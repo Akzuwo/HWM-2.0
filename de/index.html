@@ -10,40 +10,41 @@
   <link rel="icon" type="image/png" href="../media/logo.png">
   <link rel="stylesheet" href="style.css">
 
-  <!-- FullCalendar Core CSS -->
-  <link
-    rel="stylesheet"
-    href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css"
-  />
-  <!-- FullCalendar DayGrid CSS -->
-  <link
-    rel="stylesheet"
-    href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/daygrid.min.css"
-  />
 </head>
 <body>
   <div class="container">
     <h1>📚 Homework Manager</h1>
-    <div class="tabs">
-      <button onclick="window.location.href='kalender.html'">📅 Kalender</button>
-      <button onclick="window.location.href='upcoming.html'">🔔 Upcoming Events</button>
-      <button onclick="window.location.href='stundenplan.html'">🕒 Aktuelles Fach</button>
-      <button onclick="window.location.href='notenrechner.html'">📊 Notenrechner</button>
-      <button id="eintragTab" onclick="showEntryForm()">📝 Eintrag erfassen</button>
-      <button onclick="logout()">🚪 Abmelden</button>
-    </div>
-    <div id="content">Danke für ihren Besuch!</div>
+    <nav class="navbar">
+      <a href="kalender.html">📅 Kalender</a>
+      <a href="upcoming.html">🔔 Upcoming Events</a>
+      <a href="stundenplan.html">🕒 Aktuelles Fach</a>
+      <a href="notenrechner.html">📊 Notenrechner</a>
+      <a href="#" onclick="logout()">🚪 Abmelden</a>
+    </nav>
+
+    <section id="description">
+      <h2>📝 Projektbeschreibung</h2>
+      <p>Der Homework-Manager entstand aus einem einfachen, aber frustrierenden Problem:
+         Ich hatte es satt, im Klassenchat nach den Hausaufgaben zu fragen und keine Antwort zu bekommen.</p>
+      <p>Natürlich könnte man sich die Hausaufgaben einfach auf Papier notieren oder in einen persönlichen digitalen Kalender eintragen.
+         Aber das wäre mir zu langweilig gewesen – und hätte nur mir selbst geholfen.</p>
+      <p>Daher wollte ich eine Lösung entwickeln, die auch meinen Klassenkameraden etwas bringt.
+         So entstand der Homework-Manager: Ein Programm, das einen Hausaufgaben- und Prüfungs-Kalender bietet und einige zusätzliche Features mitbringt.</p>
+      <h3>🔄️ Update 1.5</h3>
+      <p>Die Benutzeroberfläche wurde angepasst, um eine höhere Benutzerfreundlichkeit zu garantieren, zudem wurde der "Noterechner" implementiert.</p>
+      <h3>🔄️ Update 1.6.x</h3>
+      <p>Aktuell versuche ich die Benutzeroberfläche zu überarbeiten, jedoch ist mir schnell klar geworden, dass die Möglichkeiten einer reinen Python Benutzeroberfläche sehr beschränkt sind bzw. viel zu kompliziert, um ein gutes Resultat zu erzielen. Die Lösung war, die Oberfläche mit HTML und CSS zu gestalten, während die Funktionalität weiterhin in Python umgesetzt wird.</p>
+      <h3>🔄 Update 1.6.1-BETA</h3>
+      <p>Nach Experimenten steht die Webseite nun bereit und funktioniert weitgehend zuverlässig, bringt aber noch einige potenzielle Probleme mit sich, wie die Downloadpflicht und statische Assets.</p>
+      <h3>🔄 Release 1.6.2</h3>
+      <p>Die neue Homework-Manager-Webseite ist online. Sie benötigt keine lokale Installation mehr, bietet flexible Gestaltungsmöglichkeiten und speichert Assets zentral auf dem Server.</p>
+      <h3>🔄️ Update 1.6.3 & 1.6.4</h3>
+      <p>Die Webseite erhielt mehrere grafische sowie sicherheitstechnische Verbesserungen, darunter neue Overlays und ein Administrator-Overlay zum Bearbeiten oder Löschen von Einträgen.</p>
+      <h3>🔄️ Update 1.7 inkl Patch 00x1 & 00x2</h3>
+      <p>Diverse Anpassungen an der Benutzeroberfläche ermöglichen nun, Einträge direkt im Kalender zu erfassen und zu bearbeiten.</p>
+    </section>
   </div>
 
-  <!-- FullCalendar Core & DayGrid JS -->
-  <script
-    src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"
-    defer
-  ></script>
-  <script
-    src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/daygrid.global.min.js"
-    defer
-  ></script>
   <script src="overlay.js" defer></script>
   <!-- Deine App-Logik -->
   <script src="script.js" defer></script>

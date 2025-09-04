@@ -25,10 +25,24 @@ button {
     cursor: pointer;
 }
 
-.tabs button {
-    width: 30%;
-    display: inline-block;
-    margin: 10px;
+.navbar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.navbar a {
+    background: #333;
+    color: #fff;
+    text-decoration: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+}
+
+.navbar a:hover {
+    background: #444;
 }
 
 #meldung {

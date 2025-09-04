@@ -1,51 +1,44 @@
 <!DOCTYPE html>
 <html lang="it">
-
-<!-- Mirrored from homework-manager.akzuwo.ch/ by HTTrack Website Copier/3.x [XR&CO'2014], Fri, 22 Aug 2025 06:36:24 GMT -->
-<!-- Added by HTTrack --><meta http-equiv="content-type" content="text/html;charset=utf-8" /><!-- /Added by HTTrack -->
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Homework Manager</title>
   <link rel="icon" type="image/png" href="../media/logo.png">
   <link rel="stylesheet" href="style.css">
-
-  <!-- FullCalendar Core CSS -->
-  <link
-    rel="stylesheet"
-    href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css"
-  />
-  <!-- FullCalendar DayGrid CSS -->
-  <link
-    rel="stylesheet"
-    href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/daygrid.min.css"
-  />
 </head>
 <body>
   <div class="container">
     <h1>📚 Homework Manager</h1>
-    <div class="tabs">
-      <button onclick="window.location.href='kalender.html'">📅 Calendario</button>
-      <button onclick="window.location.href='upcoming.html'">🔔 Eventi in arrivo</button>
-      <button onclick="window.location.href='stundenplan.html'">🕒 Materia attuale</button>
-      <button onclick="window.location.href='notenrechner.html'">📊 Calcolatore di voti</button>
-      <button id="eintragTab" onclick="showEntryForm()">📝 Aggiungi voce</button>
-      <button onclick="logout()">🚪 Disconnettersi</button>
-    </div>
-    <div id="content">Grazie per la visita!</div>
+    <nav class="navbar">
+      <a href="kalender.html">📅 Calendario</a>
+      <a href="upcoming.html">🔔 Eventi in arrivo</a>
+      <a href="stundenplan.html">🕒 Materia attuale</a>
+      <a href="notenrechner.html">📊 Calcolatore di voti</a>
+      <a href="#" onclick="logout()">🚪 Disconnettersi</a>
+    </nav>
+
+    <section id="description">
+      <h2>📝 Descrizione del progetto</h2>
+      <p>Il Homework Manager è nato da un problema semplice ma frustrante: ero stanco di chiedere i compiti nella chat della classe senza mai ricevere risposta.</p>
+      <p>Certo, si potrebbero annotare i compiti su carta o inserirli in un calendario digitale personale. Ma sarebbe stato troppo noioso e avrebbe aiutato solo me.</p>
+      <p>Perciò volevo sviluppare una soluzione utile anche ai miei compagni di classe. Così è nato il Homework Manager: un programma che offre un calendario per compiti e verifiche e include alcune funzioni aggiuntive.</p>
+      <h3>🔄️ Aggiornamento 1.5</h3>
+      <p>L'interfaccia utente è stata adattata per garantire una maggiore facilità d'uso e il "calcolatore di voti" è stato implementato.</p>
+      <h3>🔄️ Aggiornamento 1.6.x</h3>
+      <p>Attualmente sto cercando di rielaborare l'interfaccia, ma mi sono reso conto che un'interfaccia puramente in Python è molto limitata o troppo complicata per ottenere un buon risultato. La soluzione è stata progettare l'interfaccia con HTML e CSS mantenendo le funzionalità in Python.</p>
+      <h3>🔄 Aggiornamento 1.6.1-BETA</h3>
+      <p>Dopo vari esperimenti, il sito è pronto e funziona in gran parte in modo affidabile, ma presenta ancora alcuni potenziali problemi, come il pacchetto software da scaricare e gli asset statici.</p>
+      <h3>🔄 Release 1.6.2</h3>
+      <p>Il nuovo sito del Homework Manager è online. Non è più necessaria alcuna installazione locale, l'interfaccia web offre maggiori possibilità di design e gli asset sono salvati centralmente sul server e possono essere aggiornati dinamicamente. Gli orari modificati vengono ora visualizzati automaticamente senza installare una nuova versione.</p>
+      <h3>🔄️ Aggiornamento 1.6.3 & 1.6.4</h3>
+      <p>Il sito ha ricevuto diversi miglioramenti grafici e di sicurezza, tra cui nuovi overlay. Inoltre, grazie al feedback degli utenti, è stato aggiunto un overlay che permette a un amministratore di modificare o cancellare le voci.</p>
+      <h3>🔄️ Aggiornamento 1.7 incl Patch 00x1 & 00x2</h3>
+      <p>Vari piccoli adattamenti dell'interfaccia ora permettono di creare e modificare voci direttamente nel calendario.</p>
+    </section>
   </div>
 
-  <!-- FullCalendar Core & DayGrid JS -->
-  <script
-    src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"
-    defer
-  ></script>
-  <script
-    src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/daygrid.global.min.js"
-    defer
-  ></script>
   <script src="overlay.js" defer></script>
-  <!-- Deine App-Logik -->
   <script src="script.js" defer></script>
 
   <!-- Footer -->
@@ -56,11 +49,10 @@
            border-top: 1px solid #ccc;
            font-size: 0.9em;
          ">
-    ©️ Timo Wigger 2025 | 
+    ©️ Timo Wigger 2025 |
       <a href="cdn-cgi/l/email-protection.html#81f5e8eceef6e8e6e6e4f3b9c1e6ece0e8edafe2eeec" style="color: inherit; text-decoration: underline;">
         Contatto
       </a>
   </footer>
 </body>
-<!-- Mirrored from homework-manager.akzuwo.ch/ by HTTrack Website Copier/3.x [XR&CO'2014], Fri, 22 Aug 2025 06:36:30 GMT -->
 </html>
