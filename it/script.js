@@ -5,7 +5,7 @@ function login() {
         sessionStorage.setItem('role', 'admin');
         window.location.href = 'index.html';
     } else {
-        showOverlay('Falsches Passwort!');
+        showOverlay('Password errata!');
     }
 }
 
@@ -64,12 +64,12 @@ async function openCalendar() {
 
         const events = [
             ...hausaufgaben.map(h => ({
-                title: `HA ${h.fach}`,
+                title: `Compito ${h.fach}`,
                 start: h.faellig_am,
                 color: '#007bff'  // Blau
             })),
             ...pruefungen.map(p => ({
-                title: `Prüfung ${p.fach}`,
+                title: `Esame ${p.fach}`,
                 start: p.pruefungsdatum,
                 color: '#dc3545'  // Rot
             }))
@@ -102,9 +102,9 @@ async function loadCurrentSubject() {
     const res = await fetch('https://homework-manager-1-6-backend.onrender.com/aktuelles_fach');
     const data = await res.json();
     document.getElementById('content').innerHTML = `
-      <h2>Aktuelles Fach: ${data.fach}</h2>
-      <h3>Verbleibend: ${data.verbleibend}</h3>
-      <p><strong>Raum:</strong> ${data.raum}</p>
+      <h2>Materia attuale: ${data.fach}</h2>
+      <h3>Rimanente: ${data.verbleibend}</h3>
+      <p><strong>Aula:</strong> ${data.raum}</p>
     `;
   }
   clearInterval(fachInterval);
@@ -117,10 +117,10 @@ async function aktuellesFachLaden() {
   const res = await fetch('https://homework-manager-1-6-backend.onrender.com/aktuelles_fach');
   const data = await res.json();
   document.getElementById('fachInfo').innerHTML = `
-    <p><strong>Fach:</strong> ${data.fach}</p>
-    <p><strong>Endet um:</strong> ${data.endet || '-'} </p>
-    <p><strong>Verbleibend:</strong> ${data.verbleibend}</p>
-    <p><strong>Raum:</strong> ${data.raum}</p>
+    <p><strong>Materia:</strong> ${data.fach}</p>
+    <p><strong>Termina alle:</strong> ${data.endet || '-'} </p>
+    <p><strong>Rimanente:</strong> ${data.verbleibend}</p>
+    <p><strong>Aula:</strong> ${data.raum}</p>
   `;
 }
 
@@ -134,7 +134,7 @@ function closeEntryModal() {
 
 function showEntryForm() {
     if (sessionStorage.getItem('role') !== 'admin') {
-        showOverlay('Nur Admin darf Einträge erstellen!');
+        showOverlay('Solo l\'admin può creare voci!');
         return;
     }
     const overlay = document.getElementById('entry-modal-overlay');
@@ -144,10 +144,10 @@ function showEntryForm() {
     }
     clearContent();
     document.getElementById('content').innerHTML = `
-        <h2>📝 Neuen Eintrag erstellen</h2>
+        <h2>📝 Crea nuova voce</h2>
         <select id="typ">
-            <option value="hausaufgabe">Hausaufgabe</option>
-            <option value="pruefung">Prüfung</option>
+            <option value="hausaufgabe">Compito</option>
+            <option value="pruefung">Esame</option>
         </select><br>
         <select id="fach">
             ${[
@@ -155,9 +155,9 @@ function showEntryForm() {
                 'GG','IN','IT','FR','BG','MU','BI','Sport','CH','PH','SMU'
             ].map(f => `<option>${f}</option>`).join('')}
         </select><br>
-        <input id="beschreibung" placeholder="Beschreibung"><br>
+        <input id="beschreibung" placeholder="Descrizione"><br>
         <input type="datetime-local" id="datum"><br>
-        <button id="saveButton" onclick="saveEntry()">Hinzufügen</button>
+        <button id="saveButton" onclick="saveEntry()">Aggiungi</button>
 
     `;
 }
@@ -171,7 +171,7 @@ async function saveEntry() {
 
     // Button deaktivieren und visuelles Feedback geben (optional)
     saveButton.disabled = true;
-    saveButton.innerText = "Speichern läuft...";
+    saveButton.innerText = "Salvataggio in corso...";
 
     let success = false;
     let attempt = 0;
@@ -189,29 +189,29 @@ async function saveEntry() {
 
             if (result.status === "ok") {
                 success = true;
-                showOverlay("Eintrag wurde erfolgreich gespeichert!");
+                showOverlay("Voce salvata con successo!");
                 closeEntryModal();
                 document.getElementById('overlay-close')
                     .addEventListener('click', () => location.reload(), { once: true });
             } else {
-                console.error("Server-Fehler beim Speichern:", result.message);
+                console.error("Errore del server durante il salvataggio:", result.message);
             }
         } catch (error) {
-            console.error("Netzwerk-Fehler beim Speichern:", error);
+            console.error("Errore di rete durante il salvataggio:", error);
         }
 
         if (!success) {
             attempt++;
-            console.warn(`Speicher-Versuch ${attempt} fehlgeschlagen. Neuer Versuch in 2 Sekunden.`);
+            console.warn(`Tentativo di salvataggio ${attempt} fallito. Nuovo tentativo tra 2 secondi.`);
             // Warte 2000ms, bevor erneut versucht wird
             await new Promise(resolve => setTimeout(resolve, 2000));
         }
     }
 
     if (!success) {
-        showOverlay("Der Eintrag konnte nach mehreren Versuchen nicht gespeichert werden. Bitte versuche es später noch einmal.");
+        showOverlay("La voce non è stata salvata dopo diversi tentativi. Riprova più tardi.");
     } else {
-        // Eingabefelder zurücksetzen
+        // Reimposta campi di input
         document.getElementById('typ').value = "";
         document.getElementById('fach').value = "";
         document.getElementById('beschreibung').value = "";
@@ -220,7 +220,7 @@ async function saveEntry() {
 
     // Button wieder aktivieren
     saveButton.disabled = false;
-    saveButton.innerText = "Hinzufügen";
+    saveButton.innerText = "Aggiungi";
 }
 
 

@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     const res = await fetch(`${API_BASE}/tagesuebersicht`);
     if (!res.ok) {
-      throw new Error(`API-Fehler: ${res.status}`);
+      throw new Error(`API error: ${res.status}`);
     }
     const data = await res.json();
     container.innerHTML = '';
@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const ul = document.createElement('ul');
       if (eintraege.length === 0) {
         const li = document.createElement('li');
-        li.textContent = 'Keine Einträge';
+        li.textContent = 'No entries';
         ul.appendChild(li);
       } else {
         for (const e of eintraege) {
@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       container.appendChild(ul);
     }
   } catch (err) {
-    console.error('Fehler beim Laden der Tagesübersicht:', err);
-    container.textContent = 'Fehler beim Laden der Daten.';
+    console.error('Error loading daily overview:', err);
+    container.textContent = 'Error loading data.';
   }
 });

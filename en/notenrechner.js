@@ -20,7 +20,7 @@ function noteHinzufuegen() {
   const note = parseFloat(document.getElementById('note').value);
   const gewichtung = parseFloat(document.getElementById('gewichtung').value);
   if (isNaN(note) || isNaN(gewichtung)) {
-    showOverlay('Bitte gültige Zahlen eingeben.');
+    showOverlay('Please enter valid numbers.');
     return;
   }
   const fach = fachSelect.value;
@@ -36,20 +36,20 @@ function schnittBerechnen() {
   const fach = fachSelect.value;
   const arr = getFachNoten(fach);
   if (!arr.length) {
-    document.getElementById('schnitt').textContent = 'Schnitt: -';
+    document.getElementById('schnitt').textContent = 'Average: -';
     return;
   }
   const gesamtgewichtung = arr.reduce((a, n) => a + n.gewichtung, 0);
   const summe = arr.reduce((a, n) => a + n.note * n.gewichtung, 0);
   const schnitt = summe / gesamtgewichtung;
-  document.getElementById('schnitt').textContent = `Schnitt: ${schnitt.toFixed(2)}`;
+  document.getElementById('schnitt').textContent = `Average: ${schnitt.toFixed(2)}`;
 }
 
 function zielBerechnen() {
   const ziel = parseFloat(document.getElementById('ziel').value);
   const zGew = parseFloat(document.getElementById('zusaetzlich').value);
   if (isNaN(ziel) || isNaN(zGew)) {
-    showOverlay('Bitte gültige Zahlen eingeben.');
+    showOverlay('Please enter valid numbers.');
     return;
   }
   const fach = fachSelect.value;
@@ -57,7 +57,7 @@ function zielBerechnen() {
   const gesamtgewichtung = arr.reduce((a, n) => a + n.gewichtung, 0);
   const summe = arr.reduce((a, n) => a + n.note * n.gewichtung, 0);
   const benoetigte = ((ziel * (gesamtgewichtung + zGew)) - summe) / zGew;
-  document.getElementById('zielNote').textContent = `Benötigte Note: ${benoetigte.toFixed(2)}`;
+  document.getElementById('zielNote').textContent = `Required grade: ${benoetigte.toFixed(2)}`;
 }
 
 function notenListeUpdate() {
@@ -87,5 +87,5 @@ document.getElementById('berechnen').addEventListener('click', zielBerechnen);
 fachSelect.addEventListener('change', () => {
   notenListeUpdate();
   schnittBerechnen();
-  document.getElementById('zielNote').textContent = 'Benötigte Note: -';
+  document.getElementById('zielNote').textContent = 'Required grade: -';
 });

@@ -1,31 +1,31 @@
 // kalender.js
 
-// Basis‐URL deines Backends
+// Base URL of your backend
 const API_BASE = 'https://homework-manager-2-0-backend.onrender.com';
 
-// Rolle aus sessionStorage (wird beim Login gesetzt)
+// Role from sessionStorage (set on login)
 const role = sessionStorage.getItem('role') || 'guest';
 const userIsAdmin = (role === 'admin');
 
-// Markdown‐Ersatz für *fett*
+// Markdown replacement for *bold*
 function mdBold(text) {
   return text.replace(/\*(.*?)\*/g, '<strong>$1</strong>');
 }
 
-// Modal öffnen: View vs. Edit
+// Open modal: view vs. edit
 function openModal(event) {
   const { id } = event;
   const { type, subject, description } = event.extendedProps;
   const date = event.startStr;
   const title = event.title;
 
-  // View‐Mode füllen
+  // Populate view mode
   document.getElementById('fc-modal-title').innerText   = title;
   document.getElementById('fc-modal-subject').innerText = subject;
   document.getElementById('fc-modal-date').innerText    = date;
   document.getElementById('fc-modal-desc').innerHTML    = mdBold(description);
 
-  // Edit‐Formular vorbelegen
+  // Pre-fill edit form
   document.getElementById('fc-entry-id').value   = id;
   document.getElementById('fc-entry-type').value = type;
   document.getElementById('fc-edit-subject').value = subject;
@@ -43,13 +43,13 @@ function openModal(event) {
   document.getElementById('fc-modal-overlay').style.display = 'block';
 }
 
-// Modal schließen
+// Close modal
 function closeModal() {
   document.getElementById('fc-modal-overlay').style.display = 'none';
 }
 window.closeModal = closeModal;
 
-// Speichern (Update)
+// Save (update)
 async function saveEdit() {
   const id    = document.getElementById('fc-entry-id').value;
   const type  = document.getElementById('fc-entry-type').value;
@@ -73,16 +73,16 @@ async function saveEdit() {
     closeModal();
     location.reload();
   } catch (e) {
-    console.error('Fehler beim Speichern:', e);
-    showOverlay('Fehler beim Speichern:\n' + e.message);
+    console.error('Error saving:', e);
+    showOverlay('Error saving:\n' + e.message);
   }
 }
 
-// Löschen
+// Delete
 async function deleteEntry() {
   const id   = document.getElementById('fc-entry-id').value;
   const type = document.getElementById('fc-entry-type').value;
-  if (!confirm('Eintrag wirklich löschen?')) return;
+  if (!confirm('Really delete entry?')) return;
 
   try {
     const res = await fetch(`${API_BASE}/delete_entry/${type}/${id}`, {
@@ -96,16 +96,16 @@ async function deleteEntry() {
     closeModal();
     location.reload();
   } catch (e) {
-    console.error('Fehler beim Löschen:', e);
-    showOverlay('Fehler beim Löschen:\n' + e.message);
+    console.error('Error deleting:', e);
+    showOverlay('Error deleting:\n' + e.message);
   }
 }
 
-// Kalender initialisieren
+// Initialize calendar
 document.addEventListener('DOMContentLoaded', async () => {
   const calendarEl = document.getElementById('calendar');
   if (!calendarEl) {
-    console.log("Kein Kalender-Element gefunden – Script beendet.");
+    console.log("No calendar element found – script terminated.");
     return;
   }
 
@@ -116,7 +116,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       fetch(`${API_BASE}/events`)
     ]);
     if (!resHA.ok || !resPR.ok || !resEV.ok) {
-      throw new Error(`API-Fehler (HA: ${resHA.status}, PR: ${resPR.status}, EV: ${resEV.status})`);
+      throw new Error(`API error (HW: ${resHA.status}, EX: ${resPR.status}, EV: ${resEV.status})`);
     }
 
     const hausaufgaben = await resHA.json();
@@ -126,7 +126,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const events = [
       ...hausaufgaben.map(h => ({
         id:    String(h.id),
-        title: `HA ${h.fach}`,
+        title: `HW ${h.fach}`,
         start: h.faellig_am,
         color: '#007bff',
         extendedProps: {
@@ -137,7 +137,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       })),
       ...pruefungen.map(p => ({
         id:    String(p.id),
-        title: `Prüfung ${p.fach}`,
+        title: `Exam ${p.fach}`,
         start: p.pruefungsdatum,
         color: '#dc3545',
         extendedProps: {
@@ -163,7 +163,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'dayGridMonth',
-        locale:      'de',
+        locale:      'en',
         headerToolbar: {
           left:   'prev,next today',
           center: 'title',
@@ -185,8 +185,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     calendar.render();
   } catch (err) {
-    console.error('Fehler beim Laden des Kalenders:', err);
-    calendarEl.innerText = "Fehler beim Laden der Kalendereinträge!";
+    console.error('Error loading calendar:', err);
+    calendarEl.innerText = "Error loading calendar entries!";
   }
 
 });

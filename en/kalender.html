@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 
 <!-- Mirrored from homework-manager.akzuwo.ch/kalender by HTTrack Website Copier/3.x [XR&CO'2014], Fri, 22 Aug 2025 06:36:30 GMT -->
 <!-- Added by HTTrack --><meta http-equiv="content-type" content="text/html;charset=utf-8" /><!-- /Added by HTTrack -->
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Kalender</title>
-  <link rel="icon" type="image/png" href="media/logo.png">
+  <title>Calendar</title>
+  <link rel="icon" type="image/png" href="../media/logo.png">
 
   <!-- FullCalendar Standard-CSS -->
   <link
@@ -19,10 +19,10 @@
 
 </head>
 <body>
-  <h1>📅 Kalender</h1>
+  <h1>📅 Calendar</h1>
   <div id="content">
-    <div id="calendar">Kalender wird geladen…</div>
-    <button id="export-button" onclick="window.location.href='https://homework-manager-1-6-backend.onrender.com/calendar.ics'">📤 Exportieren</button>
+    <div id="calendar">Loading calendar…</div>
+    <button id="export-button" onclick="window.location.href='https://homework-manager-1-6-backend.onrender.com/calendar.ics'">📤 Export</button>
   </div>
 
   <!-- Modal (initial versteckt) -->
@@ -34,35 +34,35 @@
       <!-- VIEW MODE -->
       <div id="fc-view-mode">
         <h2 id="fc-modal-title"></h2>
-        <p><strong>Fach:</strong> <span id="fc-modal-subject"></span></p>
-        <p><strong>Datum:</strong> <span id="fc-modal-date"></span></p>
+        <p><strong>Subject:</strong> <span id="fc-modal-subject"></span></p>
+        <p><strong>Date:</strong> <span id="fc-modal-date"></span></p>
         <div id="fc-modal-desc"></div>
       </div>
 
-      <!-- EDIT MODE (nur für Admins) -->
+      <!-- EDIT MODE (admin only) -->
       <form id="fc-edit-form" style="display:none;">
-        <h2>Eintrag bearbeiten</h2>
+        <h2>Edit Entry</h2>
         <input type="hidden" id="fc-entry-id">
         <input type="hidden" id="fc-entry-type">
 
         <label>
-          Fachkürzel:
+          Subject Abbreviation:
           <input type="text" id="fc-edit-subject">
         </label>
 
         <label>
-          Datum (YYYY-MM-DD):
+          Date (YYYY-MM-DD):
           <input type="date" id="fc-edit-date">
         </label>
 
         <label>
-          Beschreibung:
+          Description:
           <textarea id="fc-edit-desc" rows="4"></textarea>
         </label>
 
-        <button type="button" onclick="saveEdit()">Speichern</button>
+        <button type="button" onclick="saveEdit()">Save</button>
         <button type="button" onclick="deleteEntry()" style="background:#dc3545; color:#fff;">
-          Löschen
+          Delete
         </button>
       </form>
 
@@ -75,18 +75,18 @@
 
       <button class="close-btn" onclick="closeEntryModal()">✖</button>
 
-      <h2>📝 Neuen Eintrag erstellen</h2>
+      <h2>📝 Create New Entry</h2>
       <form id="entry-form">
         <label>
-          Typ:
+          Type:
           <select id="typ">
-            <option value="hausaufgabe">Hausaufgabe</option>
-            <option value="pruefung">Prüfung</option>
+            <option value="hausaufgabe">Homework</option>
+            <option value="pruefung">Exam</option>
           </select>
         </label>
 
         <label>
-          Fach:
+          Subject:
           <select id="fach">
             <option>MA</option>
             <option>DE</option>
@@ -113,16 +113,16 @@
         </label>
 
         <label>
-          Beschreibung:
-          <input id="beschreibung" placeholder="Beschreibung">
+          Description:
+          <input id="beschreibung" placeholder="Description">
         </label>
 
         <label>
-          Datum:
+          Date:
           <input type="datetime-local" id="datum">
         </label>
 
-        <button type="button" id="saveButton" onclick="saveEntry()">Hinzufügen</button>
+        <button type="button" id="saveButton" onclick="saveEntry()">Add</button>
       </form>
     </div>
   </div>
@@ -137,7 +137,7 @@
     <!-- Dein Kalender-Script -->
     <script src="kalender.js" defer></script>
 
-  <button id="back-button" onclick="window.location.href='index.html'">◀️ Zurück</button>
+  <button id="back-button" onclick="window.location.href='index.html'">◀️ Back</button>
 </body>
 <!-- Mirrored from homework-manager.akzuwo.ch/kalender by HTTrack Website Copier/3.x [XR&CO'2014], Fri, 22 Aug 2025 06:36:31 GMT -->
 </html>

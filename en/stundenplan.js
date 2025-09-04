@@ -1,28 +1,28 @@
 async function aktuellesFachLaden() {
-    // Lokale Funktion für den Datenabruf
+    // Local function for data retrieval
     async function update() {
         try {
             const res  = await fetch('https://homework-manager-2-0-backend.onrender.com/aktuelles_fach');
             const data = await res.json();
 
             document.getElementById('fachInfo').innerHTML = `
-                <h2>Aktuelles Fach: ${data.fach}</h2>
-                <p><strong>Verbleibend:</strong> ${data.verbleibend}</p>
-                <p><strong>Raum:</strong> ${data.raum}</p>
+                <h2>Current Subject: ${data.fach}</h2>
+                <p><strong>Remaining:</strong> ${data.verbleibend}</p>
+                <p><strong>Room:</strong> ${data.raum}</p>
                 <hr>
-                <h3>Nächste Stunde</h3>
-                <p><strong>Fach:</strong> ${data.naechstes_fach}</p>
+                <h3>Next Lesson</h3>
+                <p><strong>Subject:</strong> ${data.naechstes_fach}</p>
                 <p><strong>Start:</strong> ${data.naechste_start}</p>
-                <p><strong>Raum:</strong> ${data.naechster_raum}</p>
+                <p><strong>Room:</strong> ${data.naechster_raum}</p>
             `;
         } catch (error) {
-            console.error('Fehler beim Abrufen des aktuellen Fachs:', error);
+            console.error('Error fetching current subject:', error);
             document.getElementById('fachInfo').innerHTML =
-                '<p>Fehler beim Laden der Daten.</p>';
+                '<p>Error loading data.</p>';
         }
     }
 
-    // Vorhandenes Intervall löschen, falls bereits gesetzt
+    // Clear existing interval if set
     if (window.fachInterval) {
         clearInterval(window.fachInterval);
     }

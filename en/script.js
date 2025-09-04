@@ -5,7 +5,7 @@ function login() {
         sessionStorage.setItem('role', 'admin');
         window.location.href = 'index.html';
     } else {
-        showOverlay('Falsches Passwort!');
+        showOverlay('Wrong password!');
     }
 }
 
@@ -64,12 +64,12 @@ async function openCalendar() {
 
         const events = [
             ...hausaufgaben.map(h => ({
-                title: `HA ${h.fach}`,
+                title: `HW ${h.fach}`,
                 start: h.faellig_am,
                 color: '#007bff'  // Blau
             })),
             ...pruefungen.map(p => ({
-                title: `Prüfung ${p.fach}`,
+                title: `Exam ${p.fach}`,
                 start: p.pruefungsdatum,
                 color: '#dc3545'  // Rot
             }))
@@ -102,9 +102,9 @@ async function loadCurrentSubject() {
     const res = await fetch('https://homework-manager-1-6-backend.onrender.com/aktuelles_fach');
     const data = await res.json();
     document.getElementById('content').innerHTML = `
-      <h2>Aktuelles Fach: ${data.fach}</h2>
-      <h3>Verbleibend: ${data.verbleibend}</h3>
-      <p><strong>Raum:</strong> ${data.raum}</p>
+      <h2>Current Subject: ${data.fach}</h2>
+      <h3>Remaining: ${data.verbleibend}</h3>
+      <p><strong>Room:</strong> ${data.raum}</p>
     `;
   }
   clearInterval(fachInterval);
@@ -117,10 +117,10 @@ async function aktuellesFachLaden() {
   const res = await fetch('https://homework-manager-1-6-backend.onrender.com/aktuelles_fach');
   const data = await res.json();
   document.getElementById('fachInfo').innerHTML = `
-    <p><strong>Fach:</strong> ${data.fach}</p>
-    <p><strong>Endet um:</strong> ${data.endet || '-'} </p>
-    <p><strong>Verbleibend:</strong> ${data.verbleibend}</p>
-    <p><strong>Raum:</strong> ${data.raum}</p>
+    <p><strong>Subject:</strong> ${data.fach}</p>
+    <p><strong>Ends at:</strong> ${data.endet || '-'} </p>
+    <p><strong>Remaining:</strong> ${data.verbleibend}</p>
+    <p><strong>Room:</strong> ${data.raum}</p>
   `;
 }
 
@@ -134,7 +134,7 @@ function closeEntryModal() {
 
 function showEntryForm() {
     if (sessionStorage.getItem('role') !== 'admin') {
-        showOverlay('Nur Admin darf Einträge erstellen!');
+        showOverlay('Only admin may create entries!');
         return;
     }
     const overlay = document.getElementById('entry-modal-overlay');
@@ -144,10 +144,10 @@ function showEntryForm() {
     }
     clearContent();
     document.getElementById('content').innerHTML = `
-        <h2>📝 Neuen Eintrag erstellen</h2>
+        <h2>📝 Create New Entry</h2>
         <select id="typ">
-            <option value="hausaufgabe">Hausaufgabe</option>
-            <option value="pruefung">Prüfung</option>
+            <option value="hausaufgabe">Homework</option>
+            <option value="pruefung">Exam</option>
         </select><br>
         <select id="fach">
             ${[
@@ -155,9 +155,9 @@ function showEntryForm() {
                 'GG','IN','IT','FR','BG','MU','BI','Sport','CH','PH','SMU'
             ].map(f => `<option>${f}</option>`).join('')}
         </select><br>
-        <input id="beschreibung" placeholder="Beschreibung"><br>
+        <input id="beschreibung" placeholder="Description"><br>
         <input type="datetime-local" id="datum"><br>
-        <button id="saveButton" onclick="saveEntry()">Hinzufügen</button>
+        <button id="saveButton" onclick="saveEntry()">Add</button>
 
     `;
 }
@@ -171,7 +171,7 @@ async function saveEntry() {
 
     // Button deaktivieren und visuelles Feedback geben (optional)
     saveButton.disabled = true;
-    saveButton.innerText = "Speichern läuft...";
+    saveButton.innerText = "Saving...";
 
     let success = false;
     let attempt = 0;
@@ -189,29 +189,29 @@ async function saveEntry() {
 
             if (result.status === "ok") {
                 success = true;
-                showOverlay("Eintrag wurde erfolgreich gespeichert!");
+                showOverlay("Entry saved successfully!");
                 closeEntryModal();
                 document.getElementById('overlay-close')
                     .addEventListener('click', () => location.reload(), { once: true });
             } else {
-                console.error("Server-Fehler beim Speichern:", result.message);
+                console.error("Server error while saving:", result.message);
             }
         } catch (error) {
-            console.error("Netzwerk-Fehler beim Speichern:", error);
+            console.error("Network error while saving:", error);
         }
 
         if (!success) {
             attempt++;
-            console.warn(`Speicher-Versuch ${attempt} fehlgeschlagen. Neuer Versuch in 2 Sekunden.`);
+            console.warn(`Save attempt ${attempt} failed. Retrying in 2 seconds.`);
             // Warte 2000ms, bevor erneut versucht wird
             await new Promise(resolve => setTimeout(resolve, 2000));
         }
     }
 
     if (!success) {
-        showOverlay("Der Eintrag konnte nach mehreren Versuchen nicht gespeichert werden. Bitte versuche es später noch einmal.");
+        showOverlay("The entry could not be saved after several attempts. Please try again later.");
     } else {
-        // Eingabefelder zurücksetzen
+        // Reset input fields
         document.getElementById('typ').value = "";
         document.getElementById('fach').value = "";
         document.getElementById('beschreibung').value = "";
@@ -220,7 +220,7 @@ async function saveEntry() {
 
     // Button wieder aktivieren
     saveButton.disabled = false;
-    saveButton.innerText = "Hinzufügen";
+    saveButton.innerText = "Add";
 }
 
 
