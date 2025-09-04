@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<!-- Mirrored from homework-manager.akzuwo.ch/kalender by HTTrack Website Copier/3.x [XR&CO'2014], Fri, 22 Aug 2025 06:36:30 GMT -->
+<!-- Added by HTTrack --><meta http-equiv="content-type" content="text/html;charset=utf-8" /><!-- /Added by HTTrack -->
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kalender</title>
+  <link rel="icon" type="image/png" href="media/logo.png">
+
+  <!-- FullCalendar Standard-CSS -->
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css"
+  />
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="kalender.css">
+
+</head>
+<body>
+  <h1>📅 Kalender</h1>
+  <div id="content">
+    <div id="calendar">Kalender wird geladen…</div>
+    <button id="export-button" onclick="window.location.href='https://homework-manager-1-6-backend.onrender.com/calendar.ics'">📤 Exportieren</button>
+  </div>
+
+  <!-- Modal (initial versteckt) -->
+  <div id="fc-modal-overlay" class="fc-modal-overlay" onclick="closeModal()">
+    <div class="fc-modal" onclick="event.stopPropagation()">
+
+      <button class="close-btn" onclick="closeModal()">✖</button>
+
+      <!-- VIEW MODE -->
+      <div id="fc-view-mode">
+        <h2 id="fc-modal-title"></h2>
+        <p><strong>Fach:</strong> <span id="fc-modal-subject"></span></p>
+        <p><strong>Datum:</strong> <span id="fc-modal-date"></span></p>
+        <div id="fc-modal-desc"></div>
+      </div>
+
+      <!-- EDIT MODE (nur für Admins) -->
+      <form id="fc-edit-form" style="display:none;">
+        <h2>Eintrag bearbeiten</h2>
+        <input type="hidden" id="fc-entry-id">
+        <input type="hidden" id="fc-entry-type">
+
+        <label>
+          Fachkürzel:
+          <input type="text" id="fc-edit-subject">
+        </label>
+
+        <label>
+          Datum (YYYY-MM-DD):
+          <input type="date" id="fc-edit-date">
+        </label>
+
+        <label>
+          Beschreibung:
+          <textarea id="fc-edit-desc" rows="4"></textarea>
+        </label>
+
+        <button type="button" onclick="saveEdit()">Speichern</button>
+        <button type="button" onclick="deleteEntry()" style="background:#dc3545; color:#fff;">
+          Löschen
+        </button>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- Entry creation modal -->
+  <div id="entry-modal-overlay" class="fc-modal-overlay" onclick="closeEntryModal()">
+    <div class="fc-modal" onclick="event.stopPropagation()">
+
+      <button class="close-btn" onclick="closeEntryModal()">✖</button>
+
+      <h2>📝 Neuen Eintrag erstellen</h2>
+      <form id="entry-form">
+        <label>
+          Typ:
+          <select id="typ">
+            <option value="hausaufgabe">Hausaufgabe</option>
+            <option value="pruefung">Prüfung</option>
+          </select>
+        </label>
+
+        <label>
+          Fach:
+          <select id="fach">
+            <option>MA</option>
+            <option>DE</option>
+            <option>EN</option>
+            <option>PS</option>
+            <option>SPM-PS</option>
+            <option>SPM-MA</option>
+            <option>SPM-ES</option>
+            <option>SP</option>
+            <option>WR</option>
+            <option>GS</option>
+            <option>GG</option>
+            <option>IN</option>
+            <option>IT</option>
+            <option>FR</option>
+            <option>BG</option>
+            <option>MU</option>
+            <option>BI</option>
+            <option>Sport</option>
+            <option>CH</option>
+            <option>PH</option>
+            <option>SMU</option>
+          </select>
+        </label>
+
+        <label>
+          Beschreibung:
+          <input id="beschreibung" placeholder="Beschreibung">
+        </label>
+
+        <label>
+          Datum:
+          <input type="datetime-local" id="datum">
+        </label>
+
+        <button type="button" id="saveButton" onclick="saveEntry()">Hinzufügen</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- FullCalendar Standard-JS -->
+    <script
+      src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"
+      defer
+    ></script>
+    <script src="overlay.js" defer></script>
+    <script src="script.js" defer></script>
+    <!-- Dein Kalender-Script -->
+    <script src="kalender.js" defer></script>
+
+  <button id="back-button" onclick="window.location.href='index.html'">◀️ Zurück</button>
+</body>
+<!-- Mirrored from homework-manager.akzuwo.ch/kalender by HTTrack Website Copier/3.x [XR&CO'2014], Fri, 22 Aug 2025 06:36:31 GMT -->
+</html>

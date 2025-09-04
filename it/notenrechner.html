@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<!-- Mirrored from homework-manager.akzuwo.ch/notenrechner by HTTrack Website Copier/3.x [XR&CO'2014], Fri, 22 Aug 2025 06:36:31 GMT -->
+<!-- Added by HTTrack --><meta http-equiv="content-type" content="text/html;charset=utf-8" /><!-- /Added by HTTrack -->
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notenrechner</title>
+  <link rel="icon" type="image/png" href="media/logo.png">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    #notenrechner-container button {
+      width: auto;
+      display: inline-block;
+      margin: 10px 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="notenrechner-container">
+  <header>
+    <h2>📊 Notenrechner</h2>
+  </header>
+
+  <main>
+    <label for="fach">Fach:</label>
+    <select id="fach"></select>
+
+    <div id="noteInput">
+      <input id="note" type="number" step="0.01" placeholder="Note">
+      <input id="gewichtung" type="number" step="0.01" placeholder="Gewichtung">
+      <button type="button" id="add">Hinzufügen</button>
+    </div>
+
+    <table id="notenTabelle" style="width:80%;margin:auto;border-collapse:collapse;">
+      <thead>
+        <tr><th>Nr.</th><th>Note</th><th>Gewichtung</th><th></th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <div id="schnitt" style="margin-top:10px;">Schnitt: -</div>
+
+    <div id="zielInput">
+      <input id="ziel" type="number" step="0.01" placeholder="Ziel-Schnitt">
+      <input id="zusaetzlich" type="number" step="0.01" placeholder="Gewichtung der nächsten Note">
+      <button type="button" id="berechnen">Berechnen</button>
+    </div>
+
+    <div id="zielNote">Benötigte Note: -</div>
+  </main>
+
+  <div id="buttons">
+    <button type="button" onclick="window.location.href='index.html'">◀️ Zurück</button>
+  </div>
+  </div>
+  <script src="overlay.js" defer></script>
+  <script src="notenrechner.js" defer></script>
+
+  <footer style="text-align:center;margin-top:30px;padding:10px 0;border-top:1px solid #ccc;font-size:0.9em;">
+    ©️ Timo Wigger 2025 |
+    <a href="cdn-cgi/l/email-protection.html#0a7e6367657d636d6d6f78324a6d676b636624696567" style="color: inherit; text-decoration: underline;">Kontakt</a>
+  </footer>
+</body>
+<!-- Mirrored from homework-manager.akzuwo.ch/notenrechner by HTTrack Website Copier/3.x [XR&CO'2014], Fri, 22 Aug 2025 06:36:32 GMT -->
+</html>

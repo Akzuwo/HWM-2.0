@@ -1,0 +1,12 @@
+#plan-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  background: #1e1e1e;
+  border-radius: 10px;
+}
+
+#plan-container button {
+  width: 100%;
+  padding: 8px 16px;
+}
