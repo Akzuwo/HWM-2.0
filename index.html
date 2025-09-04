@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Homework Manager</title>
+  <script>
+    const lang = navigator.language || navigator.userLanguage;
+    if (lang.startsWith('de')) {
+      window.location.replace('de/');
+    } else if (lang.startsWith('it')) {
+      window.location.replace('it/');
+    } else {
+      window.location.replace('en/');
+    }
+  </script>
+</head>
+<body>
+  <noscript>
+    <p>Please choose your language: <a href="de/">Deutsch</a> | <a href="en/">English</a> | <a href="it/">Italiano</a></p>
+  </noscript>
+</body>
+</html>
+
