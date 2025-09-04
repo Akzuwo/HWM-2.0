@@ -83,7 +83,33 @@ def ensure_stundenplan_table():
     conn.close()
 
 
+# Tabelle für Events sicherstellen
+def ensure_events_table():
+    try:
+        conn = get_connection()
+    except Exception:
+        return
+    cur = conn.cursor()
+    cur.execute("SHOW TABLES LIKE 'events'")
+    if cur.fetchone() is None:
+        cur.execute(
+            """
+            CREATE TABLE events (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                titel VARCHAR(255) NOT NULL,
+                beschreibung TEXT,
+                startzeit DATETIME NOT NULL
+            )
+            """
+        )
+        conn.commit()
+        print("Created table 'events'")
+    cur.close()
+    conn.close()
+
+
 ensure_stundenplan_table()
+ensure_events_table()
 
 # ---------- ROUTES ----------
 
