@@ -37,10 +37,6 @@ function checkLogin() {
         return;
     }
 
-    const eintragTab = document.getElementById('eintragTab');
-    if (eintragTab && role !== 'admin') {
-        eintragTab.style.display = 'none';
-    }
 }
 
   
@@ -158,7 +154,6 @@ function showEntryForm() {
         <input id="beschreibung" placeholder="Beschreibung"><br>
         <input type="datetime-local" id="datum"><br>
         <button id="saveButton" onclick="saveEntry()">Hinzufügen</button>
-
     `;
 }
 
@@ -167,15 +162,14 @@ async function saveEntry() {
     const fach = document.getElementById('fach').value;
     const beschreibung = document.getElementById('beschreibung').value;
     const datum = document.getElementById('datum').value;
-    const saveButton = document.getElementById('saveButton');  // Stelle sicher, dass der Button diese ID hat
+    const saveButton = document.getElementById('saveButton');
 
-    // Button deaktivieren und visuelles Feedback geben (optional)
+    // Button deaktivieren und visuelles Feedback geben
     saveButton.disabled = true;
     saveButton.innerText = "Speichern läuft...";
 
     let success = false;
     let attempt = 0;
-    // Maximal 10 Versuche (optional; du kannst hier auch unbegrenzt versuchen, solltest aber eine Abbruchlogik einbauen)
     const maxAttempts = 10;
 
     while (!success && attempt < maxAttempts) {
@@ -203,7 +197,6 @@ async function saveEntry() {
         if (!success) {
             attempt++;
             console.warn(`Speicher-Versuch ${attempt} fehlgeschlagen. Neuer Versuch in 2 Sekunden.`);
-            // Warte 2000ms, bevor erneut versucht wird
             await new Promise(resolve => setTimeout(resolve, 2000));
         }
     }
@@ -211,7 +204,6 @@ async function saveEntry() {
     if (!success) {
         showOverlay("Der Eintrag konnte nach mehreren Versuchen nicht gespeichert werden. Bitte versuche es später noch einmal.");
     } else {
-        // Eingabefelder zurücksetzen
         document.getElementById('typ').value = "";
         document.getElementById('fach').value = "";
         document.getElementById('beschreibung').value = "";
@@ -222,8 +214,6 @@ async function saveEntry() {
     saveButton.disabled = false;
     saveButton.innerText = "Hinzufügen";
 }
-
-
 
 // Initialcheck beim Laden der Seite
 window.addEventListener('DOMContentLoaded', checkLogin);

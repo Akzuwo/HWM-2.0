@@ -37,10 +37,6 @@ function checkLogin() {
         return;
     }
 
-    const eintragTab = document.getElementById('eintragTab');
-    if (eintragTab && role !== 'admin') {
-        eintragTab.style.display = 'none';
-    }
 }
 
   
