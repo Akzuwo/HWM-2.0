@@ -7,19 +7,19 @@ const API_BASE = 'https://homework-manager-2-0-backend.onrender.com';
 const role = sessionStorage.getItem('role') || 'guest';
 const userIsAdmin = (role === 'admin');
 
-// Markdown‐Ersatz für *fett*
+// Sostituzione Markdown per *grassetto*
 function mdBold(text) {
   return text.replace(/\*(.*?)\*/g, '<strong>$1</strong>');
 }
 
-// Modal öffnen: View vs. Edit
+// Apri modal: visualizza vs. modifica
 function openModal(event) {
   const { id } = event;
   const { type, subject, description } = event.extendedProps;
   const date = event.startStr;
   const title = event.title;
 
-  // View‐Mode füllen
+  // Compila modalità visualizzazione
   document.getElementById('fc-modal-title').innerText   = title;
   document.getElementById('fc-modal-subject').innerText = subject;
   document.getElementById('fc-modal-date').innerText    = date;
@@ -43,7 +43,7 @@ function openModal(event) {
   document.getElementById('fc-modal-overlay').style.display = 'block';
 }
 
-// Modal schließen
+// Chiudi modal
 function closeModal() {
   document.getElementById('fc-modal-overlay').style.display = 'none';
 }
@@ -73,16 +73,16 @@ async function saveEdit() {
     closeModal();
     location.reload();
   } catch (e) {
-    console.error('Fehler beim Speichern:', e);
-    showOverlay('Fehler beim Speichern:\n' + e.message);
+    console.error('Errore durante il salvataggio:', e);
+    showOverlay('Errore durante il salvataggio:\n' + e.message);
   }
 }
 
-// Löschen
+// Elimina
 async function deleteEntry() {
   const id   = document.getElementById('fc-entry-id').value;
   const type = document.getElementById('fc-entry-type').value;
-  if (!confirm('Eintrag wirklich löschen?')) return;
+  if (!confirm('Eliminare veramente la voce?')) return;
 
   try {
     const res = await fetch(`${API_BASE}/delete_entry/${type}/${id}`, {
@@ -96,8 +96,8 @@ async function deleteEntry() {
     closeModal();
     location.reload();
   } catch (e) {
-    console.error('Fehler beim Löschen:', e);
-    showOverlay('Fehler beim Löschen:\n' + e.message);
+    console.error('Errore durante l\'eliminazione:', e);
+    showOverlay('Errore durante l\'eliminazione:\n' + e.message);
   }
 }
 
@@ -105,7 +105,7 @@ async function deleteEntry() {
 document.addEventListener('DOMContentLoaded', async () => {
   const calendarEl = document.getElementById('calendar');
   if (!calendarEl) {
-    console.log("Kein Kalender-Element gefunden – Script beendet.");
+    console.log("Nessun elemento calendario trovato – script terminato.");
     return;
   }
 
@@ -116,7 +116,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       fetch(`${API_BASE}/events`)
     ]);
     if (!resHA.ok || !resPR.ok || !resEV.ok) {
-      throw new Error(`API-Fehler (HA: ${resHA.status}, PR: ${resPR.status}, EV: ${resEV.status})`);
+      throw new Error(`Errore API (CP: ${resHA.status}, ES: ${resPR.status}, EV: ${resEV.status})`);
     }
 
     const hausaufgaben = await resHA.json();
@@ -126,7 +126,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const events = [
       ...hausaufgaben.map(h => ({
         id:    String(h.id),
-        title: `HA ${h.fach}`,
+        title: `Compito ${h.fach}`,
         start: h.faellig_am,
         color: '#007bff',
         extendedProps: {
@@ -137,7 +137,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       })),
       ...pruefungen.map(p => ({
         id:    String(p.id),
-        title: `Prüfung ${p.fach}`,
+        title: `Esame ${p.fach}`,
         start: p.pruefungsdatum,
         color: '#dc3545',
         extendedProps: {
@@ -163,7 +163,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'dayGridMonth',
-        locale:      'de',
+        locale:      'it',
         headerToolbar: {
           left:   'prev,next today',
           center: 'title',
@@ -185,8 +185,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     calendar.render();
   } catch (err) {
-    console.error('Fehler beim Laden des Kalenders:', err);
-    calendarEl.innerText = "Fehler beim Laden der Kalendereinträge!";
+    console.error('Errore durante il caricamento del calendario:', err);
+    calendarEl.innerText = "Errore durante il caricamento delle voci del calendario!";
   }
 
 });

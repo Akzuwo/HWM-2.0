@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       fetch(`${API_BASE}/events`)
     ]);
     if (!resHA.ok || !resPR.ok || !resEV.ok) {
-      throw new Error(`API-Fehler (HA: ${resHA.status}, PR: ${resPR.status}, EV: ${resEV.status})`);
+      throw new Error(`Errore API (CP: ${resHA.status}, ES: ${resPR.status}, EV: ${resEV.status})`);
     }
     const [hausaufgaben, pruefungen, events] = await Promise.all([
       resHA.json(),
@@ -18,12 +18,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     ]);
     const items = [
       ...hausaufgaben.map(h => ({datum: h.faellig_am, text: `HA ${h.fach}: ${h.beschreibung}`})),
-      ...pruefungen.map(p => ({datum: p.pruefungsdatum, text: `Prüfung ${p.fach}: ${p.beschreibung}`})),
+      ...pruefungen.map(p => ({datum: p.pruefungsdatum, text: `Esame ${p.fach}: ${p.beschreibung}`})),
       ...events.map(e => ({datum: e.startzeit, text: `Event ${e.titel}: ${e.beschreibung}`}))
     ].sort((a,b) => a.datum.localeCompare(b.datum));
     listEl.innerHTML = '';
     if (items.length === 0) {
-      listEl.innerHTML = '<li>Keine Einträge gefunden.</li>';
+      listEl.innerHTML = '<li>Nessuna voce trovata.</li>';
     } else {
       for (const it of items) {
         const li = document.createElement('li');
@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     }
   } catch (err) {
-    console.error('Fehler beim Laden der Daten:', err);
-    listEl.textContent = 'Fehler beim Laden der Daten.';
+    console.error('Errore durante il caricamento dei dati:', err);
+    listEl.textContent = 'Errore durante il caricamento dei dati.';
   }
 });
