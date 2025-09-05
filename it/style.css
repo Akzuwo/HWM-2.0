@@ -1,6 +1,6 @@
 body {
     font-family: Arial, sans-serif;
-    background: #121212;
+    background: #1a1a1a;
     color: white;
     text-align: center;
     margin: 0;
@@ -28,12 +28,11 @@ button {
 .navbar {
   display: flex;
   align-items: center;
-  background-color: #53233a;
+  background-color: #000;
   height: 7.5vh;
   position: fixed;
   top: 0;
   width: 100vw;
-  outline: 5px solid #311522;
 }
 
 .navbar .navbarItems {
@@ -50,15 +49,15 @@ button {
   text-decoration: none;
   height: 100%;
   border-radius: 5px;
-  width: 8.5vw;
   display: flex;
   justify-content: center;
   align-items: center;
+  padding: 0 1.5vw;
   transition: background-color 500ms, transform 1s;
 }
 
 .navbar .navbarItems .button:hover {
-  background-color: #3a1929;
+  background-color: #333;
   transform: translateY(7.5%) scaleY(1.15);
 }
 
@@ -84,7 +83,7 @@ button {
   position: fixed;
   text-align: center;
   width: 100%;
-  background-color: rgb(49, 49, 49);
+  background-color: #000;
   justify-content: center;
 }
 
@@ -165,12 +164,12 @@ button {
 }
 
 .content {
-  margin-top: 8vh;
+  margin-top: 10vh;
 }
 
 #description {
     max-width: 800px;
-    margin: 20px auto;
+    margin: 20px 20px;
     padding: 0 20px;
     text-align: left;
 }
