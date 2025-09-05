@@ -36,9 +36,23 @@ button {
 }
 
 .navbar .navbarItems {
-  width: 91.5vw;
   height: 100%;
   display: flex;
+  flex: 1;
+}
+.navbar .language-select {
+  margin-left: auto;
+  margin-right: 1vw;
+  background-color: #000;
+  color: white;
+  border: 1px solid #333;
+}
+.navbarMobileItems .language-select {
+  width: 90%;
+  margin: 10px auto;
+  background-color: #000;
+  color: white;
+  border: 1px solid #333;
 }
 
 .navbar .navbarItems .button {

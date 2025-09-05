@@ -28,6 +28,22 @@ function menuButton() {
     }
 }
 
+function initLanguageSelector() {
+    function setup(id) {
+        const select = document.getElementById(id);
+        if (!select) return;
+        const currentLang = window.location.pathname.split('/')[1];
+        select.value = currentLang;
+        select.addEventListener('change', (e) => {
+            const parts = window.location.pathname.split('/');
+            parts[1] = e.target.value;
+            window.location.pathname = parts.join('/');
+        });
+    }
+    setup('language-select');
+    setup('language-select-mobile');
+}
+
 function checkLogin() {
     const role = sessionStorage.getItem('role');
     const isLoginPage = window.location.href.toLowerCase().includes('login');
@@ -226,4 +242,5 @@ async function saveEntry() {
 
 // Initialcheck beim Laden der Seite
 window.addEventListener('DOMContentLoaded', checkLogin);
+window.addEventListener('DOMContentLoaded', initLanguageSelector);
 
