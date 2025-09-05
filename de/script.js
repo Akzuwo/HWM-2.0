@@ -19,6 +19,15 @@ function logout() {
     window.location.href = 'login.html';
 }
 
+function menuButton() {
+    const links = document.getElementById('navbarlinks');
+    if (links.style.display === 'block') {
+        links.style.display = 'none';
+    } else {
+        links.style.display = 'block';
+    }
+}
+
 function checkLogin() {
     const role = sessionStorage.getItem('role');
     const isLoginPage = window.location.href.toLowerCase().includes('login');
@@ -217,3 +226,4 @@ async function saveEntry() {
 
 // Initialcheck beim Laden der Seite
 window.addEventListener('DOMContentLoaded', checkLogin);
+
