@@ -41,7 +41,7 @@ button {
   flex: 1;
 }
 .navbar .language-dropdown {
-  margin-left: 1vw;
+  margin-left: auto;
   margin-right: 1vw;
   position: relative;
 }
@@ -56,19 +56,25 @@ button {
   margin-left: 0.5vw;
 }
 .language-menu {
-  display: none;
   position: absolute;
   top: 100%;
-  left: 0;
+  right: 0;
   background-color: #000;
   border: 1px solid #333;
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: max-height 0.3s ease, opacity 0.3s ease;
 }
 .language-menu div {
   padding: 5px 10px;
   cursor: pointer;
 }
 .language-dropdown.open .language-menu {
-  display: block;
+  max-height: 200px;
+  opacity: 1;
+  pointer-events: auto;
 }
 .navbarMobileItems .language-dropdown {
   width: 90%;
