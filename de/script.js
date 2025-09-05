@@ -30,18 +30,36 @@ function menuButton() {
 
 function initLanguageSelector() {
     function setup(id) {
-        const select = document.getElementById(id);
-        if (!select) return;
+        const container = document.getElementById(id);
+        if (!container) return;
+        const button = container.querySelector('.language-button');
+        const currentSpan = button.querySelector('.current-lang');
+        const arrow = button.querySelector('.arrow');
+        const menu = container.querySelector('.language-menu');
         const currentLang = window.location.pathname.split('/')[1];
-        select.value = currentLang;
-        select.addEventListener('change', (e) => {
-            const parts = window.location.pathname.split('/');
-            parts[1] = e.target.value;
-            window.location.pathname = parts.join('/');
+        currentSpan.textContent = currentLang.toUpperCase();
+        button.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const open = container.classList.toggle('open');
+            arrow.textContent = open ? '▲' : '▼';
+        });
+        menu.querySelectorAll('div').forEach(opt => {
+            opt.addEventListener('click', () => {
+                const parts = window.location.pathname.split('/');
+                parts[1] = opt.dataset.lang;
+                window.location.pathname = parts.join('/');
+            });
         });
     }
-    setup('language-select');
-    setup('language-select-mobile');
+    setup('language-dropdown');
+    setup('language-dropdown-mobile');
+    document.addEventListener('click', () => {
+        document.querySelectorAll('.language-dropdown.open').forEach(c => {
+            c.classList.remove('open');
+            const arrow = c.querySelector('.arrow');
+            if (arrow) arrow.textContent = '▼';
+        });
+    });
 }
 
 function checkLogin() {
