@@ -13,6 +13,14 @@
 </head>
 <body>
   <div class="navbar">
+    <div class="language-dropdown" id="language-dropdown">
+      <button class="language-button"><span class="current-lang">DE</span> <span class="arrow">▼</span></button>
+      <div class="language-menu">
+        <div data-lang="de">DE</div>
+        <div data-lang="en">EN</div>
+        <div data-lang="it">IT</div>
+      </div>
+    </div>
     <a class="imgbutton" href="index.html">
       <img class="imgbuttonhover" src="../media/logo.png" alt="Logo">
     </a>
@@ -23,11 +31,6 @@
       <a class="button" href="notenrechner.html">📊 Notenrechner</a>
       <a class="button" href="#" onclick="logout()">🚪 Abmelden</a>
     </div>
-    <select id="language-select" class="language-select">
-      <option value="de">Deutsch</option>
-      <option value="en">English</option>
-      <option value="it">Italiano</option>
-    </select>
     <a href="javascript:void(0);" class="menubutton" onclick="menuButton()">
       <i class="fa fa-bars"></i>
     </a>
@@ -38,11 +41,14 @@
     <a class="button" href="stundenplan.html">🕒 Aktuelles Fach</a>
     <a class="button" href="notenrechner.html">📊 Notenrechner</a>
     <a class="button" href="#" onclick="logout()">🚪 Abmelden</a>
-    <select id="language-select-mobile" class="language-select">
-      <option value="de">Deutsch</option>
-      <option value="en">English</option>
-      <option value="it">Italiano</option>
-    </select>
+    <div class="language-dropdown" id="language-dropdown-mobile">
+      <button class="language-button"><span class="current-lang">DE</span> <span class="arrow">▼</span></button>
+      <div class="language-menu">
+        <div data-lang="de">DE</div>
+        <div data-lang="en">EN</div>
+        <div data-lang="it">IT</div>
+      </div>
+    </div>
   </div>
 
   <div class="content">
