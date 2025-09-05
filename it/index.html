@@ -7,45 +7,45 @@
   <link rel="icon" type="image/png" href="../media/logo.png">
   <link rel="stylesheet" href="style.css">
 </head>
-<body>
-  <div class="navbar">
-    <div class="language-dropdown" id="language-dropdown">
-      <button class="language-button"><span class="current-lang">IT</span> <span class="arrow">▼</span></button>
-      <div class="language-menu">
-        <div data-lang="de">DE</div>
-        <div data-lang="en">EN</div>
-        <div data-lang="it">IT</div>
+  <body>
+    <div class="navbar">
+      <a class="imgbutton" href="index.html">
+        <img class="imgbuttonhover" src="../media/logo.png" alt="Logo">
+      </a>
+      <div class="navbarItems">
+        <a class="button" href="kalender.html">📅 Calendario</a>
+        <a class="button" href="upcoming.html">🔔 Eventi in arrivo</a>
+        <a class="button" href="stundenplan.html">🕒 Materia attuale</a>
+        <a class="button" href="notenrechner.html">📊 Calcolatore di voti</a>
+        <a class="button" href="#" onclick="logout()">🚪 Disconnettersi</a>
       </div>
+      <div class="language-dropdown" id="language-dropdown">
+        <button class="language-button"><span class="current-lang">IT</span> <span class="arrow">▼</span></button>
+        <div class="language-menu">
+          <div data-lang="de">Deutsch</div>
+          <div data-lang="en">English</div>
+          <div data-lang="it">Italiano</div>
+        </div>
+      </div>
+      <a href="javascript:void(0);" class="menubutton" onclick="menuButton()">
+        <i class="fa fa-bars"></i>
+      </a>
     </div>
-    <a class="imgbutton" href="index.html">
-      <img class="imgbuttonhover" src="../media/logo.png" alt="Logo">
-    </a>
-    <div class="navbarItems">
+    <div class="navbarMobileItems" id="navbarlinks">
       <a class="button" href="kalender.html">📅 Calendario</a>
       <a class="button" href="upcoming.html">🔔 Eventi in arrivo</a>
       <a class="button" href="stundenplan.html">🕒 Materia attuale</a>
       <a class="button" href="notenrechner.html">📊 Calcolatore di voti</a>
       <a class="button" href="#" onclick="logout()">🚪 Disconnettersi</a>
-    </div>
-    <a href="javascript:void(0);" class="menubutton" onclick="menuButton()">
-      <i class="fa fa-bars"></i>
-    </a>
-  </div>
-  <div class="navbarMobileItems" id="navbarlinks">
-    <a class="button" href="kalender.html">📅 Calendario</a>
-    <a class="button" href="upcoming.html">🔔 Eventi in arrivo</a>
-    <a class="button" href="stundenplan.html">🕒 Materia attuale</a>
-    <a class="button" href="notenrechner.html">📊 Calcolatore di voti</a>
-    <a class="button" href="#" onclick="logout()">🚪 Disconnettersi</a>
-    <div class="language-dropdown" id="language-dropdown-mobile">
-      <button class="language-button"><span class="current-lang">IT</span> <span class="arrow">▼</span></button>
-      <div class="language-menu">
-        <div data-lang="de">DE</div>
-        <div data-lang="en">EN</div>
-        <div data-lang="it">IT</div>
+      <div class="language-dropdown" id="language-dropdown-mobile">
+        <button class="language-button"><span class="current-lang">IT</span> <span class="arrow">▼</span></button>
+        <div class="language-menu">
+          <div data-lang="de">Deutsch</div>
+          <div data-lang="en">English</div>
+          <div data-lang="it">Italiano</div>
+        </div>
       </div>
     </div>
-  </div>
 
   <div class="content">
     <h1>📚 Homework Manager</h1>

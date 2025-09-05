@@ -29,6 +29,12 @@ function menuButton() {
 }
 
 function initLanguageSelector() {
+    const langMap = {
+        de: { short: 'DE', long: 'Deutsch' },
+        en: { short: 'EN', long: 'English' },
+        it: { short: 'IT', long: 'Italiano' }
+    };
+
     function setup(id) {
         const container = document.getElementById(id);
         if (!container) return;
@@ -37,27 +43,37 @@ function initLanguageSelector() {
         const arrow = button.querySelector('.arrow');
         const menu = container.querySelector('.language-menu');
         const currentLang = window.location.pathname.split('/')[1];
-        currentSpan.textContent = currentLang.toUpperCase();
+        const names = langMap[currentLang] || langMap.en;
+        currentSpan.textContent = names.short;
         button.addEventListener('click', (e) => {
             e.stopPropagation();
             const open = container.classList.toggle('open');
             arrow.textContent = open ? '▲' : '▼';
+            currentSpan.textContent = open ? names.long : names.short;
         });
         menu.querySelectorAll('div').forEach(opt => {
+            const lang = opt.dataset.lang;
+            opt.textContent = langMap[lang].long;
             opt.addEventListener('click', () => {
                 const parts = window.location.pathname.split('/');
-                parts[1] = opt.dataset.lang;
+                parts[1] = lang;
                 window.location.pathname = parts.join('/');
             });
         });
     }
+
     setup('language-dropdown');
     setup('language-dropdown-mobile');
+
     document.addEventListener('click', () => {
         document.querySelectorAll('.language-dropdown.open').forEach(c => {
             c.classList.remove('open');
             const arrow = c.querySelector('.arrow');
+            const currentSpan = c.querySelector('.current-lang');
+            const currentLang = window.location.pathname.split('/')[1];
+            const names = langMap[currentLang] || langMap.en;
             if (arrow) arrow.textContent = '▼';
+            if (currentSpan) currentSpan.textContent = names.short;
         });
     });
 }
