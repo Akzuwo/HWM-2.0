@@ -8,16 +8,32 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>📚 Homework Manager</h1>
-  <nav class="navbar">
-      <a href="kalender.html">📅 Calendar</a>
-      <a href="upcoming.html">🔔 Upcoming Events</a>
-      <a href="stundenplan.html">🕒 Current Subject</a>
-      <a href="notenrechner.html">📊 Grade Calculator</a>
-      <a href="#" onclick="logout()">🚪 Log Out</a>
-  </nav>
+  <div class="navbar">
+    <a class="imgbutton" href="index.html">
+      <img class="imgbuttonhover" src="../media/logo.png" alt="Logo">
+    </a>
+    <div class="navbarItems">
+      <a class="button" href="kalender.html">📅 Calendar</a>
+      <a class="button" href="upcoming.html">🔔 Upcoming Events</a>
+      <a class="button" href="stundenplan.html">🕒 Current Subject</a>
+      <a class="button" href="notenrechner.html">📊 Grade Calculator</a>
+      <a class="button" href="#" onclick="logout()">🚪 Log Out</a>
+    </div>
+    <a href="javascript:void(0);" class="menubutton" onclick="menuButton()">
+      <i class="fa fa-bars"></i>
+    </a>
+  </div>
+  <div class="navbarMobileItems" id="navbarlinks">
+    <a class="button" href="kalender.html">📅 Calendar</a>
+    <a class="button" href="upcoming.html">🔔 Upcoming Events</a>
+    <a class="button" href="stundenplan.html">🕒 Current Subject</a>
+    <a class="button" href="notenrechner.html">📊 Grade Calculator</a>
+    <a class="button" href="#" onclick="logout()">🚪 Log Out</a>
+  </div>
 
-  <section id="description">
+  <div class="content">
+    <h1>📚 Homework Manager</h1>
+    <section id="description">
       <h2>📝 Project Description</h2>
       <p>The Homework Manager grew out of a simple but frustrating problem: I was tired of asking for the homework in the class chat and getting no answer.</p>
       <p>Of course, you could simply write the homework down on paper or enter it into a personal digital calendar. But that would have been too boring—and would have only helped me.</p>
@@ -35,6 +51,7 @@
       <h3>🔄️ Update 1.7 incl Patch 00x1 & 00x2</h3>
       <p>Various tweaks to the user interface now make it possible to create and edit entries directly in the calendar.</p>
   </section>
+  </div>
 
   <script src="overlay.js" defer></script>
   <script src="script.js" defer></script>

@@ -8,16 +8,32 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>📚 Homework Manager</h1>
-  <nav class="navbar">
-      <a href="kalender.html">📅 Calendario</a>
-      <a href="upcoming.html">🔔 Eventi in arrivo</a>
-      <a href="stundenplan.html">🕒 Materia attuale</a>
-      <a href="notenrechner.html">📊 Calcolatore di voti</a>
-      <a href="#" onclick="logout()">🚪 Disconnettersi</a>
-  </nav>
+  <div class="navbar">
+    <a class="imgbutton" href="index.html">
+      <img class="imgbuttonhover" src="../media/logo.png" alt="Logo">
+    </a>
+    <div class="navbarItems">
+      <a class="button" href="kalender.html">📅 Calendario</a>
+      <a class="button" href="upcoming.html">🔔 Eventi in arrivo</a>
+      <a class="button" href="stundenplan.html">🕒 Materia attuale</a>
+      <a class="button" href="notenrechner.html">📊 Calcolatore di voti</a>
+      <a class="button" href="#" onclick="logout()">🚪 Disconnettersi</a>
+    </div>
+    <a href="javascript:void(0);" class="menubutton" onclick="menuButton()">
+      <i class="fa fa-bars"></i>
+    </a>
+  </div>
+  <div class="navbarMobileItems" id="navbarlinks">
+    <a class="button" href="kalender.html">📅 Calendario</a>
+    <a class="button" href="upcoming.html">🔔 Eventi in arrivo</a>
+    <a class="button" href="stundenplan.html">🕒 Materia attuale</a>
+    <a class="button" href="notenrechner.html">📊 Calcolatore di voti</a>
+    <a class="button" href="#" onclick="logout()">🚪 Disconnettersi</a>
+  </div>
 
-  <section id="description">
+  <div class="content">
+    <h1>📚 Homework Manager</h1>
+    <section id="description">
       <h2>📝 Descrizione del progetto</h2>
       <p>Il Homework Manager è nato da un problema semplice ma frustrante: ero stanco di chiedere i compiti nella chat della classe senza mai ricevere risposta.</p>
       <p>Certo, si potrebbero annotare i compiti su carta o inserirli in un calendario digitale personale. Ma sarebbe stato troppo noioso e avrebbe aiutato solo me.</p>
@@ -35,6 +51,7 @@
       <h3>🔄️ Aggiornamento 1.7 incl Patch 00x1 & 00x2</h3>
       <p>Vari piccoli adattamenti dell'interfaccia ora permettono di creare e modificare voci direttamente nel calendario.</p>
   </section>
+  </div>
 
   <script src="overlay.js" defer></script>
   <script src="script.js" defer></script>
