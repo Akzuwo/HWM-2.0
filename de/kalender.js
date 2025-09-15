@@ -15,22 +15,21 @@ function mdBold(text) {
 // Modal öffnen: View vs. Edit
 function openModal(event) {
   const { id } = event;
-  const { type, subject, description } = event.extendedProps;
+  const { type, description } = event.extendedProps;
   const date = event.startStr;
   const title = event.title;
 
   // View‐Mode füllen
   document.getElementById('fc-modal-title').innerText   = title;
-  document.getElementById('fc-modal-subject').innerText = subject;
+  document.getElementById('fc-modal-subject').innerText = '';
   document.getElementById('fc-modal-date').innerText    = date;
   document.getElementById('fc-modal-desc').innerHTML    = mdBold(description);
 
   // Edit‐Formular vorbelegen
   document.getElementById('fc-entry-id').value   = id;
   document.getElementById('fc-entry-type').value = type;
-  document.getElementById('fc-edit-subject').value = subject;
-  document.getElementById('fc-edit-date').value    = date;
-  document.getElementById('fc-edit-desc').value    = description;
+  document.getElementById('fc-edit-date').value  = date;
+  document.getElementById('fc-edit-desc').value  = description;
 
   if (userIsAdmin && type !== 'event') {
     document.getElementById('fc-view-mode').style.display = 'none';
@@ -53,7 +52,6 @@ window.closeModal = closeModal;
 async function saveEdit() {
   const id    = document.getElementById('fc-entry-id').value;
   const type  = document.getElementById('fc-entry-type').value;
-  const fach  = document.getElementById('fc-edit-subject').value;
   const date  = document.getElementById('fc-edit-date').value;
   const desc  = document.getElementById('fc-edit-desc').value;
 
@@ -64,7 +62,7 @@ async function saveEdit() {
         'Content-Type': 'application/json',
         'X-Role': role
       },
-      body: JSON.stringify({ id, type, fach, date, description: desc })
+      body: JSON.stringify({ id, type, date, description: desc, startzeit: null, endzeit: null })
     });
     if (!res.ok) {
       const err = await res.text().catch(() => '');
@@ -80,12 +78,11 @@ async function saveEdit() {
 
 // Löschen
 async function deleteEntry() {
-  const id   = document.getElementById('fc-entry-id').value;
-  const type = document.getElementById('fc-entry-type').value;
+  const id = document.getElementById('fc-entry-id').value;
   if (!confirm('Eintrag wirklich löschen?')) return;
 
   try {
-    const res = await fetch(`${API_BASE}/delete_entry/${type}/${id}`, {
+    const res = await fetch(`${API_BASE}/delete_entry/${id}`, {
       method: 'DELETE',
       headers: { 'X-Role': role }
     });
@@ -110,54 +107,23 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   try {
-    const [resHA, resPR, resEV] = await Promise.all([
-      fetch(`${API_BASE}/hausaufgaben`),
-      fetch(`${API_BASE}/pruefungen`),
-      fetch(`${API_BASE}/events`)
-    ]);
-    if (!resHA.ok || !resPR.ok || !resEV.ok) {
-      throw new Error(`API-Fehler (HA: ${resHA.status}, PR: ${resPR.status}, EV: ${resEV.status})`);
+    const res = await fetch(`${API_BASE}/entries`);
+    if (!res.ok) {
+      throw new Error(`API-Fehler (${res.status})`);
     }
 
-    const hausaufgaben = await resHA.json();
-    const pruefungen   = await resPR.json();
-    const eventsData   = await resEV.json();
-
-    const events = [
-      ...hausaufgaben.map(h => ({
-        id:    String(h.id),
-        title: `HA ${h.fach}`,
-        start: h.faellig_am,
-        color: '#007bff',
-        extendedProps: {
-          type:        'hausaufgabe',
-          subject:     h.fach,
-          description: h.beschreibung
-        }
-      })),
-      ...pruefungen.map(p => ({
-        id:    String(p.id),
-        title: `Prüfung ${p.fach}`,
-        start: p.pruefungsdatum,
-        color: '#dc3545',
-        extendedProps: {
-          type:        'pruefung',
-          subject:     p.fach,
-          description: p.beschreibung
-        }
-      })),
-      ...eventsData.map(e => ({
-        id:    String(e.id),
-        title: `Event ${e.titel}`,
-        start: e.startzeit,
-        color: '#28a745',
-        extendedProps: {
-          type:        'event',
-          subject:     e.titel,
-          description: e.beschreibung
-        }
-      }))
-    ];
+    const entries = await res.json();
+    const colorMap = { hausaufgabe: '#007bff', pruefung: '#dc3545', event: '#28a745' };
+    const events = entries.map(e => ({
+      id: String(e.id),
+      title: e.beschreibung,
+      start: e.startzeit ? `${e.datum}T${e.startzeit}` : e.datum,
+      color: colorMap[e.typ] || '#000',
+      extendedProps: {
+        type: e.typ,
+        description: e.beschreibung
+      }
+    }));
     // Remove loading text once events are ready
     calendarEl.textContent = '';
 
