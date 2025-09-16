@@ -111,24 +111,17 @@ async function openCalendar() {
     try {
         clearContent();
 
-        const resHA = await fetch('https://homework-manager-2-0-backend.onrender.com/hausaufgaben');
-        const hausaufgaben = await resHA.json();
-
-        const resPR = await fetch('https://homework-manager-2-0-backend.onrender.com/pruefungen');
-        const pruefungen = await resPR.json();
-
-        const events = [
-            ...hausaufgaben.map(h => ({
-                title: `HW ${h.fach}`,
-                start: h.faellig_am,
-                color: '#007bff'  // Blau
-            })),
-            ...pruefungen.map(p => ({
-                title: `Exam ${p.fach}`,
-                start: p.pruefungsdatum,
-                color: '#dc3545'  // Rot
-            }))
-        ];
+        const res = await fetch('https://homework-manager-2-0-backend.onrender.com/entries');
+        if (!res.ok) {
+            throw new Error(`API error (${res.status})`);
+        }
+        const entries = await res.json();
+        const colorMap = { hausaufgabe: '#007bff', pruefung: '#dc3545', event: '#28a745' };
+        const events = entries.map(e => ({
+            title: e.beschreibung,
+            start: e.startzeit ? `${e.datum}T${e.startzeit}` : e.datum,
+            color: colorMap[e.typ] || '#000'
+        }));
 
         document.getElementById('content').innerHTML = '<div id="calendar"></div>';
 
@@ -144,7 +137,7 @@ async function openCalendar() {
 
         calendar.render();
     } catch (err) {
-        console.error('Fehler beim Laden oder Rendern des Kalenders:', err);
+        console.error('Error loading or rendering the calendar:', err);
     }
 }
 

@@ -83,33 +83,32 @@ def ensure_stundenplan_table():
     conn.close()
 
 
-# Tabelle für Events sicherstellen
-def ensure_events_table():
+# Tabelle für allgemeine Einträge sicherstellen
+def ensure_entries_table():
     try:
         conn = get_connection()
     except Exception:
         return
     cur = conn.cursor()
-    cur.execute("SHOW TABLES LIKE 'events'")
-    if cur.fetchone() is None:
-        cur.execute(
-            """
-            CREATE TABLE events (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                titel VARCHAR(255) NOT NULL,
-                beschreibung TEXT,
-                startzeit DATETIME NOT NULL
-            )
-            """
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS eintraege (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            beschreibung TEXT NOT NULL,
+            datum DATE NOT NULL,
+            startzeit TIME NULL,
+            endzeit TIME NULL,
+            typ ENUM('hausaufgabe','pruefung','event') NOT NULL
         )
-        conn.commit()
-        print("Created table 'events'")
+        """
+    )
+    conn.commit()
     cur.close()
     conn.close()
 
 
 ensure_stundenplan_table()
-ensure_events_table()
+ensure_entries_table()
 
 # ---------- ROUTES ----------
 
@@ -119,22 +118,13 @@ def root():
 
 @app.route('/calendar.ics')
 def export_ics():
-    """Erzeugt eine iCalendar-Datei mit allen zukünftigen Hausaufgaben,
-    Prüfungen und Events."""
+    """Erzeugt eine iCalendar-Datei mit allen zukünftigen Einträgen."""
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
     cursor.execute(
         """
-        SELECT id, typ, fach, beschreibung, datum FROM (
-            SELECT id, 'hausaufgabe' AS typ, fachkuerzel AS fach, beschreibung, faellig_am AS datum
-            FROM hausaufgaben
-            UNION ALL
-            SELECT id, 'pruefung' AS typ, fachkuerzel AS fach, beschreibung, pruefungsdatum AS datum
-            FROM pruefungen
-            UNION ALL
-            SELECT id, 'event' AS typ, titel AS fach, beschreibung, startzeit AS datum
-            FROM events
-        ) AS zusammen
+        SELECT id, typ, beschreibung, datum
+        FROM eintraege
         WHERE datum >= CURDATE()
         ORDER BY datum ASC
         """
@@ -147,11 +137,11 @@ def export_ics():
     for e in entries:
         due = e['datum']
         ev = Event()
-        ev.name = f"{e['typ'].capitalize()}: {e['fach']}"
+        ev.name = f"{e['typ'].capitalize()}: {e['beschreibung']}"
         ev.description = e['beschreibung']
-        ev.begin = due.date()
+        ev.begin = due
         ev.make_all_day()
-        ev.uid = f"aufgabe-{e['id']}@homework-manager.akzuwo.ch"
+        ev.uid = f"eintrag-{e['id']}@homework-manager.akzuwo.ch"
         cal.events.add(ev)
 
     ics_text = str(cal)
@@ -161,17 +151,21 @@ def export_ics():
         headers={'Content-Disposition': 'attachment; filename="homework.ics"'}
     )
 
-@app.route('/events')
-def events():
-    """Gibt alle Events zurück."""
+@app.route('/entries')
+def entries():
+    """Gibt alle Einträge zurück."""
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
     cursor.execute(
-        "SELECT id, titel, beschreibung, DATE(startzeit) AS startzeit FROM events"
+        "SELECT id, beschreibung, datum, startzeit, endzeit, typ FROM eintraege"
     )
     rows = cursor.fetchall()
     for r in rows:
-        r['startzeit'] = r['startzeit'].strftime('%Y-%m-%d')
+        r['datum'] = r['datum'].strftime('%Y-%m-%d')
+        if r['startzeit'] is not None:
+            r['startzeit'] = r['startzeit'].strftime('%H:%M:%S')
+        if r['endzeit'] is not None:
+            r['endzeit'] = r['endzeit'].strftime('%H:%M:%S')
     cursor.close()
     conn.close()
     return jsonify(rows)
@@ -204,28 +198,21 @@ def update_entry():
     if request.headers.get('X-Role') != 'admin':
         return jsonify(status='error', message='Forbidden'), 403
 
-    data       = request.json or {}
-    entry_type = data.get('type')
-    id         = data.get('id')
-    fach       = data.get('fach')
-    date       = data.get('date')
-    desc       = data.get('description')
+    data = request.json or {}
+    id = data.get('id')
+    desc = data.get('description')
+    date = data.get('date')
+    start = data.get('startzeit')
+    end = data.get('endzeit')
+    typ = data.get('type')
 
     conn = get_connection()
-    cur  = conn.cursor()
+    cur = conn.cursor()
     try:
-        if entry_type == 'hausaufgabe':
-            cur.execute(
-                "UPDATE hausaufgaben SET fachkuerzel=%s, beschreibung=%s, faellig_am=%s WHERE id=%s",
-                (fach, desc, date, id)
-            )
-        elif entry_type == 'pruefung':
-            cur.execute(
-                "UPDATE pruefungen SET fachkuerzel=%s, beschreibung=%s, pruefungsdatum=%s WHERE id=%s",
-                (fach, desc, date, id)
-            )
-        else:
-            return jsonify(status='error', message='Ungültiger Typ'), 400
+        cur.execute(
+            "UPDATE eintraege SET beschreibung=%s, datum=%s, startzeit=%s, endzeit=%s, typ=%s WHERE id=%s",
+            (desc, date, start, end, typ, id)
+        )
         conn.commit()
         return jsonify(status='ok')
     except Exception as e:
@@ -235,8 +222,8 @@ def update_entry():
         conn.close()
 
 # --- DELETE ENTRY ---
-@app.route('/delete_entry/<entry_type>/<int:id>', methods=['DELETE', 'OPTIONS'])
-def delete_entry(entry_type, id):
+@app.route('/delete_entry/<int:id>', methods=['DELETE', 'OPTIONS'])
+def delete_entry(id):
     # Auth per Header statt Session-Cookie
     if request.method == 'OPTIONS':
         return _cors_preflight()
@@ -244,15 +231,9 @@ def delete_entry(entry_type, id):
         return jsonify(status='error', message='Forbidden'), 403
 
     conn = get_connection()
-    cur  = conn.cursor()
+    cur = conn.cursor()
     try:
-        if entry_type == 'hausaufgabe':
-            cur.execute("DELETE FROM hausaufgaben WHERE id=%s", (id,))
-        elif entry_type == 'pruefung':
-            cur.execute("DELETE FROM pruefungen WHERE id=%s", (id,))
-        else:
-            return jsonify(status='error', message='Ungültiger Typ'), 400
-
+        cur.execute("DELETE FROM eintraege WHERE id=%s", (id,))
         conn.commit()
         return jsonify(status='ok')
     except Exception as e:
@@ -330,59 +311,25 @@ def tagesuebersicht():
     cur.close(); conn.close()
     return jsonify({heute: heute_rows, morgen: morgen_rows})
 
-# --- HAUSAUFGABEN / PRÜFUNGEN ---
-@app.route('/hausaufgaben')
-def hausaufgaben():
-    conn = get_connection()
-    cursor = conn.cursor(dictionary=True)
-    cursor.execute(
-        "SELECT id, fachkuerzel AS fach, beschreibung, DATE(faellig_am) AS faellig_am "
-        "FROM hausaufgaben"
-    )
-    rows = cursor.fetchall()
-    for r in rows:
-        r['faellig_am'] = r['faellig_am'].strftime('%Y-%m-%d')
-    cursor.close(); conn.close()
-    return jsonify(rows)
-
-@app.route('/pruefungen')
-def pruefungen():
-    conn = get_connection()
-    cursor = conn.cursor(dictionary=True)
-    cursor.execute(
-        "SELECT id, fachkuerzel AS fach, beschreibung, DATE(pruefungsdatum) AS pruefungsdatum "
-        "FROM pruefungen"
-    )
-    rows = cursor.fetchall()
-    for r in rows:
-        r['pruefungsdatum'] = r['pruefungsdatum'].strftime('%Y-%m-%d')
-    cursor.close(); conn.close()
-    return jsonify(rows)
-
 # --- EINTRAG HINZUFÜGEN ---
 @app.route('/add_entry', methods=['POST'])
 def add_entry():
     data = request.json or {}
-    typ = data.get("typ"); fach = data.get("fach")
-    beschreibung = data.get("beschreibung"); datum = data.get("datum")
+    beschreibung = data.get("beschreibung")
+    datum = data.get("datum")
+    startzeit = data.get("startzeit")
+    endzeit = data.get("endzeit")
+    typ = data.get("typ")
     conn = get_connection(); cur = conn.cursor()
     try:
-        if typ=="hausaufgabe":
-            cur.execute(
-                "INSERT INTO hausaufgaben (fachkuerzel,beschreibung,faellig_am) VALUES (%s,%s,%s)",
-                (fach,beschreibung,datum)
-            )
-        elif typ=="pruefung":
-            cur.execute(
-                "INSERT INTO pruefungen (fachkuerzel,beschreibung,pruefungsdatum) VALUES (%s,%s,%s)",
-                (fach,beschreibung,datum)
-            )
-        else:
-            return jsonify(status="error",message="Ungültiger Typ"),400
+        cur.execute(
+            "INSERT INTO eintraege (beschreibung, datum, startzeit, endzeit, typ) VALUES (%s,%s,%s,%s,%s)",
+            (beschreibung, datum, startzeit, endzeit, typ)
+        )
         conn.commit()
         return jsonify(status="ok")
     except Exception as e:
-        return jsonify(status="error",message=str(e)),500
+        return jsonify(status="error", message=str(e)), 500
     finally:
         cur.close(); conn.close()
         
