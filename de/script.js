@@ -241,6 +241,139 @@ function closeEntryModal() {
     if (overlay) overlay.style.display = 'none';
 }
 
+const ENTRY_FORM_MESSAGES = {
+    invalidDate: 'Bitte gib ein gültiges Datum im Format TT.MM.JJJJ ein.',
+    invalidEnd: 'Die Endzeit darf nicht vor der Startzeit liegen.'
+};
+
+function parseSwissDate(value) {
+    if (!value) return null;
+    const match = value.trim().match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+    if (!match) return null;
+    const day = Number(match[1]);
+    const month = Number(match[2]);
+    const year = Number(match[3]);
+    const date = new Date(Date.UTC(year, month - 1, day));
+    if (
+        date.getUTCFullYear() !== year ||
+        date.getUTCMonth() !== month - 1 ||
+        date.getUTCDate() !== day
+    ) {
+        return null;
+    }
+    return `${year.toString().padStart(4, '0')}-${month
+        .toString()
+        .padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+}
+
+function setupEntryFormInteractions(form) {
+    if (!form || form.dataset.enhanced === 'true') {
+        return;
+    }
+    form.dataset.enhanced = 'true';
+
+    const typeSelect = form.querySelector('#typ');
+    const subjectGroup = form.querySelector('[data-field="subject"]');
+    const subjectSelect = form.querySelector('#fach');
+    const eventTitleGroup = form.querySelector('[data-field="event-title"]');
+    const eventTitleInput = form.querySelector('#event-titel');
+    const dateInput = form.querySelector('#datum');
+    const startInput = form.querySelector('#startzeit');
+    const endInput = form.querySelector('#endzeit');
+    const saveButton = form.querySelector('#saveButton');
+
+    const evaluate = () => {
+        if (dateInput) {
+            const iso = parseSwissDate(dateInput.value);
+            if (!iso) {
+                dateInput.setCustomValidity(ENTRY_FORM_MESSAGES.invalidDate);
+            } else {
+                dateInput.setCustomValidity('');
+            }
+        }
+
+        if (startInput && endInput) {
+            if (endInput.value && startInput.value && endInput.value < startInput.value) {
+                endInput.setCustomValidity(ENTRY_FORM_MESSAGES.invalidEnd);
+            } else {
+                endInput.setCustomValidity('');
+            }
+        }
+
+        if (saveButton) {
+            saveButton.disabled = !form.checkValidity();
+        }
+    };
+
+    const toggleTypeFields = () => {
+        if (!typeSelect) return;
+        const isEvent = typeSelect.value === 'event';
+        if (subjectGroup) {
+            subjectGroup.style.display = isEvent ? 'none' : '';
+        }
+        if (subjectSelect) {
+            subjectSelect.required = !isEvent;
+            subjectSelect.classList.toggle('optional', isEvent);
+            if (isEvent) {
+                subjectSelect.value = '';
+                subjectSelect.setCustomValidity('');
+            }
+        }
+        if (eventTitleGroup) {
+            eventTitleGroup.style.display = isEvent ? '' : 'none';
+        }
+        if (eventTitleInput) {
+            eventTitleInput.required = isEvent;
+            if (!isEvent) {
+                eventTitleInput.value = '';
+                eventTitleInput.setCustomValidity('');
+            }
+        }
+        evaluate();
+    };
+
+    if (typeSelect) {
+        typeSelect.addEventListener('change', toggleTypeFields);
+    }
+
+    [dateInput, startInput, endInput, subjectSelect, eventTitleInput].forEach((input) => {
+        if (!input) return;
+        input.addEventListener('input', evaluate);
+    });
+
+    form.addEventListener('reset', () => {
+        window.setTimeout(() => {
+            if (dateInput) {
+                dateInput.value = '';
+                dateInput.setCustomValidity('');
+            }
+            if (startInput) {
+                startInput.value = '';
+            }
+            if (endInput) {
+                endInput.value = '';
+                endInput.setCustomValidity('');
+            }
+            if (eventTitleInput) {
+                eventTitleInput.value = '';
+                eventTitleInput.setCustomValidity('');
+            }
+            if (subjectSelect) {
+                subjectSelect.value = '';
+                subjectSelect.setCustomValidity('');
+            }
+            if (typeSelect) {
+                typeSelect.value = 'event';
+            }
+            toggleTypeFields();
+            evaluate();
+        }, 0);
+    });
+
+    toggleTypeFields();
+    evaluate();
+}
+
 function showEntryForm() {
     if (sessionStorage.getItem('role') !== 'admin') {
         showOverlay('Nur Admin darf Einträge erstellen!');
@@ -252,9 +385,11 @@ function showEntryForm() {
         const form = document.getElementById('entry-form');
         if (form) {
             form.reset();
-            const typeSelect = document.getElementById('typ');
+            setupEntryFormInteractions(form);
+            const typeSelect = form.querySelector('#typ');
             if (typeSelect) {
                 typeSelect.value = 'event';
+                typeSelect.dispatchEvent(new Event('change'));
             }
         }
         return;
@@ -271,7 +406,7 @@ function showEntryForm() {
                     <option value="event" selected>Event</option>
                 </select>
             </label><br>
-            <label>
+            <label data-field="subject">
                 Fach:
                 <select id="fach" required>
                     <option value="">– bitte wählen –</option>
@@ -281,13 +416,21 @@ function showEntryForm() {
                     ].map(f => `<option>${f}</option>`).join('')}
                 </select>
             </label><br>
+            <label data-field="event-title" style="display:none;">
+                Event-Titel:
+                <input type="text" id="event-titel" minlength="80" maxlength="120" placeholder="Titel mit 80–120 Zeichen" required>
+            </label><br>
             <label>
                 Beschreibung (optional):
                 <textarea id="beschreibung" rows="3" placeholder="Kurzbeschreibung"></textarea>
             </label><br>
             <label>
-                Datum &amp; Uhrzeit:
-                <input type="datetime-local" id="datum" required>
+                Datum (TT.MM.JJJJ):
+                <input type="text" id="datum" placeholder="18.09.2025" inputmode="numeric" required>
+            </label><br>
+            <label>
+                Startzeit:
+                <input type="time" id="startzeit" required>
             </label><br>
             <label>
                 Endzeit (optional):
@@ -297,17 +440,7 @@ function showEntryForm() {
         </form>
     `;
 
-    const typeSelect = document.getElementById('typ');
-    const subjectSelect = document.getElementById('fach');
-    if (typeSelect && subjectSelect) {
-        const updateSubjectRequirement = () => {
-            const isEvent = typeSelect.value === 'event';
-            subjectSelect.required = !isEvent;
-            subjectSelect.classList.toggle('optional', isEvent);
-        };
-        typeSelect.addEventListener('change', updateSubjectRequirement);
-        updateSubjectRequirement();
-    }
+    setupEntryFormInteractions(document.getElementById('entry-form'));
 }
 
 async function saveEntry(event) {
@@ -315,12 +448,26 @@ async function saveEntry(event) {
         event.preventDefault();
     }
 
-    const typ = document.getElementById('typ').value;
-    const fach = document.getElementById('fach').value;
-    const beschreibung = document.getElementById('beschreibung').value.trim();
-    const datumInput = document.getElementById('datum').value;
-    const endzeitField = document.getElementById('endzeit');
-    const endzeitInput = endzeitField ? endzeitField.value : '';
+    const typeField = document.getElementById('typ');
+    const subjectField = document.getElementById('fach');
+    const descriptionField = document.getElementById('beschreibung');
+    const dateField = document.getElementById('datum');
+    const startField = document.getElementById('startzeit');
+    const endField = document.getElementById('endzeit');
+    const eventTitleField = document.getElementById('event-titel');
+
+    if (!typeField || !dateField || !startField) {
+        console.error('Formularfelder fehlen.');
+        return;
+    }
+
+    const typ = typeField.value;
+    const fach = subjectField ? subjectField.value.trim() : '';
+    const beschreibung = descriptionField ? descriptionField.value.trim() : '';
+    const datumInput = dateField.value.trim();
+    const startzeitInput = startField.value;
+    const endzeitInput = endField ? endField.value : '';
+    const eventTitle = eventTitleField ? eventTitleField.value.trim() : '';
     const saveButton = document.getElementById('saveButton');
     const form = document.getElementById('entry-form');
     const resetTypeSelection = () => {
@@ -336,18 +483,46 @@ async function saveEntry(event) {
         return;
     }
 
-    if (typ !== 'event' && !fach) {
+    const isEvent = typ === 'event';
+
+    if (!isEvent && !fach) {
         showOverlay('Bitte wähle ein Fach aus (außer bei Events).');
         return;
     }
+    if (isEvent) {
+        if (!eventTitle || eventTitle.length < 80 || eventTitle.length > 120) {
+            showOverlay('Bitte gib einen Event-Titel mit 80–120 Zeichen ein.');
+            return;
+        }
+    }
     if (!datumInput) {
-        showOverlay('Bitte wähle ein Datum.');
+        showOverlay('Bitte gib ein Datum ein.');
         return;
     }
 
-    const [datePart, timePartRaw] = datumInput.split('T');
-    const startzeit = timePartRaw ? `${timePartRaw}:00` : null;
+    const isoDate = parseSwissDate(datumInput);
+    if (!isoDate) {
+        showOverlay('Bitte gib ein gültiges Datum im Format TT.MM.JJJJ ein.');
+        return;
+    }
+
+    if (!startzeitInput) {
+        showOverlay('Bitte gib eine Startzeit ein.');
+        return;
+    }
+
+    if (endzeitInput && endzeitInput < startzeitInput) {
+        showOverlay('Die Endzeit darf nicht vor der Startzeit liegen.');
+        return;
+    }
+
+    const startzeit = `${startzeitInput}:00`;
     const endzeit = endzeitInput ? `${endzeitInput}:00` : null;
+
+    const payloadBeschreibung = isEvent
+        ? eventTitle + (beschreibung ? `\n\n${beschreibung}` : '')
+        : beschreibung;
+    const payloadSubject = isEvent ? '' : fach;
 
     // Button deaktivieren und visuelles Feedback geben
     saveButton.disabled = true;
@@ -362,7 +537,7 @@ async function saveEntry(event) {
             const response = await fetch('https://homework-manager-2-0-backend.onrender.com/add_entry', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ typ, fach, beschreibung, datum: datePart, startzeit, endzeit })
+                body: JSON.stringify({ typ, fach: payloadSubject, beschreibung: payloadBeschreibung, datum: isoDate, startzeit, endzeit })
             });
             const result = await response.json();
 
@@ -407,4 +582,7 @@ async function saveEntry(event) {
 // Initialcheck beim Laden der Seite
 window.addEventListener('DOMContentLoaded', checkLogin);
 window.addEventListener('DOMContentLoaded', initLanguageSelector);
+window.addEventListener('DOMContentLoaded', () => {
+    setupEntryFormInteractions(document.getElementById('entry-form'));
+});
 
