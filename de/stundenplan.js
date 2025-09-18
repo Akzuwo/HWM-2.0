@@ -29,8 +29,8 @@ async function aktuellesFachLaden() {
 
     // Einmal direkt laden…
     await update();
-    // …und dann jede Sekunde automatisch aktualisieren
-    window.fachInterval = setInterval(update, 1000);
+    // …und dann alle 500 ms automatisch aktualisieren
+    window.fachInterval = setInterval(update, 500);
 }
 
 // Initialaufruf

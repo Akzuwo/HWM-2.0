@@ -9,51 +9,58 @@
   <title>Calcolatore di voti</title>
   <link rel="icon" type="image/png" href="../media/logo.png">
   <link rel="stylesheet" href="style.css">
-  <style>
-    #notenrechner-container button {
-      width: auto;
-      display: inline-block;
-      margin: 10px 5px;
-    }
-  </style>
 </head>
 <body>
   <div class="container" id="notenrechner-container">
-  <header>
-    <h2>📊 Calcolatore di voti</h2>
-  </header>
+    <header class="page-header">
+      <h2>📊 Calcolatore di voti</h2>
+    </header>
 
-  <main>
-    <label for="fach">Materia:</label>
-    <select id="fach"></select>
+    <main class="noten-main">
+      <div class="input-row">
+        <label class="field-label" for="fach">Materia:</label>
+        <select id="fach" class="field-control"></select>
+      </div>
 
-    <div id="noteInput">
-      <input id="note" type="number" step="0.01" placeholder="Voto">
-      <input id="gewichtung" type="number" step="0.01" placeholder="Peso">
-      <button type="button" id="add">Aggiungi</button>
+      <div class="noten-inputs">
+        <div class="field-group">
+          <label class="field-label" for="note">Voto</label>
+          <input id="note" class="field-control" type="number" step="0.01" placeholder="es. 5.5">
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="gewichtung">Peso</label>
+          <input id="gewichtung" class="field-control" type="number" step="0.01" placeholder="es. 1">
+        </div>
+        <button type="button" id="add" class="primary-action" disabled>Aggiungi</button>
+      </div>
+
+      <p id="inputError" class="error-message" aria-live="polite"></p>
+
+      <div class="noten-actions">
+        <button type="button" id="clearAll" class="danger-secondary" disabled>Elimina tutti</button>
+      </div>
+
+      <table id="notenTabelle" class="noten-tabelle">
+        <thead>
+          <tr><th>N.</th><th>Voto</th><th>Peso</th><th></th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <div id="schnitt" class="noten-summary">Media: -</div>
+
+      <div id="zielInput" class="ziel-inputs">
+        <input id="ziel" class="field-control" type="number" step="0.01" placeholder="Media desiderata">
+        <input id="zusaetzlich" class="field-control" type="number" step="0.01" placeholder="Peso del prossimo voto">
+        <button type="button" id="berechnen" class="secondary-action">Calcola</button>
+      </div>
+
+      <div id="zielNote" class="noten-summary">Voto necessario: -</div>
+    </main>
+
+    <div id="buttons" class="page-actions">
+      <button type="button" onclick="window.location.href='index.html'">◀️ Indietro</button>
     </div>
-
-    <table id="notenTabelle" style="width:80%;margin:auto;border-collapse:collapse;">
-      <thead>
-        <tr><th>N.</th><th>Voto</th><th>Peso</th><th></th></tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-
-    <div id="schnitt" style="margin-top:10px;">Media: -</div>
-
-    <div id="zielInput">
-      <input id="ziel" type="number" step="0.01" placeholder="Media desiderata">
-      <input id="zusaetzlich" type="number" step="0.01" placeholder="Peso del prossimo voto">
-      <button type="button" id="berechnen">Calcola</button>
-    </div>
-
-    <div id="zielNote">Voto necessario: -</div>
-  </main>
-
-  <div id="buttons">
-    <button type="button" onclick="window.location.href='index.html'">◀️ Indietro</button>
-  </div>
   </div>
   <script src="overlay.js" defer></script>
   <script src="notenrechner.js" defer></script>

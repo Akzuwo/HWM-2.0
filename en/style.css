@@ -264,3 +264,391 @@ button {
     margin-top: 10px;
     padding: 6px 12px;
 }
+
+/* --------- Notenrechner Layout --------- */
+#notenrechner-container {
+    text-align: left;
+}
+
+#notenrechner-container .page-header {
+    margin-bottom: 10px;
+}
+
+#notenrechner-container .page-header h2 {
+    margin: 0;
+}
+
+#notenrechner-container .noten-main {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+#notenrechner-container .input-row,
+#notenrechner-container .noten-inputs,
+#notenrechner-container .ziel-inputs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: flex-end;
+}
+
+#notenrechner-container .input-row {
+    align-items: center;
+}
+
+#notenrechner-container .field-group {
+    flex: 1 1 180px;
+}
+
+#notenrechner-container .field-label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+#notenrechner-container .field-control {
+    width: 100%;
+    margin: 0;
+    padding: 12px;
+    background: #111;
+    border: 1px solid #444;
+    border-radius: 6px;
+    color: #fff;
+}
+
+#notenrechner-container .input-row .field-control {
+    flex: 1 1 240px;
+}
+
+#notenrechner-container .primary-action,
+#notenrechner-container .secondary-action,
+#notenrechner-container .danger-secondary,
+#notenrechner-container .delete-btn,
+#notenrechner-container .edit-btn {
+    margin: 0;
+    width: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+#notenrechner-container .primary-action {
+    background: linear-gradient(135deg, #1e90ff, #005fcc);
+    color: #fff;
+    padding: 14px 24px;
+    font-size: 1rem;
+    min-width: 160px;
+    border: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+#notenrechner-container .primary-action:disabled {
+    background: #333;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+#notenrechner-container .primary-action:not(:disabled):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 18px rgba(30, 144, 255, 0.35);
+}
+
+#notenrechner-container .secondary-action {
+    background: #2a2a2a;
+    color: #fff;
+    padding: 12px 20px;
+    border: 1px solid #444;
+}
+
+#notenrechner-container .secondary-action:hover {
+    background: #333;
+}
+
+#notenrechner-container .danger-secondary,
+#notenrechner-container .delete-btn,
+#notenrechner-container .edit-btn.cancel-btn {
+    background: #8b1e3f;
+    color: #fff;
+    border: none;
+}
+
+#notenrechner-container .danger-secondary {
+    padding: 12px 20px;
+}
+
+#notenrechner-container .danger-secondary:disabled {
+    background: #44202e;
+    cursor: not-allowed;
+}
+
+#notenrechner-container .danger-secondary:not(:disabled):hover {
+    background: #b21e4b;
+}
+
+#notenrechner-container .delete-btn {
+    padding: 12px 18px;
+    font-size: 1.1rem;
+    border-radius: 50%;
+    min-width: 48px;
+    min-height: 48px;
+}
+
+#notenrechner-container .delete-btn:hover {
+    background: #b21e4b;
+}
+
+#notenrechner-container .edit-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+#notenrechner-container .edit-btn {
+    padding: 10px 16px;
+    border: none;
+    font-size: 1.1rem;
+}
+
+#notenrechner-container .edit-btn.save-btn {
+    background: #1f7a4d;
+    color: #fff;
+}
+
+#notenrechner-container .edit-btn.save-btn:hover {
+    background: #2ba86a;
+}
+
+#notenrechner-container .edit-btn.cancel-btn:hover {
+    background: #c62852;
+}
+
+#notenrechner-container .edit-field {
+    margin: 0;
+}
+
+#notenrechner-container .noten-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+#notenrechner-container .noten-actions button {
+    min-width: 160px;
+}
+
+#notenrechner-container .error-message {
+    color: #ff6b6b;
+    min-height: 1.2em;
+    margin: 0;
+}
+
+#notenrechner-container .field-control.invalid,
+#notenrechner-container .edit-field.invalid {
+    border-color: #ff6b6b;
+    box-shadow: 0 0 0 1px rgba(255, 107, 107, 0.4);
+}
+
+#notenrechner-container .noten-tabelle {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+#notenrechner-container .noten-tabelle th,
+#notenrechner-container .noten-tabelle td {
+    padding: 12px;
+    border-bottom: 1px solid #2d2d2d;
+}
+
+#notenrechner-container .noten-tabelle tbody tr:nth-child(even) {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+#notenrechner-container .noten-tabelle tbody tr:hover {
+    background: rgba(30, 144, 255, 0.08);
+}
+
+#notenrechner-container .noten-summary {
+    margin-top: 12px;
+    font-weight: 600;
+}
+
+#notenrechner-container .ziel-inputs {
+    align-items: center;
+}
+
+#notenrechner-container .ziel-inputs .field-control {
+    flex: 1 1 200px;
+}
+
+.page-actions button {
+    width: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 20px;
+}
+
+@media (max-width: 700px) {
+    #notenrechner-container .input-row,
+    #notenrechner-container .noten-inputs,
+    #notenrechner-container .ziel-inputs {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    #notenrechner-container .primary-action,
+    #notenrechner-container .secondary-action,
+    #notenrechner-container .danger-secondary {
+        width: 100%;
+    }
+
+    #notenrechner-container .noten-actions {
+        justify-content: flex-start;
+    }
+
+    #notenrechner-container .noten-actions button {
+        width: 100%;
+    }
+}
+
+/* --------- Simple Navigation --------- */
+.simple-nav {
+    position: sticky;
+    top: 0;
+    z-index: 200;
+    background: #0f0f0f;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 5vw;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.simple-nav .nav-title {
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+.simple-nav .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.simple-nav a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.nav-button {
+    background: #1e1e1e;
+    color: #fff;
+    border: 1px solid #333;
+    padding: 10px 18px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+}
+
+.nav-button:hover {
+    background: #2b2b2b;
+}
+
+@media (max-width: 650px) {
+    .simple-nav {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .simple-nav .nav-links {
+        flex-wrap: wrap;
+        width: 100%;
+    }
+}
+
+/* --------- Tagesübersicht --------- */
+.page-container {
+    max-width: 1000px;
+    margin: 40px auto;
+    padding: 0 5vw;
+}
+
+.page-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    text-align: left;
+}
+
+.page-header h1,
+.page-header h2 {
+    margin: 0;
+}
+
+.page-date {
+    color: #b5b5b5;
+    font-size: 0.95rem;
+}
+
+.overview-grid {
+    display: grid;
+    gap: 18px;
+    margin-top: 24px;
+}
+
+@media (min-width: 700px) {
+    .overview-grid {
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    }
+}
+
+.day-card {
+    background: #1f1f1f;
+    border-radius: 12px;
+    padding: 16px;
+    text-align: left;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+    border: 1px solid #2a2a2a;
+}
+
+.day-card h2 {
+    margin-top: 0;
+    margin-bottom: 12px;
+}
+
+.day-card.current-day {
+    border-color: #1e90ff;
+    box-shadow: 0 0 18px rgba(30, 144, 255, 0.35);
+    background: rgba(30, 144, 255, 0.12);
+}
+
+.schedule-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+}
+
+.schedule-table th,
+.schedule-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #2e2e2e;
+    text-align: left;
+}
+
+.schedule-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.schedule-table .no-entry {
+    text-align: center;
+    color: #9c9c9c;
+}

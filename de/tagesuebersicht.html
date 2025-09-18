@@ -8,9 +8,28 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>📅 Tagesübersicht</h1>
-  <div id="overview">Lade Daten…</div>
-  <button id="back-button" onclick="window.location.href='stundenplan.html'">◀️ Zurück</button>
+  <nav class="simple-nav">
+    <div class="nav-title">Homework Manager</div>
+    <div class="nav-links">
+      <a class="nav-button" href="index.html">🏠 Start</a>
+      <a class="nav-button" href="kalender.html">📅 Kalender</a>
+      <a class="nav-button" href="upcoming.html">🔔 Upcoming Events</a>
+      <a class="nav-button" href="stundenplan.html">🕒 Aktuelles Fach</a>
+    </div>
+  </nav>
+
+  <main class="page-container">
+    <header class="page-header">
+      <div>
+        <h1>📅 Tagesübersicht</h1>
+        <p id="pageDate" class="page-date"></p>
+      </div>
+      <a class="nav-button" href="stundenplan.html">◀️ Zurück</a>
+    </header>
+
+    <div id="overview" class="overview-grid">Lade Daten…</div>
+  </main>
+
   <script src="script.js" defer></script>
   <script src="tagesuebersicht.js" defer></script>
 </body>
