@@ -483,20 +483,23 @@ button {
 #notenrechner-container .noten-main {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 24px;
 }
 
-#notenrechner-container .input-row,
+#notenrechner-container .noten-main > * {
+    margin: 0;
+}
+
 #notenrechner-container .noten-inputs,
 #notenrechner-container .ziel-inputs {
     display: flex;
     flex-wrap: wrap;
     gap: 20px;
-    align-items: stretch;
+    align-items: flex-end;
 }
 
 #notenrechner-container .field-group {
-    flex: 1 1 200px;
+    flex: 1 1 220px;
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -512,24 +515,65 @@ button {
 #notenrechner-container .field-control {
     width: 100%;
     margin: 0;
-    padding: 12px;
+    padding: 0 16px;
+    min-height: 48px;
     background: #111;
-    border: 1px solid #444;
-    border-radius: 6px;
+    border: 1px solid #3a3a3a;
+    border-radius: 8px;
     color: #fff;
+    line-height: 1.5;
 }
 
-#notenrechner-container .input-row .field-control {
-    flex: 1 1 240px;
+#notenrechner-container .field-control:focus {
+    outline: 2px solid #3f6cff;
+    outline-offset: 2px;
 }
 
 #notenrechner-container .primary-action,
 #notenrechner-container .secondary-action,
-#notenrechner-container .danger-secondary,
+#notenrechner-container .danger-secondary {
+    margin: 0;
+    width: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 24px;
+    min-height: 48px;
+    min-width: 150px;
+    border-radius: 10px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    background: #2b2b2b;
+    color: #f5f5f5;
+    border: 1px solid #3d3d3d;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+#notenrechner-container .primary-action:disabled,
+#notenrechner-container .secondary-action:disabled,
+#notenrechner-container .danger-secondary:disabled {
+    background: #242424;
+    color: #777;
+    border-color: #242424;
+    box-shadow: none;
+    cursor: not-allowed;
+}
+
+#notenrechner-container .primary-action:not(:disabled):hover,
+#notenrechner-container .secondary-action:not(:disabled):hover,
+#notenrechner-container .danger-secondary:not(:disabled):hover {
+    background: #3a3a3a;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.35);
+    transform: translateY(-2px);
+}
+
+#notenrechner-container .danger-secondary {
+    color: #f5f5f5;
+}
+
 #notenrechner-container .delete-btn,
 #notenrechner-container .edit-btn {
     margin: 0;
-    width: auto;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -538,69 +582,22 @@ button {
     letter-spacing: 0.02em;
 }
 
-#notenrechner-container .primary-action {
-    background: linear-gradient(135deg, #1e90ff, #005fcc);
-    color: #fff;
-    padding: 14px 24px;
-    font-size: 1rem;
-    min-width: 160px;
-    border: none;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-#notenrechner-container .primary-action:disabled {
-    background: #333;
-    cursor: not-allowed;
-    box-shadow: none;
-}
-
-#notenrechner-container .primary-action:not(:disabled):hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 18px rgba(30, 144, 255, 0.35);
-}
-
-#notenrechner-container .secondary-action {
-    background: #2a2a2a;
-    color: #fff;
-    padding: 12px 20px;
-    border: 1px solid #444;
-}
-
-#notenrechner-container .secondary-action:hover {
-    background: #333;
-}
-
-#notenrechner-container .danger-secondary,
-#notenrechner-container .delete-btn,
-#notenrechner-container .edit-btn.cancel-btn {
+#notenrechner-container .delete-btn {
+    padding: 0;
+    font-size: 0.7rem;
+    border-radius: 50%;
     background: #8b1e3f;
     color: #fff;
-    border: none;
-}
-
-#notenrechner-container .danger-secondary {
-    padding: 12px 20px;
-}
-
-#notenrechner-container .danger-secondary:disabled {
-    background: #44202e;
-    cursor: not-allowed;
-}
-
-#notenrechner-container .danger-secondary:not(:disabled):hover {
-    background: #b21e4b;
-}
-
-#notenrechner-container .delete-btn {
-    padding: 12px 18px;
-    font-size: 1.1rem;
-    border-radius: 50%;
+    border: 1px solid #a43252;
     min-width: 48px;
     min-height: 48px;
+    line-height: 1;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 #notenrechner-container .delete-btn:hover {
     background: #b21e4b;
+    box-shadow: 0 8px 16px rgba(178, 30, 75, 0.35);
 }
 
 #notenrechner-container .edit-actions {
@@ -635,10 +632,7 @@ button {
 #notenrechner-container .noten-actions {
     display: flex;
     justify-content: flex-end;
-}
-
-#notenrechner-container .noten-actions button {
-    min-width: 160px;
+    gap: 12px;
 }
 
 #notenrechner-container .error-message {
@@ -656,13 +650,15 @@ button {
 #notenrechner-container .noten-tabelle {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 10px;
+    margin: 0;
 }
 
 #notenrechner-container .noten-tabelle th,
 #notenrechner-container .noten-tabelle td {
-    padding: 12px;
+    padding: 16px;
     border-bottom: 1px solid #2d2d2d;
+    vertical-align: middle;
+    line-height: 1.5;
 }
 
 #notenrechner-container .noten-tabelle tbody tr:nth-child(even) {
@@ -674,8 +670,10 @@ button {
 }
 
 #notenrechner-container .noten-summary {
-    margin-top: 12px;
+    margin: 0;
+    padding: 0 16px;
     font-weight: 600;
+    text-align: left;
 }
 
 #notenrechner-container .ziel-inputs {
@@ -683,7 +681,12 @@ button {
 }
 
 #notenrechner-container .ziel-inputs .field-control {
-    flex: 1 1 200px;
+    flex: 1 1 220px;
+}
+
+.page-actions {
+    display: flex;
+    justify-content: flex-start;
 }
 
 .page-actions button {
@@ -691,7 +694,8 @@ button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 10px 20px;
+    padding: 0 24px;
+    min-height: 48px;
 }
 
 .upcoming-grid {

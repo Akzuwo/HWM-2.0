@@ -1,7 +1,3 @@
-const faecher = [
-  'MA','DE','PS','SPM-PS','SPM-MA','SP','WR','GS','GG','IN','IT','FR','EN','BG','MU','BI','Sport','CH','PH','SMU'
-];
-const fachSelect = document.getElementById('fach');
 const noteInput = document.getElementById('note');
 const gewichtungInput = document.getElementById('gewichtung');
 const addButton = document.getElementById('add');
@@ -13,22 +9,8 @@ const messages = {
   required: 'Bitte beide Felder ausfüllen.'
 };
 
-faecher.forEach((f) => {
-  const opt = document.createElement('option');
-  opt.textContent = f;
-  fachSelect.appendChild(opt);
-});
-
-// Noten werden pro Fach gespeichert
-const noten = {};
+const noten = [];
 let editingIndex = null;
-
-function getFachNoten(fach) {
-  if (!noten[fach]) {
-    noten[fach] = [];
-  }
-  return noten[fach];
-}
 
 function setError(message = '') {
   if (!errorMessage) return;
@@ -92,10 +74,7 @@ function noteHinzufuegen() {
 
   const note = parseFloat(noteInput.value);
   const gewichtung = parseFloat(gewichtungInput.value);
-  const fach = fachSelect.value;
-  const arr = getFachNoten(fach);
-
-  arr.push({ note, gewichtung });
+  noten.push({ note, gewichtung });
   editingIndex = null;
   resetInputs();
   notenListeUpdate();
@@ -103,14 +82,12 @@ function noteHinzufuegen() {
 }
 
 function schnittBerechnen() {
-  const fach = fachSelect.value;
-  const arr = getFachNoten(fach);
-  if (!arr.length) {
+  if (!noten.length) {
     document.getElementById('schnitt').textContent = 'Schnitt: -';
     return;
   }
-  const gesamtgewichtung = arr.reduce((a, n) => a + n.gewichtung, 0);
-  const summe = arr.reduce((a, n) => a + n.note * n.gewichtung, 0);
+  const gesamtgewichtung = noten.reduce((a, n) => a + n.gewichtung, 0);
+  const summe = noten.reduce((a, n) => a + n.note * n.gewichtung, 0);
   const schnitt = summe / gesamtgewichtung;
   document.getElementById('schnitt').textContent = `Schnitt: ${schnitt.toFixed(2)}`;
 }
@@ -122,10 +99,8 @@ function zielBerechnen() {
     showOverlay('Bitte gültige Zahlen eingeben.');
     return;
   }
-  const fach = fachSelect.value;
-  const arr = getFachNoten(fach);
-  const gesamtgewichtung = arr.reduce((a, n) => a + n.gewichtung, 0);
-  const summe = arr.reduce((a, n) => a + n.note * n.gewichtung, 0);
+  const gesamtgewichtung = noten.reduce((a, n) => a + n.gewichtung, 0);
+  const summe = noten.reduce((a, n) => a + n.note * n.gewichtung, 0);
   const benoetigte = ((ziel * (gesamtgewichtung + zGew)) - summe) / zGew;
   document.getElementById('zielNote').textContent = `Benötigte Note: ${benoetigte.toFixed(2)}`;
 }
@@ -167,9 +142,7 @@ function saveEdit(index, noteField, gewichtField) {
     return;
   }
 
-  const fach = fachSelect.value;
-  const arr = getFachNoten(fach);
-  arr[index] = { note: parseFloat(noteValue), gewichtung: parseFloat(gewichtValue) };
+  noten[index] = { note: parseFloat(noteValue), gewichtung: parseFloat(gewichtValue) };
   editingIndex = null;
   setError('');
   notenListeUpdate();
@@ -238,12 +211,10 @@ function createEditControls(tr, index, daten) {
 }
 
 function notenListeUpdate() {
-  const fach = fachSelect.value;
-  const arr = getFachNoten(fach);
   const tbody = document.querySelector('#notenTabelle tbody');
   tbody.innerHTML = '';
 
-  arr.forEach((daten, index) => {
+  noten.forEach((daten, index) => {
     const tr = document.createElement('tr');
     tr.dataset.index = index;
 
@@ -269,7 +240,7 @@ function notenListeUpdate() {
       delBtn.setAttribute('aria-label', 'Note löschen');
       delBtn.addEventListener('click', (event) => {
         event.stopPropagation();
-        arr.splice(index, 1);
+        noten.splice(index, 1);
         editingIndex = null;
         notenListeUpdate();
         schnittBerechnen();
@@ -281,27 +252,20 @@ function notenListeUpdate() {
     tbody.appendChild(tr);
   });
 
-  clearAllButton.disabled = arr.length === 0;
+  clearAllButton.disabled = noten.length === 0;
+  if (!noten.length) {
+    document.getElementById('zielNote').textContent = 'Benötigte Note: -';
+  }
 }
 
 document.getElementById('add').addEventListener('click', noteHinzufuegen);
 document.getElementById('berechnen').addEventListener('click', zielBerechnen);
 clearAllButton.addEventListener('click', () => {
-  const fach = fachSelect.value;
-  const arr = getFachNoten(fach);
-  arr.length = 0;
+  noten.length = 0;
   editingIndex = null;
   setError('');
   notenListeUpdate();
   schnittBerechnen();
-});
-
-fachSelect.addEventListener('change', () => {
-  editingIndex = null;
-  setError('');
-  notenListeUpdate();
-  schnittBerechnen();
-  document.getElementById('zielNote').textContent = 'Benötigte Note: -';
 });
 
 noteInput.addEventListener('input', () => validateInputs(false));
