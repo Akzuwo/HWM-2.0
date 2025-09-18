@@ -117,6 +117,23 @@ def ensure_entries_table():
 ensure_stundenplan_table()
 ensure_entries_table()
 
+# Hilfsfunktion für die Formatierung von Zeitwerten aus MySQL
+def _format_time_value(value):
+    if value is None:
+        return None
+    if isinstance(value, datetime.timedelta):
+        total_seconds = int(value.total_seconds())
+        hours, remainder = divmod(total_seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+    if isinstance(value, datetime.datetime):
+        return value.time().strftime('%H:%M:%S')
+    if isinstance(value, datetime.time):
+        return value.strftime('%H:%M:%S')
+    if isinstance(value, str):
+        return value
+    return str(value)
+
 # ---------- ROUTES ----------
 
 @app.route("/")
@@ -174,10 +191,8 @@ def entries():
     rows = cursor.fetchall()
     for r in rows:
         r['datum'] = r['datum'].strftime('%Y-%m-%d')
-        if r['startzeit'] is not None:
-            r['startzeit'] = r['startzeit'].strftime('%H:%M:%S')
-        if r['endzeit'] is not None:
-            r['endzeit'] = r['endzeit'].strftime('%H:%M:%S')
+        r['startzeit'] = _format_time_value(r.get('startzeit'))
+        r['endzeit'] = _format_time_value(r.get('endzeit'))
     cursor.close()
     conn.close()
     return jsonify(rows)
@@ -214,15 +229,26 @@ def update_entry():
     id = data.get('id')
     desc = (data.get('description') or '').strip()
     date = data.get('date')
-    start = data.get('startzeit')
-    end = data.get('endzeit')
+    start = data.get('startzeit') or None
+    end = data.get('endzeit') or None
     typ = data.get('type')
     fach = (data.get('fach') or '').strip()
 
-    if start == '':
-        start = None
-    if end == '':
-        end = None
+    if start:
+        start = start.strip()
+        if len(start) == 5:
+            start = f"{start}:00"
+        start = start[:8]
+    if end:
+        end = end.strip()
+        if len(end) == 5:
+            end = f"{end}:00"
+        end = end[:8]
+
+    if typ != 'event' and not fach:
+        return jsonify(status='error', message='fach ist für diesen Typ erforderlich'), 400
+    if typ == 'event' and not fach:
+        fach = ''
 
     conn = get_connection()
     cur = conn.cursor()
@@ -346,17 +372,28 @@ def add_entry():
             startzeit = time_part or None
         datum = date_part
 
+    if startzeit == '':
+        startzeit = None
+    if endzeit == '':
+        endzeit = None
+
     if startzeit:
+        startzeit = startzeit.strip()
         if len(startzeit) == 5:
             startzeit = f"{startzeit}:00"
         startzeit = startzeit[:8]
     if endzeit:
+        endzeit = endzeit.strip()
         if len(endzeit) == 5:
             endzeit = f"{endzeit}:00"
         endzeit = endzeit[:8]
 
     if not typ or not datum:
         return jsonify(status="error", message="typ und datum sind erforderlich"), 400
+    if typ != 'event' and not fach:
+        return jsonify(status="error", message="fach ist für diesen Typ erforderlich"), 400
+    if typ == 'event' and not fach:
+        fach = ''
 
     conn = get_connection(); cur = conn.cursor()
     try:

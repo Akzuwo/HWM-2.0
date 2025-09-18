@@ -18,9 +18,9 @@ const TYPE_LABELS = {
   event: 'Event'
 };
 
-function formatDateLabel(dateStr, timeStr) {
+function formatDateLabel(dateStr, startStr, endStr) {
   if (!dateStr) return '';
-  const baseDate = `${dateStr}T${timeStr || '00:00:00'}`;
+  const baseDate = `${dateStr}T${startStr || '00:00:00'}`;
   const dateObj = new Date(baseDate);
   const dateFormatter = new Intl.DateTimeFormat('de-DE', {
     day: '2-digit',
@@ -28,8 +28,13 @@ function formatDateLabel(dateStr, timeStr) {
     year: 'numeric'
   });
   const formattedDate = dateFormatter.format(dateObj);
-  if (timeStr) {
-    return `${formattedDate} · ${timeStr.slice(0,5)}`;
+  const startLabel = startStr ? startStr.slice(0,5) : '';
+  const endLabel = endStr ? endStr.slice(0,5) : '';
+  if (startLabel && endLabel) {
+    return `${formattedDate} · ${startLabel} – ${endLabel}`;
+  }
+  if (startLabel) {
+    return `${formattedDate} · ${startLabel}`;
   }
   return formattedDate;
 }
@@ -37,13 +42,13 @@ function formatDateLabel(dateStr, timeStr) {
 // Modal öffnen: View vs. Edit
 function openModal(event) {
   const { id } = event;
-  const { type, typeLabel, description, fach, datum, startzeit } = event.extendedProps;
+  const { type, typeLabel, description, fach, datum, startzeit, endzeit } = event.extendedProps;
 
   const title = `${typeLabel} · ${fach || '—'}`;
   document.getElementById('fc-modal-title').innerText = title;
   document.getElementById('fc-modal-type').innerText = typeLabel;
   document.getElementById('fc-modal-subject').innerText = fach || '—';
-  document.getElementById('fc-modal-date').innerText = formatDateLabel(datum, startzeit);
+  document.getElementById('fc-modal-date').innerText = formatDateLabel(datum, startzeit, endzeit);
   document.getElementById('fc-modal-desc').innerHTML = description ? mdBold(description) : '<em>Keine Beschreibung vorhanden.</em>';
 
   document.getElementById('fc-entry-id').value = id;
@@ -52,6 +57,12 @@ function openModal(event) {
   document.getElementById('fc-edit-desc').value = description;
   document.getElementById('fc-edit-subject').value = fach || '';
   document.getElementById('fc-edit-start').value = startzeit ? startzeit.slice(0, 5) : '';
+  document.getElementById('fc-edit-end').value = endzeit ? endzeit.slice(0, 5) : '';
+
+  const subjectInput = document.getElementById('fc-edit-subject');
+  if (subjectInput) {
+    subjectInput.required = type !== 'event';
+  }
 
   if (userIsAdmin) {
     document.getElementById('fc-view-mode').style.display = 'none';
@@ -78,13 +89,14 @@ async function saveEdit() {
   const desc = document.getElementById('fc-edit-desc').value.trim();
   const fach = document.getElementById('fc-edit-subject').value.trim();
   let start = document.getElementById('fc-edit-start').value;
+  let end = document.getElementById('fc-edit-end').value;
 
   if (!date) {
     showOverlay('Bitte gib ein Datum an.');
     return;
   }
-  if (!fach) {
-    showOverlay('Bitte gib ein Fachkürzel an.');
+  if (type !== 'event' && !fach) {
+    showOverlay('Bitte gib ein Fachkürzel an (nicht für Events erforderlich).');
     return;
   }
 
@@ -96,6 +108,14 @@ async function saveEdit() {
     start = null;
   }
 
+  if (end) {
+    if (end.length === 5) {
+      end = `${end}:00`;
+    }
+  } else {
+    end = null;
+  }
+
   try {
     const res = await fetch(`${API_BASE}/update_entry`, {
       method: 'PUT',
@@ -103,7 +123,7 @@ async function saveEdit() {
         'Content-Type': 'application/json',
         'X-Role': role
       },
-      body: JSON.stringify({ id, type, date, description: desc, startzeit: start, endzeit: null, fach })
+      body: JSON.stringify({ id, type, date, description: desc, startzeit: start, endzeit: end, fach })
     });
     if (!res.ok) {
       const err = await res.text().catch(() => '');
@@ -159,7 +179,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       const typeLabel = TYPE_LABELS[e.typ] || e.typ;
       const subject = e.fach || '';
       const start = e.startzeit ? `${e.datum}T${e.startzeit}` : e.datum;
-      return {
+      const end = e.endzeit ? `${e.datum}T${e.endzeit}` : undefined;
+      const eventConfig = {
         id: String(e.id),
         title: `${typeLabel} · ${subject || '—'}`,
         start,
@@ -175,6 +196,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           endzeit: e.endzeit
         }
       };
+      if (end) {
+        eventConfig.end = end;
+      }
+      return eventConfig;
     });
     // Remove loading text once events are ready
     calendarEl.textContent = '';
