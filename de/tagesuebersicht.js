@@ -1,7 +1,21 @@
 const API_BASE = 'https://homework-manager-2-0-backend.onrender.com';
 
+function setPageDate() {
+  const dateTarget = document.getElementById('pageDate');
+  if (dateTarget) {
+    const today = new Date();
+    dateTarget.textContent = new Intl.DateTimeFormat('de-DE', { dateStyle: 'full' }).format(today);
+  }
+}
+
+function normalizeDay(value) {
+  return value ? value.toLocaleLowerCase('de-DE') : '';
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   const container = document.getElementById('overview');
+  setPageDate();
+
   try {
     const res = await fetch(`${API_BASE}/tagesuebersicht`);
     if (!res.ok) {
@@ -9,23 +23,50 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     const data = await res.json();
     container.innerHTML = '';
+
+    const todayKey = normalizeDay(new Intl.DateTimeFormat('de-DE', { weekday: 'long' }).format(new Date()));
+
     for (const [tag, eintraege] of Object.entries(data)) {
-      const h2 = document.createElement('h2');
-      h2.textContent = tag;
-      container.appendChild(h2);
-      const ul = document.createElement('ul');
-      if (eintraege.length === 0) {
-        const li = document.createElement('li');
-        li.textContent = 'Keine Einträge';
-        ul.appendChild(li);
+      const card = document.createElement('section');
+      card.className = 'day-card';
+      if (normalizeDay(tag) === todayKey) {
+        card.classList.add('current-day');
+      }
+
+      const heading = document.createElement('h2');
+      heading.textContent = tag;
+      card.appendChild(heading);
+
+      const table = document.createElement('table');
+      table.className = 'schedule-table';
+      table.innerHTML = '<thead><tr><th>Uhrzeit</th><th>Fach</th><th>Raum</th></tr></thead>';
+      const tbody = document.createElement('tbody');
+
+      if (!eintraege.length) {
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.colSpan = 3;
+        cell.textContent = 'Keine Einträge';
+        cell.classList.add('no-entry');
+        row.appendChild(cell);
+        tbody.appendChild(row);
       } else {
         for (const e of eintraege) {
-          const li = document.createElement('li');
-          li.textContent = `${e.start} - ${e.end}: ${e.fach} (${e.raum})`;
-          ul.appendChild(li);
+          const row = document.createElement('tr');
+          const time = document.createElement('td');
+          time.textContent = `${e.start} – ${e.end}`;
+          const subject = document.createElement('td');
+          subject.textContent = e.fach;
+          const room = document.createElement('td');
+          room.textContent = e.raum;
+          row.append(time, subject, room);
+          tbody.appendChild(row);
         }
       }
-      container.appendChild(ul);
+
+      table.appendChild(tbody);
+      card.appendChild(table);
+      container.appendChild(card);
     }
   } catch (err) {
     console.error('Fehler beim Laden der Tagesübersicht:', err);
