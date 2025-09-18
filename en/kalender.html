@@ -46,30 +46,30 @@
         <input type="hidden" id="fc-entry-id">
         <input type="hidden" id="fc-entry-type">
 
-        <label>
-          Subject Abbreviation:
+        <div class="fc-form-group">
+          <label for="fc-edit-subject">Subject Abbreviation</label>
           <input type="text" id="fc-edit-subject" maxlength="100" required>
-        </label>
+        </div>
 
-        <label>
-          Date (YYYY-MM-DD):
+        <div class="fc-form-group">
+          <label for="fc-edit-date">Date (YYYY-MM-DD)</label>
           <input type="date" id="fc-edit-date" required>
-        </label>
+        </div>
 
-        <label>
-          Start time (optional):
+        <div class="fc-form-group">
+          <label for="fc-edit-start">Start time (optional)</label>
           <input type="time" id="fc-edit-start">
-        </label>
+        </div>
 
-        <label>
-          End time (optional):
+        <div class="fc-form-group">
+          <label for="fc-edit-end">End time (optional)</label>
           <input type="time" id="fc-edit-end">
-        </label>
+        </div>
 
-        <label>
-          Description:
+        <div class="fc-form-group">
+          <label for="fc-edit-desc">Description</label>
           <textarea id="fc-edit-desc" rows="4"></textarea>
-        </label>
+        </div>
 
         <button type="button" onclick="saveEdit()">Save</button>
         <button type="button" onclick="deleteEntry()" style="background:#dc3545; color:#fff;">
@@ -88,18 +88,18 @@
 
       <h2>📝 Create a New Entry</h2>
       <form id="entry-form" onsubmit="saveEntry(event)">
-        <label>
-          Type:
-          <select id="typ" required>
+        <div class="fc-form-group">
+          <label for="typ">Type</label>
+          <select id="typ" name="typ" required>
             <option value="hausaufgabe">Homework</option>
             <option value="pruefung">Exam</option>
             <option value="event">Event</option>
           </select>
-        </label>
+        </div>
 
-        <label>
-          Subject:
-          <select id="fach" required>
+        <div class="fc-form-group">
+          <label for="fach">Subject</label>
+          <select id="fach" name="fach" required>
             <option value="">– please select –</option>
             <option>MA</option>
             <option>DE</option>
@@ -123,22 +123,22 @@
             <option>PH</option>
             <option>SMU</option>
           </select>
-        </label>
+        </div>
 
-        <label>
-          Description (optional):
-          <textarea id="beschreibung" rows="3" placeholder="Short description"></textarea>
-        </label>
+        <div class="fc-form-group">
+          <label for="beschreibung">Description (optional)</label>
+          <textarea id="beschreibung" name="beschreibung" rows="3" placeholder="Short description"></textarea>
+        </div>
 
-        <label>
-          Date &amp; time:
-          <input type="datetime-local" id="datum" required>
-        </label>
+        <div class="fc-form-group">
+          <label for="datum">Date &amp; time</label>
+          <input type="datetime-local" id="datum" name="datum" required>
+        </div>
 
-        <label>
-          End time (optional):
-          <input type="time" id="endzeit">
-        </label>
+        <div class="fc-form-group">
+          <label for="endzeit">End time (optional)</label>
+          <input type="time" id="endzeit" name="endzeit">
+        </div>
 
         <button type="submit" id="saveButton">Add</button>
       </form>
