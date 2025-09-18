@@ -1,11 +1,72 @@
 // LOGIN & SESSION MANAGEMENT
+const LOGIN_TEXT = {
+    show: 'Show password',
+    hide: 'Hide password',
+    empty: 'Please enter a password.',
+    wrong: 'Wrong password – please try again.'
+};
+
+function setLoginFeedback(message = '', isError = false) {
+    const feedback = document.getElementById('login-feedback');
+    if (!feedback) return;
+    feedback.textContent = message;
+    if (message) {
+        feedback.classList.toggle('error', Boolean(isError));
+    } else {
+        feedback.classList.remove('error');
+    }
+}
+
+function focusPasswordField() {
+    const input = document.getElementById('passwort');
+    if (input) {
+        input.focus();
+        if (typeof input.select === 'function') {
+            input.select();
+        }
+    }
+}
+
+function togglePasswordVisibility() {
+    const input = document.getElementById('passwort');
+    const toggle = document.getElementById('toggle-password');
+    if (!input || !toggle) return;
+    const shouldShow = input.type === 'password';
+    input.type = shouldShow ? 'text' : 'password';
+    toggle.setAttribute('aria-label', shouldShow ? LOGIN_TEXT.hide : LOGIN_TEXT.show);
+    toggle.classList.toggle('visible', shouldShow);
+    input.focus();
+}
+
+function handlePasswordKey(event) {
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        login();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const input = document.getElementById('passwort');
+    if (!input) return;
+    input.addEventListener('input', () => setLoginFeedback(''));
+});
+
 function login() {
-    const pw = document.getElementById('passwort').value;
+    const input = document.getElementById('passwort');
+    if (!input) return;
+    const pw = input.value.trim();
+    if (!pw) {
+        setLoginFeedback(LOGIN_TEXT.empty, true);
+        focusPasswordField();
+        return;
+    }
     if (pw === 'l23a-admin') {
         sessionStorage.setItem('role', 'admin');
+        setLoginFeedback('');
         window.location.href = 'index.html';
     } else {
-        showOverlay('Wrong password!');
+        setLoginFeedback(LOGIN_TEXT.wrong, true);
+        focusPasswordField();
     }
 }
 
