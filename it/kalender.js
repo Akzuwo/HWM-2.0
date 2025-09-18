@@ -12,26 +12,48 @@ function mdBold(text) {
   return text.replace(/\*(.*?)\*/g, '<strong>$1</strong>');
 }
 
+const TYPE_LABELS = {
+  hausaufgabe: 'Compito',
+  pruefung: 'Esame',
+  event: 'Evento'
+};
+
+function formatDateLabel(dateStr, timeStr) {
+  if (!dateStr) return '';
+  const baseDate = `${dateStr}T${timeStr || '00:00:00'}`;
+  const dateObj = new Date(baseDate);
+  const dateFormatter = new Intl.DateTimeFormat('it-IT', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+  const formattedDate = dateFormatter.format(dateObj);
+  if (timeStr) {
+    return `${formattedDate} · ${timeStr.slice(0,5)}`;
+  }
+  return formattedDate;
+}
+
 // Apri modal: visualizza vs. modifica
 function openModal(event) {
   const { id } = event;
-  const { type, description } = event.extendedProps;
-  const date = event.startStr;
-  const title = event.title;
+  const { type, typeLabel, description, fach, datum, startzeit } = event.extendedProps;
 
-  // Compila modalità visualizzazione
-  document.getElementById('fc-modal-title').innerText   = title;
-  document.getElementById('fc-modal-subject').innerText = '';
-  document.getElementById('fc-modal-date').innerText    = date;
-  document.getElementById('fc-modal-desc').innerHTML    = mdBold(description);
+  const title = `${typeLabel} · ${fach || '—'}`;
+  document.getElementById('fc-modal-title').innerText = title;
+  document.getElementById('fc-modal-type').innerText = typeLabel;
+  document.getElementById('fc-modal-subject').innerText = fach || '—';
+  document.getElementById('fc-modal-date').innerText = formatDateLabel(datum, startzeit);
+  document.getElementById('fc-modal-desc').innerHTML = description ? mdBold(description) : '<em>Nessuna descrizione disponibile.</em>';
 
-  // Pre-riempire il modulo di modifica
-  document.getElementById('fc-entry-id').value   = id;
+  document.getElementById('fc-entry-id').value = id;
   document.getElementById('fc-entry-type').value = type;
-  document.getElementById('fc-edit-date').value  = date;
-  document.getElementById('fc-edit-desc').value  = description;
+  document.getElementById('fc-edit-date').value = datum;
+  document.getElementById('fc-edit-desc').value = description;
+  document.getElementById('fc-edit-subject').value = fach || '';
+  document.getElementById('fc-edit-start').value = startzeit ? startzeit.slice(0, 5) : '';
 
-  if (userIsAdmin && type !== 'event') {
+  if (userIsAdmin) {
     document.getElementById('fc-view-mode').style.display = 'none';
     document.getElementById('fc-edit-form').style.display = 'block';
   } else {
@@ -50,10 +72,29 @@ window.closeModal = closeModal;
 
 // Speichern (Update)
 async function saveEdit() {
-  const id    = document.getElementById('fc-entry-id').value;
-  const type  = document.getElementById('fc-entry-type').value;
-  const date  = document.getElementById('fc-edit-date').value;
-  const desc  = document.getElementById('fc-edit-desc').value;
+  const id = document.getElementById('fc-entry-id').value;
+  const type = document.getElementById('fc-entry-type').value;
+  const date = document.getElementById('fc-edit-date').value;
+  const desc = document.getElementById('fc-edit-desc').value.trim();
+  const fach = document.getElementById('fc-edit-subject').value.trim();
+  let start = document.getElementById('fc-edit-start').value;
+
+  if (!date) {
+    showOverlay('Inserisci una data.');
+    return;
+  }
+  if (!fach) {
+    showOverlay('Inserisci un\'abbreviazione della materia.');
+    return;
+  }
+
+  if (start) {
+    if (start.length === 5) {
+      start = `${start}:00`;
+    }
+  } else {
+    start = null;
+  }
 
   try {
     const res = await fetch(`${API_BASE}/update_entry`, {
@@ -62,7 +103,7 @@ async function saveEdit() {
         'Content-Type': 'application/json',
         'X-Role': role
       },
-      body: JSON.stringify({ id, type, date, description: desc, startzeit: null, endzeit: null })
+      body: JSON.stringify({ id, type, date, description: desc, startzeit: start, endzeit: null, fach })
     });
     if (!res.ok) {
       const err = await res.text().catch(() => '');
@@ -114,16 +155,27 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const entries = await res.json();
     const colorMap = { hausaufgabe: '#007bff', pruefung: '#dc3545', event: '#28a745' };
-    const events = entries.map(e => ({
-      id: String(e.id),
-      title: e.beschreibung,
-      start: e.startzeit ? `${e.datum}T${e.startzeit}` : e.datum,
-      color: colorMap[e.typ] || '#000',
-      extendedProps: {
-        type: e.typ,
-        description: e.beschreibung
-      }
-    }));
+    const events = entries.map(e => {
+      const typeLabel = TYPE_LABELS[e.typ] || e.typ;
+      const subject = e.fach || '';
+      const start = e.startzeit ? `${e.datum}T${e.startzeit}` : e.datum;
+      return {
+        id: String(e.id),
+        title: `${typeLabel} · ${subject || '—'}`,
+        start,
+        allDay: !e.startzeit,
+        color: colorMap[e.typ] || '#000',
+        extendedProps: {
+          type: e.typ,
+          typeLabel,
+          description: e.beschreibung || '',
+          fach: subject,
+          datum: e.datum,
+          startzeit: e.startzeit,
+          endzeit: e.endzeit
+        }
+      };
+    });
     // Remove loading text once events are ready
     calendarEl.textContent = '';
 

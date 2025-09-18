@@ -98,11 +98,18 @@ def ensure_entries_table():
             datum DATE NOT NULL,
             startzeit TIME NULL,
             endzeit TIME NULL,
-            typ ENUM('hausaufgabe','pruefung','event') NOT NULL
+            typ ENUM('hausaufgabe','pruefung','event') NOT NULL,
+            fach VARCHAR(100) NOT NULL DEFAULT ''
         )
         """
     )
     conn.commit()
+    cur.execute("SHOW COLUMNS FROM eintraege LIKE 'fach'")
+    if cur.fetchone() is None:
+        cur.execute(
+            "ALTER TABLE eintraege ADD COLUMN fach VARCHAR(100) NOT NULL DEFAULT '' AFTER typ"
+        )
+        conn.commit()
     cur.close()
     conn.close()
 
@@ -123,7 +130,7 @@ def export_ics():
     cursor = conn.cursor(dictionary=True)
     cursor.execute(
         """
-        SELECT id, typ, beschreibung, datum
+        SELECT id, typ, beschreibung, datum, fach
         FROM eintraege
         WHERE datum >= CURDATE()
         ORDER BY datum ASC
@@ -137,7 +144,12 @@ def export_ics():
     for e in entries:
         due = e['datum']
         ev = Event()
-        ev.name = f"{e['typ'].capitalize()}: {e['beschreibung']}"
+        subject = e.get('fach', '').strip()
+        typ_label = e['typ'].capitalize()
+        title_parts = [typ_label]
+        if subject:
+            title_parts.append(subject)
+        ev.name = " - ".join(title_parts)
         ev.description = e['beschreibung']
         ev.begin = due
         ev.make_all_day()
@@ -157,7 +169,7 @@ def entries():
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
     cursor.execute(
-        "SELECT id, beschreibung, datum, startzeit, endzeit, typ FROM eintraege"
+        "SELECT id, beschreibung, datum, startzeit, endzeit, typ, fach FROM eintraege"
     )
     rows = cursor.fetchall()
     for r in rows:
@@ -200,18 +212,24 @@ def update_entry():
 
     data = request.json or {}
     id = data.get('id')
-    desc = data.get('description')
+    desc = (data.get('description') or '').strip()
     date = data.get('date')
     start = data.get('startzeit')
     end = data.get('endzeit')
     typ = data.get('type')
+    fach = (data.get('fach') or '').strip()
+
+    if start == '':
+        start = None
+    if end == '':
+        end = None
 
     conn = get_connection()
     cur = conn.cursor()
     try:
         cur.execute(
-            "UPDATE eintraege SET beschreibung=%s, datum=%s, startzeit=%s, endzeit=%s, typ=%s WHERE id=%s",
-            (desc, date, start, end, typ, id)
+            "UPDATE eintraege SET beschreibung=%s, datum=%s, startzeit=%s, endzeit=%s, typ=%s, fach=%s WHERE id=%s",
+            (desc, date, start, end, typ, fach, id)
         )
         conn.commit()
         return jsonify(status='ok')
@@ -315,16 +333,36 @@ def tagesuebersicht():
 @app.route('/add_entry', methods=['POST'])
 def add_entry():
     data = request.json or {}
-    beschreibung = data.get("beschreibung")
+    beschreibung = (data.get("beschreibung") or '').strip()
     datum = data.get("datum")
     startzeit = data.get("startzeit")
     endzeit = data.get("endzeit")
     typ = data.get("typ")
+    fach = (data.get("fach") or '').strip()
+
+    if datum and 'T' in datum:
+        date_part, time_part = datum.split('T', 1)
+        if not startzeit:
+            startzeit = time_part or None
+        datum = date_part
+
+    if startzeit:
+        if len(startzeit) == 5:
+            startzeit = f"{startzeit}:00"
+        startzeit = startzeit[:8]
+    if endzeit:
+        if len(endzeit) == 5:
+            endzeit = f"{endzeit}:00"
+        endzeit = endzeit[:8]
+
+    if not typ or not datum:
+        return jsonify(status="error", message="typ und datum sind erforderlich"), 400
+
     conn = get_connection(); cur = conn.cursor()
     try:
         cur.execute(
-            "INSERT INTO eintraege (beschreibung, datum, startzeit, endzeit, typ) VALUES (%s,%s,%s,%s,%s)",
-            (beschreibung, datum, startzeit, endzeit, typ)
+            "INSERT INTO eintraege (beschreibung, datum, startzeit, endzeit, typ, fach) VALUES (%s,%s,%s,%s,%s,%s)",
+            (beschreibung, datum, startzeit, endzeit, typ, fach)
         )
         conn.commit()
         return jsonify(status="ok")

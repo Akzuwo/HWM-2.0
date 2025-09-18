@@ -188,42 +188,86 @@ function showEntryForm() {
     const overlay = document.getElementById('entry-modal-overlay');
     if (overlay) {
         overlay.style.display = 'block';
+        const form = document.getElementById('entry-form');
+        if (form) {
+            form.reset();
+            const typeSelect = document.getElementById('typ');
+            if (typeSelect) {
+                typeSelect.value = 'event';
+            }
+        }
         return;
     }
     clearContent();
     document.getElementById('content').innerHTML = `
-        <h2>📝 Create New Entry</h2>
-        <select id="typ">
-            <option value="hausaufgabe">Homework</option>
-            <option value="pruefung">Exam</option>
-        </select><br>
-        <select id="fach">
-            ${[
-                'MA','DE','EN','PS','SPM-PS','SPM-MA','SPM-ES','SP','WR','GS',
-                'GG','IN','IT','FR','BG','MU','BI','Sport','CH','PH','SMU'
-            ].map(f => `<option>${f}</option>`).join('')}
-        </select><br>
-        <input id="beschreibung" placeholder="Description"><br>
-        <input type="datetime-local" id="datum"><br>
-        <button id="saveButton" onclick="saveEntry()">Add</button>
-
+        <h2>📝 Create a New Entry</h2>
+        <form id="entry-form" onsubmit="saveEntry(event)">
+            <label>
+                Type:
+                <select id="typ" required>
+                    <option value="hausaufgabe">Homework</option>
+                    <option value="pruefung">Exam</option>
+                    <option value="event" selected>Event</option>
+                </select>
+            </label><br>
+            <label>
+                Subject:
+                <select id="fach" required>
+                    <option value="">– please select –</option>
+                    ${[
+                        'MA','DE','EN','PS','SPM-PS','SPM-MA','SPM-ES','SP','WR','GS',
+                        'GG','IN','IT','FR','BG','MU','BI','Sport','CH','PH','SMU'
+                    ].map(f => `<option>${f}</option>`).join('')}
+                </select>
+            </label><br>
+            <label>
+                Description (optional):
+                <textarea id="beschreibung" rows="3" placeholder="Short description"></textarea>
+            </label><br>
+            <label>
+                Date &amp; time:
+                <input type="datetime-local" id="datum" required>
+            </label><br>
+            <button type="submit" id="saveButton">Add</button>
+        </form>
     `;
 }
 
-async function saveEntry() {
+async function saveEntry(event) {
+    if (event) {
+        event.preventDefault();
+    }
+
     const typ = document.getElementById('typ').value;
     const fach = document.getElementById('fach').value;
-    const beschreibung = document.getElementById('beschreibung').value;
-    const datum = document.getElementById('datum').value;
-    const saveButton = document.getElementById('saveButton');  // Stelle sicher, dass der Button diese ID hat
+    const beschreibung = document.getElementById('beschreibung').value.trim();
+    const datumInput = document.getElementById('datum').value;
+    const saveButton = document.getElementById('saveButton');
+    const form = document.getElementById('entry-form');
 
-    // Button deaktivieren und visuelles Feedback geben (optional)
+    if (!saveButton) {
+        console.error('Save button not found.');
+        return;
+    }
+
+    if (!fach) {
+        showOverlay('Please select a subject.');
+        return;
+    }
+    if (!datumInput) {
+        showOverlay('Please select a date.');
+        return;
+    }
+
+    const [datePart, timePartRaw] = datumInput.split('T');
+    const startzeit = timePartRaw ? `${timePartRaw}:00` : null;
+
+    // Disable button for feedback
     saveButton.disabled = true;
     saveButton.innerText = "Saving...";
 
     let success = false;
     let attempt = 0;
-    // Maximal 10 Versuche (optional; du kannst hier auch unbegrenzt versuchen, solltest aber eine Abbruchlogik einbauen)
     const maxAttempts = 10;
 
     while (!success && attempt < maxAttempts) {
@@ -231,7 +275,7 @@ async function saveEntry() {
             const response = await fetch('https://homework-manager-2-0-backend.onrender.com/add_entry', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ typ, fach, beschreibung, datum })
+                body: JSON.stringify({ typ, fach, beschreibung, datum: datePart, startzeit })
             });
             const result = await response.json();
 
@@ -241,6 +285,13 @@ async function saveEntry() {
                 closeEntryModal();
                 document.getElementById('overlay-close')
                     .addEventListener('click', () => location.reload(), { once: true });
+                if (form) {
+                    form.reset();
+                    const typeSelect = document.getElementById('typ');
+                    if (typeSelect) {
+                        typeSelect.value = 'event';
+                    }
+                }
             } else {
                 console.error("Server error while saving:", result.message);
             }
@@ -260,13 +311,16 @@ async function saveEntry() {
         showOverlay("The entry could not be saved after several attempts. Please try again later.");
     } else {
         // Reset input fields
-        document.getElementById('typ').value = "";
-        document.getElementById('fach').value = "";
-        document.getElementById('beschreibung').value = "";
-        document.getElementById('datum').value = "";
+        if (form) {
+            form.reset();
+            const typeSelect = document.getElementById('typ');
+            if (typeSelect) {
+                typeSelect.value = 'event';
+            }
+        }
     }
 
-    // Button wieder aktivieren
+    // Re-enable button
     saveButton.disabled = false;
     saveButton.innerText = "Add";
 }
