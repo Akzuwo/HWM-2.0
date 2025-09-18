@@ -34,9 +34,10 @@
       <!-- VIEW MODE -->
       <div id="fc-view-mode">
         <h2 id="fc-modal-title"></h2>
-        <p><strong>Fach:</strong> <span id="fc-modal-subject"></span></p>
-        <p><strong>Datum:</strong> <span id="fc-modal-date"></span></p>
-        <div id="fc-modal-desc"></div>
+        <p><strong>Tipo:</strong> <span id="fc-modal-type"></span></p>
+        <p><strong>Materia:</strong> <span id="fc-modal-subject"></span></p>
+        <p><strong>Data:</strong> <span id="fc-modal-date"></span></p>
+        <div id="fc-modal-desc" class="fc-modal-desc"></div>
       </div>
 
       <!-- EDIT MODE (solo admin) -->
@@ -47,12 +48,17 @@
 
         <label>
           Abbreviazione materia:
-          <input type="text" id="fc-edit-subject">
+          <input type="text" id="fc-edit-subject" maxlength="100" required>
         </label>
 
         <label>
           Data (AAAA-MM-GG):
-          <input type="date" id="fc-edit-date">
+          <input type="date" id="fc-edit-date" required>
+        </label>
+
+        <label>
+          Ora d'inizio (opzionale):
+          <input type="time" id="fc-edit-start">
         </label>
 
         <label>
@@ -75,19 +81,21 @@
 
       <button class="close-btn" onclick="closeEntryModal()">✖</button>
 
-      <h2>📝 Crea nuova voce</h2>
-      <form id="entry-form">
+      <h2>📝 Crea una nuova voce</h2>
+      <form id="entry-form" onsubmit="saveEntry(event)">
         <label>
           Tipo:
-          <select id="typ">
+          <select id="typ" required>
             <option value="hausaufgabe">Compito</option>
             <option value="pruefung">Esame</option>
+            <option value="event">Evento</option>
           </select>
         </label>
 
         <label>
           Materia:
-          <select id="fach">
+          <select id="fach" required>
+            <option value="">– seleziona –</option>
             <option>MA</option>
             <option>DE</option>
             <option>EN</option>
@@ -113,16 +121,16 @@
         </label>
 
         <label>
-          Descrizione:
-          <input id="beschreibung" placeholder="Descrizione">
+          Descrizione (facoltativa):
+          <textarea id="beschreibung" rows="3" placeholder="Breve descrizione"></textarea>
         </label>
 
         <label>
-          Data:
-          <input type="datetime-local" id="datum">
+          Data e ora:
+          <input type="datetime-local" id="datum" required>
         </label>
 
-        <button type="button" id="saveButton" onclick="saveEntry()">Aggiungi</button>
+        <button type="submit" id="saveButton">Aggiungi</button>
       </form>
     </div>
   </div>

@@ -188,33 +188,79 @@ function showEntryForm() {
     const overlay = document.getElementById('entry-modal-overlay');
     if (overlay) {
         overlay.style.display = 'block';
+        const form = document.getElementById('entry-form');
+        if (form) {
+            form.reset();
+            const typeSelect = document.getElementById('typ');
+            if (typeSelect) {
+                typeSelect.value = 'event';
+            }
+        }
         return;
     }
     clearContent();
     document.getElementById('content').innerHTML = `
         <h2>📝 Neuen Eintrag erstellen</h2>
-        <select id="typ">
-            <option value="hausaufgabe">Hausaufgabe</option>
-            <option value="pruefung">Prüfung</option>
-        </select><br>
-        <select id="fach">
-            ${[
-                'MA','DE','EN','PS','SPM-PS','SPM-MA','SPM-ES','SP','WR','GS',
-                'GG','IN','IT','FR','BG','MU','BI','Sport','CH','PH','SMU'
-            ].map(f => `<option>${f}</option>`).join('')}
-        </select><br>
-        <input id="beschreibung" placeholder="Beschreibung"><br>
-        <input type="datetime-local" id="datum"><br>
-        <button id="saveButton" onclick="saveEntry()">Hinzufügen</button>
+        <form id="entry-form" onsubmit="saveEntry(event)">
+            <label>
+                Typ:
+                <select id="typ" required>
+                    <option value="hausaufgabe">Hausaufgabe</option>
+                    <option value="pruefung">Prüfung</option>
+                    <option value="event" selected>Event</option>
+                </select>
+            </label><br>
+            <label>
+                Fach:
+                <select id="fach" required>
+                    <option value="">– bitte wählen –</option>
+                    ${[
+                        'MA','DE','EN','PS','SPM-PS','SPM-MA','SPM-ES','SP','WR','GS',
+                        'GG','IN','IT','FR','BG','MU','BI','Sport','CH','PH','SMU'
+                    ].map(f => `<option>${f}</option>`).join('')}
+                </select>
+            </label><br>
+            <label>
+                Beschreibung (optional):
+                <textarea id="beschreibung" rows="3" placeholder="Kurzbeschreibung"></textarea>
+            </label><br>
+            <label>
+                Datum &amp; Uhrzeit:
+                <input type="datetime-local" id="datum" required>
+            </label><br>
+            <button type="submit" id="saveButton">Hinzufügen</button>
+        </form>
     `;
 }
 
-async function saveEntry() {
+async function saveEntry(event) {
+    if (event) {
+        event.preventDefault();
+    }
+
     const typ = document.getElementById('typ').value;
     const fach = document.getElementById('fach').value;
-    const beschreibung = document.getElementById('beschreibung').value;
-    const datum = document.getElementById('datum').value;
+    const beschreibung = document.getElementById('beschreibung').value.trim();
+    const datumInput = document.getElementById('datum').value;
     const saveButton = document.getElementById('saveButton');
+    const form = document.getElementById('entry-form');
+
+    if (!saveButton) {
+        console.error('Kein Speicher-Button gefunden.');
+        return;
+    }
+
+    if (!fach) {
+        showOverlay('Bitte wähle ein Fach aus.');
+        return;
+    }
+    if (!datumInput) {
+        showOverlay('Bitte wähle ein Datum.');
+        return;
+    }
+
+    const [datePart, timePartRaw] = datumInput.split('T');
+    const startzeit = timePartRaw ? `${timePartRaw}:00` : null;
 
     // Button deaktivieren und visuelles Feedback geben
     saveButton.disabled = true;
@@ -229,7 +275,7 @@ async function saveEntry() {
             const response = await fetch('https://homework-manager-2-0-backend.onrender.com/add_entry', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ typ, fach, beschreibung, datum })
+                body: JSON.stringify({ typ, fach, beschreibung, datum: datePart, startzeit })
             });
             const result = await response.json();
 
@@ -239,6 +285,13 @@ async function saveEntry() {
                 closeEntryModal();
                 document.getElementById('overlay-close')
                     .addEventListener('click', () => location.reload(), { once: true });
+                if (form) {
+                    form.reset();
+                    const typeSelect = document.getElementById('typ');
+                    if (typeSelect) {
+                        typeSelect.value = 'event';
+                    }
+                }
             } else {
                 console.error("Server-Fehler beim Speichern:", result.message);
             }
@@ -256,10 +309,13 @@ async function saveEntry() {
     if (!success) {
         showOverlay("Der Eintrag konnte nach mehreren Versuchen nicht gespeichert werden. Bitte versuche es später noch einmal.");
     } else {
-        document.getElementById('typ').value = "";
-        document.getElementById('fach').value = "";
-        document.getElementById('beschreibung').value = "";
-        document.getElementById('datum').value = "";
+        if (form) {
+            form.reset();
+            const typeSelect = document.getElementById('typ');
+            if (typeSelect) {
+                typeSelect.value = 'event';
+            }
+        }
     }
 
     // Button wieder aktivieren

@@ -34,9 +34,10 @@
       <!-- VIEW MODE -->
       <div id="fc-view-mode">
         <h2 id="fc-modal-title"></h2>
+        <p><strong>Typ:</strong> <span id="fc-modal-type"></span></p>
         <p><strong>Fach:</strong> <span id="fc-modal-subject"></span></p>
         <p><strong>Datum:</strong> <span id="fc-modal-date"></span></p>
-        <div id="fc-modal-desc"></div>
+        <div id="fc-modal-desc" class="fc-modal-desc"></div>
       </div>
 
       <!-- EDIT MODE (nur für Admins) -->
@@ -47,12 +48,17 @@
 
         <label>
           Fachkürzel:
-          <input type="text" id="fc-edit-subject">
+          <input type="text" id="fc-edit-subject" maxlength="100" required>
         </label>
 
         <label>
           Datum (YYYY-MM-DD):
-          <input type="date" id="fc-edit-date">
+          <input type="date" id="fc-edit-date" required>
+        </label>
+
+        <label>
+          Beginn (optional):
+          <input type="time" id="fc-edit-start">
         </label>
 
         <label>
@@ -76,18 +82,20 @@
       <button class="close-btn" onclick="closeEntryModal()">✖</button>
 
       <h2>📝 Neuen Eintrag erstellen</h2>
-      <form id="entry-form">
+      <form id="entry-form" onsubmit="saveEntry(event)">
         <label>
           Typ:
-          <select id="typ">
+          <select id="typ" required>
             <option value="hausaufgabe">Hausaufgabe</option>
             <option value="pruefung">Prüfung</option>
+            <option value="event">Event</option>
           </select>
         </label>
 
         <label>
           Fach:
-          <select id="fach">
+          <select id="fach" required>
+            <option value="">– bitte wählen –</option>
             <option>MA</option>
             <option>DE</option>
             <option>EN</option>
@@ -113,16 +121,16 @@
         </label>
 
         <label>
-          Beschreibung:
-          <input id="beschreibung" placeholder="Beschreibung">
+          Beschreibung (optional):
+          <textarea id="beschreibung" rows="3" placeholder="Kurzbeschreibung"></textarea>
         </label>
 
         <label>
-          Datum:
-          <input type="datetime-local" id="datum">
+          Datum &amp; Uhrzeit:
+          <input type="datetime-local" id="datum" required>
         </label>
 
-        <button type="button" id="saveButton" onclick="saveEntry()">Hinzufügen</button>
+        <button type="submit" id="saveButton">Hinzufügen</button>
       </form>
     </div>
   </div>

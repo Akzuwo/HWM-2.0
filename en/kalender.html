@@ -34,9 +34,10 @@
       <!-- VIEW MODE -->
       <div id="fc-view-mode">
         <h2 id="fc-modal-title"></h2>
+        <p><strong>Type:</strong> <span id="fc-modal-type"></span></p>
         <p><strong>Subject:</strong> <span id="fc-modal-subject"></span></p>
         <p><strong>Date:</strong> <span id="fc-modal-date"></span></p>
-        <div id="fc-modal-desc"></div>
+        <div id="fc-modal-desc" class="fc-modal-desc"></div>
       </div>
 
       <!-- EDIT MODE (admin only) -->
@@ -47,12 +48,17 @@
 
         <label>
           Subject Abbreviation:
-          <input type="text" id="fc-edit-subject">
+          <input type="text" id="fc-edit-subject" maxlength="100" required>
         </label>
 
         <label>
           Date (YYYY-MM-DD):
-          <input type="date" id="fc-edit-date">
+          <input type="date" id="fc-edit-date" required>
+        </label>
+
+        <label>
+          Start time (optional):
+          <input type="time" id="fc-edit-start">
         </label>
 
         <label>
@@ -75,19 +81,21 @@
 
       <button class="close-btn" onclick="closeEntryModal()">✖</button>
 
-      <h2>📝 Create New Entry</h2>
-      <form id="entry-form">
+      <h2>📝 Create a New Entry</h2>
+      <form id="entry-form" onsubmit="saveEntry(event)">
         <label>
           Type:
-          <select id="typ">
+          <select id="typ" required>
             <option value="hausaufgabe">Homework</option>
             <option value="pruefung">Exam</option>
+            <option value="event">Event</option>
           </select>
         </label>
 
         <label>
           Subject:
-          <select id="fach">
+          <select id="fach" required>
+            <option value="">– please select –</option>
             <option>MA</option>
             <option>DE</option>
             <option>EN</option>
@@ -113,16 +121,16 @@
         </label>
 
         <label>
-          Description:
-          <input id="beschreibung" placeholder="Description">
+          Description (optional):
+          <textarea id="beschreibung" rows="3" placeholder="Short description"></textarea>
         </label>
 
         <label>
-          Date:
-          <input type="datetime-local" id="datum">
+          Date &amp; time:
+          <input type="datetime-local" id="datum" required>
         </label>
 
-        <button type="button" id="saveButton" onclick="saveEntry()">Add</button>
+        <button type="submit" id="saveButton">Add</button>
       </form>
     </div>
   </div>

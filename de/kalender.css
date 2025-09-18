@@ -122,3 +122,13 @@ button:hover {
   display: block;
   margin-top: 1em;
 }
+
+.fc-modal-desc {
+  margin-top: 1em;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+.fc-modal-desc em {
+  color: #bbbbbb;
+}
