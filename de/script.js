@@ -228,9 +228,25 @@ function showEntryForm() {
                 Datum &amp; Uhrzeit:
                 <input type="datetime-local" id="datum" required>
             </label><br>
+            <label>
+                Endzeit (optional):
+                <input type="time" id="endzeit">
+            </label><br>
             <button type="submit" id="saveButton">Hinzufügen</button>
         </form>
     `;
+
+    const typeSelect = document.getElementById('typ');
+    const subjectSelect = document.getElementById('fach');
+    if (typeSelect && subjectSelect) {
+        const updateSubjectRequirement = () => {
+            const isEvent = typeSelect.value === 'event';
+            subjectSelect.required = !isEvent;
+            subjectSelect.classList.toggle('optional', isEvent);
+        };
+        typeSelect.addEventListener('change', updateSubjectRequirement);
+        updateSubjectRequirement();
+    }
 }
 
 async function saveEntry(event) {
@@ -242,16 +258,25 @@ async function saveEntry(event) {
     const fach = document.getElementById('fach').value;
     const beschreibung = document.getElementById('beschreibung').value.trim();
     const datumInput = document.getElementById('datum').value;
+    const endzeitField = document.getElementById('endzeit');
+    const endzeitInput = endzeitField ? endzeitField.value : '';
     const saveButton = document.getElementById('saveButton');
     const form = document.getElementById('entry-form');
+    const resetTypeSelection = () => {
+        const typeSelect = document.getElementById('typ');
+        if (typeSelect) {
+            typeSelect.value = 'event';
+            typeSelect.dispatchEvent(new Event('change'));
+        }
+    };
 
     if (!saveButton) {
         console.error('Kein Speicher-Button gefunden.');
         return;
     }
 
-    if (!fach) {
-        showOverlay('Bitte wähle ein Fach aus.');
+    if (typ !== 'event' && !fach) {
+        showOverlay('Bitte wähle ein Fach aus (außer bei Events).');
         return;
     }
     if (!datumInput) {
@@ -261,6 +286,7 @@ async function saveEntry(event) {
 
     const [datePart, timePartRaw] = datumInput.split('T');
     const startzeit = timePartRaw ? `${timePartRaw}:00` : null;
+    const endzeit = endzeitInput ? `${endzeitInput}:00` : null;
 
     // Button deaktivieren und visuelles Feedback geben
     saveButton.disabled = true;
@@ -275,7 +301,7 @@ async function saveEntry(event) {
             const response = await fetch('https://homework-manager-2-0-backend.onrender.com/add_entry', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ typ, fach, beschreibung, datum: datePart, startzeit })
+                body: JSON.stringify({ typ, fach, beschreibung, datum: datePart, startzeit, endzeit })
             });
             const result = await response.json();
 
@@ -287,10 +313,7 @@ async function saveEntry(event) {
                     .addEventListener('click', () => location.reload(), { once: true });
                 if (form) {
                     form.reset();
-                    const typeSelect = document.getElementById('typ');
-                    if (typeSelect) {
-                        typeSelect.value = 'event';
-                    }
+                    resetTypeSelection();
                 }
             } else {
                 console.error("Server-Fehler beim Speichern:", result.message);
@@ -311,10 +334,7 @@ async function saveEntry(event) {
     } else {
         if (form) {
             form.reset();
-            const typeSelect = document.getElementById('typ');
-            if (typeSelect) {
-                typeSelect.value = 'event';
-            }
+            resetTypeSelection();
         }
     }
 
