@@ -97,7 +97,7 @@
           </select>
         </div>
 
-        <div class="fc-form-group">
+        <div class="fc-form-group" data-field="subject">
           <label for="fach">Fach</label>
           <select id="fach" name="fach" required>
             <option value="">– bitte wählen –</option>
@@ -125,14 +125,39 @@
           </select>
         </div>
 
+        <div class="fc-form-group" data-field="event-title" style="display:none;">
+          <label for="event-titel">Event-Titel</label>
+          <input
+            type="text"
+            id="event-titel"
+            name="event-titel"
+            minlength="80"
+            maxlength="120"
+            placeholder="Titel mit 80–120 Zeichen"
+            required
+          >
+        </div>
+
         <div class="fc-form-group">
           <label for="beschreibung">Beschreibung (optional)</label>
           <textarea id="beschreibung" name="beschreibung" rows="3" placeholder="Kurzbeschreibung"></textarea>
         </div>
 
         <div class="fc-form-group">
-          <label for="datum">Datum &amp; Uhrzeit</label>
-          <input type="datetime-local" id="datum" name="datum" required>
+          <label for="datum">Datum (TT.MM.JJJJ)</label>
+          <input
+            type="text"
+            id="datum"
+            name="datum"
+            placeholder="18.09.2025"
+            inputmode="numeric"
+            required
+          >
+        </div>
+
+        <div class="fc-form-group">
+          <label for="startzeit">Startzeit</label>
+          <input type="time" id="startzeit" name="startzeit" required>
         </div>
 
         <div class="fc-form-group">
