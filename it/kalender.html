@@ -46,30 +46,30 @@
         <input type="hidden" id="fc-entry-id">
         <input type="hidden" id="fc-entry-type">
 
-        <label>
-          Abbreviazione materia:
+        <div class="fc-form-group">
+          <label for="fc-edit-subject">Abbreviazione materia</label>
           <input type="text" id="fc-edit-subject" maxlength="100" required>
-        </label>
+        </div>
 
-        <label>
-          Data (AAAA-MM-GG):
+        <div class="fc-form-group">
+          <label for="fc-edit-date">Data (AAAA-MM-GG)</label>
           <input type="date" id="fc-edit-date" required>
-        </label>
+        </div>
 
-        <label>
-          Ora d'inizio (opzionale):
+        <div class="fc-form-group">
+          <label for="fc-edit-start">Ora d'inizio (opzionale)</label>
           <input type="time" id="fc-edit-start">
-        </label>
+        </div>
 
-        <label>
-          Ora di fine (opzionale):
+        <div class="fc-form-group">
+          <label for="fc-edit-end">Ora di fine (opzionale)</label>
           <input type="time" id="fc-edit-end">
-        </label>
+        </div>
 
-        <label>
-          Descrizione:
+        <div class="fc-form-group">
+          <label for="fc-edit-desc">Descrizione</label>
           <textarea id="fc-edit-desc" rows="4"></textarea>
-        </label>
+        </div>
 
         <button type="button" onclick="saveEdit()">Salva</button>
         <button type="button" onclick="deleteEntry()" style="background:#dc3545; color:#fff;">
@@ -88,18 +88,18 @@
 
       <h2>📝 Crea una nuova voce</h2>
       <form id="entry-form" onsubmit="saveEntry(event)">
-        <label>
-          Tipo:
-          <select id="typ" required>
+        <div class="fc-form-group">
+          <label for="typ">Tipo</label>
+          <select id="typ" name="typ" required>
             <option value="hausaufgabe">Compito</option>
             <option value="pruefung">Esame</option>
             <option value="event">Evento</option>
           </select>
-        </label>
+        </div>
 
-        <label>
-          Materia:
-          <select id="fach" required>
+        <div class="fc-form-group">
+          <label for="fach">Materia</label>
+          <select id="fach" name="fach" required>
             <option value="">– seleziona –</option>
             <option>MA</option>
             <option>DE</option>
@@ -123,22 +123,22 @@
             <option>PH</option>
             <option>SMU</option>
           </select>
-        </label>
+        </div>
 
-        <label>
-          Descrizione (facoltativa):
-          <textarea id="beschreibung" rows="3" placeholder="Breve descrizione"></textarea>
-        </label>
+        <div class="fc-form-group">
+          <label for="beschreibung">Descrizione (facoltativa)</label>
+          <textarea id="beschreibung" name="beschreibung" rows="3" placeholder="Breve descrizione"></textarea>
+        </div>
 
-        <label>
-          Data e ora:
-          <input type="datetime-local" id="datum" required>
-        </label>
+        <div class="fc-form-group">
+          <label for="datum">Data e ora</label>
+          <input type="datetime-local" id="datum" name="datum" required>
+        </div>
 
-        <label>
-          Orario di fine (opzionale):
-          <input type="time" id="endzeit">
-        </label>
+        <div class="fc-form-group">
+          <label for="endzeit">Orario di fine (opzionale)</label>
+          <input type="time" id="endzeit" name="endzeit">
+        </div>
 
         <button type="submit" id="saveButton">Aggiungi</button>
       </form>
