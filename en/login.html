@@ -10,10 +10,24 @@
 <body>
   <div class="login-container">
     <img src="../media/logo.png" alt="Logo" class="login-logo">
-    <h2>🔒 Login</h2>
-    <input type="password" id="passwort" placeholder="Password">
-    <button onclick="login()">Login</button>
-    <button onclick="guestLogin()">Continue as Guest</button>
+    <h2 class="login-title">🔒 Login</h2>
+    <form class="login-form" onsubmit="event.preventDefault(); login();">
+      <div class="form-group">
+        <label for="passwort">Password</label>
+        <div class="password-field">
+          <input type="password" id="passwort" class="form-control" placeholder="Password" autofocus onkeyup="handlePasswordKey(event)">
+          <button type="button" id="toggle-password" class="toggle-password" aria-label="Show password" onclick="togglePasswordVisibility()">
+            <span class="eye-icon" aria-hidden="true"></span>
+          </button>
+        </div>
+        <div id="login-feedback" class="login-feedback" role="alert" aria-live="polite"></div>
+      </div>
+      <div class="login-actions">
+        <button type="button" class="login-button" onclick="login()">Login</button>
+        <button type="button" class="guest-button" onclick="guestLogin()">Continue as Guest</button>
+        <p class="guest-info">Continue as guest</p>
+      </div>
+    </form>
   </div>
 
   <script src="overlay.js" defer></script>
