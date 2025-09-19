@@ -1,39 +1,18 @@
-async function aktuellesFachLaden() {
-    // Funzione locale per il recupero dei dati
-    async function update() {
-        try {
-            const res  = await fetch('https://homework-manager-2-0-backend.onrender.com/aktuelles_fach');
-            const data = await res.json();
+document.addEventListener('DOMContentLoaded', () => {
+  if (typeof initCurrentSubjectPage !== 'function') {
+    console.warn('initCurrentSubjectPage is not available.');
+    return;
+  }
 
-            document.getElementById('fachInfo').innerHTML = `
-                <h2>Materia attuale: ${data.fach}</h2>
-                <p><strong>Rimanente:</strong> ${data.verbleibend}</p>
-                <p><strong>Aula:</strong> ${data.raum}</p>
-                <hr>
-                <h3>Lezione successiva</h3>
-                <p><strong>Materia:</strong> ${data.naechstes_fach}</p>
-                <p><strong>Inizio:</strong> ${data.naechste_start}</p>
-                <p><strong>Aula:</strong> ${data.naechster_raum}</p>
-            `;
-        } catch (error) {
-            console.error('Errore durante il recupero della materia attuale:', error);
-            document.getElementById('fachInfo').innerHTML =
-                '<p>Errore durante il caricamento dei dati.</p>';
-        }
-    }
-
-    // Cancella l'intervallo esistente se impostato
-    if (window.fachInterval) {
-        clearInterval(window.fachInterval);
-    }
-
-    // Carica una volta immediatamente…
-    await update();
-    // …e poi aggiorna automaticamente ogni 500 ms
-    window.fachInterval = setInterval(update, 500);
-}
-
-// Chiamata iniziale
-aktuellesFachLaden();
-
-
+  initCurrentSubjectPage({
+    text: {
+      baseTitle: 'Materia attuale',
+      countdownLabel: 'Tempo rimanente',
+      progressLabel: 'Avanzamento della lezione',
+      freeSlot: 'Ora libera',
+      noLesson: 'Nessuna lezione in corso.',
+      noNextLesson: "Nessun'altra lezione oggi.",
+      error: 'Impossibile caricare i dati.',
+    },
+  });
+});

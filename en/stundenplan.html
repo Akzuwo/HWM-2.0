@@ -6,7 +6,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Schedule</title>
+  <title>Current Subject</title>
   <link rel="icon" type="image/png" href="../media/logo.png">
   <link rel="stylesheet" href="../utils/css/style.css">
   <link rel="stylesheet" href="../utils/css/stundenplan.css">
@@ -19,30 +19,95 @@
       <a class="nav-button" href="kalender.html">📅 Calendar</a>
       <a class="nav-button" href="upcoming.html">🔔 Upcoming Events</a>
       <a class="nav-button" href="notenrechner.html">📊 Grade Calculator</a>
+      <a class="nav-button is-active" href="stundenplan.html" aria-current="page">🕒 Current Subject</a>
     </div>
   </nav>
-  <div id="plan-container" class="container">
-    <h1>🕒 Current Subject</h1>
-    <div id="fachInfo">Loading…</div>
-    <button type="button" onclick="window.location.href='tagesuebersicht.html'">📅 Daily Overview</button>
-    <button type="button" id="back-button" onclick="window.location.href='index.html'">◀️ Back</button>
-  </div>
+  <main class="current-subject" data-current-subject>
+    <header class="current-subject__header">
+      <h1 class="current-subject__title">
+        <span class="current-subject__title-icon" aria-hidden="true">🕒</span>
+        <span>Current Subject</span>
+        <span class="current-subject__title-subject" data-subject-name>· —</span>
+      </h1>
+    </header>
+    <section class="current-subject__status">
+      <div class="current-subject__countdown" aria-live="polite">
+        <span class="current-subject__countdown-label" data-countdown-label>Time remaining</span>
+        <span class="current-subject__countdown-value" data-countdown-value>--:--</span>
+      </div>
+      <div
+        class="current-subject__progress"
+        data-progress
+        role="progressbar"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-valuenow="0"
+      >
+        <div class="current-subject__progress-bar" data-progress-bar></div>
+      </div>
+    </section>
+    <div class="current-subject__grid">
+      <section class="current-subject__section" aria-labelledby="current-lesson-heading">
+        <h2 id="current-lesson-heading">Current Lesson</h2>
+        <p class="current-subject__empty-note" data-current-empty hidden>
+          No lesson in progress.
+        </p>
+        <dl class="current-subject__info-list" data-current-details>
+          <div class="current-subject__info-row">
+            <dt>Start</dt>
+            <dd class="is-mono" data-current-start>--:--</dd>
+          </div>
+          <div class="current-subject__info-row">
+            <dt>End</dt>
+            <dd class="is-mono" data-current-end>--:--</dd>
+          </div>
+          <div class="current-subject__info-row">
+            <dt>Room</dt>
+            <dd data-current-room>–</dd>
+          </div>
+        </dl>
+      </section>
+      <section class="current-subject__section" aria-labelledby="next-lesson-heading">
+        <h2 id="next-lesson-heading">Next Lesson</h2>
+        <p class="current-subject__empty-note" data-next-empty hidden>
+          No further lessons today.
+        </p>
+        <dl class="current-subject__info-list" data-next-details>
+          <div class="current-subject__info-row">
+            <dt>Subject</dt>
+            <dd data-next-subject>–</dd>
+          </div>
+          <div class="current-subject__info-row">
+            <dt>Start</dt>
+            <dd class="is-mono" data-next-start>--:--</dd>
+          </div>
+          <div class="current-subject__info-row">
+            <dt>Room</dt>
+            <dd data-next-room>–</dd>
+          </div>
+        </dl>
+      </section>
+    </div>
+    <hr class="current-subject__divider" />
+    <div class="current-subject__actions">
+      <a class="current-subject__button current-subject__button--primary" href="tagesuebersicht.html">
+        <span aria-hidden="true">📅</span>
+        <span>Daily Overview</span>
+      </a>
+      <a class="current-subject__button current-subject__button--secondary" href="index.html">
+        <span aria-hidden="true">◀️</span>
+        <span>Back</span>
+      </a>
+    </div>
+    <footer class="current-subject__footer">
+      ©️ Timo Wigger 2025 |
+      <a href="cdn-cgi/l/email-protection.html#17637e7a78607e707072652f57707a767e7b3974787a">Contact</a>
+    </footer>
+  </main>
 
   <script src="../utils/js/overlay.js" defer></script>
+  <script src="../utils/js/current-subject.js" defer></script>
   <script src="stundenplan.js" defer></script>
-
-  <footer style="
-           text-align: center;
-           margin-top: 30px;
-           padding: 10px 0;
-           border-top: 1px solid #ccc;
-           font-size: 0.9em;
-         ">
-    ©️ Timo Wigger 2025 |
-    <a href="cdn-cgi/l/email-protection.html#17637e7a78607e707072652f57707a767e7b3974787a" style="color: inherit; text-decoration: underline;">
-      Kontakt
-    </a>
-  </footer>
 </body>
 <!-- Mirrored from homework-manager.akzuwo.ch/stundenplan by HTTrack Website Copier/3.x [XR&CO'2014], Fri, 22 Aug 2025 06:36:31 GMT -->
 </html>

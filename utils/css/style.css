@@ -584,6 +584,19 @@ button {
     background: #2b2b2b;
 }
 
+.nav-button.is-active,
+.nav-button[aria-current="page"] {
+    background: rgba(59, 130, 246, 0.18);
+    border-color: rgba(59, 130, 246, 0.4);
+    color: #bfdbfe;
+    box-shadow: 0 4px 20px rgba(37, 99, 235, 0.25);
+}
+
+.nav-button.is-active:hover,
+.nav-button[aria-current="page"]:hover {
+    background: rgba(59, 130, 246, 0.25);
+}
+
 @media (max-width: 650px) {
     .simple-nav {
         flex-direction: column;
