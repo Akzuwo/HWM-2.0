@@ -8,94 +8,165 @@ const zusaetzlichInput = document.getElementById('zusaetzlich');
 const berechnenButton = document.getElementById('berechnen');
 
 const messages = {
-  invalidNumber: 'Inserisci numeri validi.',
-  required: 'Compila entrambi i campi.'
+  invalidNumber: 'Inserisci valori validi, per favore.',
+  required: 'Compila entrambi i campi, per favore.',
+  gradeRange: 'Il voto deve essere compreso tra 1 e 6.',
+  weightPositive: 'Il peso deve essere maggiore di 0.',
+  targetRange: 'La media desiderata deve essere compresa tra 1 e 6.',
+  nextWeight: 'Il peso del prossimo voto deve essere maggiore di 0.'
 };
 
 const noten = [];
 let editingIndex = null;
+
+const MIN_GRADE = 1;
+const MAX_GRADE = 6;
+
+function parseValue(input) {
+  const value = input.value.trim();
+  return value === '' ? NaN : parseFloat(value);
+}
+
+function isValidGrade(value) {
+  return Number.isFinite(value) && value >= MIN_GRADE && value <= MAX_GRADE;
+}
+
+function isPositive(value) {
+  return Number.isFinite(value) && value > 0;
+}
 
 function setError(message = '') {
   if (!errorMessage) return;
   errorMessage.textContent = message;
 }
 
+function updateButtonStates() {
+  const gradeValue = parseValue(noteInput);
+  const weightValue = parseValue(gewichtungInput);
+  const targetValue = parseValue(zielInput);
+  const nextWeightValue = parseValue(zusaetzlichInput);
+
+  const enableAdd = isValidGrade(gradeValue) && isPositive(weightValue);
+  const enableCalc = isValidGrade(targetValue) && isPositive(nextWeightValue) && noten.length > 0;
+
+  addButton.disabled = !enableAdd;
+  addButton.setAttribute('aria-disabled', String(!enableAdd));
+
+  berechnenButton.disabled = !enableCalc;
+  berechnenButton.setAttribute('aria-disabled', String(!enableCalc));
+  berechnenButton.classList.toggle('btn--primary', enableCalc);
+  berechnenButton.classList.toggle('btn--ghost', !enableCalc);
+}
+
 function validateInputs(showFeedback = false) {
-  const noteValue = noteInput.value.trim();
-  const gewichtungValue = gewichtungInput.value.trim();
+  const gradeRaw = noteInput.value.trim();
+  const weightRaw = gewichtungInput.value.trim();
+  const gradeValue = gradeRaw === '' ? NaN : parseFloat(gradeRaw);
+  const weightValue = weightRaw === '' ? NaN : parseFloat(weightRaw);
   let valid = true;
   let message = '';
 
   noteInput.classList.remove('invalid');
   gewichtungInput.classList.remove('invalid');
 
-  if (noteValue === '' || gewichtungValue === '') {
+  if (gradeRaw === '' || weightRaw === '') {
     valid = false;
-    if (showFeedback) {
-      message = messages.required;
-    }
+    message = messages.required;
   }
 
-  if (noteValue !== '' && isNaN(noteValue)) {
+  if (gradeRaw !== '' && Number.isNaN(gradeValue)) {
     valid = false;
     noteInput.classList.add('invalid');
-    if (showFeedback) {
-      message = messages.invalidNumber;
-    }
+    message = messages.invalidNumber;
   }
 
-  if (gewichtungValue !== '' && isNaN(gewichtungValue)) {
+  if (weightRaw !== '' && Number.isNaN(weightValue)) {
     valid = false;
     gewichtungInput.classList.add('invalid');
-    if (showFeedback) {
+    if (!message || message === messages.required) {
       message = messages.invalidNumber;
     }
   }
 
-  addButton.disabled = !valid;
-  if (showFeedback) {
-    setError(message);
-  } else if (valid) {
+  if (!Number.isNaN(gradeValue) && !isValidGrade(gradeValue)) {
+    valid = false;
+    noteInput.classList.add('invalid');
+    if (!message || message === messages.required) {
+      message = messages.gradeRange;
+    }
+  }
+
+  if (!Number.isNaN(weightValue) && !isPositive(weightValue)) {
+    valid = false;
+    gewichtungInput.classList.add('invalid');
+    if (!message || message === messages.required) {
+      message = messages.weightPositive;
+    }
+  }
+
+  if (!valid && showFeedback) {
+    setError(message || messages.invalidNumber);
+  } else if (!showFeedback || valid) {
     setError('');
   }
+
+  updateButtonStates();
   return valid;
 }
 
 function validateGoalInputs(showFeedback = false) {
-  const zielValue = zielInput.value.trim();
-  const zusaetzlichValue = zusaetzlichInput.value.trim();
+  const zielRaw = zielInput.value.trim();
+  const zusaetzlichRaw = zusaetzlichInput.value.trim();
+  const zielValue = zielRaw === '' ? NaN : parseFloat(zielRaw);
+  const zusaetzlichValue = zusaetzlichRaw === '' ? NaN : parseFloat(zusaetzlichRaw);
   let valid = true;
   let message = '';
 
   zielInput.classList.remove('invalid');
   zusaetzlichInput.classList.remove('invalid');
 
-  if (zielValue === '' || zusaetzlichValue === '') {
+  if (zielRaw === '' || zusaetzlichRaw === '') {
     valid = false;
     message = messages.required;
   }
 
-  if (zielValue !== '' && isNaN(zielValue)) {
+  if (zielRaw !== '' && Number.isNaN(zielValue)) {
     valid = false;
     zielInput.classList.add('invalid');
-    message = messages.invalidNumber;
-  }
-
-  if (zusaetzlichValue !== '') {
-    const parsedValue = parseFloat(zusaetzlichValue);
-    if (isNaN(parsedValue) || parsedValue === 0) {
-      valid = false;
-      zusaetzlichInput.classList.add('invalid');
+    if (!message) {
       message = messages.invalidNumber;
     }
   }
 
-  berechnenButton.disabled = !valid;
+  if (zusaetzlichRaw !== '' && Number.isNaN(zusaetzlichValue)) {
+    valid = false;
+    zusaetzlichInput.classList.add('invalid');
+    if (!message) {
+      message = messages.invalidNumber;
+    }
+  }
+
+  if (!Number.isNaN(zielValue) && !isValidGrade(zielValue)) {
+    valid = false;
+    zielInput.classList.add('invalid');
+    if (!message) {
+      message = messages.targetRange;
+    }
+  }
+
+  if (!Number.isNaN(zusaetzlichValue) && !isPositive(zusaetzlichValue)) {
+    valid = false;
+    zusaetzlichInput.classList.add('invalid');
+    if (!message) {
+      message = messages.nextWeight;
+    }
+  }
 
   if (!valid && showFeedback) {
     showOverlay(message || messages.invalidNumber);
   }
 
+  updateButtonStates();
   return valid;
 }
 
@@ -153,37 +224,57 @@ function cancelEdit() {
 }
 
 function saveEdit(index, noteField, gewichtField) {
-  const noteValue = noteField.value.trim();
-  const gewichtValue = gewichtField.value.trim();
+  const noteRaw = noteField.value.trim();
+  const gewichtRaw = gewichtField.value.trim();
+  const noteValue = noteRaw === '' ? NaN : parseFloat(noteRaw);
+  const gewichtValue = gewichtRaw === '' ? NaN : parseFloat(gewichtRaw);
   let message = '';
   let valid = true;
 
   noteField.classList.remove('invalid');
   gewichtField.classList.remove('invalid');
 
-  if (noteValue === '' || gewichtValue === '') {
+  if (noteRaw === '' || gewichtRaw === '') {
     message = messages.required;
     valid = false;
   }
 
-  if (noteValue !== '' && isNaN(noteValue)) {
+  if (noteRaw !== '' && Number.isNaN(noteValue)) {
     noteField.classList.add('invalid');
     message = messages.invalidNumber;
     valid = false;
   }
 
-  if (gewichtValue !== '' && isNaN(gewichtValue)) {
+  if (gewichtRaw !== '' && Number.isNaN(gewichtValue)) {
     gewichtField.classList.add('invalid');
-    message = messages.invalidNumber;
+    if (!message) {
+      message = messages.invalidNumber;
+    }
+    valid = false;
+  }
+
+  if (!Number.isNaN(noteValue) && !isValidGrade(noteValue)) {
+    noteField.classList.add('invalid');
+    if (!message) {
+      message = messages.gradeRange;
+    }
+    valid = false;
+  }
+
+  if (!Number.isNaN(gewichtValue) && !isPositive(gewichtValue)) {
+    gewichtField.classList.add('invalid');
+    if (!message) {
+      message = messages.weightPositive;
+    }
     valid = false;
   }
 
   if (!valid) {
-    setError(message);
+    setError(message || messages.invalidNumber);
     return;
   }
 
-  noten[index] = { note: parseFloat(noteValue), gewichtung: parseFloat(gewichtValue) };
+  noten[index] = { note: noteValue, gewichtung: gewichtValue };
   editingIndex = null;
   setError('');
   notenListeUpdate();
@@ -277,7 +368,7 @@ function notenListeUpdate() {
       const delBtn = document.createElement('button');
       delBtn.type = 'button';
       delBtn.className = 'delete-btn';
-      delBtn.textContent = '✖';
+      delBtn.textContent = '✕';
       delBtn.setAttribute('aria-label', 'Elimina voto');
       delBtn.addEventListener('click', (event) => {
         event.stopPropagation();
@@ -293,10 +384,14 @@ function notenListeUpdate() {
     tbody.appendChild(tr);
   });
 
-  clearAllButton.disabled = noten.length === 0;
+  const disableClear = noten.length === 0;
+  clearAllButton.disabled = disableClear;
+  clearAllButton.setAttribute('aria-disabled', String(disableClear));
   if (!noten.length) {
     document.getElementById('zielNote').textContent = 'Voto necessario: -';
   }
+
+  updateButtonStates();
 }
 
 addButton.addEventListener('click', noteHinzufuegen);
