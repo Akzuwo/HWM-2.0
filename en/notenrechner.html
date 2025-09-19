@@ -12,6 +12,27 @@
   <link rel="stylesheet" href="notenrechner.css">
 </head>
 <body>
+  <nav class="simple-nav noten-nav">
+    <div class="nav-title">Homework Manager</div>
+    <div class="nav-links">
+      <a class="nav-button" href="kalender.html">📅 Calendar</a>
+      <a class="nav-button" href="upcoming.html">🔔 Upcoming</a>
+      <a class="nav-button" href="stundenplan.html">🕒 Current Subject</a>
+      <a class="nav-button nav-button--active" href="notenrechner.html" aria-current="page">📊 Grade Calculator</a>
+      <a class="nav-button" href="#" onclick="logout()">🚪 Log out</a>
+      <div class="language-dropdown" id="language-dropdown">
+        <button type="button" class="language-button">
+          <span class="current-lang">EN</span>
+          <span class="arrow">▼</span>
+        </button>
+        <div class="language-menu">
+          <div data-lang="de">Deutsch</div>
+          <div data-lang="en">English</div>
+          <div data-lang="it">Italiano</div>
+        </div>
+      </div>
+    </div>
+  </nav>
   <div class="container" id="notenrechner-container">
     <header class="page-header">
       <h2>📊 Grade Calculator</h2>
@@ -27,13 +48,13 @@
           <label class="field-label" for="gewichtung">Weight</label>
           <input id="gewichtung" class="field-control" type="number" step="0.01" placeholder="e.g. 1">
         </div>
-        <button type="button" id="add" class="primary-action" disabled>Add</button>
+        <button type="button" id="add" class="btn btn--primary" disabled aria-disabled="true">Add</button>
       </div>
 
       <p id="inputError" class="error-message" aria-live="polite"></p>
 
       <div class="noten-actions">
-        <button type="button" id="clearAll" class="danger-secondary" disabled>Clear all</button>
+        <button type="button" id="clearAll" class="btn btn--ghost" disabled aria-disabled="true">Clear all</button>
       </div>
 
       <table id="notenTabelle" class="noten-tabelle">
@@ -48,16 +69,17 @@
       <div id="zielInput" class="ziel-inputs">
         <input id="ziel" class="field-control" type="number" step="0.01" placeholder="Target average">
         <input id="zusaetzlich" class="field-control" type="number" step="0.01" placeholder="Weight of next grade">
-        <button type="button" id="berechnen" class="secondary-action" disabled>Calculate</button>
+        <button type="button" id="berechnen" class="btn btn--ghost" disabled aria-disabled="true">Calculate</button>
       </div>
 
       <div id="zielNote" class="noten-summary">Required grade: -</div>
     </main>
 
     <div id="buttons" class="page-actions">
-      <button type="button" class="secondary-action back-button" onclick="window.location.href='index.html'">◀️ Back</button>
+      <button type="button" class="btn btn--ghost back-button" onclick="window.location.href='index.html'">◀️ Back</button>
     </div>
   </div>
+  <script src="script.js" defer></script>
   <script src="overlay.js" defer></script>
   <script src="notenrechner.js" defer></script>
 

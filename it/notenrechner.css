@@ -25,14 +25,13 @@
 #notenrechner-container .ziel-inputs {
   display: flex;
   flex-wrap: wrap;
-  gap: 24px;
-  align-items: flex-end;
+  gap: 16px;
+  align-items: stretch;
 }
 
 #notenrechner-container .field-group {
-  flex: 1 1 160px;
-  min-width: 150px;
-  max-width: 200px;
+  flex: 1 1 220px;
+  min-width: 200px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -62,9 +61,7 @@
   outline-offset: 2px;
 }
 
-#notenrechner-container .primary-action,
-#notenrechner-container .secondary-action,
-#notenrechner-container .danger-secondary {
+#notenrechner-container .btn {
   margin: 0;
   width: auto;
   display: inline-flex;
@@ -76,54 +73,74 @@
   font-weight: 700;
   letter-spacing: 0.02em;
   border: 1px solid transparent;
+  background: #2b2b2b;
+  color: #f5f5f5;
   transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
-#notenrechner-container .primary-action {
+#notenrechner-container .btn:focus-visible {
+  outline: 2px solid #3f6cff;
+  outline-offset: 2px;
+}
+
+#notenrechner-container .btn--primary {
   background: #1e4bff;
   border-color: #1e4bff;
   color: #fff;
   box-shadow: 0 6px 18px rgba(30, 75, 255, 0.25);
 }
 
-#notenrechner-container .primary-action:disabled,
-#notenrechner-container .secondary-action:disabled,
-#notenrechner-container .danger-secondary:disabled {
-  background: #242424;
-  color: #777;
-  border-color: #242424;
-  box-shadow: none;
-  cursor: not-allowed;
-}
-
-#notenrechner-container .primary-action:not(:disabled):hover {
+#notenrechner-container .btn--primary:not(:disabled):hover {
   background: #365dff;
   box-shadow: 0 10px 24px rgba(54, 93, 255, 0.35);
   transform: translateY(-2px);
 }
 
-#notenrechner-container .secondary-action,
-#notenrechner-container .danger-secondary {
-  background: #2b2b2b;
-  color: #f5f5f5;
+#notenrechner-container .btn--ghost {
   border-color: #3d3d3d;
 }
 
-#notenrechner-container .secondary-action:not(:disabled):hover,
-#notenrechner-container .danger-secondary:not(:disabled):hover {
+#notenrechner-container .btn--ghost:not(:disabled):hover {
   background: #3a3a3a;
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.35);
   transform: translateY(-2px);
 }
 
-#notenrechner-container .danger-secondary {
-  color: #f5f5f5;
+#notenrechner-container .btn--danger {
+  background: #8b1e3f;
+  border-color: #b74b68;
+  color: #fff;
 }
 
-#notenrechner-container .noten-inputs .primary-action {
+#notenrechner-container .btn--danger:not(:disabled):hover {
+  background: #a52b55;
+  box-shadow: 0 8px 16px rgba(165, 43, 85, 0.35);
+}
+
+#notenrechner-container .btn--danger:not(:disabled):active {
+  background: #731730;
+}
+
+#notenrechner-container .btn:disabled,
+#notenrechner-container .btn[aria-disabled="true"] {
+  background: #242424;
+  color: #777;
+  border-color: #242424;
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+}
+
+#notenrechner-container .noten-inputs .btn {
   flex: 0 0 auto;
-  min-width: 140px;
-  align-self: flex-end;
+  min-width: 160px;
+  align-self: stretch;
+}
+
+#notenrechner-container .ziel-inputs .btn {
+  flex: 0 0 auto;
+  min-width: 160px;
+  align-self: stretch;
 }
 
 #notenrechner-container .noten-actions {
@@ -150,27 +167,39 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
   font-weight: 700;
   letter-spacing: 0.02em;
 }
 
 #notenrechner-container .delete-btn {
   padding: 0;
-  font-size: 0.7rem;
-  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  border-radius: 9999px;
   background: #8b1e3f;
+  border: 1px solid #b74b68;
   color: #fff;
-  border: 1px solid #a43252;
-  min-width: 48px;
-  min-height: 48px;
+  font-size: 0.85rem;
   line-height: 1;
-  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 #notenrechner-container .delete-btn:hover {
-  background: #b21e4b;
-  box-shadow: 0 8px 16px rgba(178, 30, 75, 0.35);
+  background: #a52b55;
+  box-shadow: 0 6px 18px rgba(165, 43, 85, 0.35);
+  transform: translateY(-1px);
+}
+
+#notenrechner-container .delete-btn:active {
+  background: #731730;
+  transform: translateY(0);
+}
+
+#notenrechner-container .delete-btn:focus-visible {
+  outline: 2px solid rgba(255, 123, 156, 0.8);
+  outline-offset: 2px;
 }
 
 #notenrechner-container .edit-actions {
@@ -196,6 +225,98 @@
 
 #notenrechner-container .edit-btn.cancel-btn:hover {
   background: #c62852;
+}
+
+.noten-nav .nav-links {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.noten-nav .nav-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.noten-nav .nav-button--active {
+  background: #1e4bff;
+  border-color: #1e4bff;
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(30, 75, 255, 0.25);
+}
+
+.noten-nav .language-dropdown {
+  position: relative;
+}
+
+.noten-nav .language-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #1e1e1e;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 10px 16px;
+  color: inherit;
+  cursor: pointer;
+}
+
+.noten-nav .language-button:focus-visible {
+  outline: 2px solid #3f6cff;
+  outline-offset: 2px;
+}
+
+.noten-nav .language-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  display: flex;
+  flex-direction: column;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  min-width: 160px;
+  padding: 6px 0;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 250;
+}
+
+.noten-nav .language-dropdown.open .language-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.noten-nav .language-menu div {
+  padding: 8px 16px;
+  cursor: pointer;
+}
+
+.noten-nav .language-menu div:hover {
+  background: #2b2b2b;
+}
+
+@media (max-width: 720px) {
+  #notenrechner-container .noten-inputs > * {
+    flex: 1 1 100%;
+  }
+
+  #notenrechner-container .ziel-inputs > * {
+    flex: 1 1 100%;
+  }
+
+  .noten-nav .nav-links {
+    width: 100%;
+  }
+
+  .noten-nav .language-dropdown {
+    margin-left: auto;
+  }
 }
 
 #notenrechner-container .edit-field {

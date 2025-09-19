@@ -12,6 +12,27 @@
   <link rel="stylesheet" href="notenrechner.css">
 </head>
 <body>
+  <nav class="simple-nav noten-nav">
+    <div class="nav-title">Homework Manager</div>
+    <div class="nav-links">
+      <a class="nav-button" href="kalender.html">📅 Kalender</a>
+      <a class="nav-button" href="upcoming.html">🔔 Upcoming Events</a>
+      <a class="nav-button" href="stundenplan.html">🕒 Aktuelles Fach</a>
+      <a class="nav-button nav-button--active" href="notenrechner.html" aria-current="page">📊 Notenrechner</a>
+      <a class="nav-button" href="#" onclick="logout()">🚪 Abmelden</a>
+      <div class="language-dropdown" id="language-dropdown">
+        <button type="button" class="language-button">
+          <span class="current-lang">DE</span>
+          <span class="arrow">▼</span>
+        </button>
+        <div class="language-menu">
+          <div data-lang="de">Deutsch</div>
+          <div data-lang="en">English</div>
+          <div data-lang="it">Italiano</div>
+        </div>
+      </div>
+    </div>
+  </nav>
   <div class="container" id="notenrechner-container">
     <header class="page-header">
       <h2>📊 Notenrechner</h2>
@@ -27,13 +48,13 @@
           <label class="field-label" for="gewichtung">Gewichtung</label>
           <input id="gewichtung" class="field-control" type="number" step="0.01" placeholder="z. B. 1">
         </div>
-        <button type="button" id="add" class="primary-action" disabled>Hinzufügen</button>
+        <button type="button" id="add" class="btn btn--primary" disabled aria-disabled="true">Hinzufügen</button>
       </div>
 
       <p id="inputError" class="error-message" aria-live="polite"></p>
 
       <div class="noten-actions">
-        <button type="button" id="clearAll" class="danger-secondary" disabled>Alle löschen</button>
+        <button type="button" id="clearAll" class="btn btn--ghost" disabled aria-disabled="true">Alle löschen</button>
       </div>
 
       <table id="notenTabelle" class="noten-tabelle">
@@ -48,16 +69,17 @@
       <div id="zielInput" class="ziel-inputs">
         <input id="ziel" class="field-control" type="number" step="0.01" placeholder="Ziel-Schnitt">
         <input id="zusaetzlich" class="field-control" type="number" step="0.01" placeholder="Gewichtung der nächsten Note">
-        <button type="button" id="berechnen" class="secondary-action" disabled>Berechnen</button>
+        <button type="button" id="berechnen" class="btn btn--ghost" disabled aria-disabled="true">Berechnen</button>
       </div>
 
       <div id="zielNote" class="noten-summary">Benötigte Note: -</div>
     </main>
 
     <div id="buttons" class="page-actions">
-      <button type="button" class="secondary-action back-button" onclick="window.location.href='index.html'">◀️ Zurück</button>
+      <button type="button" class="btn btn--ghost back-button" onclick="window.location.href='index.html'">◀️ Zurück</button>
     </div>
   </div>
+  <script src="script.js" defer></script>
   <script src="overlay.js" defer></script>
   <script src="notenrechner.js" defer></script>
 
