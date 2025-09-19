@@ -1,79 +1,191 @@
 <!DOCTYPE html>
 <html lang="it">
-
-<!-- Mirrored from homework-manager.akzuwo.ch/kalender by HTTrack Website Copier/3.x [XR&CO'2014], Fri, 22 Aug 2025 06:36:30 GMT -->
-<!-- Added by HTTrack --><meta http-equiv="content-type" content="text/html;charset=utf-8" /><!-- /Added by HTTrack -->
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Calendario</title>
-  <link rel="icon" type="image/png" href="../media/logo.png">
-
-  <!-- FullCalendar Standard-CSS -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="calendar.pageTitle">Calendario</title>
+  <link rel="icon" type="image/png" href="../media/logo.png" />
   <link
     rel="stylesheet"
     href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css"
   />
-  <link rel="stylesheet" href="../utils/css/style.css">
-  <link rel="stylesheet" href="../utils/css/kalender.css">
-
+  <link rel="stylesheet" href="../utils/css/style.css" />
+  <link rel="stylesheet" href="../utils/css/kalender.css" />
 </head>
 <body>
-  <h1>📅 Calendario</h1>
-  <div id="content">
-    <div id="calendar">Caricamento del calendario…</div>
-    <button id="export-button" onclick="window.location.href='https://homework-manager-2-0-backend.onrender.com/calendar.ics'">📤 Esporta</button>
-  </div>
+  <a class="skip-link" href="#main" data-i18n="common.skipToContent">Salta al contenuto</a>
+  <nav class="simple-nav" data-nav>
+    <div class="nav-title">
+      <img src="../media/logo.png" alt="" width="28" height="28" />
+      <span data-i18n="common.appName">Homework Manager</span>
+    </div>
+    <button
+      class="nav-toggle"
+      type="button"
+      aria-expanded="false"
+      aria-controls="calendar-nav-links"
+    >
+      <span aria-hidden="true"></span>
+    </button>
+    <div class="nav-links" id="calendar-nav-links">
+      <a class="nav-button" href="index.html" data-i18n="common.nav.home">🏠 Panoramica</a>
+      <a
+        class="nav-button"
+        aria-current="page"
+        href="kalender.html"
+        data-i18n="common.nav.calendar"
+        >📅 Calendario</a
+      >
+      <a class="nav-button" href="upcoming.html" data-i18n="common.nav.upcoming">🔔 Prossimi eventi</a>
+      <a class="nav-button" href="notenrechner.html" data-i18n="common.nav.grades">📊 Calcolatore di voti</a>
+      <a class="nav-button" href="stundenplan.html" data-i18n="common.nav.currentSubject">🕒 Materia attuale</a>
+      <a class="nav-button" href="#" onclick="logout()" data-i18n="common.nav.logout">🚪 Disconnettersi</a>
+      <div class="language-dropdown" id="language-dropdown">
+        <button type="button" class="language-button">
+          <span class="current-lang">IT</span>
+          <span class="arrow">▼</span>
+        </button>
+        <div class="language-menu">
+          <div data-lang="de">Deutsch</div>
+          <div data-lang="en">English</div>
+          <div data-lang="it">Italiano</div>
+        </div>
+      </div>
+    </div>
+  </nav>
 
-  <!-- Modal (initial versteckt) -->
+  <main class="calendar-page" id="main">
+    <section class="calendar-intro">
+      <div class="calendar-intro__heading">
+        <h1 data-i18n="calendar.heading">📅 Calendario</h1>
+        <p data-i18n="calendar.description">
+          Gestisci compiti, verifiche ed eventi in un'interfaccia scura e coerente.
+        </p>
+      </div>
+      <div class="calendar-legend" role="list">
+        <span class="calendar-legend__item" data-type="hausaufgabe" role="listitem">
+          <span class="calendar-legend__dot" aria-hidden="true"></span>
+          <span data-i18n="calendar.legend.homework">Compito</span>
+        </span>
+        <span class="calendar-legend__item" data-type="pruefung" role="listitem">
+          <span class="calendar-legend__dot" aria-hidden="true"></span>
+          <span data-i18n="calendar.legend.exam">Verifica</span>
+        </span>
+        <span class="calendar-legend__item" data-type="event" role="listitem">
+          <span class="calendar-legend__dot" aria-hidden="true"></span>
+          <span data-i18n="calendar.legend.event">Evento</span>
+        </span>
+      </div>
+    </section>
+
+    <section class="calendar-shell" aria-live="polite">
+      <div class="calendar-weekstrip" data-week-strip>
+        <span class="calendar-weekstrip__label" data-i18n="calendar.weekStrip.label">Settimane</span>
+        <div class="calendar-weekstrip__list" data-week-strip-list role="listbox"></div>
+      </div>
+      <div id="calendar" data-i18n="calendar.status.loading">Caricamento del calendario …</div>
+    </section>
+  </main>
+
+  <footer
+    class="calendar-action-bar"
+    data-i18n-attr="aria-label:calendar.actionBar.label"
+    aria-label="Azioni del calendario"
+  >
+    <div class="calendar-action-bar__inner">
+      <button
+        type="button"
+        class="calendar-action"
+        data-action="create"
+        data-i18n-attr="aria-label:calendar.actions.create.tooltip,title:calendar.actions.create.tooltip"
+      >
+        <span class="calendar-action__icon" aria-hidden="true">➕</span>
+        <span class="calendar-action__label" data-i18n="calendar.actions.create.label">Nuova voce</span>
+      </button>
+      <button
+        type="button"
+        class="calendar-action"
+        data-action="export"
+        data-i18n-attr="aria-label:calendar.actions.export.tooltip,title:calendar.actions.export.tooltip"
+      >
+        <span class="calendar-action__icon" aria-hidden="true">📤</span>
+        <span class="calendar-action__label" data-i18n="calendar.actions.export.label">Esporta</span>
+      </button>
+      <button
+        type="button"
+        class="calendar-action"
+        data-action="back"
+        data-i18n-attr="aria-label:calendar.actions.back.tooltip,title:calendar.actions.back.tooltip"
+      >
+        <span class="calendar-action__icon" aria-hidden="true">◀️</span>
+        <span class="calendar-action__label" data-i18n="calendar.actions.back.label">Panoramica</span>
+      </button>
+    </div>
+  </footer>
+
   <div id="fc-modal-overlay" class="hm-modal-overlay" onclick="closeModal()">
     <div class="hm-modal" role="dialog" aria-modal="true" tabindex="-1" onclick="event.stopPropagation()">
       <header class="hm-modal__header">
-        <button type="button" class="hm-modal__close" onclick="closeModal()" aria-label="Chiudi">×</button>
+        <button
+          type="button"
+          class="hm-modal__close"
+          onclick="closeModal()"
+          aria-label="Chiudi"
+          data-i18n-attr="aria-label:calendar.modal.buttons.close"
+        >
+          ×
+        </button>
         <div class="hm-modal__title-wrapper">
-          <h2 id="fc-modal-title" class="hm-modal__title">Voce di calendario</h2>
+          <h2 id="fc-modal-title" class="hm-modal__title" data-i18n="calendar.modal.viewTitle">Voce di calendario</h2>
         </div>
         <span class="hm-modal__header-spacer" aria-hidden="true"></span>
       </header>
 
-      <div id="fc-view-mode" style="display:none;">
+      <div id="fc-view-mode" class="hm-modal__section">
         <div class="hm-modal__body">
           <div class="hm-modal__field">
-            <label>Tipo</label>
+            <label data-i18n="calendar.modal.labels.type">Tipo</label>
             <span id="fc-modal-type"></span>
           </div>
           <div class="hm-modal__field">
-            <label data-view-label="subject">Materia</label>
+            <label data-view-label="subject" data-i18n="calendar.modal.labels.subject">Materia</label>
             <span id="fc-modal-subject"></span>
           </div>
           <div class="hm-modal__field">
-            <label>Data</label>
+            <label data-i18n="calendar.modal.labels.date">Data</label>
             <span id="fc-modal-date"></span>
           </div>
         </div>
-        <div id="fc-modal-desc" class="hm-modal__desc"></div>
+        <div id="fc-modal-desc" class="hm-modal__desc" data-i18n-html="calendar.modal.noDescription"></div>
         <div class="hm-modal__footer">
-          <button type="button" class="hm-btn hm-btn--secondary" onclick="closeModal()">Chiudi</button>
+          <button
+            type="button"
+            class="hm-btn hm-btn--secondary"
+            onclick="closeModal()"
+            data-i18n="calendar.modal.buttons.close"
+          >
+            Chiudi
+          </button>
         </div>
       </div>
 
-      <form id="fc-edit-form" class="hm-modal__form" style="display:none;" onsubmit="saveEdit(event)" novalidate>
-        <input type="hidden" id="fc-entry-id">
+      <form id="fc-edit-form" class="hm-modal__form is-hidden" onsubmit="saveEdit(event)" novalidate>
+        <input type="hidden" id="fc-entry-id" />
 
         <div class="hm-modal__body">
           <div class="hm-modal__field" data-field="type">
-            <label for="fc-edit-type">Tipo</label>
+            <label for="fc-edit-type" data-i18n="calendar.modal.labels.type">Tipo</label>
             <select id="fc-edit-type" name="typ" required data-hm-modal-initial-focus>
-              <option value="hausaufgabe">Compito</option>
-              <option value="pruefung">Esame</option>
-              <option value="event">Evento</option>
+              <option value="hausaufgabe" data-i18n="calendar.legend.homework">Compito</option>
+              <option value="pruefung" data-i18n="calendar.legend.exam">Verifica</option>
+              <option value="event" data-i18n="calendar.legend.event">Evento</option>
             </select>
           </div>
 
           <div class="hm-modal__field" data-field="subject">
-            <label for="fc-edit-subject">Materia</label>
+            <label for="fc-edit-subject" data-i18n="calendar.modal.labels.subject">Materia</label>
             <select id="fc-edit-subject" name="fach">
-              <option value="">– seleziona –</option>
+              <option value="" data-i18n="calendar.modal.placeholders.subject">– seleziona –</option>
               <option>MA</option>
               <option>DE</option>
               <option>EN</option>
@@ -98,36 +210,78 @@
             </select>
           </div>
 
-          <div class="hm-modal__field" data-field="event-title" style="display:none;">
-            <label for="fc-edit-event-title">Titolo evento</label>
-            <input type="text" id="fc-edit-event-title" name="event-titel" placeholder="Nome dell'evento">
+          <div class="hm-modal__field is-hidden" data-field="event-title">
+            <label for="fc-edit-event-title" data-i18n="calendar.modal.labels.eventTitle">Titolo evento</label>
+            <input
+              type="text"
+              id="fc-edit-event-title"
+              name="event-titel"
+              placeholder="Nome dell'evento"
+              data-i18n-attr="placeholder:calendar.modal.placeholders.eventTitle"
+            />
           </div>
 
           <div class="hm-modal__field" data-field="date">
-            <label for="fc-edit-date">Data (GG.MM.AAAA)</label>
-            <input type="text" id="fc-edit-date" name="datum" inputmode="numeric" placeholder="18.09.2025" required>
+            <label for="fc-edit-date" data-i18n="calendar.modal.labels.dateWithFormat">Data (GG.MM.AAAA)</label>
+            <input
+              type="text"
+              id="fc-edit-date"
+              name="datum"
+              inputmode="numeric"
+              placeholder="18.09.2025"
+              required
+              data-i18n-attr="placeholder:calendar.modal.placeholders.date"
+            />
           </div>
 
           <div class="hm-modal__field" data-field="start">
-            <label for="fc-edit-start">Ora di inizio</label>
-            <input type="time" id="fc-edit-start" name="startzeit">
+            <label for="fc-edit-start" data-i18n="calendar.modal.labels.start">Ora di inizio</label>
+            <input type="time" id="fc-edit-start" name="startzeit" />
           </div>
 
           <div class="hm-modal__field" data-field="end">
-            <label for="fc-edit-end">Ora di fine</label>
-            <input type="time" id="fc-edit-end" name="endzeit">
+            <label for="fc-edit-end" data-i18n="calendar.modal.labels.end">Ora di fine</label>
+            <input type="time" id="fc-edit-end" name="endzeit" />
           </div>
 
           <div class="hm-modal__field" data-field="description">
-            <label for="fc-edit-desc">Descrizione</label>
-            <textarea id="fc-edit-desc" name="beschreibung" rows="4" placeholder="Dettagli della voce"></textarea>
+            <label for="fc-edit-desc" data-i18n="calendar.modal.labels.description">Descrizione</label>
+            <textarea
+              id="fc-edit-desc"
+              name="beschreibung"
+              rows="4"
+              placeholder="Dettagli"
+              data-i18n-attr="placeholder:calendar.modal.placeholders.description"
+            ></textarea>
           </div>
         </div>
 
         <div class="hm-modal__footer">
-          <button type="button" class="hm-btn hm-btn--secondary" data-role="cancel">Annulla</button>
-          <button type="submit" class="hm-btn hm-btn--primary" data-role="submit">Salva</button>
-          <button type="button" class="hm-btn hm-btn--danger" data-role="delete" onclick="deleteEntry()">Elimina</button>
+          <button
+            type="button"
+            class="hm-btn hm-btn--secondary"
+            data-role="cancel"
+            data-i18n="calendar.modal.buttons.cancel"
+          >
+            Annulla
+          </button>
+          <button
+            type="submit"
+            class="hm-btn hm-btn--primary"
+            data-role="submit"
+            data-i18n="calendar.modal.buttons.save"
+          >
+            Salva
+          </button>
+          <button
+            type="button"
+            class="hm-btn hm-btn--danger"
+            data-role="delete"
+            onclick="deleteEntry()"
+            data-i18n="calendar.modal.buttons.delete"
+          >
+            Elimina
+          </button>
         </div>
       </form>
     </div>
@@ -136,9 +290,17 @@
   <div id="entry-modal-overlay" class="hm-modal-overlay" onclick="closeEntryModal()">
     <div class="hm-modal" role="dialog" aria-modal="true" tabindex="-1" onclick="event.stopPropagation()">
       <header class="hm-modal__header">
-        <button type="button" class="hm-modal__close" onclick="closeEntryModal()" aria-label="Chiudi">×</button>
+        <button
+          type="button"
+          class="hm-modal__close"
+          onclick="closeEntryModal()"
+          aria-label="Chiudi"
+          data-i18n-attr="aria-label:calendar.modal.buttons.close"
+        >
+          ×
+        </button>
         <div class="hm-modal__title-wrapper">
-          <h2 class="hm-modal__title">📝 Crea una nuova voce</h2>
+          <h2 class="hm-modal__title" data-i18n="calendar.modal.createTitle">📝 Crea una nuova voce</h2>
         </div>
         <span class="hm-modal__header-spacer" aria-hidden="true"></span>
       </header>
@@ -146,18 +308,18 @@
       <form id="entry-form" class="hm-modal__form" onsubmit="saveEntry(event)" novalidate>
         <div class="hm-modal__body">
           <div class="hm-modal__field" data-field="type">
-            <label for="typ">Tipo</label>
+            <label for="typ" data-i18n="calendar.modal.labels.type">Tipo</label>
             <select id="typ" name="typ" required data-hm-modal-initial-focus>
-              <option value="hausaufgabe">Compito</option>
-              <option value="pruefung">Esame</option>
-              <option value="event">Evento</option>
+              <option value="hausaufgabe" data-i18n="calendar.legend.homework">Compito</option>
+              <option value="pruefung" data-i18n="calendar.legend.exam">Verifica</option>
+              <option value="event" data-i18n="calendar.legend.event">Evento</option>
             </select>
           </div>
 
           <div class="hm-modal__field" data-field="subject">
-            <label for="fach">Materia</label>
+            <label for="fach" data-i18n="calendar.modal.labels.subject">Materia</label>
             <select id="fach" name="fach">
-              <option value="">– seleziona –</option>
+              <option value="" data-i18n="calendar.modal.placeholders.subject">– seleziona –</option>
               <option>MA</option>
               <option>DE</option>
               <option>EN</option>
@@ -182,53 +344,81 @@
             </select>
           </div>
 
-          <div class="hm-modal__field" data-field="event-title" style="display:none;">
-            <label for="event-titel">Titolo evento</label>
-            <input type="text" id="event-titel" name="event-titel" placeholder="Nome dell'evento">
-            <p class="field-hint">Campo obbligatorio per gli eventi.</p>
+          <div class="hm-modal__field is-hidden" data-field="event-title">
+            <label for="event-titel" data-i18n="calendar.modal.labels.eventTitle">Titolo evento</label>
+            <input
+              type="text"
+              id="event-titel"
+              name="event-titel"
+              placeholder="Nome dell'evento"
+              data-i18n-attr="placeholder:calendar.modal.placeholders.eventTitle"
+            />
+            <p class="field-hint" data-i18n="calendar.modal.hints.eventTitle">Obbligatorio per gli eventi.</p>
           </div>
 
           <div class="hm-modal__field" data-field="description">
-            <label for="beschreibung">Descrizione (facoltativa)</label>
-            <textarea id="beschreibung" name="beschreibung" rows="3" placeholder="Breve descrizione"></textarea>
+            <label for="beschreibung" data-i18n="calendar.modal.labels.descriptionOptional">Descrizione (facoltativa)</label>
+            <textarea
+              id="beschreibung"
+              name="beschreibung"
+              rows="3"
+              placeholder="Descrizione breve"
+              data-i18n-attr="placeholder:calendar.modal.placeholders.descriptionShort"
+            ></textarea>
           </div>
 
           <div class="hm-modal__field" data-field="date">
-            <label for="datum">Data (GG.MM.AAAA)</label>
-            <input type="text" id="datum" name="datum" placeholder="18.09.2025" inputmode="numeric" required>
+            <label for="datum" data-i18n="calendar.modal.labels.dateWithFormat">Data (GG.MM.AAAA)</label>
+            <input
+              type="text"
+              id="datum"
+              name="datum"
+              placeholder="18.09.2025"
+              inputmode="numeric"
+              required
+              data-i18n-attr="placeholder:calendar.modal.placeholders.date"
+            />
           </div>
 
           <div class="hm-modal__field" data-field="start">
-            <label for="startzeit">Ora di inizio</label>
-            <input type="time" id="startzeit" name="startzeit" required>
+            <label for="startzeit" data-i18n="calendar.modal.labels.start">Ora di inizio</label>
+            <input type="time" id="startzeit" name="startzeit" required />
           </div>
 
           <div class="hm-modal__field" data-field="end">
-            <label for="endzeit">Ora di fine</label>
-            <input type="time" id="endzeit" name="endzeit">
+            <label for="endzeit" data-i18n="calendar.modal.labels.end">Ora di fine</label>
+            <input type="time" id="endzeit" name="endzeit" />
           </div>
         </div>
 
         <div class="hm-modal__footer">
-          <button type="button" class="hm-btn hm-btn--secondary" onclick="closeEntryModal()">Annulla</button>
-          <button type="submit" id="saveButton" class="hm-btn hm-btn--primary" data-role="submit">Aggiungi</button>
+          <button
+            type="button"
+            class="hm-btn hm-btn--secondary"
+            onclick="closeEntryModal()"
+            data-i18n="calendar.modal.buttons.cancel"
+          >
+            Annulla
+          </button>
+          <button
+            type="submit"
+            id="saveButton"
+            class="hm-btn hm-btn--primary"
+            data-role="submit"
+            data-i18n="calendar.modal.buttons.add"
+          >
+            Aggiungi
+          </button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- FullCalendar Standard-JS -->
-    <script
-      src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"
-      defer
-    ></script>
-    <script src="../utils/js/modal.js" defer></script>
-    <script src="../utils/js/overlay.js" defer></script>
-    <script src="script.js" defer></script>
-    <!-- Dein Kalender-Script -->
-    <script src="kalender.js" defer></script>
-
-  <button id="back-button" onclick="window.location.href='index.html'">◀️ Indietro</button>
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js" defer></script>
+  <script src="../utils/js/i18n.js" defer></script>
+  <script src="../utils/js/modal.js" defer></script>
+  <script src="../utils/js/overlay.js" defer></script>
+  <script src="script.js" defer></script>
+  <script src="kalender.js" defer></script>
 </body>
-<!-- Mirrored from homework-manager.akzuwo.ch/kalender by HTTrack Website Copier/3.x [XR&CO'2014], Fri, 22 Aug 2025 06:36:31 GMT -->
 </html>
