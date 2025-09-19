@@ -1,31 +1,60 @@
 // kalender.js
 
-// Basis‐URL deines Backends
 const API_BASE = 'https://homework-manager-2-0-backend.onrender.com';
-
-// Rolle aus sessionStorage (wird beim Login gesetzt)
 const role = sessionStorage.getItem('role') || 'guest';
-const userIsAdmin = (role === 'admin');
+const userIsAdmin = role === 'admin';
 
-// Sostituzione Markdown per *grassetto*
-function mdBold(text) {
-  return text.replace(/\*(.*?)\*/g, '<strong>$1</strong>');
-}
+const t = window.hmI18n ? window.hmI18n.scope('calendar') : (key, fallback) => fallback;
+const modalT = window.hmI18n ? window.hmI18n.scope('calendar.modal') : (key, fallback) => fallback;
 
 const TYPE_LABELS = {
-  hausaufgabe: 'Compito',
-  pruefung: 'Esame',
-  event: 'Evento'
+  hausaufgabe: t('legend.homework', 'Compito'),
+  pruefung: t('legend.exam', 'Verifica'),
+  event: t('legend.event', 'Evento')
+};
+
+const actionText = {
+  exportLabel: t('actions.export.label', 'Esporta'),
+  exportLoading: t('actions.export.loading', 'Esportazione …'),
+  exportError: t('actions.export.error', 'Errore durante l\'esportazione del calendario.'),
+  exportSuccess: t('actions.export.success', 'Calendario esportato con successo.'),
+  exportFileName: t('actions.export.fileName', 'homework-calendar.ics'),
+  backTooltip: t('actions.back.tooltip', 'Torna alla pagina iniziale'),
+  createTooltip: t('actions.create.tooltip', 'Crea una nuova voce di calendario')
+};
+
+const modalText = {
+  noDescription: modalT('noDescription', '<em>Nessuna descrizione disponibile.</em>'),
+  subjectLabel: modalT('labels.subject', 'Materia'),
+  eventTitleLabel: modalT('labels.eventTitle', 'Titolo evento'),
+  deleteConfirm: modalT('confirmDelete', 'Vuoi davvero eliminare questa voce?'),
+  deleteError: modalT('messages.deleteError', 'Impossibile eliminare la voce.'),
+  saveError: modalT('messages.saveError', 'Impossibile salvare la voce.')
+};
+
+const modalButtons = {
+  save: modalT('buttons.save', 'Salva'),
+  saveLoading: modalT('buttons.saveLoading', 'Salvataggio …'),
+  delete: modalT('buttons.delete', 'Elimina'),
+  deleteLoading: modalT('buttons.deleteLoading', 'Eliminazione …')
 };
 
 let editFormController = null;
+let calendarInstance = null;
+
+function mdBold(text = '') {
+  return text.replace(/\*(.*?)\*/g, '<strong>$1</strong>');
+}
 
 function formatSwissDateFromISO(dateStr) {
   if (!dateStr) return '';
-  const parts = dateStr.split('-');
-  if (parts.length !== 3) return '';
-  const [year, month, day] = parts;
+  const [year, month, day] = dateStr.split('-');
   return `${day.padStart(2, '0')}.${month.padStart(2, '0')}.${year}`;
+}
+
+function parseTimeLabel(value) {
+  if (!value) return '';
+  return value.slice(0, 5);
 }
 
 function splitEventDescription(type, text) {
@@ -41,16 +70,16 @@ function splitEventDescription(type, text) {
 
 function formatDateLabel(dateStr, startStr, endStr) {
   if (!dateStr) return '';
-  const baseDate = `${dateStr}T${startStr || '00:00:00'}`;
-  const dateObj = new Date(baseDate);
-  const dateFormatter = new Intl.DateTimeFormat('it-IT', {
+  const locale = document.documentElement.lang || 'it-IT';
+  const formatter = new Intl.DateTimeFormat(locale, {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric'
   });
-  const formattedDate = dateFormatter.format(dateObj);
-  const startLabel = startStr ? startStr.slice(0,5) : '';
-  const endLabel = endStr ? endStr.slice(0,5) : '';
+  const baseDate = new Date(`${dateStr}T${startStr || '00:00:00'}`);
+  const formattedDate = formatter.format(baseDate);
+  const startLabel = parseTimeLabel(startStr);
+  const endLabel = parseTimeLabel(endStr);
   if (startLabel && endLabel) {
     return `${formattedDate} · ${startLabel} – ${endLabel}`;
   }
@@ -60,17 +89,42 @@ function formatDateLabel(dateStr, startStr, endStr) {
   return formattedDate;
 }
 
-// Apri modal: visualizza vs. modifica
+function debounce(fn, wait = 160) {
+  let timeout = null;
+  return (...args) => {
+    window.clearTimeout(timeout);
+    timeout = window.setTimeout(() => fn(...args), wait);
+  };
+}
+
+function toggleViewMode(isAdmin) {
+  const viewMode = document.getElementById('fc-view-mode');
+  const editForm = document.getElementById('fc-edit-form');
+  if (!viewMode || !editForm) return;
+  if (isAdmin) {
+    viewMode.classList.add('is-hidden');
+    editForm.classList.remove('is-hidden');
+  } else {
+    viewMode.classList.remove('is-hidden');
+    editForm.classList.add('is-hidden');
+  }
+}
+
+function setModalDescription(html) {
+  const description = document.getElementById('fc-modal-desc');
+  if (description) {
+    description.innerHTML = html;
+  }
+}
+
 function openModal(event) {
   const { id } = event;
   const { type, typeLabel, description, fach, datum, startzeit, endzeit } = event.extendedProps;
 
   const overlay = document.getElementById('fc-modal-overlay');
-  const viewMode = document.getElementById('fc-view-mode');
-  const editForm = document.getElementById('fc-edit-form');
   const subjectLabel = document.querySelector('[data-view-label="subject"]');
-  if (!overlay || !viewMode || !editForm) {
-    console.error('Elementi del modal mancanti.');
+  if (!overlay) {
+    console.error("Overlay del modal non trovato.");
     return;
   }
 
@@ -79,22 +133,31 @@ function openModal(event) {
   const eventTitle = storedTitle !== undefined ? storedTitle : computedTitle;
   const detailDescription = descriptionBody !== undefined ? descriptionBody : computedDescription;
   const isEvent = type === 'event';
-  const modalTitle = isEvent
-    ? (eventTitle || typeLabel)
-    : `${typeLabel}${fach ? ` · ${fach}` : ''}`;
-
+  const modalTitle = isEvent ? (eventTitle || typeLabel) : `${typeLabel}${fach ? ` · ${fach}` : ''}`;
   const subjectValue = isEvent ? (eventTitle || '—') : (fach || '—');
-  if (subjectLabel) {
-    subjectLabel.textContent = isEvent ? 'Titolo evento' : 'Materia';
+
+  const titleElement = document.getElementById('fc-modal-title');
+  if (titleElement) {
+    titleElement.textContent = modalTitle;
+  }
+  const typeElement = document.getElementById('fc-modal-type');
+  if (typeElement) {
+    typeElement.textContent = typeLabel;
+  }
+  const subjectElement = document.getElementById('fc-modal-subject');
+  if (subjectElement) {
+    subjectElement.textContent = subjectValue;
+  }
+  const dateElement = document.getElementById('fc-modal-date');
+  if (dateElement) {
+    dateElement.textContent = formatDateLabel(datum, startzeit, endzeit);
   }
 
-  document.getElementById('fc-modal-title').innerText = modalTitle;
-  document.getElementById('fc-modal-type').innerText = typeLabel;
-  document.getElementById('fc-modal-subject').innerText = subjectValue;
-  document.getElementById('fc-modal-date').innerText = formatDateLabel(datum, startzeit, endzeit);
-  document.getElementById('fc-modal-desc').innerHTML = detailDescription
-    ? mdBold(detailDescription)
-    : '<em>Nessuna descrizione disponibile.</em>';
+  setModalDescription(detailDescription ? mdBold(detailDescription) : modalText.noDescription);
+
+  if (subjectLabel) {
+    subjectLabel.textContent = isEvent ? modalText.eventTitleLabel : modalText.subjectLabel;
+  }
 
   const dateInput = document.getElementById('fc-edit-date');
   const descInput = document.getElementById('fc-edit-desc');
@@ -119,32 +182,29 @@ function openModal(event) {
     dateInput.value = formatSwissDateFromISO(datum);
   }
   if (startInput) {
-    startInput.value = startzeit ? startzeit.slice(0, 5) : '';
+    startInput.value = parseTimeLabel(startzeit);
   }
   if (endInput) {
-    endInput.value = endzeit ? endzeit.slice(0, 5) : '';
-    endInput.disabled = !startInput || !startInput.value;
+    endInput.value = parseTimeLabel(endzeit);
+    if (startInput && !startInput.value) {
+      endInput.value = '';
+      endInput.disabled = true;
+    }
   }
   if (descInput) {
     descInput.value = detailDescription;
   }
 
-  editFormController = setupModalFormInteractions(editForm, ENTRY_FORM_MESSAGES);
+  editFormController = setupModalFormInteractions(document.getElementById('fc-edit-form'), ENTRY_FORM_MESSAGES);
   if (editFormController) {
     editFormController.setType(type);
     editFormController.evaluate();
   }
 
-  if (userIsAdmin) {
-    viewMode.style.display = 'none';
-    editForm.style.display = 'flex';
-  } else {
-    viewMode.style.display = 'block';
-    editForm.style.display = 'none';
-  }
+  toggleViewMode(userIsAdmin);
 
   const initialFocusTarget = userIsAdmin
-    ? editForm.querySelector('[data-hm-modal-initial-focus]')
+    ? document.querySelector('#fc-edit-form [data-hm-modal-initial-focus]')
     : overlay.querySelector('.hm-modal__close');
 
   if (window.hmModal) {
@@ -154,13 +214,16 @@ function openModal(event) {
     });
   } else {
     overlay.classList.add('is-open');
+    if (initialFocusTarget && typeof initialFocusTarget.focus === 'function') {
+      initialFocusTarget.focus();
+    }
   }
 }
 
-// Chiudi modal
 function closeModal() {
   const overlay = document.getElementById('fc-modal-overlay');
   const editForm = document.getElementById('fc-edit-form');
+  const viewMode = document.getElementById('fc-view-mode');
   if (overlay) {
     if (window.hmModal) {
       window.hmModal.close(overlay);
@@ -173,11 +236,14 @@ function closeModal() {
     editFormController = setupModalFormInteractions(editForm, ENTRY_FORM_MESSAGES);
     editFormController?.setType('event');
     editFormController?.evaluate();
+    editForm.classList.add('is-hidden');
+  }
+  if (viewMode) {
+    viewMode.classList.remove('is-hidden');
   }
 }
 window.closeModal = closeModal;
 
-// Salva (aggiorna)
 async function saveEdit(evt) {
   if (evt) {
     evt.preventDefault();
@@ -222,17 +288,17 @@ async function saveEdit(evt) {
     return;
   }
 
-  const fach = type === 'event' ? '' : (subjectSelect ? subjectSelect.value.trim() : '');
+  const subject = type === 'event' ? '' : (subjectSelect ? subjectSelect.value.trim() : '');
   const eventTitle = type === 'event' ? (eventTitleInput ? eventTitleInput.value.trim() : '') : '';
-  const beschreibung = descInput ? descInput.value.trim() : '';
+  const description = descInput ? descInput.value.trim() : '';
 
   const payloadDescription = type === 'event'
-    ? eventTitle + (beschreibung ? `\n\n${beschreibung}` : '')
-    : beschreibung;
+    ? eventTitle + (description ? `\n\n${description}` : '')
+    : description;
 
   if (submitButton) {
     submitButton.disabled = true;
-    submitButton.textContent = 'Salvataggio…';
+    submitButton.textContent = modalButtons.saveLoading;
   }
 
   try {
@@ -249,7 +315,7 @@ async function saveEdit(evt) {
         description: payloadDescription,
         startzeit: startValue ? `${startValue}:00` : null,
         endzeit: endValue ? `${endValue}:00` : null,
-        fach
+        fach: subject
       })
     });
     if (!res.ok) {
@@ -260,24 +326,23 @@ async function saveEdit(evt) {
     location.reload();
   } catch (e) {
     console.error('Errore durante il salvataggio:', e);
-    showOverlay('Errore durante il salvataggio:\n' + e.message);
+    showOverlay(`${modalText.saveError}\n${e.message}`);
   } finally {
     if (submitButton) {
       submitButton.disabled = false;
-      submitButton.textContent = 'Salva';
+      submitButton.textContent = modalButtons.save;
     }
   }
 }
 
-// Elimina
 async function deleteEntry() {
   const id = document.getElementById('fc-entry-id').value;
-  if (!confirm('Eliminare davvero questa voce?')) return;
+  if (!confirm(modalText.deleteConfirm)) return;
 
   const deleteButton = document.querySelector('#fc-edit-form [data-role="delete"]');
   if (deleteButton) {
     deleteButton.disabled = true;
-    deleteButton.textContent = 'Eliminazione…';
+    deleteButton.textContent = modalButtons.deleteLoading;
   }
 
   try {
@@ -293,22 +358,279 @@ async function deleteEntry() {
     location.reload();
   } catch (e) {
     console.error('Errore durante l\'eliminazione:', e);
-    showOverlay('Errore durante l\'eliminazione:\n' + e.message);
+    showOverlay(`${modalText.deleteError}\n${e.message}`);
   } finally {
     if (deleteButton) {
       deleteButton.disabled = false;
-      deleteButton.textContent = 'Elimina';
+      deleteButton.textContent = modalButtons.delete;
     }
   }
 }
 
-// Kalender initialisieren
-document.addEventListener('DOMContentLoaded', async () => {
-  const calendarEl = document.getElementById('calendar');
-  if (!calendarEl) {
-    console.log("Nessun elemento calendario trovato – script terminato.");
+window.deleteEntry = deleteEntry;
+window.saveEdit = saveEdit;
+
+function initActionBar() {
+  const actionBar = document.querySelector('.calendar-action-bar');
+  if (!actionBar) return;
+  const createBtn = actionBar.querySelector('[data-action="create"]');
+  const exportBtn = actionBar.querySelector('[data-action="export"]');
+  const backBtn = actionBar.querySelector('[data-action="back"]');
+
+  if (createBtn) {
+    if (!userIsAdmin) {
+      createBtn.disabled = true;
+      createBtn.setAttribute('aria-disabled', 'true');
+    } else {
+      createBtn.addEventListener('click', () => showEntryForm());
+    }
+  }
+
+  if (exportBtn) {
+    exportBtn.addEventListener('click', handleExportClick);
+  }
+
+  if (backBtn) {
+    backBtn.addEventListener('click', () => {
+      window.location.href = 'index.html';
+    });
+  }
+}
+
+async function handleExportClick(event) {
+  const button = event.currentTarget;
+  if (!(button instanceof HTMLElement)) return;
+  const label = button.querySelector('.calendar-action__label');
+  const defaultLabel = label ? label.textContent : actionText.exportLabel;
+  button.classList.add('is-loading');
+  button.disabled = true;
+  if (label) label.textContent = actionText.exportLoading;
+
+  try {
+    const response = await fetch(`${API_BASE}/calendar.ics`);
+    if (!response.ok) {
+      throw new Error(`${response.status}`);
+    }
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const downloadLink = document.createElement('a');
+    downloadLink.href = url;
+    downloadLink.download = actionText.exportFileName || 'homework-calendar.ics';
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+    URL.revokeObjectURL(url);
+    showOverlay(actionText.exportSuccess);
+  } catch (error) {
+    console.error('Esportazione fallita', error);
+    showOverlay(actionText.exportError);
+  } finally {
+    button.classList.remove('is-loading');
+    button.disabled = false;
+    if (label) {
+      label.textContent = defaultLabel || actionText.exportLabel;
+    }
+  }
+}
+
+function updateWeekStrip(calendar) {
+  const container = document.querySelector('[data-week-strip]');
+  const list = document.querySelector('[data-week-strip-list]');
+  if (!container || !list) return;
+
+  if (calendar.view.type !== 'dayGridMonth') {
+    container.classList.add('is-hidden');
+    list.innerHTML = '';
     return;
   }
+
+  container.classList.remove('is-hidden');
+  list.innerHTML = '';
+
+  const rows = Array.from(calendar.el.querySelectorAll('.fc-daygrid-body tr'));
+  const locale = document.documentElement.lang || 'it-IT';
+  const formatter = new Intl.DateTimeFormat(locale, { day: '2-digit', month: '2-digit' });
+  const today = new Date();
+
+  rows.forEach((row, index) => {
+    const firstCell = row.querySelector('[data-date]');
+    const lastCell = row.querySelector('[data-date]:last-of-type');
+    if (!firstCell || !lastCell) return;
+    const startDateStr = firstCell.getAttribute('data-date');
+    const endDateStr = lastCell.getAttribute('data-date');
+    if (!startDateStr || !endDateStr) return;
+
+    const startDate = new Date(`${startDateStr}T00:00:00`);
+    const endDate = new Date(`${endDateStr}T23:59:59`);
+    const marker = calendar.dateEnv.createMarker(startDateStr);
+    const weekNumber = calendar.formatDate(marker, { week: 'numeric' });
+    const isCurrentWeek = today >= startDate && today <= endDate;
+
+    const item = document.createElement('div');
+    item.className = 'calendar-weekstrip__item';
+    if (isCurrentWeek) {
+      item.classList.add('is-current');
+    }
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'calendar-weekstrip__button';
+    button.setAttribute('data-week-index', String(index));
+    button.innerHTML = `
+      <span>${t('weekStrip.week', 'Sett.')} ${weekNumber}</span>
+      <span class="calendar-weekstrip__week">${formatter.format(startDate)} – ${formatter.format(endDate)}</span>
+    `;
+
+    const highlightRow = () => {
+      row.classList.add('is-hovered');
+      item.classList.add('is-hover');
+    };
+    const clearHighlight = () => {
+      row.classList.remove('is-hovered');
+      item.classList.remove('is-hover');
+    };
+
+    button.addEventListener('mouseenter', highlightRow);
+    button.addEventListener('focus', highlightRow);
+    button.addEventListener('mouseleave', clearHighlight);
+    button.addEventListener('blur', clearHighlight);
+
+    item.appendChild(button);
+    list.appendChild(item);
+  });
+}
+
+function createEventContent(info) {
+  const type = info.event.extendedProps.type;
+  const typeLabel = info.event.extendedProps.typeLabel || TYPE_LABELS[type] || info.event.title;
+  const subjectLabel = info.event.title;
+  const startLabel = info.event.extendedProps.startLabel;
+  const endLabel = info.event.extendedProps.endLabel;
+  const metaPieces = [typeLabel];
+  if (startLabel && endLabel) {
+    metaPieces.push(`${startLabel} – ${endLabel}`);
+  } else if (startLabel) {
+    metaPieces.push(startLabel);
+  }
+
+  const container = document.createElement('div');
+  container.className = 'calendar-event';
+  container.setAttribute('data-event-type', type);
+
+  const title = document.createElement('span');
+  title.className = 'calendar-event__title';
+  title.textContent = subjectLabel;
+  container.appendChild(title);
+
+  if (metaPieces.length) {
+    const meta = document.createElement('span');
+    meta.className = 'calendar-event__meta';
+    const dot = document.createElement('span');
+    dot.className = 'calendar-event__dot';
+    meta.appendChild(dot);
+    const metaText = document.createElement('span');
+    metaText.textContent = metaPieces.join(' · ');
+    meta.appendChild(metaText);
+    container.appendChild(meta);
+  }
+
+  return { domNodes: [container] };
+}
+
+function normaliseEvent(entry) {
+  const typeLabel = TYPE_LABELS[entry.typ] || entry.typ;
+  const subject = entry.fach || '';
+  const { eventTitle, description: descriptionBody } = splitEventDescription(entry.typ, entry.beschreibung || '');
+  const displaySubject = entry.typ === 'event' ? (eventTitle || typeLabel) : (subject || typeLabel);
+  const startTime = entry.startzeit ? entry.startzeit.trim() : '';
+  const endTime = entry.endzeit ? entry.endzeit.trim() : '';
+  const startLabel = parseTimeLabel(startTime);
+  const endLabel = parseTimeLabel(endTime);
+
+  const eventConfig = {
+    id: String(entry.id),
+    title: displaySubject,
+    start: startLabel ? `${entry.datum}T${startTime}` : entry.datum,
+    allDay: !startLabel,
+    extendedProps: {
+      type: entry.typ,
+      typeLabel,
+      description: entry.beschreibung || '',
+      fach: subject,
+      datum: entry.datum,
+      startzeit: entry.startzeit,
+      endzeit: entry.endzeit,
+      eventTitle,
+      descriptionBody,
+      startLabel,
+      endLabel
+    }
+  };
+
+  if (endLabel) {
+    eventConfig.end = `${entry.datum}T${entry.endzeit}`;
+  }
+
+  return eventConfig;
+}
+
+function determineInitialView() {
+  return window.matchMedia('(max-width: 767px)').matches ? 'timeGridWeek' : 'dayGridMonth';
+}
+
+function initialiseCalendar(events) {
+  const calendarEl = document.getElementById('calendar');
+  if (!calendarEl) return;
+
+  calendarEl.innerHTML = '';
+
+  const calendar = new FullCalendar.Calendar(calendarEl, {
+    initialView: determineInitialView(),
+    locale: 'it',
+    headerToolbar: {
+      left: 'prev,today,next',
+      center: 'title',
+      right: 'dayGridMonth,timeGridWeek,timeGridDay'
+    },
+    buttonText: {
+      month: t('views.month', 'Mese'),
+      week: t('views.week', 'Settimana'),
+      day: t('views.day', 'Giorno')
+    },
+    events,
+    eventContent: createEventContent,
+    dateClick: (info) => {
+      showEntryForm();
+      const dateInput = document.getElementById('datum');
+      if (dateInput) {
+        dateInput.value = formatSwissDateFromISO(info.dateStr);
+      }
+    },
+    eventClick: (info) => {
+      info.jsEvent.preventDefault();
+      openModal(info.event);
+    },
+    datesSet: () => {
+      updateWeekStrip(calendar);
+    }
+  });
+
+  calendar.render();
+  updateWeekStrip(calendar);
+  calendarInstance = calendar;
+
+  const handleResize = debounce(() => {
+    if (!calendarInstance) return;
+    updateWeekStrip(calendarInstance);
+  }, 180);
+
+  window.addEventListener('resize', handleResize);
+}
+
+async function loadCalendar() {
+  const calendarEl = document.getElementById('calendar');
+  if (!calendarEl) return;
+  calendarEl.textContent = t('status.loading', 'Caricamento del calendario …');
 
   try {
     const res = await fetch(`${API_BASE}/entries`);
@@ -317,78 +639,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     const entries = await res.json();
-    const colorMap = { hausaufgabe: '#007bff', pruefung: '#dc3545', event: '#28a745' };
-    const sanitizeTime = (type, value) => {
-      if (!value) return '';
-      const trimmed = String(value).trim();
-      if (!trimmed) return '';
-      if (type === 'event' && (trimmed === '00:00:00' || trimmed === '00:00')) {
-        return '';
-      }
-      return trimmed;
-    };
-
-    const events = entries.map(e => {
-      const typeLabel = TYPE_LABELS[e.typ] || e.typ;
-      const subject = e.fach || '';
-      const { eventTitle, description: descriptionBody } = splitEventDescription(e.typ, e.beschreibung || '');
-      const displaySubject = e.typ === 'event' ? (eventTitle || '—') : (subject || '—');
-      const startTime = sanitizeTime(e.typ, e.startzeit);
-      const endTime = sanitizeTime(e.typ, e.endzeit);
-      const start = startTime ? `${e.datum}T${startTime}` : e.datum;
-      const end = endTime ? `${e.datum}T${endTime}` : undefined;
-      const eventConfig = {
-        id: String(e.id),
-        title: `${typeLabel} · ${displaySubject}`,
-        start,
-        allDay: !startTime,
-        color: colorMap[e.typ] || '#000',
-        extendedProps: {
-          type: e.typ,
-          typeLabel,
-          description: e.beschreibung || '',
-          fach: subject,
-          datum: e.datum,
-          startzeit: e.startzeit,
-          endzeit: e.endzeit,
-          eventTitle,
-          descriptionBody
-        }
-      };
-      if (end) {
-        eventConfig.end = end;
-      }
-      return eventConfig;
-    });
-    // Remove loading text once events are ready
-    calendarEl.textContent = '';
-
-    const calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: 'dayGridMonth',
-        locale:      'it',
-        headerToolbar: {
-          left:   'prev,next today',
-          center: 'title',
-          right:  'dayGridMonth,timeGridWeek,timeGridDay'
-        },
-        events,
-        dateClick: info => {
-          showEntryForm();
-          const dateInput = document.getElementById('datum');
-          if (dateInput) {
-            dateInput.value = formatSwissDateFromISO(info.dateStr);
-          }
-        },
-        eventClick: info => {
-          info.jsEvent.preventDefault();
-          openModal(info.event);
-        }
-      });
-
-    calendar.render();
+    const events = entries.map(normaliseEvent);
+    initialiseCalendar(events);
   } catch (err) {
     console.error('Errore durante il caricamento del calendario:', err);
-    calendarEl.innerText = "Errore durante il caricamento delle voci del calendario!";
+    calendarEl.textContent = t('status.error', 'Impossibile caricare le voci del calendario!');
   }
+}
 
+window.addEventListener('DOMContentLoaded', () => {
+  initActionBar();
+  loadCalendar();
 });
