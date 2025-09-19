@@ -5,6 +5,8 @@
   --space-md: 1.25rem;
   --surface: #242429;
   --border: rgba(255, 255, 255, 0.14);
+  --motion-duration: 180ms;
+  --motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 body {
@@ -26,6 +28,7 @@ h1 {
   padding: 20px;
   border-radius: 8px;
   box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+  transition: box-shadow var(--motion-duration) var(--motion-ease);
 }
 
 button {
@@ -38,10 +41,15 @@ button {
   color: #121212;
   font-size: 1em;
   cursor: pointer;
+  transition: background-color var(--motion-duration) var(--motion-ease),
+              transform var(--motion-duration) var(--motion-ease),
+              color var(--motion-duration) var(--motion-ease);
 }
 
-button:hover {
+button:hover,
+button:focus-visible {
   background: #a475f9;
+  transform: translateY(-1px);
 }
 
 #back-button {
@@ -59,7 +67,6 @@ button:hover {
 
 /* Modal-Styles */
 .fc-modal-overlay {
-  display: none;
   position: fixed;
   z-index: 10000;
   left: 0;
@@ -67,17 +74,27 @@ button:hover {
   width: 100%;
   height: 100%;
   background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity var(--motion-duration) var(--motion-ease),
+              visibility 0s linear var(--motion-duration);
 }
 
 .fc-modal {
   background: var(--surface);
   color: var(--fg);
   max-width: 600px;
-  margin: 100px auto;
-  /* Extra top padding so the close button does not cover content */
-  padding: 40px 20px 20px;
+  margin: 0 20px;
+  padding: 40px 24px 24px;
   border-radius: 8px;
   position: relative;
+  transform: scale(0.98);
+  transition: transform var(--motion-duration) var(--motion-ease),
+              box-shadow var(--motion-duration) var(--motion-ease);
 }
 
 .fc-modal h2 {
@@ -101,9 +118,7 @@ button:hover {
   display: inline;
 }
 
-/* View‐ vs. Edit‐Container */
-#fc-view-mode,
-#fc-edit-form {
+#fc-view-mode {
   margin-top: 1em;
 }
 
@@ -114,20 +129,27 @@ button:hover {
   margin-bottom: var(--space-md);
 }
 
+.fc-form-group[hidden] {
+  display: none;
+}
+
 .fc-form-group label {
   font-weight: 600;
   margin-bottom: var(--space-md);
 }
 
-#fc-edit-form label,
+.fc-field-hint {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: rgba(244, 244, 245, 0.65);
+}
+
 #entry-form label {
   display: block;
   font-size: 0.95rem;
   letter-spacing: 0.01em;
 }
 
-#fc-edit-form input,
-#fc-edit-form textarea,
 #entry-form input,
 #entry-form select,
 #entry-form textarea {
@@ -137,40 +159,26 @@ button:hover {
   border: 1px solid var(--border);
   background: var(--bg);
   color: var(--fg);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color var(--motion-duration) var(--motion-ease),
+              box-shadow var(--motion-duration) var(--motion-ease),
+              background-color var(--motion-duration) var(--motion-ease);
 }
 
-#fc-edit-form input:focus,
-#fc-edit-form textarea:focus,
 #entry-form input:focus,
 #entry-form select:focus,
-#entry-form textarea:focus {
+#entry-form textarea:focus,
+#entry-form input:focus-visible,
+#entry-form select:focus-visible,
+#entry-form textarea:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-color: var(--accent);
   box-shadow: 0 0 0 2px rgba(187, 134, 252, 0.2);
 }
 
-#fc-edit-form textarea,
 #entry-form textarea {
   resize: vertical;
   min-height: 120px;
-}
-
-#fc-edit-form button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  margin: var(--space-md) 0 0;
-  padding: 0.75rem 1.25rem;
-  font-size: 1rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-}
-
-#fc-edit-form button + button {
-  margin-left: 0.75rem;
 }
 
 #entry-form button {
@@ -181,6 +189,9 @@ button:hover {
   font-size: 1rem;
   font-weight: 600;
   letter-spacing: 0.02em;
+  transition: background-color var(--motion-duration) var(--motion-ease),
+              transform var(--motion-duration) var(--motion-ease),
+              color var(--motion-duration) var(--motion-ease);
 }
 
 #entry-form ::placeholder {
@@ -195,4 +206,83 @@ button:hover {
 
 .fc-modal-desc em {
   color: #bbbbbb;
+}
+
+.fc-modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.fc-modal-actions button {
+  flex: 1 1 auto;
+  padding: 0.75rem 1.25rem;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--accent);
+  color: #121212;
+  transition: background-color var(--motion-duration) var(--motion-ease),
+              transform var(--motion-duration) var(--motion-ease);
+}
+
+.fc-modal-actions button:hover,
+.fc-modal-actions button:focus-visible {
+  background: #a475f9;
+  transform: translateY(-1px);
+}
+
+.fc-modal-actions .danger {
+  background: #dc3545;
+  color: #fff;
+}
+
+.fc-modal-actions .danger:hover,
+.fc-modal-actions .danger:focus-visible {
+  background: #c02d3c;
+}
+
+.fc-modal-overlay.is-visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition-delay: 0s;
+}
+
+.fc-modal-overlay.is-visible .fc-modal {
+  transform: scale(1);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+}
+
+.fc-modal-overlay.closing {
+  pointer-events: none;
+}
+
+.fc-modal-overlay.closing .fc-modal {
+  transform: scale(0.98);
+}
+
+.fc-modal-overlay.closing,
+.overlay.closing {
+  opacity: 0;
+  visibility: hidden;
+  transition-delay: var(--motion-duration);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-duration: 0ms;
+  }
+
+  .fc-modal,
+  .fc-modal-overlay,
+  #calendar,
+  button,
+  #entry-form input,
+  #entry-form select,
+  #entry-form textarea {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+  }
 }
