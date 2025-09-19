@@ -30,6 +30,7 @@ CORS(
         "https://*.homework-manager.pages.dev",
         "https://homework-manager.akzuwo.ch",
         "https://hw-manager.akzuwo.ch"
+        "https://hwm-beta.akzuwo.ch"
     ]}},
     methods=["GET","HEAD","POST","OPTIONS","PUT","DELETE"],
     allow_headers=["Content-Type","X-Role"]
@@ -419,3 +420,4 @@ def add_cors_headers(response):
 # ---------- SERVER START ----------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=False)
+
