@@ -6,23 +6,6 @@ const LOGIN_TEXT = {
     wrong: 'Wrong password – please try again.'
 };
 
-const CREATE_DISABLED_MESSAGE = (window.hmI18n && window.hmI18n.get('calendar.actions.create.disabled'))
-    || 'Only admins can create entries';
-
-const CALENDAR_MODAL_SCOPE = window.hmI18n ? window.hmI18n.scope('calendar.modal') : (key, fallback) => fallback;
-
-const CALENDAR_MODAL_BUTTONS = {
-    add: CALENDAR_MODAL_SCOPE('buttons.add', 'Add entry'),
-    addLoading: CALENDAR_MODAL_SCOPE('buttons.addLoading', 'Adding …'),
-    save: CALENDAR_MODAL_SCOPE('buttons.save', 'Save'),
-    saveLoading: CALENDAR_MODAL_SCOPE('buttons.saveLoading', 'Saving …')
-};
-
-const CALENDAR_MODAL_MESSAGES = {
-    saveSuccess: CALENDAR_MODAL_SCOPE('messages.saveSuccess', 'Entry saved successfully!'),
-    saveRetry: CALENDAR_MODAL_SCOPE('messages.saveRetry', 'We could not save the entry after several attempts. Please try again later.')
-};
-
 function setLoginFeedback(message = '', isError = false) {
     const feedback = document.getElementById('login-feedback');
     if (!feedback) return;
@@ -154,57 +137,6 @@ function initLanguageSelector() {
             if (currentSpan) currentSpan.textContent = names.short;
         });
     });
-}
-
-function initSimpleNav() {
-    const nav = document.querySelector('.simple-nav');
-    if (!nav || nav.dataset.enhanced === 'true') {
-        return;
-    }
-
-    const toggle = nav.querySelector('.nav-toggle');
-    const links = nav.querySelector('.nav-links');
-
-    if (links && !links.id) {
-        links.id = `nav-links-${Math.random().toString(36).slice(2, 9)}`;
-    }
-
-    if (toggle && links) {
-        toggle.setAttribute('aria-controls', links.id);
-        toggle.addEventListener('click', () => {
-            const open = nav.classList.toggle('simple-nav--open');
-            toggle.setAttribute('aria-expanded', String(open));
-        });
-    }
-
-    const closeMenu = () => {
-        if (toggle) {
-            toggle.setAttribute('aria-expanded', 'false');
-        }
-        nav.classList.remove('simple-nav--open');
-    };
-
-    if (links) {
-        links.addEventListener('click', (event) => {
-            if (event.target.closest('a')) {
-                closeMenu();
-            }
-        });
-    }
-
-    document.addEventListener('click', (event) => {
-        if (!nav.contains(event.target)) {
-            closeMenu();
-        }
-    });
-
-    document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape') {
-            closeMenu();
-        }
-    });
-
-    nav.dataset.enhanced = 'true';
 }
 
 function checkLogin() {
@@ -341,13 +273,6 @@ const ENTRY_FORM_MESSAGES = {
     missingEventTitle: 'Please enter an event title.'
 };
 
-if (window.hmI18n) {
-    const formMessages = window.hmI18n.get('calendar.formMessages');
-    if (formMessages && typeof formMessages === 'object') {
-        Object.assign(ENTRY_FORM_MESSAGES, formMessages);
-    }
-}
-
 function parseSwissDate(value) {
     if (!value) return null;
     const match = value.trim().match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
@@ -452,7 +377,7 @@ function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES)
     const toggleTypeFields = () => {
         const isEvent = typeSelect && typeSelect.value === 'event';
         if (subjectGroup) {
-            subjectGroup.classList.toggle('is-hidden', Boolean(isEvent));
+            subjectGroup.style.display = isEvent ? 'none' : '';
         }
         if (subjectSelect) {
             subjectSelect.required = !isEvent;
@@ -462,7 +387,7 @@ function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES)
             }
         }
         if (eventTitleGroup) {
-            eventTitleGroup.classList.toggle('is-hidden', !isEvent);
+            eventTitleGroup.style.display = isEvent ? '' : 'none';
         }
         if (eventTitleInput) {
             eventTitleInput.required = isEvent;
@@ -553,7 +478,7 @@ function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES)
 
 function showEntryForm() {
     if (sessionStorage.getItem('role') !== 'admin') {
-        showOverlay(CREATE_DISABLED_MESSAGE);
+        showOverlay('Only admin may create entries!');
         return;
     }
     const overlay = document.getElementById('entry-modal-overlay');
@@ -572,7 +497,7 @@ function showEntryForm() {
     const saveButton = form.querySelector('#saveButton');
     if (saveButton) {
         saveButton.disabled = true;
-        saveButton.textContent = CALENDAR_MODAL_BUTTONS.add;
+        saveButton.textContent = 'Add';
     }
 
     const initialFocus = form.querySelector('[data-hm-modal-initial-focus]') || form.querySelector('select, input, textarea, button');
@@ -656,7 +581,7 @@ async function saveEntry(event) {
     const payloadSubject = isEvent ? '' : fach;
 
     saveButton.disabled = true;
-    saveButton.innerText = CALENDAR_MODAL_BUTTONS.saveLoading;
+    saveButton.innerText = 'Saving…';
 
     let success = false;
     let attempt = 0;
@@ -673,7 +598,7 @@ async function saveEntry(event) {
 
             if (result.status === "ok") {
                 success = true;
-                showOverlay(CALENDAR_MODAL_MESSAGES.saveSuccess);
+                showOverlay("Entry saved successfully!");
                 closeEntryModal();
                 document.getElementById('overlay-close')
                     .addEventListener('click', () => location.reload(), { once: true });
@@ -697,7 +622,7 @@ async function saveEntry(event) {
     }
 
     if (!success) {
-        showOverlay(CALENDAR_MODAL_MESSAGES.saveRetry);
+        showOverlay("The entry could not be saved after several attempts. Please try again later.");
     } else {
         // Reset input fields
         if (form) {
@@ -708,7 +633,7 @@ async function saveEntry(event) {
 
     // Re-enable button
     saveButton.disabled = false;
-    saveButton.innerText = CALENDAR_MODAL_BUTTONS.add;
+    saveButton.innerText = 'Add';
 }
 
 
@@ -720,4 +645,3 @@ window.addEventListener('DOMContentLoaded', () => {
     setupModalFormInteractions(document.getElementById('entry-form'));
     setupModalFormInteractions(document.getElementById('fc-edit-form'));
 });
-window.addEventListener('DOMContentLoaded', initSimpleNav);
