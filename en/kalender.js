@@ -18,6 +18,27 @@ const TYPE_LABELS = {
   event: 'Event'
 };
 
+let editFormController = null;
+
+function formatSwissDateFromISO(dateStr) {
+  if (!dateStr) return '';
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return '';
+  const [year, month, day] = parts;
+  return `${day.padStart(2, '0')}.${month.padStart(2, '0')}.${year}`;
+}
+
+function splitEventDescription(type, text) {
+  if (type !== 'event' || !text) {
+    return { eventTitle: '', description: text || '' };
+  }
+  const sections = text.split('\n\n');
+  const [first, ...rest] = sections;
+  const eventTitle = (first || '').trim();
+  const description = rest.join('\n\n').trim();
+  return { eventTitle, description };
+}
+
 function formatDateLabel(dateStr, startStr, endStr) {
   if (!dateStr) return '';
   const baseDate = `${dateStr}T${startStr || '00:00:00'}`;
@@ -44,76 +65,159 @@ function openModal(event) {
   const { id } = event;
   const { type, typeLabel, description, fach, datum, startzeit, endzeit } = event.extendedProps;
 
-  const title = `${typeLabel} · ${fach || '—'}`;
-  document.getElementById('fc-modal-title').innerText = title;
+  const overlay = document.getElementById('fc-modal-overlay');
+  const viewMode = document.getElementById('fc-view-mode');
+  const editForm = document.getElementById('fc-edit-form');
+  const subjectLabel = document.querySelector('[data-view-label="subject"]');
+  if (!overlay || !viewMode || !editForm) {
+    console.error('Modal elements missing.');
+    return;
+  }
+
+  const { eventTitle: storedTitle, descriptionBody } = event.extendedProps;
+  const { eventTitle: computedTitle, description: computedDescription } = splitEventDescription(type, description);
+  const eventTitle = storedTitle !== undefined ? storedTitle : computedTitle;
+  const detailDescription = descriptionBody !== undefined ? descriptionBody : computedDescription;
+  const isEvent = type === 'event';
+  const modalTitle = isEvent
+    ? (eventTitle || typeLabel)
+    : `${typeLabel}${fach ? ` · ${fach}` : ''}`;
+
+  const subjectValue = isEvent ? (eventTitle || '—') : (fach || '—');
+  if (subjectLabel) {
+    subjectLabel.textContent = isEvent ? 'Event title' : 'Subject';
+  }
+
+  document.getElementById('fc-modal-title').innerText = modalTitle;
   document.getElementById('fc-modal-type').innerText = typeLabel;
-  document.getElementById('fc-modal-subject').innerText = fach || '—';
+  document.getElementById('fc-modal-subject').innerText = subjectValue;
   document.getElementById('fc-modal-date').innerText = formatDateLabel(datum, startzeit, endzeit);
-  document.getElementById('fc-modal-desc').innerHTML = description ? mdBold(description) : '<em>No description available.</em>';
+  document.getElementById('fc-modal-desc').innerHTML = detailDescription
+    ? mdBold(detailDescription)
+    : '<em>No description available.</em>';
+
+  const dateInput = document.getElementById('fc-edit-date');
+  const descInput = document.getElementById('fc-edit-desc');
+  const subjectSelect = document.getElementById('fc-edit-subject');
+  const startInput = document.getElementById('fc-edit-start');
+  const endInput = document.getElementById('fc-edit-end');
+  const typeSelect = document.getElementById('fc-edit-type');
+  const eventTitleInput = document.getElementById('fc-edit-event-title');
 
   document.getElementById('fc-entry-id').value = id;
-  document.getElementById('fc-entry-type').value = type;
-  document.getElementById('fc-edit-date').value = datum;
-  document.getElementById('fc-edit-desc').value = description;
-  document.getElementById('fc-edit-subject').value = fach || '';
-  document.getElementById('fc-edit-start').value = startzeit ? startzeit.slice(0, 5) : '';
-  document.getElementById('fc-edit-end').value = endzeit ? endzeit.slice(0, 5) : '';
 
-  const subjectInput = document.getElementById('fc-edit-subject');
-  if (subjectInput) {
-    subjectInput.required = type !== 'event';
+  if (typeSelect) {
+    typeSelect.value = type;
+  }
+  if (subjectSelect) {
+    subjectSelect.value = fach || '';
+  }
+  if (eventTitleInput) {
+    eventTitleInput.value = isEvent ? eventTitle : '';
+  }
+  if (dateInput) {
+    dateInput.value = formatSwissDateFromISO(datum);
+  }
+  if (startInput) {
+    startInput.value = startzeit ? startzeit.slice(0, 5) : '';
+  }
+  if (endInput) {
+    endInput.value = endzeit ? endzeit.slice(0, 5) : '';
+    endInput.disabled = !startInput || !startInput.value;
+  }
+  if (descInput) {
+    descInput.value = detailDescription;
+  }
+
+  editFormController = setupModalFormInteractions(editForm, ENTRY_FORM_MESSAGES);
+  if (editFormController) {
+    editFormController.setType(type);
+    editFormController.evaluate();
   }
 
   if (userIsAdmin) {
-    document.getElementById('fc-view-mode').style.display = 'none';
-    document.getElementById('fc-edit-form').style.display = 'block';
+    viewMode.style.display = 'none';
+    editForm.style.display = 'flex';
   } else {
-    document.getElementById('fc-view-mode').style.display = 'block';
-    document.getElementById('fc-edit-form').style.display = 'none';
+    viewMode.style.display = 'block';
+    editForm.style.display = 'none';
   }
 
-  document.getElementById('fc-modal-overlay').style.display = 'block';
+  overlay.classList.add('is-open');
 }
 
 // Close modal
 function closeModal() {
-  document.getElementById('fc-modal-overlay').style.display = 'none';
+  const overlay = document.getElementById('fc-modal-overlay');
+  const editForm = document.getElementById('fc-edit-form');
+  if (overlay) {
+    overlay.classList.remove('is-open');
+  }
+  if (editForm) {
+    editForm.reset();
+    editFormController = setupModalFormInteractions(editForm, ENTRY_FORM_MESSAGES);
+    editFormController?.setType('event');
+    editFormController?.evaluate();
+  }
 }
 window.closeModal = closeModal;
 
 // Save (update)
-async function saveEdit() {
+async function saveEdit(evt) {
+  if (evt) {
+    evt.preventDefault();
+  }
+
+  const form = document.getElementById('fc-edit-form');
+  if (!form) {
+    console.error('Edit form missing.');
+    return;
+  }
+
+  editFormController = setupModalFormInteractions(form, ENTRY_FORM_MESSAGES);
+  editFormController?.evaluate();
+
+  if (!form.checkValidity()) {
+    form.reportValidity();
+    return;
+  }
+
   const id = document.getElementById('fc-entry-id').value;
-  const type = document.getElementById('fc-entry-type').value;
-  const date = document.getElementById('fc-edit-date').value;
-  const desc = document.getElementById('fc-edit-desc').value.trim();
-  const fach = document.getElementById('fc-edit-subject').value.trim();
-  let start = document.getElementById('fc-edit-start').value;
-  let end = document.getElementById('fc-edit-end').value;
+  const typeSelect = document.getElementById('fc-edit-type');
+  const subjectSelect = document.getElementById('fc-edit-subject');
+  const eventTitleInput = document.getElementById('fc-edit-event-title');
+  const dateInput = document.getElementById('fc-edit-date');
+  const startInput = document.getElementById('fc-edit-start');
+  const endInput = document.getElementById('fc-edit-end');
+  const descInput = document.getElementById('fc-edit-desc');
+  const submitButton = form.querySelector('[data-role="submit"]');
 
-  if (!date) {
-    showOverlay('Please provide a date.');
+  const type = typeSelect ? typeSelect.value : '';
+  const isoDate = dateInput ? parseSwissDate(dateInput.value.trim()) : null;
+  if (!isoDate) {
+    showOverlay(ENTRY_FORM_MESSAGES.invalidDate);
+    dateInput?.focus();
     return;
   }
-  if (type !== 'event' && !fach) {
-    showOverlay('Please provide a subject code (not required for events).');
+
+  const startValue = startInput ? startInput.value : '';
+  const endValue = endInput && !endInput.disabled ? endInput.value : '';
+  if (endValue && startValue && endValue < startValue) {
+    showOverlay(ENTRY_FORM_MESSAGES.invalidEnd);
     return;
   }
 
-  if (start) {
-    if (start.length === 5) {
-      start = `${start}:00`;
-    }
-  } else {
-    start = null;
-  }
+  const fach = type === 'event' ? '' : (subjectSelect ? subjectSelect.value.trim() : '');
+  const eventTitle = type === 'event' ? (eventTitleInput ? eventTitleInput.value.trim() : '') : '';
+  const beschreibung = descInput ? descInput.value.trim() : '';
 
-  if (end) {
-    if (end.length === 5) {
-      end = `${end}:00`;
-    }
-  } else {
-    end = null;
+  const payloadDescription = type === 'event'
+    ? eventTitle + (beschreibung ? `\n\n${beschreibung}` : '')
+    : beschreibung;
+
+  if (submitButton) {
+    submitButton.disabled = true;
+    submitButton.textContent = 'Saving…';
   }
 
   try {
@@ -123,7 +227,15 @@ async function saveEdit() {
         'Content-Type': 'application/json',
         'X-Role': role
       },
-      body: JSON.stringify({ id, type, date, description: desc, startzeit: start, endzeit: end, fach })
+      body: JSON.stringify({
+        id,
+        type,
+        date: isoDate,
+        description: payloadDescription,
+        startzeit: startValue ? `${startValue}:00` : null,
+        endzeit: endValue ? `${endValue}:00` : null,
+        fach
+      })
     });
     if (!res.ok) {
       const err = await res.text().catch(() => '');
@@ -134,13 +246,24 @@ async function saveEdit() {
   } catch (e) {
     console.error('Error saving:', e);
     showOverlay('Error saving:\n' + e.message);
+  } finally {
+    if (submitButton) {
+      submitButton.disabled = false;
+      submitButton.textContent = 'Save';
+    }
   }
 }
 
 // Delete
 async function deleteEntry() {
   const id = document.getElementById('fc-entry-id').value;
-  if (!confirm('Really delete entry?')) return;
+  if (!confirm('Do you really want to delete this entry?')) return;
+
+  const deleteButton = document.querySelector('#fc-edit-form [data-role="delete"]');
+  if (deleteButton) {
+    deleteButton.disabled = true;
+    deleteButton.textContent = 'Deleting…';
+  }
 
   try {
     const res = await fetch(`${API_BASE}/delete_entry/${id}`, {
@@ -156,6 +279,11 @@ async function deleteEntry() {
   } catch (e) {
     console.error('Error deleting:', e);
     showOverlay('Error deleting:\n' + e.message);
+  } finally {
+    if (deleteButton) {
+      deleteButton.disabled = false;
+      deleteButton.textContent = 'Delete';
+    }
   }
 }
 
@@ -178,11 +306,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const events = entries.map(e => {
       const typeLabel = TYPE_LABELS[e.typ] || e.typ;
       const subject = e.fach || '';
+      const { eventTitle, description: descriptionBody } = splitEventDescription(e.typ, e.beschreibung || '');
+      const displaySubject = e.typ === 'event' ? (eventTitle || '—') : (subject || '—');
       const start = e.startzeit ? `${e.datum}T${e.startzeit}` : e.datum;
       const end = e.endzeit ? `${e.datum}T${e.endzeit}` : undefined;
       const eventConfig = {
         id: String(e.id),
-        title: `${typeLabel} · ${subject || '—'}`,
+        title: `${typeLabel} · ${displaySubject}`,
         start,
         allDay: !e.startzeit,
         color: colorMap[e.typ] || '#000',
@@ -193,7 +323,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           fach: subject,
           datum: e.datum,
           startzeit: e.startzeit,
-          endzeit: e.endzeit
+          endzeit: e.endzeit,
+          eventTitle,
+          descriptionBody
         }
       };
       if (end) {
@@ -217,7 +349,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           showEntryForm();
           const dateInput = document.getElementById('datum');
           if (dateInput) {
-            dateInput.value = info.dateStr + 'T00:00';
+            dateInput.value = formatSwissDateFromISO(info.dateStr);
           }
         },
         eventClick: info => {
