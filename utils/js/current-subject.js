@@ -2,6 +2,7 @@
   const DEFAULT_ENDPOINT = 'https://homework-manager-2-0-backend.onrender.com/aktuelles_fach';
   const FREE_TOKENS = ['frei', 'free', 'libero', '-'];
   const DEFAULT_REFRESH = 30000;
+  const DEFAULT_COUNTDOWN_UPDATE = 1000;
 
   const DEFAULT_TEXT = {
     baseTitle: 'Current Subject',
@@ -70,6 +71,7 @@
       endpoint: DEFAULT_ENDPOINT,
       refreshInterval: DEFAULT_REFRESH,
       text: {},
+      countdownUpdateInterval: DEFAULT_COUNTDOWN_UPDATE,
       ...options,
     };
     const root = bySelector(config.selector);
@@ -110,11 +112,17 @@
       progressEl.setAttribute('aria-valuenow', '0');
     }
 
+    const countdownInterval =
+      Number.isFinite(config.countdownUpdateInterval) && config.countdownUpdateInterval > 0
+        ? config.countdownUpdateInterval
+        : DEFAULT_COUNTDOWN_UPDATE;
+
     const state = {
-      remainingSeconds: null,
-      totalSeconds: null,
+      remainingMs: null,
+      totalMs: null,
       rafId: null,
       lastTick: null,
+      lastDisplay: null,
       fetchTimer: null,
       lastPayload: null,
     };
@@ -156,7 +164,7 @@
       if (!progressEl || !progressBar) {
         return;
       }
-      if (!Number.isFinite(state.totalSeconds) || state.totalSeconds <= 0) {
+      if (!Number.isFinite(state.totalMs) || state.totalMs <= 0) {
         progressEl.hidden = true;
         progressEl.setAttribute('aria-valuenow', '0');
         progressBar.style.width = '0%';
@@ -165,7 +173,7 @@
       }
 
       progressEl.hidden = false;
-      const percentRemaining = clampPercent((state.remainingSeconds / state.totalSeconds) * 100);
+      const percentRemaining = clampPercent((state.remainingMs / state.totalMs) * 100);
       const rounded = Math.round(percentRemaining);
       progressEl.setAttribute('aria-valuenow', String(rounded));
       progressBar.style.width = `${percentRemaining}%`;
@@ -179,7 +187,8 @@
 
     function updateCountdownDisplay() {
       if (countdownValueEl) {
-        countdownValueEl.textContent = formatClock(state.remainingSeconds);
+        const seconds = Number.isFinite(state.remainingMs) ? state.remainingMs / 1000 : null;
+        countdownValueEl.textContent = formatClock(seconds);
       }
       updateProgress();
     }
@@ -190,30 +199,37 @@
         state.rafId = null;
       }
       state.lastTick = null;
+      state.lastDisplay = null;
     }
 
     function tick(now) {
-      if (!Number.isFinite(state.remainingSeconds)) {
+      if (!Number.isFinite(state.remainingMs)) {
         return;
       }
       if (state.lastTick == null) {
         state.lastTick = now;
+        state.lastDisplay = now;
+        updateCountdownDisplay();
+        state.rafId = requestAnimationFrame(tick);
+        return;
       }
       const elapsed = now - state.lastTick;
-      if (elapsed >= 950) {
-        const decrement = Math.floor(elapsed / 1000);
-        state.remainingSeconds = Math.max(0, state.remainingSeconds - decrement);
-        state.lastTick = now;
+      state.lastTick = now;
+      state.remainingMs = Math.max(0, state.remainingMs - elapsed);
+
+      if (state.lastDisplay == null || now - state.lastDisplay >= countdownInterval || state.remainingMs === 0) {
+        state.lastDisplay = now;
         updateCountdownDisplay();
       }
-      if (state.remainingSeconds > 0) {
+
+      if (state.remainingMs > 0) {
         state.rafId = requestAnimationFrame(tick);
       }
     }
 
     function startTicker() {
       stopTicker();
-      if (!Number.isFinite(state.remainingSeconds)) {
+      if (!Number.isFinite(state.remainingMs)) {
         updateCountdownDisplay();
         return;
       }
@@ -226,8 +242,8 @@
       setSubjectLabel(data?.fach, active);
 
       if (!active) {
-        state.remainingSeconds = null;
-        state.totalSeconds = null;
+        state.remainingMs = null;
+        state.totalMs = null;
         if (currentRoom) currentRoom.textContent = '–';
         if (currentStart) currentStart.textContent = '--:--';
         if (currentEnd) currentEnd.textContent = '--:--';
@@ -248,9 +264,10 @@
         currentEnd.textContent = data.ende || '--:--';
       }
 
-      state.totalSeconds = parseSeconds(data.gesamt_sekunden);
-      const remaining = parseSeconds(data.verbleibende_sekunden ?? data.verbleibend);
-      state.remainingSeconds = Number.isFinite(remaining) ? remaining : null;
+      const totalSeconds = parseSeconds(data.gesamt_sekunden);
+      const remainingSeconds = parseSeconds(data.verbleibende_sekunden ?? data.verbleibend);
+      state.totalMs = Number.isFinite(totalSeconds) ? totalSeconds * 1000 : null;
+      state.remainingMs = Number.isFinite(remainingSeconds) ? remainingSeconds * 1000 : null;
       startTicker();
     }
 
@@ -282,8 +299,8 @@
         subjectSuffix.textContent = '· —';
         subjectSuffix.classList.add('is-inactive');
       }
-      state.remainingSeconds = null;
-      state.totalSeconds = null;
+      state.remainingMs = null;
+      state.totalMs = null;
       stopTicker();
       if (countdownValueEl) {
         countdownValueEl.textContent = '--:--';

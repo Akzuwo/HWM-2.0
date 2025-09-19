@@ -5,6 +5,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   initCurrentSubjectPage({
+    refreshInterval: 750,
+    countdownUpdateInterval: 750,
     text: {
       baseTitle: 'Current Subject',
       countdownLabel: 'Time remaining',
