@@ -27,145 +27,186 @@
 
   <!-- Modal (initial versteckt) -->
   <div id="fc-modal-overlay" class="fc-modal-overlay" onclick="closeModal()">
-    <div class="fc-modal" onclick="event.stopPropagation()">
+    <div class="fc-modal" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
+      <header class="modal-header">
+        <h2 id="fc-modal-title">Calendar Entry</h2>
+        <button type="button" class="modal-close" onclick="closeModal()" aria-label="Close">✖</button>
+      </header>
 
-      <button class="close-btn" onclick="closeModal()">✖</button>
-
-      <!-- VIEW MODE -->
-      <div id="fc-view-mode">
-        <h2 id="fc-modal-title"></h2>
-        <p><strong>Type:</strong> <span id="fc-modal-type"></span></p>
-        <p><strong>Subject:</strong> <span id="fc-modal-subject"></span></p>
-        <p><strong>Date:</strong> <span id="fc-modal-date"></span></p>
+      <div id="fc-view-mode" style="display:none;">
+        <div class="modal-body">
+          <div class="modal-field">
+            <label>Type</label>
+            <span id="fc-modal-type"></span>
+          </div>
+          <div class="modal-field">
+            <label data-view-label="subject">Subject</label>
+            <span id="fc-modal-subject"></span>
+          </div>
+          <div class="modal-field">
+            <label>Date</label>
+            <span id="fc-modal-date"></span>
+          </div>
+        </div>
         <div id="fc-modal-desc" class="fc-modal-desc"></div>
+        <div class="modal-footer">
+          <button type="button" class="secondary" onclick="closeModal()">Close</button>
+        </div>
       </div>
 
-      <!-- EDIT MODE (admin only) -->
-      <form id="fc-edit-form" style="display:none;">
-        <h2>Edit Entry</h2>
+      <form id="fc-edit-form" class="modal-form" style="display:none;" onsubmit="saveEdit(event)" novalidate>
         <input type="hidden" id="fc-entry-id">
-        <input type="hidden" id="fc-entry-type">
 
-        <div class="fc-form-group">
-          <label for="fc-edit-subject">Subject Abbreviation</label>
-          <input type="text" id="fc-edit-subject" maxlength="100" required>
+        <div class="modal-body">
+          <div class="modal-field" data-field="type">
+            <label for="fc-edit-type">Type</label>
+            <select id="fc-edit-type" name="typ" required>
+              <option value="hausaufgabe">Homework</option>
+              <option value="pruefung">Exam</option>
+              <option value="event">Event</option>
+            </select>
+          </div>
+
+          <div class="modal-field" data-field="subject">
+            <label for="fc-edit-subject">Subject</label>
+            <select id="fc-edit-subject" name="fach">
+              <option value="">– please select –</option>
+              <option>MA</option>
+              <option>DE</option>
+              <option>EN</option>
+              <option>PS</option>
+              <option>SPM-PS</option>
+              <option>SPM-MA</option>
+              <option>SPM-ES</option>
+              <option>SP</option>
+              <option>WR</option>
+              <option>GS</option>
+              <option>GG</option>
+              <option>IN</option>
+              <option>IT</option>
+              <option>FR</option>
+              <option>BG</option>
+              <option>MU</option>
+              <option>BI</option>
+              <option>Sport</option>
+              <option>CH</option>
+              <option>PH</option>
+              <option>SMU</option>
+            </select>
+          </div>
+
+          <div class="modal-field" data-field="event-title" style="display:none;">
+            <label for="fc-edit-event-title">Event title</label>
+            <input type="text" id="fc-edit-event-title" name="event-titel" placeholder="Event name">
+          </div>
+
+          <div class="modal-field" data-field="date">
+            <label for="fc-edit-date">Date (DD.MM.YYYY)</label>
+            <input type="text" id="fc-edit-date" name="datum" inputmode="numeric" placeholder="18.09.2025" required>
+          </div>
+
+          <div class="modal-field" data-field="start">
+            <label for="fc-edit-start">Start time</label>
+            <input type="time" id="fc-edit-start" name="startzeit">
+          </div>
+
+          <div class="modal-field" data-field="end">
+            <label for="fc-edit-end">End time</label>
+            <input type="time" id="fc-edit-end" name="endzeit">
+          </div>
+
+          <div class="modal-field" data-field="description">
+            <label for="fc-edit-desc">Description</label>
+            <textarea id="fc-edit-desc" name="beschreibung" rows="4" placeholder="Entry details"></textarea>
+          </div>
         </div>
 
-        <div class="fc-form-group">
-          <label for="fc-edit-date">Date (YYYY-MM-DD)</label>
-          <input type="date" id="fc-edit-date" required>
+        <div class="modal-footer">
+          <button type="button" class="secondary" data-role="cancel">Cancel</button>
+          <button type="submit" data-role="submit">Save</button>
+          <button type="button" class="danger" data-role="delete" onclick="deleteEntry()">Delete</button>
         </div>
-
-        <div class="fc-form-group">
-          <label for="fc-edit-start">Start time (optional)</label>
-          <input type="time" id="fc-edit-start">
-        </div>
-
-        <div class="fc-form-group">
-          <label for="fc-edit-end">End time (optional)</label>
-          <input type="time" id="fc-edit-end">
-        </div>
-
-        <div class="fc-form-group">
-          <label for="fc-edit-desc">Description</label>
-          <textarea id="fc-edit-desc" rows="4"></textarea>
-        </div>
-
-        <button type="button" onclick="saveEdit()">Save</button>
-        <button type="button" onclick="deleteEntry()" style="background:#dc3545; color:#fff;">
-          Delete
-        </button>
       </form>
-
     </div>
   </div>
 
-  <!-- Entry creation modal -->
   <div id="entry-modal-overlay" class="fc-modal-overlay" onclick="closeEntryModal()">
-    <div class="fc-modal" onclick="event.stopPropagation()">
+    <div class="fc-modal" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
+      <header class="modal-header">
+        <h2>📝 Create a new entry</h2>
+        <button type="button" class="modal-close" onclick="closeEntryModal()" aria-label="Close">✖</button>
+      </header>
 
-      <button class="close-btn" onclick="closeEntryModal()">✖</button>
+      <form id="entry-form" class="modal-form" onsubmit="saveEntry(event)" novalidate>
+        <div class="modal-body">
+          <div class="modal-field" data-field="type">
+            <label for="typ">Type</label>
+            <select id="typ" name="typ" required>
+              <option value="hausaufgabe">Homework</option>
+              <option value="pruefung">Exam</option>
+              <option value="event">Event</option>
+            </select>
+          </div>
 
-      <h2>📝 Create a New Entry</h2>
-      <form id="entry-form" onsubmit="saveEntry(event)">
-        <div class="fc-form-group">
-          <label for="typ">Type</label>
-          <select id="typ" name="typ" required>
-            <option value="hausaufgabe">Homework</option>
-            <option value="pruefung">Exam</option>
-            <option value="event">Event</option>
-          </select>
+          <div class="modal-field" data-field="subject">
+            <label for="fach">Subject</label>
+            <select id="fach" name="fach">
+              <option value="">– please select –</option>
+              <option>MA</option>
+              <option>DE</option>
+              <option>EN</option>
+              <option>PS</option>
+              <option>SPM-PS</option>
+              <option>SPM-MA</option>
+              <option>SPM-ES</option>
+              <option>SP</option>
+              <option>WR</option>
+              <option>GS</option>
+              <option>GG</option>
+              <option>IN</option>
+              <option>IT</option>
+              <option>FR</option>
+              <option>BG</option>
+              <option>MU</option>
+              <option>BI</option>
+              <option>Sport</option>
+              <option>CH</option>
+              <option>PH</option>
+              <option>SMU</option>
+            </select>
+          </div>
+
+          <div class="modal-field" data-field="event-title" style="display:none;">
+            <label for="event-titel">Event title</label>
+            <input type="text" id="event-titel" name="event-titel" placeholder="Event name">
+            <p class="field-hint">Required for events.</p>
+          </div>
+
+          <div class="modal-field" data-field="description">
+            <label for="beschreibung">Description (optional)</label>
+            <textarea id="beschreibung" name="beschreibung" rows="3" placeholder="Short description"></textarea>
+          </div>
+
+          <div class="modal-field" data-field="date">
+            <label for="datum">Date (DD.MM.YYYY)</label>
+            <input type="text" id="datum" name="datum" placeholder="18.09.2025" inputmode="numeric" required>
+          </div>
+
+          <div class="modal-field" data-field="start">
+            <label for="startzeit">Start time</label>
+            <input type="time" id="startzeit" name="startzeit" required>
+          </div>
+
+          <div class="modal-field" data-field="end">
+            <label for="endzeit">End time</label>
+            <input type="time" id="endzeit" name="endzeit">
+          </div>
         </div>
 
-        <div class="fc-form-group" data-field="subject">
-          <label for="fach">Subject</label>
-          <select id="fach" name="fach" required>
-            <option value="">– please select –</option>
-            <option>MA</option>
-            <option>DE</option>
-            <option>EN</option>
-            <option>PS</option>
-            <option>SPM-PS</option>
-            <option>SPM-MA</option>
-            <option>SPM-ES</option>
-            <option>SP</option>
-            <option>WR</option>
-            <option>GS</option>
-            <option>GG</option>
-            <option>IN</option>
-            <option>IT</option>
-            <option>FR</option>
-            <option>BG</option>
-            <option>MU</option>
-            <option>BI</option>
-            <option>Sport</option>
-            <option>CH</option>
-            <option>PH</option>
-            <option>SMU</option>
-          </select>
+        <div class="modal-footer">
+          <button type="button" class="secondary" onclick="closeEntryModal()">Cancel</button>
+          <button type="submit" id="saveButton" data-role="submit">Add</button>
         </div>
-
-        <div class="fc-form-group" data-field="event-title" style="display:none;">
-          <label for="event-titel">Event title</label>
-          <input
-            type="text"
-            id="event-titel"
-            name="event-titel"
-            minlength="80"
-            maxlength="120"
-            placeholder="Title with 80–120 characters"
-            required
-          >
-        </div>
-
-        <div class="fc-form-group">
-          <label for="beschreibung">Description (optional)</label>
-          <textarea id="beschreibung" name="beschreibung" rows="3" placeholder="Short description"></textarea>
-        </div>
-
-        <div class="fc-form-group">
-          <label for="datum">Date (DD.MM.YYYY)</label>
-          <input
-            type="text"
-            id="datum"
-            name="datum"
-            placeholder="18.09.2025"
-            inputmode="numeric"
-            required
-          >
-        </div>
-
-        <div class="fc-form-group">
-          <label for="startzeit">Start time</label>
-          <input type="time" id="startzeit" name="startzeit" required>
-        </div>
-
-        <div class="fc-form-group">
-          <label for="endzeit">End time (optional)</label>
-          <input type="time" id="endzeit" name="endzeit">
-        </div>
-
-        <button type="submit" id="saveButton">Add</button>
       </form>
     </div>
   </div>
