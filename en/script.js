@@ -178,11 +178,23 @@ async function openCalendar() {
         }
         const entries = await res.json();
         const colorMap = { hausaufgabe: '#007bff', pruefung: '#dc3545', event: '#28a745' };
-        const events = entries.map(e => ({
-            title: e.beschreibung,
-            start: e.startzeit ? `${e.datum}T${e.startzeit}` : e.datum,
-            color: colorMap[e.typ] || '#000'
-        }));
+        const sanitizeTime = (type, value) => {
+            if (!value) return '';
+            const trimmed = String(value).trim();
+            if (!trimmed) return '';
+            if (type === 'event' && (trimmed === '00:00:00' || trimmed === '00:00')) {
+                return '';
+            }
+            return trimmed;
+        };
+        const events = entries.map(e => {
+            const startTime = sanitizeTime(e.typ, e.startzeit);
+            return {
+                title: e.beschreibung,
+                start: startTime ? `${e.datum}T${startTime}` : e.datum,
+                color: colorMap[e.typ] || '#000'
+            };
+        });
 
         document.getElementById('content').innerHTML = '<div id="calendar"></div>';
 

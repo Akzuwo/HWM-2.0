@@ -318,18 +318,30 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const entries = await res.json();
     const colorMap = { hausaufgabe: '#007bff', pruefung: '#dc3545', event: '#28a745' };
+    const sanitizeTime = (type, value) => {
+      if (!value) return '';
+      const trimmed = String(value).trim();
+      if (!trimmed) return '';
+      if (type === 'event' && (trimmed === '00:00:00' || trimmed === '00:00')) {
+        return '';
+      }
+      return trimmed;
+    };
+
     const events = entries.map(e => {
       const typeLabel = TYPE_LABELS[e.typ] || e.typ;
       const subject = e.fach || '';
       const { eventTitle, description: descriptionBody } = splitEventDescription(e.typ, e.beschreibung || '');
       const displaySubject = e.typ === 'event' ? (eventTitle || '—') : (subject || '—');
-      const start = e.startzeit ? `${e.datum}T${e.startzeit}` : e.datum;
-      const end = e.endzeit ? `${e.datum}T${e.endzeit}` : undefined;
+      const startTime = sanitizeTime(e.typ, e.startzeit);
+      const endTime = sanitizeTime(e.typ, e.endzeit);
+      const start = startTime ? `${e.datum}T${startTime}` : e.datum;
+      const end = endTime ? `${e.datum}T${endTime}` : undefined;
       const eventConfig = {
         id: String(e.id),
         title: `${typeLabel} · ${displaySubject}`,
         start,
-        allDay: !e.startzeit,
+        allDay: !startTime,
         color: colorMap[e.typ] || '#000',
         extendedProps: {
           type: e.typ,
