@@ -3,6 +3,9 @@ const gewichtungInput = document.getElementById('gewichtung');
 const addButton = document.getElementById('add');
 const clearAllButton = document.getElementById('clearAll');
 const errorMessage = document.getElementById('inputError');
+const zielInput = document.getElementById('ziel');
+const zusaetzlichInput = document.getElementById('zusaetzlich');
+const berechnenButton = document.getElementById('berechnen');
 
 const messages = {
   invalidNumber: 'Bitte gültige Zahlen eingeben.',
@@ -58,6 +61,44 @@ function validateInputs(showFeedback = false) {
   return valid;
 }
 
+function validateGoalInputs(showFeedback = false) {
+  const zielValue = zielInput.value.trim();
+  const zusaetzlichValue = zusaetzlichInput.value.trim();
+  let valid = true;
+  let message = '';
+
+  zielInput.classList.remove('invalid');
+  zusaetzlichInput.classList.remove('invalid');
+
+  if (zielValue === '' || zusaetzlichValue === '') {
+    valid = false;
+    message = messages.required;
+  }
+
+  if (zielValue !== '' && isNaN(zielValue)) {
+    valid = false;
+    zielInput.classList.add('invalid');
+    message = messages.invalidNumber;
+  }
+
+  if (zusaetzlichValue !== '') {
+    const parsedValue = parseFloat(zusaetzlichValue);
+    if (isNaN(parsedValue) || parsedValue === 0) {
+      valid = false;
+      zusaetzlichInput.classList.add('invalid');
+      message = messages.invalidNumber;
+    }
+  }
+
+  berechnenButton.disabled = !valid;
+
+  if (!valid && showFeedback) {
+    showOverlay(message || messages.invalidNumber);
+  }
+
+  return valid;
+}
+
 function resetInputs() {
   noteInput.value = '';
   gewichtungInput.value = '';
@@ -93,12 +134,12 @@ function schnittBerechnen() {
 }
 
 function zielBerechnen() {
-  const ziel = parseFloat(document.getElementById('ziel').value);
-  const zGew = parseFloat(document.getElementById('zusaetzlich').value);
-  if (isNaN(ziel) || isNaN(zGew)) {
-    showOverlay('Bitte gültige Zahlen eingeben.');
+  if (!validateGoalInputs(true)) {
     return;
   }
+
+  const ziel = parseFloat(zielInput.value);
+  const zGew = parseFloat(zusaetzlichInput.value);
   const gesamtgewichtung = noten.reduce((a, n) => a + n.gewichtung, 0);
   const summe = noten.reduce((a, n) => a + n.note * n.gewichtung, 0);
   const benoetigte = ((ziel * (gesamtgewichtung + zGew)) - summe) / zGew;
@@ -258,8 +299,8 @@ function notenListeUpdate() {
   }
 }
 
-document.getElementById('add').addEventListener('click', noteHinzufuegen);
-document.getElementById('berechnen').addEventListener('click', zielBerechnen);
+addButton.addEventListener('click', noteHinzufuegen);
+berechnenButton.addEventListener('click', zielBerechnen);
 clearAllButton.addEventListener('click', () => {
   noten.length = 0;
   editingIndex = null;
@@ -270,5 +311,8 @@ clearAllButton.addEventListener('click', () => {
 
 noteInput.addEventListener('input', () => validateInputs(false));
 gewichtungInput.addEventListener('input', () => validateInputs(false));
+zielInput.addEventListener('input', () => validateGoalInputs(false));
+zusaetzlichInput.addEventListener('input', () => validateGoalInputs(false));
 
 validateInputs();
+validateGoalInputs();

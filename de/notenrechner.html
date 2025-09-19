@@ -9,6 +9,7 @@
   <title>Notenrechner</title>
   <link rel="icon" type="image/png" href="../media/logo.png">
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="notenrechner.css">
 </head>
 <body>
   <div class="container" id="notenrechner-container">
@@ -47,7 +48,7 @@
       <div id="zielInput" class="ziel-inputs">
         <input id="ziel" class="field-control" type="number" step="0.01" placeholder="Ziel-Schnitt">
         <input id="zusaetzlich" class="field-control" type="number" step="0.01" placeholder="Gewichtung der nächsten Note">
-        <button type="button" id="berechnen" class="secondary-action">Berechnen</button>
+        <button type="button" id="berechnen" class="secondary-action" disabled>Berechnen</button>
       </div>
 
       <div id="zielNote" class="noten-summary">Benötigte Note: -</div>

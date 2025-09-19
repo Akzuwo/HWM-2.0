@@ -9,6 +9,7 @@
   <title>Calcolatore di voti</title>
   <link rel="icon" type="image/png" href="../media/logo.png">
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="notenrechner.css">
 </head>
 <body>
   <div class="container" id="notenrechner-container">
@@ -47,7 +48,7 @@
       <div id="zielInput" class="ziel-inputs">
         <input id="ziel" class="field-control" type="number" step="0.01" placeholder="Media desiderata">
         <input id="zusaetzlich" class="field-control" type="number" step="0.01" placeholder="Peso del prossimo voto">
-        <button type="button" id="berechnen" class="secondary-action">Calcola</button>
+        <button type="button" id="berechnen" class="secondary-action" disabled>Calcola</button>
       </div>
 
       <div id="zielNote" class="noten-summary">Voto necessario: -</div>
