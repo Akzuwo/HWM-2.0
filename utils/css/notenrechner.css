@@ -45,6 +45,7 @@
 }
 
 #notenrechner-container .field-control {
+  box-sizing: border-box;
   width: 100%;
   margin: 0;
   padding: 0 16px;
@@ -62,6 +63,7 @@
 }
 
 #notenrechner-container .btn {
+  box-sizing: border-box;
   margin: 0;
   width: auto;
   display: inline-flex;
