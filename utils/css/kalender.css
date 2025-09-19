@@ -65,10 +65,14 @@ button:hover {
   border-radius: 8px;
 }
 
-.fc-modal-overlay {
+body.hm-modal-open {
+  overflow: hidden;
+}
+
+.hm-modal-overlay {
   position: fixed;
   inset: 0;
-  z-index: 10000;
+  z-index: 20000;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -78,76 +82,107 @@ button:hover {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transition: opacity 0.25s ease, visibility 0.25s ease;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
 }
 
-.fc-modal-overlay.is-open {
+.hm-modal-overlay.is-open {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
 }
 
-.fc-modal {
-  width: min(640px, 100%);
+.hm-modal {
+  width: clamp(360px, 90vw, 720px);
   max-height: 90vh;
   display: flex;
   flex-direction: column;
   background: #19191c;
-  border-radius: 16px;
+  border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 28px 65px rgba(0, 0, 0, 0.55);
   overflow: hidden;
   transform: translateY(12px) scale(0.96);
   opacity: 0;
-  transition: transform 0.28s ease, opacity 0.28s ease;
+  transition: transform 0.2s ease, opacity 0.2s ease;
 }
 
-.fc-modal-overlay.is-open .fc-modal {
+.hm-modal-overlay.is-open .hm-modal {
   transform: translateY(0) scale(1);
   opacity: 1;
 }
 
-.modal-header {
+.hm-modal__header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 1.35rem 1.75rem 1.1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 1.25rem 1.75rem 1.1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.modal-header h2 {
+.hm-modal__close {
+  flex: 0 0 auto;
+  width: 2.25rem;
+  height: 2.25rem;
   margin: 0;
-  font-size: 1.35rem;
-  font-weight: 700;
-}
-
-.modal-close {
-  background: transparent;
-  color: var(--fg);
+  padding: 0;
+  border-radius: 9999px;
   border: none;
-  font-size: 1.35rem;
-  padding: 0.25rem;
-  line-height: 1;
-  border-radius: 999px;
-  transition: background 0.18s ease, color 0.18s ease;
-}
-
-.modal-close:hover,
-.modal-close:focus {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--danger, #e74c3c);
   color: #fff;
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
 }
 
-.modal-form {
+.hm-modal__close:hover {
+  background: #c0392b;
+}
+
+.hm-modal__close:focus-visible {
+  outline: 3px solid rgba(255, 255, 255, 0.55);
+  outline-offset: 2px;
+}
+
+.hm-modal__title-wrapper {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+.hm-modal__title {
+  margin: 0;
+  width: 100%;
+  text-align: center;
+  font-size: clamp(1.15rem, 3vw, 1.6rem);
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hm-modal__header-spacer {
+  flex: 0 0 auto;
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+.hm-modal__form {
   display: flex;
   flex-direction: column;
-  flex: 1;
+  flex: 1 1 auto;
   min-height: 0;
 }
 
-.modal-body {
-  flex: 1;
+.hm-modal__body {
+  flex: 1 1 auto;
   overflow-y: auto;
   padding: 1.25rem 1.75rem 1.5rem;
   display: flex;
@@ -155,29 +190,29 @@ button:hover {
   gap: 1rem;
 }
 
-.modal-body::-webkit-scrollbar {
+.hm-modal__body::-webkit-scrollbar {
   width: 8px;
 }
 
-.modal-body::-webkit-scrollbar-thumb {
+.hm-modal__body::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.16);
   border-radius: 999px;
 }
 
-.modal-field {
+.hm-modal__field {
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
 }
 
-.modal-field label {
+.hm-modal__field label {
   font-weight: 600;
   font-size: 0.95rem;
 }
 
-.modal-field input,
-.modal-field select,
-.modal-field textarea {
+.hm-modal__field input,
+.hm-modal__field select,
+.hm-modal__field textarea {
   width: 100%;
   padding: 0.85rem 0.9rem;
   border-radius: 10px;
@@ -187,22 +222,22 @@ button:hover {
   transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
-.modal-field textarea {
+.hm-modal__field textarea {
   min-height: 120px;
   resize: vertical;
 }
 
-.modal-field input:focus,
-.modal-field select:focus,
-.modal-field textarea:focus {
+.hm-modal__field input:focus,
+.hm-modal__field select:focus,
+.hm-modal__field textarea:focus {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 2px rgba(187, 134, 252, 0.25);
 }
 
-.modal-field input.is-invalid,
-.modal-field select.is-invalid,
-.modal-field textarea.is-invalid {
+.hm-modal__field input.is-invalid,
+.hm-modal__field select.is-invalid,
+.hm-modal__field textarea.is-invalid {
   border-color: #f87171;
   box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.22);
 }
@@ -212,42 +247,78 @@ button:hover {
   color: rgba(244, 244, 245, 0.65);
 }
 
-.modal-footer {
+.hm-modal__footer {
   position: sticky;
   bottom: 0;
   display: flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 0.75rem;
+  justify-content: center;
+  align-items: center;
+  gap: 0.85rem;
   padding: 1rem 1.75rem 1.5rem;
   background: linear-gradient(180deg, rgba(25, 25, 28, 0.75) 0%, rgba(25, 25, 28, 0.98) 40%, rgba(25, 25, 28, 1) 100%);
   border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.modal-footer button {
+.hm-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   margin: 0;
-  min-width: 120px;
+  min-width: 140px;
+  padding: 0.75rem 1.5rem;
+  border-radius: 9999px;
+  border: none;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease, color 0.18s ease;
 }
 
-.modal-footer button.secondary {
-  background: rgba(255, 255, 255, 0.14);
+.hm-btn:hover {
+  transform: translateY(-1px);
+}
+
+.hm-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.hm-btn:focus-visible {
+  outline: 3px solid rgba(255, 255, 255, 0.45);
+  outline-offset: 2px;
+}
+
+.hm-btn--primary {
+  background: #3498db;
+  color: #fff;
+}
+
+.hm-btn--primary:hover {
+  background: #2c80b4;
+}
+
+.hm-btn--secondary {
+  background: rgba(255, 255, 255, 0.16);
   color: var(--fg);
 }
 
-.modal-footer button.secondary:hover {
-  background: rgba(255, 255, 255, 0.25);
+.hm-btn--secondary:hover {
+  background: rgba(255, 255, 255, 0.28);
 }
 
-.modal-footer button.danger {
-  background: #f87171;
-  color: #111;
+.hm-btn--danger {
+  background: #e74c3c;
+  color: #fff;
 }
 
-.modal-footer button.danger:hover {
-  background: #f05252;
+.hm-btn--danger:hover {
+  background: #c0392b;
 }
 
-.fc-modal-desc {
+.hm-modal__desc {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
@@ -256,6 +327,35 @@ button:hover {
   white-space: pre-line;
 }
 
-.fc-modal-desc em {
+.hm-modal__desc em {
   color: rgba(244, 244, 245, 0.65);
+}
+
+@media (max-width: 560px) {
+  .hm-modal__footer {
+    flex-direction: column;
+  }
+
+  .hm-modal__footer .hm-btn {
+    width: min(100%, 280px);
+  }
+
+  .hm-modal__close,
+  .hm-modal__header-spacer {
+    width: 2rem;
+    height: 2rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hm-modal-overlay,
+  .hm-modal,
+  .hm-btn,
+  .hm-modal__close {
+    transition: none !important;
+  }
+
+  .hm-modal {
+    transform: none !important;
+  }
 }

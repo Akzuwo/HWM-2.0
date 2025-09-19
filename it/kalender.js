@@ -143,7 +143,18 @@ function openModal(event) {
     editForm.style.display = 'none';
   }
 
-  overlay.classList.add('is-open');
+  const initialFocusTarget = userIsAdmin
+    ? editForm.querySelector('[data-hm-modal-initial-focus]')
+    : overlay.querySelector('.hm-modal__close');
+
+  if (window.hmModal) {
+    window.hmModal.open(overlay, {
+      initialFocus: initialFocusTarget,
+      onRequestClose: closeModal
+    });
+  } else {
+    overlay.classList.add('is-open');
+  }
 }
 
 // Chiudi modal
@@ -151,7 +162,11 @@ function closeModal() {
   const overlay = document.getElementById('fc-modal-overlay');
   const editForm = document.getElementById('fc-edit-form');
   if (overlay) {
-    overlay.classList.remove('is-open');
+    if (window.hmModal) {
+      window.hmModal.close(overlay);
+    } else {
+      overlay.classList.remove('is-open');
+    }
   }
   if (editForm) {
     editForm.reset();
