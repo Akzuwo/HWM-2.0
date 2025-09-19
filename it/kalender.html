@@ -26,48 +26,51 @@
   </div>
 
   <!-- Modal (initial versteckt) -->
-  <div id="fc-modal-overlay" class="fc-modal-overlay" onclick="closeModal()">
-    <div class="fc-modal" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
-      <header class="modal-header">
-        <h2 id="fc-modal-title">Voce di calendario</h2>
-        <button type="button" class="modal-close" onclick="closeModal()" aria-label="Chiudi">✖</button>
+  <div id="fc-modal-overlay" class="hm-modal-overlay" onclick="closeModal()">
+    <div class="hm-modal" role="dialog" aria-modal="true" tabindex="-1" onclick="event.stopPropagation()">
+      <header class="hm-modal__header">
+        <button type="button" class="hm-modal__close" onclick="closeModal()" aria-label="Chiudi">×</button>
+        <div class="hm-modal__title-wrapper">
+          <h2 id="fc-modal-title" class="hm-modal__title">Voce di calendario</h2>
+        </div>
+        <span class="hm-modal__header-spacer" aria-hidden="true"></span>
       </header>
 
       <div id="fc-view-mode" style="display:none;">
-        <div class="modal-body">
-          <div class="modal-field">
+        <div class="hm-modal__body">
+          <div class="hm-modal__field">
             <label>Tipo</label>
             <span id="fc-modal-type"></span>
           </div>
-          <div class="modal-field">
+          <div class="hm-modal__field">
             <label data-view-label="subject">Materia</label>
             <span id="fc-modal-subject"></span>
           </div>
-          <div class="modal-field">
+          <div class="hm-modal__field">
             <label>Data</label>
             <span id="fc-modal-date"></span>
           </div>
         </div>
-        <div id="fc-modal-desc" class="fc-modal-desc"></div>
-        <div class="modal-footer">
-          <button type="button" class="secondary" onclick="closeModal()">Chiudi</button>
+        <div id="fc-modal-desc" class="hm-modal__desc"></div>
+        <div class="hm-modal__footer">
+          <button type="button" class="hm-btn hm-btn--secondary" onclick="closeModal()">Chiudi</button>
         </div>
       </div>
 
-      <form id="fc-edit-form" class="modal-form" style="display:none;" onsubmit="saveEdit(event)" novalidate>
+      <form id="fc-edit-form" class="hm-modal__form" style="display:none;" onsubmit="saveEdit(event)" novalidate>
         <input type="hidden" id="fc-entry-id">
 
-        <div class="modal-body">
-          <div class="modal-field" data-field="type">
+        <div class="hm-modal__body">
+          <div class="hm-modal__field" data-field="type">
             <label for="fc-edit-type">Tipo</label>
-            <select id="fc-edit-type" name="typ" required>
+            <select id="fc-edit-type" name="typ" required data-hm-modal-initial-focus>
               <option value="hausaufgabe">Compito</option>
               <option value="pruefung">Esame</option>
               <option value="event">Evento</option>
             </select>
           </div>
 
-          <div class="modal-field" data-field="subject">
+          <div class="hm-modal__field" data-field="subject">
             <label for="fc-edit-subject">Materia</label>
             <select id="fc-edit-subject" name="fach">
               <option value="">– seleziona –</option>
@@ -95,60 +98,63 @@
             </select>
           </div>
 
-          <div class="modal-field" data-field="event-title" style="display:none;">
+          <div class="hm-modal__field" data-field="event-title" style="display:none;">
             <label for="fc-edit-event-title">Titolo evento</label>
             <input type="text" id="fc-edit-event-title" name="event-titel" placeholder="Nome dell'evento">
           </div>
 
-          <div class="modal-field" data-field="date">
+          <div class="hm-modal__field" data-field="date">
             <label for="fc-edit-date">Data (GG.MM.AAAA)</label>
             <input type="text" id="fc-edit-date" name="datum" inputmode="numeric" placeholder="18.09.2025" required>
           </div>
 
-          <div class="modal-field" data-field="start">
+          <div class="hm-modal__field" data-field="start">
             <label for="fc-edit-start">Ora di inizio</label>
             <input type="time" id="fc-edit-start" name="startzeit">
           </div>
 
-          <div class="modal-field" data-field="end">
+          <div class="hm-modal__field" data-field="end">
             <label for="fc-edit-end">Ora di fine</label>
             <input type="time" id="fc-edit-end" name="endzeit">
           </div>
 
-          <div class="modal-field" data-field="description">
+          <div class="hm-modal__field" data-field="description">
             <label for="fc-edit-desc">Descrizione</label>
             <textarea id="fc-edit-desc" name="beschreibung" rows="4" placeholder="Dettagli della voce"></textarea>
           </div>
         </div>
 
-        <div class="modal-footer">
-          <button type="button" class="secondary" data-role="cancel">Annulla</button>
-          <button type="submit" data-role="submit">Salva</button>
-          <button type="button" class="danger" data-role="delete" onclick="deleteEntry()">Elimina</button>
+        <div class="hm-modal__footer">
+          <button type="button" class="hm-btn hm-btn--secondary" data-role="cancel">Annulla</button>
+          <button type="submit" class="hm-btn hm-btn--primary" data-role="submit">Salva</button>
+          <button type="button" class="hm-btn hm-btn--danger" data-role="delete" onclick="deleteEntry()">Elimina</button>
         </div>
       </form>
     </div>
   </div>
 
-  <div id="entry-modal-overlay" class="fc-modal-overlay" onclick="closeEntryModal()">
-    <div class="fc-modal" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
-      <header class="modal-header">
-        <h2>📝 Crea una nuova voce</h2>
-        <button type="button" class="modal-close" onclick="closeEntryModal()" aria-label="Chiudi">✖</button>
+  <div id="entry-modal-overlay" class="hm-modal-overlay" onclick="closeEntryModal()">
+    <div class="hm-modal" role="dialog" aria-modal="true" tabindex="-1" onclick="event.stopPropagation()">
+      <header class="hm-modal__header">
+        <button type="button" class="hm-modal__close" onclick="closeEntryModal()" aria-label="Chiudi">×</button>
+        <div class="hm-modal__title-wrapper">
+          <h2 class="hm-modal__title">📝 Crea una nuova voce</h2>
+        </div>
+        <span class="hm-modal__header-spacer" aria-hidden="true"></span>
       </header>
 
-      <form id="entry-form" class="modal-form" onsubmit="saveEntry(event)" novalidate>
-        <div class="modal-body">
-          <div class="modal-field" data-field="type">
+      <form id="entry-form" class="hm-modal__form" onsubmit="saveEntry(event)" novalidate>
+        <div class="hm-modal__body">
+          <div class="hm-modal__field" data-field="type">
             <label for="typ">Tipo</label>
-            <select id="typ" name="typ" required>
+            <select id="typ" name="typ" required data-hm-modal-initial-focus>
               <option value="hausaufgabe">Compito</option>
               <option value="pruefung">Esame</option>
               <option value="event">Evento</option>
             </select>
           </div>
 
-          <div class="modal-field" data-field="subject">
+          <div class="hm-modal__field" data-field="subject">
             <label for="fach">Materia</label>
             <select id="fach" name="fach">
               <option value="">– seleziona –</option>
@@ -176,36 +182,36 @@
             </select>
           </div>
 
-          <div class="modal-field" data-field="event-title" style="display:none;">
+          <div class="hm-modal__field" data-field="event-title" style="display:none;">
             <label for="event-titel">Titolo evento</label>
             <input type="text" id="event-titel" name="event-titel" placeholder="Nome dell'evento">
             <p class="field-hint">Campo obbligatorio per gli eventi.</p>
           </div>
 
-          <div class="modal-field" data-field="description">
+          <div class="hm-modal__field" data-field="description">
             <label for="beschreibung">Descrizione (facoltativa)</label>
             <textarea id="beschreibung" name="beschreibung" rows="3" placeholder="Breve descrizione"></textarea>
           </div>
 
-          <div class="modal-field" data-field="date">
+          <div class="hm-modal__field" data-field="date">
             <label for="datum">Data (GG.MM.AAAA)</label>
             <input type="text" id="datum" name="datum" placeholder="18.09.2025" inputmode="numeric" required>
           </div>
 
-          <div class="modal-field" data-field="start">
+          <div class="hm-modal__field" data-field="start">
             <label for="startzeit">Ora di inizio</label>
             <input type="time" id="startzeit" name="startzeit" required>
           </div>
 
-          <div class="modal-field" data-field="end">
+          <div class="hm-modal__field" data-field="end">
             <label for="endzeit">Ora di fine</label>
             <input type="time" id="endzeit" name="endzeit">
           </div>
         </div>
 
-        <div class="modal-footer">
-          <button type="button" class="secondary" onclick="closeEntryModal()">Annulla</button>
-          <button type="submit" id="saveButton" data-role="submit">Aggiungi</button>
+        <div class="hm-modal__footer">
+          <button type="button" class="hm-btn hm-btn--secondary" onclick="closeEntryModal()">Annulla</button>
+          <button type="submit" id="saveButton" class="hm-btn hm-btn--primary" data-role="submit">Aggiungi</button>
         </div>
       </form>
     </div>
@@ -216,6 +222,7 @@
       src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"
       defer
     ></script>
+    <script src="../utils/js/modal.js" defer></script>
     <script src="../utils/js/overlay.js" defer></script>
     <script src="script.js" defer></script>
     <!-- Dein Kalender-Script -->

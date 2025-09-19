@@ -239,7 +239,11 @@ async function aktuellesFachLaden() {
 function closeEntryModal() {
     const overlay = document.getElementById('entry-modal-overlay');
     if (overlay) {
-        overlay.classList.remove('is-open');
+        if (window.hmModal) {
+            window.hmModal.close(overlay);
+        } else {
+            overlay.classList.remove('is-open');
+        }
     }
     const form = document.getElementById('entry-form');
     if (form) {
@@ -484,7 +488,22 @@ function showEntryForm() {
         saveButton.textContent = 'Aggiungi';
     }
 
-    overlay.classList.add('is-open');
+    const initialFocus = form.querySelector('[data-hm-modal-initial-focus]') || form.querySelector('select, input, textarea, button');
+    if (window.hmModal) {
+        window.hmModal.open(overlay, {
+            initialFocus,
+            onRequestClose: closeEntryModal
+        });
+    } else {
+        overlay.classList.add('is-open');
+        if (initialFocus && typeof initialFocus.focus === 'function') {
+            try {
+                initialFocus.focus({ preventScroll: true });
+            } catch (err) {
+                initialFocus.focus();
+            }
+        }
+    }
 }
 
 async function saveEntry(event) {
