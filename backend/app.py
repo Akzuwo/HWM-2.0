@@ -313,7 +313,15 @@ def aktuelles_fach():
     with open(path, encoding='utf-8') as f:
         plan = json.load(f).get(tag, [])
 
-    current  = {"fach":"Frei","verbleibend":"-","raum":"-"}
+    current  = {
+        "fach": "Frei",
+        "verbleibend": "-",
+        "raum": "-",
+        "start": None,
+        "ende": None,
+        "verbleibende_sekunden": 0,
+        "gesamt_sekunden": 0,
+    }
     next_cls = {"start":None,"fach":"-","raum":"-"}
     def parse_time(t):
         h,m = map(int,t.split(':'))
@@ -323,15 +331,32 @@ def aktuelles_fach():
         start = parse_time(slot["start"])
         ende  = parse_time(slot["end"])
         if start <= now <= ende:
-            delta = int((ende-now).total_seconds())
-            m,s = divmod(delta,60)
-            current = {"fach":slot["fach"],"verbleibend":f"{m:02d}:{s:02d}","raum":slot.get("raum","-")}
+            gesamt = int((ende - start).total_seconds())
+            verbleibend = max(int((ende - now).total_seconds()), 0)
+            m, s = divmod(verbleibend, 60)
+            current = {
+                "fach": slot["fach"],
+                "verbleibend": f"{m:02d}:{s:02d}",
+                "raum": slot.get("raum", "-"),
+                "start": start.strftime("%H:%M"),
+                "ende": ende.strftime("%H:%M"),
+                "verbleibende_sekunden": verbleibend,
+                "gesamt_sekunden": gesamt,
+            }
         elif start>now and slot.get("raum","-")!="-":
             if next_cls["start"] is None or start<next_cls["start"]:
                 next_cls={"start":start,"fach":slot["fach"],"raum":slot["raum"]}
 
     next_start = f"{next_cls['start'].hour:02d}:{next_cls['start'].minute:02d}" if next_cls["start"] else "-"
-    return jsonify({**current,"naechste_start":next_start,"naechster_raum":next_cls["raum"],"naechstes_fach":next_cls["fach"]})
+    response = {
+        **current,
+        "naechste_start": next_start,
+        "naechster_raum": next_cls["raum"],
+        "naechstes_fach": next_cls["fach"],
+    }
+    if next_cls["start"]:
+        response["naechste_start_iso"] = next_cls["start"].isoformat()
+    return jsonify(response)
 
 
 @app.route('/tagesuebersicht')
