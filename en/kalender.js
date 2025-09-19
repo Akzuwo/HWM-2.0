@@ -578,6 +578,34 @@ function determineInitialView() {
   return window.matchMedia('(max-width: 767px)').matches ? 'timeGridWeek' : 'dayGridMonth';
 }
 
+function updateMonthLabel(calendar) {
+  const label = document.querySelector('[data-calendar-month-label]');
+  if (label) {
+    label.textContent = calendar.view.title;
+  }
+}
+
+function setupMonthNavigation(calendar) {
+  const prevButton = document.querySelector('[data-calendar-nav="prev"]');
+  const nextButton = document.querySelector('[data-calendar-nav="next"]');
+
+  if (prevButton) {
+    prevButton.addEventListener('click', () => {
+      calendar.prev();
+      updateMonthLabel(calendar);
+    });
+  }
+
+  if (nextButton) {
+    nextButton.addEventListener('click', () => {
+      calendar.next();
+      updateMonthLabel(calendar);
+    });
+  }
+
+  updateMonthLabel(calendar);
+}
+
 function initialiseCalendar(events) {
   const calendarEl = document.getElementById('calendar');
   if (!calendarEl) return;
@@ -612,11 +640,13 @@ function initialiseCalendar(events) {
     },
     datesSet: () => {
       updateWeekStrip(calendar);
+      updateMonthLabel(calendar);
     }
   });
 
   calendar.render();
   updateWeekStrip(calendar);
+  setupMonthNavigation(calendar);
   calendarInstance = calendar;
 
   const handleResize = debounce(() => {

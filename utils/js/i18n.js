@@ -26,6 +26,12 @@
           week: 'Woche',
           day: 'Tag',
         },
+        monthNav: {
+          label: 'Monatsnavigation',
+          previous: 'Vorheriger Monat',
+          next: 'Nächster Monat',
+          current: 'Aktueller Monat',
+        },
         actions: {
           create: {
             label: 'Neuer Eintrag',
@@ -136,6 +142,12 @@
           week: 'Week',
           day: 'Day',
         },
+        monthNav: {
+          label: 'Month navigation',
+          previous: 'Previous month',
+          next: 'Next month',
+          current: 'Current month',
+        },
         actions: {
           create: {
             label: 'New entry',
@@ -244,6 +256,12 @@
           month: 'Mese',
           week: 'Settimana',
           day: 'Giorno',
+        },
+        monthNav: {
+          label: 'Navigazione mesi',
+          previous: 'Mese precedente',
+          next: 'Mese successivo',
+          current: 'Mese corrente',
         },
         actions: {
           create: {

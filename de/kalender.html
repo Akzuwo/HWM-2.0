@@ -83,6 +83,40 @@
         <span class="calendar-weekstrip__label" data-i18n="calendar.weekStrip.label">Kalenderwochen</span>
         <div class="calendar-weekstrip__list" data-week-strip-list role="listbox"></div>
       </div>
+      <div
+        class="calendar-month-nav"
+        role="group"
+        aria-label="Monatsnavigation"
+        data-i18n-attr="aria-label:calendar.monthNav.label"
+      >
+        <button
+          type="button"
+          class="calendar-month-nav__button"
+          data-calendar-nav="prev"
+          aria-label="Vorheriger Monat"
+          data-i18n-attr="aria-label:calendar.monthNav.previous"
+        >
+          <span aria-hidden="true">◀</span>
+          <span class="visually-hidden" data-i18n="calendar.monthNav.previous">Vorheriger Monat</span>
+        </button>
+        <span
+          class="calendar-month-nav__label"
+          data-calendar-month-label
+          data-i18n="calendar.monthNav.current"
+        >
+          Aktueller Monat
+        </span>
+        <button
+          type="button"
+          class="calendar-month-nav__button"
+          data-calendar-nav="next"
+          aria-label="Nächster Monat"
+          data-i18n-attr="aria-label:calendar.monthNav.next"
+        >
+          <span class="visually-hidden" data-i18n="calendar.monthNav.next">Nächster Monat</span>
+          <span aria-hidden="true">▶</span>
+        </button>
+      </div>
       <div id="calendar" data-i18n="calendar.status.loading">Kalender wird geladen …</div>
     </section>
   </main>
@@ -126,6 +160,10 @@
   <div id="fc-modal-overlay" class="hm-modal-overlay" onclick="closeModal()">
     <div class="hm-modal" role="dialog" aria-modal="true" tabindex="-1" onclick="event.stopPropagation()">
       <header class="hm-modal__header">
+        <span class="hm-modal__header-spacer" aria-hidden="true"></span>
+        <div class="hm-modal__title-wrapper">
+          <h2 id="fc-modal-title" class="hm-modal__title" data-i18n="calendar.modal.viewTitle">Kalender-Eintrag</h2>
+        </div>
         <button
           type="button"
           class="hm-modal__close"
@@ -135,10 +173,6 @@
         >
           ×
         </button>
-        <div class="hm-modal__title-wrapper">
-          <h2 id="fc-modal-title" class="hm-modal__title" data-i18n="calendar.modal.viewTitle">Kalender-Eintrag</h2>
-        </div>
-        <span class="hm-modal__header-spacer" aria-hidden="true"></span>
       </header>
 
       <div id="fc-view-mode" class="hm-modal__section">
@@ -290,6 +324,10 @@
   <div id="entry-modal-overlay" class="hm-modal-overlay" onclick="closeEntryModal()">
     <div class="hm-modal" role="dialog" aria-modal="true" tabindex="-1" onclick="event.stopPropagation()">
       <header class="hm-modal__header">
+        <span class="hm-modal__header-spacer" aria-hidden="true"></span>
+        <div class="hm-modal__title-wrapper">
+          <h2 class="hm-modal__title" data-i18n="calendar.modal.createTitle">📝 Neuen Eintrag erstellen</h2>
+        </div>
         <button
           type="button"
           class="hm-modal__close"
@@ -299,10 +337,6 @@
         >
           ×
         </button>
-        <div class="hm-modal__title-wrapper">
-          <h2 class="hm-modal__title" data-i18n="calendar.modal.createTitle">📝 Neuen Eintrag erstellen</h2>
-        </div>
-        <span class="hm-modal__header-spacer" aria-hidden="true"></span>
       </header>
 
       <form id="entry-form" class="hm-modal__form" onsubmit="saveEntry(event)" novalidate>
