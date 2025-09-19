@@ -136,7 +136,8 @@
 #notenrechner-container .noten-inputs .btn {
   flex: 0 0 auto;
   min-width: 160px;
-  align-self: stretch;
+  align-self: flex-end;
+  height: 48px;
 }
 
 #notenrechner-container .ziel-inputs .btn {
