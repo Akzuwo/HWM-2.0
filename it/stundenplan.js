@@ -5,6 +5,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   initCurrentSubjectPage({
+    refreshInterval: 750,
+    countdownUpdateInterval: 750,
     text: {
       baseTitle: 'Materia attuale',
       countdownLabel: 'Tempo rimanente',
