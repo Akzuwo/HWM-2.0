@@ -40,42 +40,11 @@
         <div id="fc-modal-desc" class="fc-modal-desc"></div>
       </div>
 
-      <!-- EDIT MODE (solo admin) -->
-      <form id="fc-edit-form" style="display:none;">
-        <h2>Modifica voce</h2>
-        <input type="hidden" id="fc-entry-id">
-        <input type="hidden" id="fc-entry-type">
-
-        <div class="fc-form-group">
-          <label for="fc-edit-subject">Abbreviazione materia</label>
-          <input type="text" id="fc-edit-subject" maxlength="100" required>
-        </div>
-
-        <div class="fc-form-group">
-          <label for="fc-edit-date">Data (AAAA-MM-GG)</label>
-          <input type="date" id="fc-edit-date" required>
-        </div>
-
-        <div class="fc-form-group">
-          <label for="fc-edit-start">Ora d'inizio (opzionale)</label>
-          <input type="time" id="fc-edit-start">
-        </div>
-
-        <div class="fc-form-group">
-          <label for="fc-edit-end">Ora di fine (opzionale)</label>
-          <input type="time" id="fc-edit-end">
-        </div>
-
-        <div class="fc-form-group">
-          <label for="fc-edit-desc">Descrizione</label>
-          <textarea id="fc-edit-desc" rows="4"></textarea>
-        </div>
-
-        <button type="button" onclick="saveEdit()">Salva</button>
-        <button type="button" onclick="deleteEntry()" style="background:#dc3545; color:#fff;">
-          Elimina
-        </button>
-      </form>
+      <!-- AZIONI AMMINISTRATORE -->
+      <div class="fc-modal-actions" id="fc-admin-actions" hidden>
+        <button type="button" id="fc-edit-button">Modifica</button>
+        <button type="button" id="fc-delete-button" class="danger">Elimina</button>
+      </div>
 
     </div>
   </div>
@@ -86,11 +55,14 @@
 
       <button class="close-btn" onclick="closeEntryModal()">✖</button>
 
-      <h2>📝 Crea una nuova voce</h2>
-      <form id="entry-form" onsubmit="saveEntry(event)">
+      <h2 id="entry-form-title">📝 Crea una nuova voce</h2>
+      <form id="entry-form" data-mode="create" onsubmit="saveEntry(event)">
+        <input type="hidden" id="entry-id" name="entry-id">
+
         <div class="fc-form-group">
           <label for="typ">Tipo</label>
           <select id="typ" name="typ" required>
+            <option value="" disabled selected>Seleziona un tipo</option>
             <option value="hausaufgabe">Compito</option>
             <option value="pruefung">Esame</option>
             <option value="event">Evento</option>
@@ -100,7 +72,7 @@
         <div class="fc-form-group" data-field="subject">
           <label for="fach">Materia</label>
           <select id="fach" name="fach" required>
-            <option value="">– seleziona –</option>
+            <option value="" disabled selected>– seleziona –</option>
             <option>MA</option>
             <option>DE</option>
             <option>EN</option>
@@ -125,22 +97,28 @@
           </select>
         </div>
 
-        <div class="fc-form-group" data-field="event-title" style="display:none;">
+        <div class="fc-form-group" data-field="event-title" hidden>
           <label for="event-titel">Titolo evento</label>
           <input
             type="text"
             id="event-titel"
             name="event-titel"
-            minlength="80"
             maxlength="120"
-            placeholder="Titolo di 80-120 caratteri"
+            placeholder="Breve e incisivo (ad es. serata informativa)"
             required
           >
         </div>
 
         <div class="fc-form-group">
           <label for="beschreibung">Descrizione (facoltativa)</label>
-          <textarea id="beschreibung" name="beschreibung" rows="3" placeholder="Breve descrizione"></textarea>
+          <textarea
+            id="beschreibung"
+            name="beschreibung"
+            rows="3"
+            placeholder="Aggiungi dettagli di supporto"
+            aria-describedby="beschreibung-hint"
+          ></textarea>
+          <p class="fc-field-hint" id="beschreibung-hint">Condividi dettagli extra, link o promemoria. Questo campo è facoltativo.</p>
         </div>
 
         <div class="fc-form-group">

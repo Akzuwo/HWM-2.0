@@ -236,15 +236,43 @@ async function aktuellesFachLaden() {
 
 
 /** EINTRAG ERFASSEN MIT DROPDOWN UND DB-ANBINDUNG **/
-function closeEntryModal() {
-    const overlay = document.getElementById('entry-modal-overlay');
-    if (overlay) overlay.style.display = 'none';
-}
+const API_BASE_URL = 'https://homework-manager-2-0-backend.onrender.com';
+const OVERLAY_VISIBLE_CLASS = 'is-visible';
+const OVERLAY_CLOSING_CLASS = 'closing';
+const OVERLAY_TRANSITION_MS = 200;
+
+const ENTRY_FORM_COPY = {
+    create: {
+        title: '📝 Neuen Eintrag erstellen',
+        submit: 'Hinzufügen',
+        success: 'Eintrag wurde erfolgreich gespeichert!'
+    },
+    edit: {
+        title: '✏️ Eintrag bearbeiten',
+        submit: 'Speichern',
+        success: 'Änderungen erfolgreich gespeichert!'
+    },
+    saving: 'Speichern läuft...'
+};
 
 const ENTRY_FORM_MESSAGES = {
     invalidDate: 'Bitte gib ein gültiges Datum im Format TT.MM.JJJJ ein.',
-    invalidEnd: 'Die Endzeit darf nicht vor der Startzeit liegen.'
+    endBeforeStart: 'Endzeit liegt vor Startzeit',
+    missingSubject: 'Bitte ein Fach wählen',
+    missingEventTitle: 'Bitte Event-Titel angeben'
 };
+
+function animateOverlay(overlay, show) {
+    if (!overlay) return;
+    overlay.classList.remove(OVERLAY_CLOSING_CLASS);
+    if (show) {
+        overlay.classList.add(OVERLAY_VISIBLE_CLASS);
+        return;
+    }
+    overlay.classList.remove(OVERLAY_VISIBLE_CLASS);
+    overlay.classList.add(OVERLAY_CLOSING_CLASS);
+    window.setTimeout(() => overlay.classList.remove(OVERLAY_CLOSING_CLASS), OVERLAY_TRANSITION_MS);
+}
 
 function parseSwissDate(value) {
     if (!value) return null;
@@ -266,6 +294,83 @@ function parseSwissDate(value) {
         .padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
 }
 
+function formatIsoToSwiss(value) {
+    if (!value) return '';
+    const [year, month, day] = value.split('-');
+    if (!year || !month || !day) {
+        return value;
+    }
+    return `${day}.${month}.${year}`;
+}
+
+function formatTimeForPayload(value) {
+    return value ? `${value}:00` : null;
+}
+
+function splitEventDescription(description) {
+    if (!description) {
+        return { title: '', details: '' };
+    }
+    const segments = description.split(/
+\s*
+/);
+    const title = segments.shift() || '';
+    const details = segments.join('
+
+').trim();
+    return { title: title.trim(), details };
+}
+
+function ensureEntryFormSetup(form) {
+    if (!form) return null;
+    if (!form.__entryFormState) {
+        setupEntryFormInteractions(form);
+    }
+    return form.__entryFormState || null;
+}
+
+function setEntryFormMode(form, mode) {
+    if (!form) return;
+    const normalizedMode = mode === 'edit' ? 'edit' : 'create';
+    form.dataset.mode = normalizedMode;
+    if (normalizedMode === 'create') {
+        form.dataset.entryId = '';
+    }
+    const copy = ENTRY_FORM_COPY[normalizedMode];
+    const heading = document.getElementById('entry-form-title');
+    const state = ensureEntryFormSetup(form);
+    if (heading && copy) {
+        heading.textContent = copy.title;
+    }
+    if (state?.saveButton && copy) {
+        state.saveButton.textContent = copy.submit;
+    }
+    state?.evaluate?.();
+}
+
+function resetEntryForm(form) {
+    if (!form) return;
+    form.dataset.mode = 'create';
+    form.dataset.entryId = '';
+    form.reset();
+    window.setTimeout(() => {
+        setEntryFormMode(form, 'create');
+        const state = ensureEntryFormSetup(form);
+        state?.toggleTypeFields?.();
+        state?.evaluate?.();
+    }, 0);
+}
+
+function closeEntryModal() {
+    const overlay = document.getElementById('entry-modal-overlay');
+    const form = document.getElementById('entry-form');
+    if (form) {
+        resetEntryForm(form);
+    }
+    animateOverlay(overlay, false);
+}
+window.closeEntryModal = closeEntryModal;
+
 function setupEntryFormInteractions(form) {
     if (!form || form.dataset.enhanced === 'true') {
         return;
@@ -277,6 +382,7 @@ function setupEntryFormInteractions(form) {
     const subjectSelect = form.querySelector('#fach');
     const eventTitleGroup = form.querySelector('[data-field="event-title"]');
     const eventTitleInput = form.querySelector('#event-titel');
+    const descriptionInput = form.querySelector('#beschreibung');
     const dateInput = form.querySelector('#datum');
     const startInput = form.querySelector('#startzeit');
     const endInput = form.querySelector('#endzeit');
@@ -284,8 +390,9 @@ function setupEntryFormInteractions(form) {
 
     const evaluate = () => {
         if (dateInput) {
-            const iso = parseSwissDate(dateInput.value);
-            if (!iso) {
+            const trimmed = dateInput.value.trim();
+            const iso = trimmed ? parseSwissDate(trimmed) : null;
+            if (trimmed && !iso) {
                 dateInput.setCustomValidity(ENTRY_FORM_MESSAGES.invalidDate);
             } else {
                 dateInput.setCustomValidity('');
@@ -294,9 +401,25 @@ function setupEntryFormInteractions(form) {
 
         if (startInput && endInput) {
             if (endInput.value && startInput.value && endInput.value < startInput.value) {
-                endInput.setCustomValidity(ENTRY_FORM_MESSAGES.invalidEnd);
+                endInput.setCustomValidity(ENTRY_FORM_MESSAGES.endBeforeStart);
             } else {
                 endInput.setCustomValidity('');
+            }
+        }
+
+        if (subjectSelect) {
+            if (subjectSelect.required && !subjectSelect.value) {
+                subjectSelect.setCustomValidity(ENTRY_FORM_MESSAGES.missingSubject);
+            } else {
+                subjectSelect.setCustomValidity('');
+            }
+        }
+
+        if (eventTitleInput) {
+            if (eventTitleInput.required && !eventTitleInput.value.trim()) {
+                eventTitleInput.setCustomValidity(ENTRY_FORM_MESSAGES.missingEventTitle);
+            } else {
+                eventTitleInput.setCustomValidity('');
             }
         }
 
@@ -306,21 +429,20 @@ function setupEntryFormInteractions(form) {
     };
 
     const toggleTypeFields = () => {
-        if (!typeSelect) return;
-        const isEvent = typeSelect.value === 'event';
+        const value = typeSelect ? typeSelect.value : '';
+        const isEvent = value === 'event';
         if (subjectGroup) {
-            subjectGroup.style.display = isEvent ? 'none' : '';
+            subjectGroup.hidden = isEvent;
         }
         if (subjectSelect) {
             subjectSelect.required = !isEvent;
-            subjectSelect.classList.toggle('optional', isEvent);
             if (isEvent) {
                 subjectSelect.value = '';
                 subjectSelect.setCustomValidity('');
             }
         }
         if (eventTitleGroup) {
-            eventTitleGroup.style.display = isEvent ? '' : 'none';
+            eventTitleGroup.hidden = !isEvent;
         }
         if (eventTitleInput) {
             eventTitleInput.required = isEvent;
@@ -336,13 +458,25 @@ function setupEntryFormInteractions(form) {
         typeSelect.addEventListener('change', toggleTypeFields);
     }
 
-    [dateInput, startInput, endInput, subjectSelect, eventTitleInput].forEach((input) => {
+    [dateInput, startInput, endInput, subjectSelect, eventTitleInput, descriptionInput].forEach((input) => {
         if (!input) return;
         input.addEventListener('input', evaluate);
+        input.addEventListener('change', evaluate);
     });
 
     form.addEventListener('reset', () => {
         window.setTimeout(() => {
+            if (typeSelect) {
+                typeSelect.value = '';
+            }
+            if (subjectSelect) {
+                subjectSelect.value = '';
+                subjectSelect.setCustomValidity('');
+            }
+            if (eventTitleInput) {
+                eventTitleInput.value = '';
+                eventTitleInput.setCustomValidity('');
+            }
             if (dateInput) {
                 dateInput.value = '';
                 dateInput.setCustomValidity('');
@@ -354,21 +488,25 @@ function setupEntryFormInteractions(form) {
                 endInput.value = '';
                 endInput.setCustomValidity('');
             }
-            if (eventTitleInput) {
-                eventTitleInput.value = '';
-                eventTitleInput.setCustomValidity('');
-            }
-            if (subjectSelect) {
-                subjectSelect.value = '';
-                subjectSelect.setCustomValidity('');
-            }
-            if (typeSelect) {
-                typeSelect.value = 'event';
-            }
             toggleTypeFields();
             evaluate();
         }, 0);
     });
+
+    form.__entryFormState = {
+        typeSelect,
+        subjectGroup,
+        subjectSelect,
+        eventTitleGroup,
+        eventTitleInput,
+        descriptionInput,
+        dateInput,
+        startInput,
+        endInput,
+        saveButton,
+        evaluate,
+        toggleTypeFields
+    };
 
     toggleTypeFields();
     evaluate();
@@ -380,205 +518,273 @@ function showEntryForm() {
         return;
     }
     const overlay = document.getElementById('entry-modal-overlay');
-    if (overlay) {
-        overlay.style.display = 'block';
-        const form = document.getElementById('entry-form');
-        if (form) {
-            form.reset();
-            setupEntryFormInteractions(form);
-            const typeSelect = form.querySelector('#typ');
-            if (typeSelect) {
-                typeSelect.value = 'event';
-                typeSelect.dispatchEvent(new Event('change'));
-            }
-        }
+    const form = document.getElementById('entry-form');
+    if (overlay && form) {
+        resetEntryForm(form);
+        animateOverlay(overlay, true);
+        const state = ensureEntryFormSetup(form);
+        window.setTimeout(() => state?.typeSelect?.focus(), 0);
         return;
     }
     clearContent();
     document.getElementById('content').innerHTML = `
-        <h2>📝 Neuen Eintrag erstellen</h2>
-        <form id="entry-form" onsubmit="saveEntry(event)">
-            <label>
-                Typ:
-                <select id="typ" required>
+        <h2 id="entry-form-title">📝 Neuen Eintrag erstellen</h2>
+        <form id="entry-form" data-mode="create" onsubmit="saveEntry(event)">
+            <input type="hidden" id="entry-id" name="entry-id">
+            <div class="fc-form-group">
+                <label for="typ">Typ</label>
+                <select id="typ" name="typ" required>
+                    <option value="" disabled selected>Bitte Typ wählen</option>
                     <option value="hausaufgabe">Hausaufgabe</option>
                     <option value="pruefung">Prüfung</option>
-                    <option value="event" selected>Event</option>
+                    <option value="event">Event</option>
                 </select>
-            </label><br>
-            <label data-field="subject">
-                Fach:
-                <select id="fach" required>
-                    <option value="">– bitte wählen –</option>
+            </div>
+            <div class="fc-form-group" data-field="subject">
+                <label for="fach">Fach</label>
+                <select id="fach" name="fach" required>
+                    <option value="" disabled selected>– bitte wählen –</option>
                     ${[
                         'MA','DE','EN','PS','SPM-PS','SPM-MA','SPM-ES','SP','WR','GS',
                         'GG','IN','IT','FR','BG','MU','BI','Sport','CH','PH','SMU'
                     ].map(f => `<option>${f}</option>`).join('')}
                 </select>
-            </label><br>
-            <label data-field="event-title" style="display:none;">
-                Event-Titel:
-                <input type="text" id="event-titel" minlength="80" maxlength="120" placeholder="Titel mit 80–120 Zeichen" required>
-            </label><br>
-            <label>
-                Beschreibung (optional):
-                <textarea id="beschreibung" rows="3" placeholder="Kurzbeschreibung"></textarea>
-            </label><br>
-            <label>
-                Datum (TT.MM.JJJJ):
-                <input type="text" id="datum" placeholder="18.09.2025" inputmode="numeric" required>
-            </label><br>
-            <label>
-                Startzeit:
-                <input type="time" id="startzeit" required>
-            </label><br>
-            <label>
-                Endzeit (optional):
-                <input type="time" id="endzeit">
-            </label><br>
+            </div>
+            <div class="fc-form-group" data-field="event-title" hidden>
+                <label for="event-titel">Event-Titel</label>
+                <input
+                    type="text"
+                    id="event-titel"
+                    name="event-titel"
+                    maxlength="120"
+                    placeholder="Kurz und prägnant (z. B. Infoabend)"
+                    required
+                >
+            </div>
+            <div class="fc-form-group">
+                <label for="beschreibung">Beschreibung (optional)</label>
+                <textarea
+                    id="beschreibung"
+                    name="beschreibung"
+                    rows="3"
+                    placeholder="Ergänzende Infos hinzufügen"
+                    aria-describedby="beschreibung-hinweis"
+                ></textarea>
+                <p class="fc-field-hint" id="beschreibung-hinweis">Beschreibe wichtige Details, Materialien oder Hinweise. Dieser Bereich ist optional.</p>
+            </div>
+            <div class="fc-form-group">
+                <label for="datum">Datum (TT.MM.JJJJ)</label>
+                <input
+                    type="text"
+                    id="datum"
+                    name="datum"
+                    placeholder="18.09.2025"
+                    inputmode="numeric"
+                    required
+                >
+            </div>
+            <div class="fc-form-group">
+                <label for="startzeit">Startzeit</label>
+                <input type="time" id="startzeit" name="startzeit" required>
+            </div>
+            <div class="fc-form-group">
+                <label for="endzeit">Endzeit (optional)</label>
+                <input type="time" id="endzeit" name="endzeit">
+            </div>
             <button type="submit" id="saveButton">Hinzufügen</button>
         </form>
     `;
 
-    setupEntryFormInteractions(document.getElementById('entry-form'));
+    const dynamicForm = document.getElementById('entry-form');
+    setupEntryFormInteractions(dynamicForm);
 }
+
+function openEntryEditor(entry) {
+    const overlay = document.getElementById('entry-modal-overlay');
+    const form = document.getElementById('entry-form');
+    if (!overlay || !form) {
+        console.warn('Bearbeitungsformular ist nicht verfügbar.');
+        return;
+    }
+    const state = ensureEntryFormSetup(form);
+    form.dataset.entryId = entry?.id ? String(entry.id) : '';
+    setEntryFormMode(form, 'edit');
+
+    if (state?.typeSelect) {
+        state.typeSelect.value = entry?.type || '';
+        state.typeSelect.dispatchEvent(new Event('change'));
+    }
+
+    if (state?.subjectSelect) {
+        state.subjectSelect.value = entry?.type === 'event' ? '' : (entry?.fach || '');
+    }
+
+    const eventSegments = entry?.type === 'event'
+        ? splitEventDescription(entry?.description || '')
+        : { title: '', details: entry?.description || '' };
+
+    if (state?.eventTitleInput) {
+        state.eventTitleInput.value = eventSegments.title || '';
+    }
+
+    if (state?.descriptionInput) {
+        state.descriptionInput.value = eventSegments.details || '';
+    }
+
+    if (state?.dateInput) {
+        state.dateInput.value = entry?.datum ? formatIsoToSwiss(entry.datum) : '';
+    }
+
+    if (state?.startInput) {
+        state.startInput.value = entry?.startzeit ? entry.startzeit.slice(0, 5) : '';
+    }
+
+    if (state?.endInput) {
+        state.endInput.value = entry?.endzeit ? entry.endzeit.slice(0, 5) : '';
+    }
+
+    window.setTimeout(() => {
+        state?.toggleTypeFields?.();
+        state?.evaluate?.();
+    }, 0);
+
+    animateOverlay(overlay, true);
+    window.setTimeout(() => state?.typeSelect?.focus(), 0);
+}
+window.openEntryEditor = openEntryEditor;
 
 async function saveEntry(event) {
     if (event) {
         event.preventDefault();
     }
 
-    const typeField = document.getElementById('typ');
-    const subjectField = document.getElementById('fach');
-    const descriptionField = document.getElementById('beschreibung');
-    const dateField = document.getElementById('datum');
-    const startField = document.getElementById('startzeit');
-    const endField = document.getElementById('endzeit');
-    const eventTitleField = document.getElementById('event-titel');
-
-    if (!typeField || !dateField || !startField) {
-        console.error('Formularfelder fehlen.');
-        return;
-    }
-
-    const typ = typeField.value;
-    const fach = subjectField ? subjectField.value.trim() : '';
-    const beschreibung = descriptionField ? descriptionField.value.trim() : '';
-    const datumInput = dateField.value.trim();
-    const startzeitInput = startField.value;
-    const endzeitInput = endField ? endField.value : '';
-    const eventTitle = eventTitleField ? eventTitleField.value.trim() : '';
-    const saveButton = document.getElementById('saveButton');
     const form = document.getElementById('entry-form');
-    const resetTypeSelection = () => {
-        const typeSelect = document.getElementById('typ');
-        if (typeSelect) {
-            typeSelect.value = 'event';
-            typeSelect.dispatchEvent(new Event('change'));
-        }
-    };
-
-    if (!saveButton) {
-        console.error('Kein Speicher-Button gefunden.');
+    if (!form) {
+        console.error('Kein Formular zum Speichern gefunden.');
+        return;
+    }
+    const state = ensureEntryFormSetup(form);
+    state?.evaluate?.();
+    if (!form.checkValidity()) {
+        form.reportValidity();
         return;
     }
 
-    const isEvent = typ === 'event';
+    const mode = form.dataset.mode === 'edit' ? 'edit' : 'create';
+    const copy = ENTRY_FORM_COPY[mode];
+    const type = state?.typeSelect ? state.typeSelect.value : '';
+    const isEvent = type === 'event';
+    const subject = state?.subjectSelect ? state.subjectSelect.value.trim() : '';
+    const eventTitle = state?.eventTitleInput ? state.eventTitleInput.value.trim() : '';
+    const description = state?.descriptionInput ? state.descriptionInput.value.trim() : '';
+    const dateInput = state?.dateInput ? state.dateInput.value.trim() : '';
+    const startInput = state?.startInput ? state.startInput.value : '';
+    const endInput = state?.endInput ? state.endInput.value : '';
+    const entryId = form.dataset.entryId || '';
+    const saveButton = state?.saveButton;
 
-    if (!isEvent && !fach) {
-        showOverlay('Bitte wähle ein Fach aus (außer bei Events).');
-        return;
-    }
-    if (isEvent) {
-        if (!eventTitle || eventTitle.length < 80 || eventTitle.length > 120) {
-            showOverlay('Bitte gib einen Event-Titel mit 80–120 Zeichen ein.');
-            return;
-        }
-    }
-    if (!datumInput) {
-        showOverlay('Bitte gib ein Datum ein.');
-        return;
-    }
-
-    const isoDate = parseSwissDate(datumInput);
+    const isoDate = parseSwissDate(dateInput);
     if (!isoDate) {
-        showOverlay('Bitte gib ein gültiges Datum im Format TT.MM.JJJJ ein.');
+        state?.dateInput?.setCustomValidity(ENTRY_FORM_MESSAGES.invalidDate);
+        form.reportValidity();
         return;
     }
 
-    if (!startzeitInput) {
-        showOverlay('Bitte gib eine Startzeit ein.');
-        return;
-    }
-
-    if (endzeitInput && endzeitInput < startzeitInput) {
-        showOverlay('Die Endzeit darf nicht vor der Startzeit liegen.');
-        return;
-    }
-
-    const startzeit = `${startzeitInput}:00`;
-    const endzeit = endzeitInput ? `${endzeitInput}:00` : null;
+    const startzeit = formatTimeForPayload(startInput);
+    const endzeit = formatTimeForPayload(endInput);
 
     const payloadBeschreibung = isEvent
-        ? eventTitle + (beschreibung ? `\n\n${beschreibung}` : '')
-        : beschreibung;
-    const payloadSubject = isEvent ? '' : fach;
+        ? `${eventTitle}${description ? `\n\n${description}` : ''}`
+        : description;
+    const payloadSubject = isEvent ? '' : subject;
 
-    // Button deaktivieren und visuelles Feedback geben
-    saveButton.disabled = true;
-    saveButton.innerText = "Speichern läuft...";
+    if (saveButton) {
+        saveButton.disabled = true;
+        saveButton.textContent = ENTRY_FORM_COPY.saving;
+    }
 
-    let success = false;
-    let attempt = 0;
-    const maxAttempts = 10;
+    const role = sessionStorage.getItem('role') || 'guest';
 
-    while (!success && attempt < maxAttempts) {
-        try {
-            const response = await fetch('https://homework-manager-2-0-backend.onrender.com/add_entry', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ typ, fach: payloadSubject, beschreibung: payloadBeschreibung, datum: isoDate, startzeit, endzeit })
+    try {
+        if (mode === 'edit') {
+            const response = await fetch(`${API_BASE_URL}/update_entry`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Role': role
+                },
+                body: JSON.stringify({
+                    id: entryId,
+                    type,
+                    date: isoDate,
+                    description: payloadBeschreibung,
+                    startzeit,
+                    endzeit,
+                    fach: payloadSubject
+                })
             });
-            const result = await response.json();
-
-            if (result.status === "ok") {
-                success = true;
-                showOverlay("Eintrag wurde erfolgreich gespeichert!");
-                closeEntryModal();
-                document.getElementById('overlay-close')
-                    .addEventListener('click', () => location.reload(), { once: true });
-                if (form) {
-                    form.reset();
-                    resetTypeSelection();
-                }
-            } else {
-                console.error("Server-Fehler beim Speichern:", result.message);
+            if (!response.ok) {
+                const message = await response.text().catch(() => '');
+                throw new Error(message || `Status ${response.status}`);
             }
-        } catch (error) {
-            console.error("Netzwerk-Fehler beim Speichern:", error);
+            showOverlay(copy.success);
+            closeEntryModal();
+            document.getElementById('overlay-close')
+                .addEventListener('click', () => location.reload(), { once: true });
+            return;
         }
 
-        if (!success) {
-            attempt++;
-            console.warn(`Speicher-Versuch ${attempt} fehlgeschlagen. Neuer Versuch in 2 Sekunden.`);
-            await new Promise(resolve => setTimeout(resolve, 2000));
+        let success = false;
+        let attempt = 0;
+        const maxAttempts = 10;
+
+        while (!success && attempt < maxAttempts) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/add_entry`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Role': role
+                    },
+                    body: JSON.stringify({
+                        typ: type,
+                        fach: payloadSubject,
+                        beschreibung: payloadBeschreibung,
+                        datum: isoDate,
+                        startzeit,
+                        endzeit
+                    })
+                });
+                const result = await response.json();
+                if (response.ok && result.status === 'ok') {
+                    success = true;
+                    showOverlay(copy.success);
+                    closeEntryModal();
+                    document.getElementById('overlay-close')
+                        .addEventListener('click', () => location.reload(), { once: true });
+                } else {
+                    const message = result.message || `Status ${response.status}`;
+                    throw new Error(message);
+                }
+            } catch (requestError) {
+                attempt += 1;
+                if (attempt >= maxAttempts) {
+                    throw requestError;
+                }
+                await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+        }
+    } catch (error) {
+        console.error('Fehler beim Speichern:', error);
+        showOverlay(`Fehler beim Speichern:
+${error.message}`);
+    } finally {
+        if (saveButton) {
+            saveButton.disabled = false;
+            saveButton.textContent = copy.submit;
         }
     }
-
-    if (!success) {
-        showOverlay("Der Eintrag konnte nach mehreren Versuchen nicht gespeichert werden. Bitte versuche es später noch einmal.");
-    } else {
-        if (form) {
-            form.reset();
-            resetTypeSelection();
-        }
-    }
-
-    // Button wieder aktivieren
-    saveButton.disabled = false;
-    saveButton.innerText = "Hinzufügen";
 }
-
 // Initialcheck beim Laden der Seite
 window.addEventListener('DOMContentLoaded', checkLogin);
 window.addEventListener('DOMContentLoaded', initLanguageSelector);
