@@ -6,8 +6,6 @@ const API_BASE = 'https://homework-manager-2-0-backend.onrender.com';
 // Role from sessionStorage (set on login)
 const role = sessionStorage.getItem('role') || 'guest';
 const userIsAdmin = (role === 'admin');
-let activeEventData = null;
-const MODAL_ANIMATION_MS = 200;
 
 // Markdown replacement for *bold*
 function mdBold(text) {
@@ -43,23 +41,8 @@ function formatDateLabel(dateStr, startStr, endStr) {
 
 // Open modal: view vs. edit
 function openModal(event) {
-  const overlay = document.getElementById('fc-modal-overlay');
-  if (!overlay) {
-    return;
-  }
-
   const { id } = event;
   const { type, typeLabel, description, fach, datum, startzeit, endzeit } = event.extendedProps;
-  const entryData = {
-    id: String(id),
-    type,
-    description: description || '',
-    fach: fach || '',
-    datum,
-    startzeit,
-    endzeit
-  };
-  activeEventData = entryData;
 
   const title = `${typeLabel} · ${fach || '—'}`;
   document.getElementById('fc-modal-title').innerText = title;
@@ -68,47 +51,96 @@ function openModal(event) {
   document.getElementById('fc-modal-date').innerText = formatDateLabel(datum, startzeit, endzeit);
   document.getElementById('fc-modal-desc').innerHTML = description ? mdBold(description) : '<em>No description available.</em>';
 
-  const adminActions = document.getElementById('fc-admin-actions');
-  const editButton = document.getElementById('fc-edit-button');
-  const deleteButton = document.getElementById('fc-delete-button');
-  document.getElementById('fc-view-mode').style.display = 'block';
+  document.getElementById('fc-entry-id').value = id;
+  document.getElementById('fc-entry-type').value = type;
+  document.getElementById('fc-edit-date').value = datum;
+  document.getElementById('fc-edit-desc').value = description;
+  document.getElementById('fc-edit-subject').value = fach || '';
+  document.getElementById('fc-edit-start').value = startzeit ? startzeit.slice(0, 5) : '';
+  document.getElementById('fc-edit-end').value = endzeit ? endzeit.slice(0, 5) : '';
 
-  if (userIsAdmin && adminActions && editButton && deleteButton) {
-    adminActions.hidden = false;
-    editButton.onclick = () => {
-      closeModal(true);
-      window.setTimeout(() => {
-        if (typeof window.openEntryEditor === 'function') {
-          window.openEntryEditor(entryData);
-        }
-      }, MODAL_ANIMATION_MS);
-    };
-    deleteButton.onclick = () => deleteEntry();
-  } else if (adminActions) {
-    adminActions.hidden = true;
+  const subjectInput = document.getElementById('fc-edit-subject');
+  if (subjectInput) {
+    subjectInput.required = type !== 'event';
   }
 
-  animateOverlay(overlay, true);
+  if (userIsAdmin) {
+    document.getElementById('fc-view-mode').style.display = 'none';
+    document.getElementById('fc-edit-form').style.display = 'block';
+  } else {
+    document.getElementById('fc-view-mode').style.display = 'block';
+    document.getElementById('fc-edit-form').style.display = 'none';
+  }
+
+  document.getElementById('fc-modal-overlay').style.display = 'block';
 }
 
 // Close modal
-function closeModal(keepData = false) {
-  const overlay = document.getElementById('fc-modal-overlay');
-  if (!keepData) {
-    activeEventData = null;
-  }
-  animateOverlay(overlay, false);
+function closeModal() {
+  document.getElementById('fc-modal-overlay').style.display = 'none';
 }
 window.closeModal = closeModal;
 
-// Delete
-async function deleteEntry() {
-  const id = activeEventData?.id;
-  if (!id) {
-    console.warn('No active entry to delete.');
+// Save (update)
+async function saveEdit() {
+  const id = document.getElementById('fc-entry-id').value;
+  const type = document.getElementById('fc-entry-type').value;
+  const date = document.getElementById('fc-edit-date').value;
+  const desc = document.getElementById('fc-edit-desc').value.trim();
+  const fach = document.getElementById('fc-edit-subject').value.trim();
+  let start = document.getElementById('fc-edit-start').value;
+  let end = document.getElementById('fc-edit-end').value;
+
+  if (!date) {
+    showOverlay('Please provide a date.');
     return;
   }
-  if (!confirm('Delete entry?')) return;
+  if (type !== 'event' && !fach) {
+    showOverlay('Please provide a subject code (not required for events).');
+    return;
+  }
+
+  if (start) {
+    if (start.length === 5) {
+      start = `${start}:00`;
+    }
+  } else {
+    start = null;
+  }
+
+  if (end) {
+    if (end.length === 5) {
+      end = `${end}:00`;
+    }
+  } else {
+    end = null;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/update_entry`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Role': role
+      },
+      body: JSON.stringify({ id, type, date, description: desc, startzeit: start, endzeit: end, fach })
+    });
+    if (!res.ok) {
+      const err = await res.text().catch(() => '');
+      throw new Error(err || `Status ${res.status}`);
+    }
+    closeModal();
+    location.reload();
+  } catch (e) {
+    console.error('Error saving:', e);
+    showOverlay('Error saving:\n' + e.message);
+  }
+}
+
+// Delete
+async function deleteEntry() {
+  const id = document.getElementById('fc-entry-id').value;
+  if (!confirm('Really delete entry?')) return;
 
   try {
     const res = await fetch(`${API_BASE}/delete_entry/${id}`, {
@@ -119,7 +151,6 @@ async function deleteEntry() {
       const err = await res.text().catch(() => '');
       throw new Error(err || `Status ${res.status}`);
     }
-    activeEventData = null;
     closeModal();
     location.reload();
   } catch (e) {
@@ -186,16 +217,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           showEntryForm();
           const dateInput = document.getElementById('datum');
           if (dateInput) {
-            const selectedDate = info.date ? new Date(info.date.valueOf()) : null;
-            if (selectedDate) {
-              const formatter = new Intl.DateTimeFormat('de-CH', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric'
-              });
-              dateInput.value = formatter.format(selectedDate);
-              dateInput.dispatchEvent(new Event('input'));
-            }
+            dateInput.value = info.dateStr + 'T00:00';
           }
         },
         eventClick: info => {

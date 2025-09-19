@@ -235,44 +235,16 @@ async function aktuellesFachLaden() {
 
 
 
-/** ENTRY CREATION WITH DROPDOWN AND BACKEND INTEGRATION **/
-const API_BASE_URL = 'https://homework-manager-2-0-backend.onrender.com';
-const OVERLAY_VISIBLE_CLASS = 'is-visible';
-const OVERLAY_CLOSING_CLASS = 'closing';
-const OVERLAY_TRANSITION_MS = 200;
-
-const ENTRY_FORM_COPY = {
-    create: {
-        title: '📝 Crea una nuova voce',
-        submit: 'Aggiungi',
-        success: 'Voce salvata con successo!'
-    },
-    edit: {
-        title: '✏️ Modifica voce',
-        submit: 'Salva',
-        success: 'Modifiche salvate con successo!'
-    },
-    saving: 'Salvataggio…'
-};
+/** EINTRAG ERFASSEN MIT DROPDOWN UND DB-ANBINDUNG **/
+function closeEntryModal() {
+    const overlay = document.getElementById('entry-modal-overlay');
+    if (overlay) overlay.style.display = 'none';
+}
 
 const ENTRY_FORM_MESSAGES = {
     invalidDate: 'Inserisci una data valida nel formato GG.MM.AAAA.',
-    endBeforeStart: 'L\'orario di fine è precedente a quello di inizio',
-    missingSubject: 'Seleziona una materia',
-    missingEventTitle: 'Indica un titolo per l\'evento'
+    invalidEnd: "L'orario di fine non può essere precedente all'inizio."
 };
-
-function animateOverlay(overlay, show) {
-    if (!overlay) return;
-    overlay.classList.remove(OVERLAY_CLOSING_CLASS);
-    if (show) {
-        overlay.classList.add(OVERLAY_VISIBLE_CLASS);
-        return;
-    }
-    overlay.classList.remove(OVERLAY_VISIBLE_CLASS);
-    overlay.classList.add(OVERLAY_CLOSING_CLASS);
-    window.setTimeout(() => overlay.classList.remove(OVERLAY_CLOSING_CLASS), OVERLAY_TRANSITION_MS);
-}
 
 function parseSwissDate(value) {
     if (!value) return null;
@@ -294,81 +266,6 @@ function parseSwissDate(value) {
         .padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
 }
 
-function formatIsoToSwiss(value) {
-    if (!value) return '';
-    const [year, month, day] = value.split('-');
-    if (!year || !month || !day) {
-        return value;
-    }
-    return `${day}.${month}.${year}`;
-}
-
-function formatTimeForPayload(value) {
-    return value ? `${value}:00` : null;
-}
-
-function splitEventDescription(description) {
-    if (!description) {
-        return { title: '', details: '' };
-    }
-    const segments = description.split(/
-\s*/);
-    const title = segments.shift() || '';
-    const details = segments.join('
-').trim();
-    return { title: title.trim(), details };
-}
-
-function ensureEntryFormSetup(form) {
-    if (!form) return null;
-    if (!form.__entryFormState) {
-        setupEntryFormInteractions(form);
-    }
-    return form.__entryFormState || null;
-}
-
-function setEntryFormMode(form, mode) {
-    if (!form) return;
-    const normalizedMode = mode === 'edit' ? 'edit' : 'create';
-    form.dataset.mode = normalizedMode;
-    if (normalizedMode === 'create') {
-        form.dataset.entryId = '';
-    }
-    const copy = ENTRY_FORM_COPY[normalizedMode];
-    const heading = document.getElementById('entry-form-title');
-    const state = ensureEntryFormSetup(form);
-    if (heading && copy) {
-        heading.textContent = copy.title;
-    }
-    if (state?.saveButton && copy) {
-        state.saveButton.textContent = copy.submit;
-    }
-    state?.evaluate?.();
-}
-
-function resetEntryForm(form) {
-    if (!form) return;
-    form.dataset.mode = 'create';
-    form.dataset.entryId = '';
-    form.reset();
-    window.setTimeout(() => {
-        setEntryFormMode(form, 'create');
-        const state = ensureEntryFormSetup(form);
-        state?.toggleTypeFields?.();
-        state?.evaluate?.();
-    }, 0);
-}
-
-function closeEntryModal() {
-    const overlay = document.getElementById('entry-modal-overlay');
-    const form = document.getElementById('entry-form');
-    if (form) {
-        resetEntryForm(form);
-    }
-    animateOverlay(overlay, false);
-}
-window.closeEntryModal = closeEntryModal;
-
 function setupEntryFormInteractions(form) {
     if (!form || form.dataset.enhanced === 'true') {
         return;
@@ -380,7 +277,6 @@ function setupEntryFormInteractions(form) {
     const subjectSelect = form.querySelector('#fach');
     const eventTitleGroup = form.querySelector('[data-field="event-title"]');
     const eventTitleInput = form.querySelector('#event-titel');
-    const descriptionInput = form.querySelector('#beschreibung');
     const dateInput = form.querySelector('#datum');
     const startInput = form.querySelector('#startzeit');
     const endInput = form.querySelector('#endzeit');
@@ -388,9 +284,8 @@ function setupEntryFormInteractions(form) {
 
     const evaluate = () => {
         if (dateInput) {
-            const trimmed = dateInput.value.trim();
-            const iso = trimmed ? parseSwissDate(trimmed) : null;
-            if (trimmed && !iso) {
+            const iso = parseSwissDate(dateInput.value);
+            if (!iso) {
                 dateInput.setCustomValidity(ENTRY_FORM_MESSAGES.invalidDate);
             } else {
                 dateInput.setCustomValidity('');
@@ -399,25 +294,9 @@ function setupEntryFormInteractions(form) {
 
         if (startInput && endInput) {
             if (endInput.value && startInput.value && endInput.value < startInput.value) {
-                endInput.setCustomValidity(ENTRY_FORM_MESSAGES.endBeforeStart);
+                endInput.setCustomValidity(ENTRY_FORM_MESSAGES.invalidEnd);
             } else {
                 endInput.setCustomValidity('');
-            }
-        }
-
-        if (subjectSelect) {
-            if (subjectSelect.required && !subjectSelect.value) {
-                subjectSelect.setCustomValidity(ENTRY_FORM_MESSAGES.missingSubject);
-            } else {
-                subjectSelect.setCustomValidity('');
-            }
-        }
-
-        if (eventTitleInput) {
-            if (eventTitleInput.required && !eventTitleInput.value.trim()) {
-                eventTitleInput.setCustomValidity(ENTRY_FORM_MESSAGES.missingEventTitle);
-            } else {
-                eventTitleInput.setCustomValidity('');
             }
         }
 
@@ -427,20 +306,21 @@ function setupEntryFormInteractions(form) {
     };
 
     const toggleTypeFields = () => {
-        const value = typeSelect ? typeSelect.value : '';
-        const isEvent = value === 'event';
+        if (!typeSelect) return;
+        const isEvent = typeSelect.value === 'event';
         if (subjectGroup) {
-            subjectGroup.hidden = isEvent;
+            subjectGroup.style.display = isEvent ? 'none' : '';
         }
         if (subjectSelect) {
             subjectSelect.required = !isEvent;
+            subjectSelect.classList.toggle('optional', isEvent);
             if (isEvent) {
                 subjectSelect.value = '';
                 subjectSelect.setCustomValidity('');
             }
         }
         if (eventTitleGroup) {
-            eventTitleGroup.hidden = !isEvent;
+            eventTitleGroup.style.display = isEvent ? '' : 'none';
         }
         if (eventTitleInput) {
             eventTitleInput.required = isEvent;
@@ -456,25 +336,13 @@ function setupEntryFormInteractions(form) {
         typeSelect.addEventListener('change', toggleTypeFields);
     }
 
-    [dateInput, startInput, endInput, subjectSelect, eventTitleInput, descriptionInput].forEach((input) => {
+    [dateInput, startInput, endInput, subjectSelect, eventTitleInput].forEach((input) => {
         if (!input) return;
         input.addEventListener('input', evaluate);
-        input.addEventListener('change', evaluate);
     });
 
     form.addEventListener('reset', () => {
         window.setTimeout(() => {
-            if (typeSelect) {
-                typeSelect.value = '';
-            }
-            if (subjectSelect) {
-                subjectSelect.value = '';
-                subjectSelect.setCustomValidity('');
-            }
-            if (eventTitleInput) {
-                eventTitleInput.value = '';
-                eventTitleInput.setCustomValidity('');
-            }
             if (dateInput) {
                 dateInput.value = '';
                 dateInput.setCustomValidity('');
@@ -486,25 +354,21 @@ function setupEntryFormInteractions(form) {
                 endInput.value = '';
                 endInput.setCustomValidity('');
             }
+            if (eventTitleInput) {
+                eventTitleInput.value = '';
+                eventTitleInput.setCustomValidity('');
+            }
+            if (subjectSelect) {
+                subjectSelect.value = '';
+                subjectSelect.setCustomValidity('');
+            }
+            if (typeSelect) {
+                typeSelect.value = 'event';
+            }
             toggleTypeFields();
             evaluate();
         }, 0);
     });
-
-    form.__entryFormState = {
-        typeSelect,
-        subjectGroup,
-        subjectSelect,
-        eventTitleGroup,
-        eventTitleInput,
-        descriptionInput,
-        dateInput,
-        startInput,
-        endInput,
-        saveButton,
-        evaluate,
-        toggleTypeFields
-    };
 
     toggleTypeFields();
     evaluate();
@@ -512,281 +376,214 @@ function setupEntryFormInteractions(form) {
 
 function showEntryForm() {
     if (sessionStorage.getItem('role') !== 'admin') {
-        showOverlay('Solo gli amministratori possono creare voci!');
+        showOverlay('Solo l\'admin può creare voci!');
         return;
     }
     const overlay = document.getElementById('entry-modal-overlay');
-    const form = document.getElementById('entry-form');
-    if (overlay && form) {
-        resetEntryForm(form);
-        animateOverlay(overlay, true);
-        const state = ensureEntryFormSetup(form);
-        window.setTimeout(() => state?.typeSelect?.focus(), 0);
+    if (overlay) {
+        overlay.style.display = 'block';
+        const form = document.getElementById('entry-form');
+        if (form) {
+            form.reset();
+            setupEntryFormInteractions(form);
+            const typeSelect = form.querySelector('#typ');
+            if (typeSelect) {
+                typeSelect.value = 'event';
+                typeSelect.dispatchEvent(new Event('change'));
+            }
+        }
         return;
     }
     clearContent();
     document.getElementById('content').innerHTML = `
-        <h2 id="entry-form-title">📝 Crea una nuova voce</h2>
-        <form id="entry-form" data-mode="create" onsubmit="saveEntry(event)">
-            <input type="hidden" id="entry-id" name="entry-id">
-            <div class="fc-form-group">
-                <label for="typ">Tipo</label>
-                <select id="typ" name="typ" required>
-                    <option value="" disabled selected>Seleziona un tipo</option>
+        <h2>📝 Crea una nuova voce</h2>
+        <form id="entry-form" onsubmit="saveEntry(event)">
+            <label>
+                Tipo:
+                <select id="typ" required>
                     <option value="hausaufgabe">Compito</option>
                     <option value="pruefung">Esame</option>
-                    <option value="event">Evento</option>
+                    <option value="event" selected>Evento</option>
                 </select>
-            </div>
-            <div class="fc-form-group" data-field="subject">
-                <label for="fach">Materia</label>
-                <select id="fach" name="fach" required>
-                    <option value="" disabled selected>– seleziona –</option>
+            </label><br>
+            <label data-field="subject">
+                Materia:
+                <select id="fach" required>
+                    <option value="">– seleziona –</option>
                     ${[
                         'MA','DE','EN','PS','SPM-PS','SPM-MA','SPM-ES','SP','WR','GS',
                         'GG','IN','IT','FR','BG','MU','BI','Sport','CH','PH','SMU'
                     ].map(f => `<option>${f}</option>`).join('')}
                 </select>
-            </div>
-            <div class="fc-form-group" data-field="event-title" hidden>
-                <label for="event-titel">Titolo evento</label>
-                <input
-                    type="text"
-                    id="event-titel"
-                    name="event-titel"
-                    maxlength="120"
-                    placeholder="Breve e incisivo (ad es. serata informativa)"
-                    required
-                >
-            </div>
-            <div class="fc-form-group">
-                <label for="beschreibung">Descrizione (facoltativa)</label>
-                <textarea
-                    id="beschreibung"
-                    name="beschreibung"
-                    rows="3"
-                    placeholder="Aggiungi dettagli di supporto"
-                    aria-describedby="beschreibung-hint"
-                ></textarea>
-                <p class="fc-field-hint" id="beschreibung-hint">Condividi dettagli extra, link o promemoria. Questo campo è facoltativo.</p>
-            </div>
-            <div class="fc-form-group">
-                <label for="datum">Data (GG.MM.AAAA)</label>
-                <input
-                    type="text"
-                    id="datum"
-                    name="datum"
-                    placeholder="18.09.2025"
-                    inputmode="numeric"
-                    required
-                >
-            </div>
-            <div class="fc-form-group">
-                <label for="startzeit">Ora di inizio</label>
-                <input type="time" id="startzeit" name="startzeit" required>
-            </div>
-            <div class="fc-form-group">
-                <label for="endzeit">Orario di fine (opzionale)</label>
-                <input type="time" id="endzeit" name="endzeit">
-            </div>
+            </label><br>
+            <label data-field="event-title" style="display:none;">
+                Titolo evento:
+                <input type="text" id="event-titel" minlength="80" maxlength="120" placeholder="Titolo di 80-120 caratteri" required>
+            </label><br>
+            <label>
+                Descrizione (facoltativa):
+                <textarea id="beschreibung" rows="3" placeholder="Breve descrizione"></textarea>
+            </label><br>
+            <label>
+                Data (GG.MM.AAAA):
+                <input type="text" id="datum" placeholder="18.09.2025" inputmode="numeric" required>
+            </label><br>
+            <label>
+                Ora di inizio:
+                <input type="time" id="startzeit" required>
+            </label><br>
+            <label>
+                Orario di fine (opzionale):
+                <input type="time" id="endzeit">
+            </label><br>
             <button type="submit" id="saveButton">Aggiungi</button>
         </form>
     `;
 
-    const dynamicForm = document.getElementById('entry-form');
-    setupEntryFormInteractions(dynamicForm);
+    setupEntryFormInteractions(document.getElementById('entry-form'));
 }
-
-function openEntryEditor(entry) {
-    const overlay = document.getElementById('entry-modal-overlay');
-    const form = document.getElementById('entry-form');
-    if (!overlay || !form) {
-        console.warn('Modulo di modifica non disponibile.');
-        return;
-    }
-    const state = ensureEntryFormSetup(form);
-    form.dataset.entryId = entry?.id ? String(entry.id) : '';
-    setEntryFormMode(form, 'edit');
-
-    if (state?.typeSelect) {
-        state.typeSelect.value = entry?.type || '';
-        state.typeSelect.dispatchEvent(new Event('change'));
-    }
-
-    if (state?.subjectSelect) {
-        state.subjectSelect.value = entry?.type === 'event' ? '' : (entry?.fach || '');
-    }
-
-    const eventSegments = entry?.type === 'event'
-        ? splitEventDescription(entry?.description || '')
-        : { title: '', details: entry?.description || '' };
-
-    if (state?.eventTitleInput) {
-        state.eventTitleInput.value = eventSegments.title || '';
-    }
-
-    if (state?.descriptionInput) {
-        state.descriptionInput.value = eventSegments.details || '';
-    }
-
-    if (state?.dateInput) {
-        state.dateInput.value = entry?.datum ? formatIsoToSwiss(entry.datum) : '';
-    }
-
-    if (state?.startInput) {
-        state.startInput.value = entry?.startzeit ? entry.startzeit.slice(0, 5) : '';
-    }
-
-    if (state?.endInput) {
-        state.endInput.value = entry?.endzeit ? entry.endzeit.slice(0, 5) : '';
-    }
-
-    window.setTimeout(() => {
-        state?.toggleTypeFields?.();
-        state?.evaluate?.();
-    }, 0);
-
-    animateOverlay(overlay, true);
-    window.setTimeout(() => state?.typeSelect?.focus(), 0);
-}
-window.openEntryEditor = openEntryEditor;
 
 async function saveEntry(event) {
     if (event) {
         event.preventDefault();
     }
 
+    const typeField = document.getElementById('typ');
+    const subjectField = document.getElementById('fach');
+    const descriptionField = document.getElementById('beschreibung');
+    const dateField = document.getElementById('datum');
+    const startField = document.getElementById('startzeit');
+    const endField = document.getElementById('endzeit');
+    const eventTitleField = document.getElementById('event-titel');
+
+    if (!typeField || !dateField || !startField) {
+        console.error('Campi del modulo mancanti.');
+        return;
+    }
+
+    const typ = typeField.value;
+    const fach = subjectField ? subjectField.value.trim() : '';
+    const beschreibung = descriptionField ? descriptionField.value.trim() : '';
+    const datumInput = dateField.value.trim();
+    const startzeitInput = startField.value;
+    const endzeitInput = endField ? endField.value : '';
+    const eventTitle = eventTitleField ? eventTitleField.value.trim() : '';
+    const saveButton = document.getElementById('saveButton');
     const form = document.getElementById('entry-form');
-    if (!form) {
-        console.error('Nessun modulo trovato per il salvataggio.');
-        return;
-    }
-    const state = ensureEntryFormSetup(form);
-    state?.evaluate?.();
-    if (!form.checkValidity()) {
-        form.reportValidity();
-        return;
-    }
+    const resetTypeSelection = () => {
+        const typeSelect = document.getElementById('typ');
+        if (typeSelect) {
+            typeSelect.value = 'event';
+            typeSelect.dispatchEvent(new Event('change'));
+        }
+    };
 
-    const mode = form.dataset.mode === 'edit' ? 'edit' : 'create';
-    const copy = ENTRY_FORM_COPY[mode];
-    const type = state?.typeSelect ? state.typeSelect.value : '';
-    const isEvent = type === 'event';
-    const subject = state?.subjectSelect ? state.subjectSelect.value.trim() : '';
-    const eventTitle = state?.eventTitleInput ? state.eventTitleInput.value.trim() : '';
-    const description = state?.descriptionInput ? state.descriptionInput.value.trim() : '';
-    const dateInput = state?.dateInput ? state.dateInput.value.trim() : '';
-    const startInput = state?.startInput ? state.startInput.value : '';
-    const endInput = state?.endInput ? state.endInput.value : '';
-    const entryId = form.dataset.entryId || '';
-    const saveButton = state?.saveButton;
-
-    const isoDate = parseSwissDate(dateInput);
-    if (!isoDate) {
-        state?.dateInput?.setCustomValidity(ENTRY_FORM_MESSAGES.invalidDate);
-        form.reportValidity();
+    if (!saveButton) {
+        console.error('Pulsante di salvataggio non trovato.');
         return;
     }
 
-    const startzeit = formatTimeForPayload(startInput);
-    const endzeit = formatTimeForPayload(endInput);
+    const isEvent = typ === 'event';
 
-    const payloadDescription = isEvent
-        ? `${eventTitle}${description ? `
-
-${description}` : ''}`
-        : description;
-    const payloadSubject = isEvent ? '' : subject;
-
-    if (saveButton) {
-        saveButton.disabled = true;
-        saveButton.textContent = ENTRY_FORM_COPY.saving;
+    if (!isEvent && !fach) {
+        showOverlay('Seleziona una materia (non necessario per gli eventi).');
+        return;
     }
-
-    const role = sessionStorage.getItem('role') || 'guest';
-
-    try {
-        if (mode === 'edit') {
-            const response = await fetch(`${API_BASE_URL}/update_entry`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Role': role
-                },
-                body: JSON.stringify({
-                    id: entryId,
-                    type,
-                    date: isoDate,
-                    description: payloadDescription,
-                    startzeit,
-                    endzeit,
-                    fach: payloadSubject
-                })
-            });
-            if (!response.ok) {
-                const message = await response.text().catch(() => '');
-                throw new Error(message || `Status ${response.status}`);
-            }
-            showOverlay(copy.success);
-            closeEntryModal();
-            document.getElementById('overlay-close')
-                .addEventListener('click', () => location.reload(), { once: true });
+    if (isEvent) {
+        if (!eventTitle || eventTitle.length < 80 || eventTitle.length > 120) {
+            showOverlay('Inserisci un titolo evento tra 80 e 120 caratteri.');
             return;
         }
+    }
+    if (!datumInput) {
+        showOverlay('Inserisci una data.');
+        return;
+    }
 
-        let success = false;
-        let attempt = 0;
-        const maxAttempts = 10;
+    const isoDate = parseSwissDate(datumInput);
+    if (!isoDate) {
+        showOverlay('Inserisci una data valida nel formato GG.MM.AAAA.');
+        return;
+    }
 
-        while (!success && attempt < maxAttempts) {
-            try {
-                const response = await fetch(`${API_BASE_URL}/add_entry`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Role': role
-                    },
-                    body: JSON.stringify({
-                        typ: type,
-                        fach: payloadSubject,
-                        beschreibung: payloadDescription,
-                        datum: isoDate,
-                        startzeit,
-                        endzeit
-                    })
-                });
-                const result = await response.json();
-                if (response.ok && result.status === 'ok') {
-                    success = true;
-                    showOverlay(copy.success);
-                    closeEntryModal();
-                    document.getElementById('overlay-close')
-                        .addEventListener('click', () => location.reload(), { once: true });
-                } else {
-                    const message = result.message || `Status ${response.status}`;
-                    throw new Error(message);
+    if (!startzeitInput) {
+        showOverlay('Inserisci un orario di inizio.');
+        return;
+    }
+
+    if (endzeitInput && endzeitInput < startzeitInput) {
+        showOverlay("L'orario di fine non può essere precedente all'inizio.");
+        return;
+    }
+
+    const startzeit = `${startzeitInput}:00`;
+    const endzeit = endzeitInput ? `${endzeitInput}:00` : null;
+
+    const payloadBeschreibung = isEvent
+        ? eventTitle + (beschreibung ? `\n\n${beschreibung}` : '')
+        : beschreibung;
+    const payloadSubject = isEvent ? '' : fach;
+
+    // Disabilita il pulsante per feedback
+    saveButton.disabled = true;
+    saveButton.innerText = "Salvataggio in corso...";
+
+    let success = false;
+    let attempt = 0;
+    const maxAttempts = 10;
+
+    while (!success && attempt < maxAttempts) {
+        try {
+            const response = await fetch('https://homework-manager-2-0-backend.onrender.com/add_entry', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ typ, fach: payloadSubject, beschreibung: payloadBeschreibung, datum: isoDate, startzeit, endzeit })
+            });
+            const result = await response.json();
+
+            if (result.status === "ok") {
+                success = true;
+                showOverlay("Voce salvata con successo!");
+                closeEntryModal();
+                document.getElementById('overlay-close')
+                    .addEventListener('click', () => location.reload(), { once: true });
+                if (form) {
+                    form.reset();
+                    resetTypeSelection();
                 }
-            } catch (requestError) {
-                attempt += 1;
-                if (attempt >= maxAttempts) {
-                    throw requestError;
-                }
-                await new Promise(resolve => setTimeout(resolve, 2000));
+            } else {
+                console.error("Errore del server durante il salvataggio:", result.message);
             }
+        } catch (error) {
+            console.error("Errore di rete durante il salvataggio:", error);
         }
-    } catch (error) {
-        console.error('Errore durante il salvataggio:', error);
-        showOverlay(`Errore durante il salvataggio:
-${error.message}`);
-    } finally {
-        if (saveButton) {
-            saveButton.disabled = false;
-            saveButton.textContent = copy.submit;
+
+        if (!success) {
+            attempt++;
+            console.warn(`Tentativo di salvataggio ${attempt} fallito. Nuovo tentativo tra 2 secondi.`);
+            // Warte 2000ms, bevor erneut versucht wird
+            await new Promise(resolve => setTimeout(resolve, 2000));
         }
     }
+
+    if (!success) {
+        showOverlay("La voce non è stata salvata dopo diversi tentativi. Riprova più tardi.");
+    } else {
+        // Reimposta campi di input
+        if (form) {
+            form.reset();
+            resetTypeSelection();
+        }
+    }
+
+    // Riattiva il pulsante
+    saveButton.disabled = false;
+    saveButton.innerText = "Aggiungi";
 }
 
-// Initial checks on page load
+
+
+// Initialcheck beim Laden der Seite
 window.addEventListener('DOMContentLoaded', checkLogin);
 window.addEventListener('DOMContentLoaded', initLanguageSelector);
 window.addEventListener('DOMContentLoaded', () => {

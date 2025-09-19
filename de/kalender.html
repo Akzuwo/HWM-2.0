@@ -40,10 +40,43 @@
         <div id="fc-modal-desc" class="fc-modal-desc"></div>
       </div>
 
-      <div class="fc-modal-actions" id="fc-admin-actions" hidden>
-        <button type="button" id="fc-edit-button">Bearbeiten</button>
-        <button type="button" id="fc-delete-button" class="danger">Löschen</button>
-      </div>
+      <!-- EDIT MODE (nur für Admins) -->
+      <form id="fc-edit-form" style="display:none;">
+        <h2>Eintrag bearbeiten</h2>
+        <input type="hidden" id="fc-entry-id">
+        <input type="hidden" id="fc-entry-type">
+
+        <div class="fc-form-group">
+          <label for="fc-edit-subject">Fachkürzel</label>
+          <input type="text" id="fc-edit-subject" maxlength="100" required>
+        </div>
+
+        <div class="fc-form-group">
+          <label for="fc-edit-date">Datum (YYYY-MM-DD)</label>
+          <input type="date" id="fc-edit-date" required>
+        </div>
+
+        <div class="fc-form-group">
+          <label for="fc-edit-start">Beginn (optional)</label>
+          <input type="time" id="fc-edit-start">
+        </div>
+
+        <div class="fc-form-group">
+          <label for="fc-edit-end">Ende (optional)</label>
+          <input type="time" id="fc-edit-end">
+        </div>
+
+        <div class="fc-form-group">
+          <label for="fc-edit-desc">Beschreibung</label>
+          <textarea id="fc-edit-desc" rows="4"></textarea>
+        </div>
+
+        <button type="button" onclick="saveEdit()">Speichern</button>
+        <button type="button" onclick="deleteEntry()" style="background:#dc3545; color:#fff;">
+          Löschen
+        </button>
+      </form>
+
     </div>
   </div>
 
@@ -53,14 +86,11 @@
 
       <button class="close-btn" onclick="closeEntryModal()">✖</button>
 
-      <h2 id="entry-form-title">📝 Neuen Eintrag erstellen</h2>
-      <form id="entry-form" data-mode="create" onsubmit="saveEntry(event)">
-        <input type="hidden" id="entry-id" name="entry-id">
-
+      <h2>📝 Neuen Eintrag erstellen</h2>
+      <form id="entry-form" onsubmit="saveEntry(event)">
         <div class="fc-form-group">
           <label for="typ">Typ</label>
           <select id="typ" name="typ" required>
-            <option value="" disabled selected>Bitte Typ wählen</option>
             <option value="hausaufgabe">Hausaufgabe</option>
             <option value="pruefung">Prüfung</option>
             <option value="event">Event</option>
@@ -70,7 +100,7 @@
         <div class="fc-form-group" data-field="subject">
           <label for="fach">Fach</label>
           <select id="fach" name="fach" required>
-            <option value="" disabled selected>– bitte wählen –</option>
+            <option value="">– bitte wählen –</option>
             <option>MA</option>
             <option>DE</option>
             <option>EN</option>
@@ -101,22 +131,16 @@
             type="text"
             id="event-titel"
             name="event-titel"
+            minlength="80"
             maxlength="120"
-            placeholder="Kurz und prägnant (z. B. Infoabend)"
+            placeholder="Titel mit 80–120 Zeichen"
             required
           >
         </div>
 
         <div class="fc-form-group">
           <label for="beschreibung">Beschreibung (optional)</label>
-          <textarea
-            id="beschreibung"
-            name="beschreibung"
-            rows="3"
-            placeholder="Ergänzende Infos hinzufügen"
-            aria-describedby="beschreibung-hinweis"
-          ></textarea>
-          <p class="fc-field-hint" id="beschreibung-hinweis">Beschreibe wichtige Details, Materialien oder Hinweise. Dieser Bereich ist optional.</p>
+          <textarea id="beschreibung" name="beschreibung" rows="3" placeholder="Kurzbeschreibung"></textarea>
         </div>
 
         <div class="fc-form-group">
