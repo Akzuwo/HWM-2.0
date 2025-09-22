@@ -467,6 +467,77 @@ button {
     padding: 6px 12px;
 }
 
+.upcoming-grid {
+    display: grid;
+    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    margin-top: 24px;
+}
+
+.upcoming-card {
+    background: #1f1f1f;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 20px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.upcoming-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+}
+
+.upcoming-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+
+.upcoming-type {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    font-size: 0.75rem;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(40, 167, 69, 0.18);
+    color: #4ade80;
+}
+
+.upcoming-subject {
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #f0f0f0;
+}
+
+.upcoming-date {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.upcoming-desc {
+    color: #cfcfcf;
+    margin: 0;
+    line-height: 1.5;
+}
+
+.upcoming-empty {
+    text-align: center;
+    padding: 24px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    color: #d0d0d0;
+}
+
 /* --------- Simple Navigation --------- */
 .simple-nav {
     position: sticky;
