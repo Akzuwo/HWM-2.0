@@ -12,14 +12,62 @@
   <link rel="stylesheet" href="../utils/css/stundenplan.css">
 </head>
 <body>
-  <nav class="simple-nav">
-    <div class="nav-title">Homework Manager</div>
-    <div class="nav-links">
-      <a class="nav-button" href="index.html">🏠 Home</a>
-      <a class="nav-button" href="kalender.html">📅 Calendario</a>
-      <a class="nav-button" href="upcoming.html">🔔 Prossimi eventi</a>
-      <a class="nav-button" href="notenrechner.html">📊 Calcolatore di voti</a>
-      <a class="nav-button is-active" href="stundenplan.html" aria-current="page">🕒 Materia attuale</a>
+    <nav class="simple-nav" data-nav data-i18n-attr="aria-label:common.nav.primary" aria-label="Main navigation">
+    <a class="nav-title" href="index.html">
+      <img src="../media/logo.png" alt="" width="32" height="32" />
+      <span data-i18n="common.appName">Homework Manager</span>
+    </a>
+    <button class="nav-toggle" type="button" aria-expanded="false" data-i18n-attr="aria-label:common.nav.toggle">
+      <span aria-hidden="true"></span>
+    </button>
+    <div class="nav-links" id="current-nav-links">
+      <a class="nav-button" href="index.html" data-i18n="common.nav.home">🏠 Home</a>
+      <a class="nav-button" href="kalender.html" data-i18n="common.nav.calendar">📅 Calendario</a>
+      <a class="nav-button" href="upcoming.html" data-i18n="common.nav.upcoming">🔔 Prossimi eventi</a>
+      <a class="nav-button" href="stundenplan.html" data-i18n="common.nav.currentSubject" aria-current="page">🕒 Lezione attuale</a>
+      <a class="nav-button" href="notenrechner.html" data-i18n="common.nav.grades">📊 Calcolatore voti</a>
+      <a class="nav-button" href="#" onclick="logout()" data-i18n="common.nav.logout">🚪 Disconnettersi</a>
+      <div class="language-dropdown" data-language>
+        <button type="button" class="language-button" data-language-toggle aria-haspopup="true" aria-expanded="false" data-i18n-attr="aria-label:common.nav.language">
+          <span class="language-button__icon" aria-hidden="true">🌐</span>
+          <span class="language-button__code">IT</span>
+          <svg class="language-button__caret" viewBox="0 0 12 12" focusable="false" aria-hidden="true">
+            <path d="M2.47 4.47a.75.75 0 0 1 1.06 0L6 6.94l2.47-2.47a.75.75 0 1 1 1.06 1.06L6.53 9.47a.75.75 0 0 1-1.06 0L2.47 5.53a.75.75 0 0 1 0-1.06z" />
+          </svg>
+        </button>
+        <ul class="language-menu" role="menu" data-language-menu data-i18n-attr="aria-label:common.language.menuLabel">
+          <li role="none">
+            <button type="button" class="language-option" data-lang="de" role="menuitem">
+              <span class="language-option__flag" aria-hidden="true">🇩🇪</span>
+              <span class="language-option__text">
+                <span class="language-option__code">DE</span>
+                <span aria-hidden="true">–</span>
+                <span class="language-option__name">Deutsch</span>
+              </span>
+            </button>
+          </li>
+          <li role="none">
+            <button type="button" class="language-option" data-lang="en" role="menuitem">
+              <span class="language-option__flag" aria-hidden="true">🇬🇧</span>
+              <span class="language-option__text">
+                <span class="language-option__code">EN</span>
+                <span aria-hidden="true">–</span>
+                <span class="language-option__name">English</span>
+              </span>
+            </button>
+          </li>
+          <li role="none">
+            <button type="button" class="language-option" data-lang="it" role="menuitem">
+              <span class="language-option__flag" aria-hidden="true">🇮🇹</span>
+              <span class="language-option__text">
+                <span class="language-option__code">IT</span>
+                <span aria-hidden="true">–</span>
+                <span class="language-option__name">Italiano</span>
+              </span>
+            </button>
+          </li>
+        </ul>
+      </div>
     </div>
   </nav>
   <main class="current-subject" data-current-subject>
