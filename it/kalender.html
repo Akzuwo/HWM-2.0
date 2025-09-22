@@ -105,7 +105,7 @@
       <div class="calendar-controls" data-calendar-controls>
         <div
           class="calendar-month-nav"
-          role="group"
+          role="toolbar"
           aria-label="Navigazione mesi"
           data-i18n-attr="aria-label:calendar.monthNav.label"
         >
@@ -119,22 +119,40 @@
             <span aria-hidden="true">◀</span>
             <span class="visually-hidden" data-i18n="calendar.monthNav.previous">Mese precedente</span>
           </button>
-          <span
-            class="calendar-month-nav__label"
-            data-calendar-month-label
-            data-i18n="calendar.monthNav.current"
+          <div
+            class="calendar-view-switch"
+            role="group"
+            aria-label="Seleziona la vista del calendario"
+            data-i18n-attr="aria-label:calendar.viewSwitch.label"
           >
-            Mese corrente
-          </span>
-          <button
-            type="button"
-            class="calendar-month-nav__button calendar-month-nav__button--today"
-            data-calendar-nav="today"
-            aria-label="Vai a oggi"
-            data-i18n-attr="aria-label:calendar.monthNav.today"
-          >
-            <span data-i18n="calendar.monthNav.today">Oggi</span>
-          </button>
+            <button
+              type="button"
+              class="calendar-view-switch__button"
+              data-calendar-view="dayGridMonth"
+              aria-pressed="false"
+              data-i18n="calendar.views.month"
+            >
+              Mese
+            </button>
+            <button
+              type="button"
+              class="calendar-view-switch__button"
+              data-calendar-view="timeGridWeek"
+              aria-pressed="false"
+              data-i18n="calendar.views.week"
+            >
+              Settimana
+            </button>
+            <button
+              type="button"
+              class="calendar-view-switch__button"
+              data-calendar-view="timeGridDay"
+              aria-pressed="false"
+              data-i18n="calendar.views.day"
+            >
+              Giorno
+            </button>
+          </div>
           <button
             type="button"
             class="calendar-month-nav__button calendar-month-nav__button--next"
@@ -145,41 +163,23 @@
             <span class="visually-hidden" data-i18n="calendar.monthNav.next">Mese successivo</span>
             <span aria-hidden="true">▶</span>
           </button>
+          <button
+            type="button"
+            class="calendar-month-nav__button calendar-month-nav__button--today"
+            data-calendar-nav="today"
+            aria-label="Vai a oggi"
+            data-i18n-attr="aria-label:calendar.monthNav.today"
+          >
+            <span data-i18n="calendar.monthNav.today">Oggi</span>
+          </button>
         </div>
-        <div
-          class="calendar-view-switch"
-          role="toolbar"
-          aria-label="Seleziona la vista del calendario"
-          data-i18n-attr="aria-label:calendar.viewSwitch.label"
+        <span
+          class="calendar-month-nav__label"
+          data-calendar-month-label
+          data-i18n="calendar.monthNav.current"
         >
-          <button
-            type="button"
-            class="calendar-view-switch__button"
-            data-calendar-view="dayGridMonth"
-            aria-pressed="false"
-            data-i18n="calendar.views.month"
-          >
-            Mese
-          </button>
-          <button
-            type="button"
-            class="calendar-view-switch__button"
-            data-calendar-view="timeGridWeek"
-            aria-pressed="false"
-            data-i18n="calendar.views.week"
-          >
-            Settimana
-          </button>
-          <button
-            type="button"
-            class="calendar-view-switch__button"
-            data-calendar-view="timeGridDay"
-            aria-pressed="false"
-            data-i18n="calendar.views.day"
-          >
-            Giorno
-          </button>
-        </div>
+          Mese corrente
+        </span>
       </div>
       <div id="calendar" data-i18n="calendar.status.loading">Caricamento del calendario …</div>
     </section>

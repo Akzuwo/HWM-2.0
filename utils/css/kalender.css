@@ -232,6 +232,7 @@ body.calendar-theme main {
   display: flex;
   flex-direction: column;
   gap: clamp(0.75rem, 2vw, 1.3rem);
+  align-items: stretch;
 }
 
 .calendar-month-nav {
@@ -261,23 +262,18 @@ body.calendar-theme main {
   background: rgba(124, 163, 255, 0.18);
 }
 
-.calendar-month-nav__button--prev {
-  order: 1;
-}
-
 .calendar-month-nav__label {
-  order: 2;
-  flex: 1 1 14rem;
+  display: block;
   text-align: center;
   font-size: clamp(1.05rem, 2vw, 1.3rem);
   font-weight: 600;
   letter-spacing: 0.02em;
   text-transform: uppercase;
   color: var(--fg-strong);
+  text-wrap: balance;
 }
 
 .calendar-month-nav__button--today {
-  order: 3;
   font-weight: 700;
   color: var(--accent-strong);
   border-color: rgba(124, 163, 255, 0.32);
@@ -288,10 +284,6 @@ body.calendar-theme main {
 .calendar-month-nav__button--today:focus-visible {
   border-color: var(--accent-outline);
   background: rgba(124, 163, 255, 0.24);
-}
-
-.calendar-month-nav__button--next {
-  order: 4;
 }
 
 .calendar-view-switch {
@@ -338,10 +330,15 @@ body.calendar-theme main {
 
   .calendar-month-nav {
     justify-content: flex-start;
+    flex-wrap: nowrap;
   }
 
   .calendar-view-switch {
     flex-shrink: 0;
+  }
+
+  .calendar-month-nav__label {
+    text-align: right;
   }
 }
 
@@ -520,6 +517,11 @@ body.calendar-theme main {
 .fc-theme-standard .fc-scrollgrid {
   border-radius: calc(var(--radius-lg) - 6px);
   overflow: hidden;
+}
+
+.fc .fc-scroller {
+  padding-right: clamp(0.75rem, 1.5vw, 1rem);
+  scrollbar-gutter: stable both-edges;
 }
 
 .fc .fc-col-header-cell {
