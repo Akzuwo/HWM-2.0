@@ -446,7 +446,10 @@ function updateWeekStrip(calendar) {
   const list = document.querySelector('[data-week-strip-list]');
   if (!container || !list) return;
 
-  if (calendar.view.type !== 'dayGridMonth') {
+  const viewType = calendar.view.type ? calendar.view.type.toLowerCase() : '';
+  const isWeekView = viewType.includes('week');
+
+  if (!isWeekView) {
     container.classList.add('is-hidden');
     list.innerHTML = '';
     return;
@@ -455,56 +458,44 @@ function updateWeekStrip(calendar) {
   container.classList.remove('is-hidden');
   list.innerHTML = '';
 
-  const rows = Array.from(calendar.el.querySelectorAll('.fc-daygrid-body tr'));
   const locale = document.documentElement.lang || 'it-IT';
   const formatter = new Intl.DateTimeFormat(locale, { day: '2-digit', month: '2-digit' });
+  const { currentStart, currentEnd } = calendar.view;
+  if (!currentStart || !currentEnd) {
+    container.classList.add('is-hidden');
+    list.innerHTML = '';
+    return;
+  }
+
+  const startDate = new Date(currentStart.getTime());
+  const endDate = new Date(currentEnd.getTime() - 1);
+
+  startDate.setHours(0, 0, 0, 0);
+  endDate.setHours(23, 59, 59, 999);
+
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
-  rows.forEach((row, index) => {
-    const firstCell = row.querySelector('[data-date]');
-    const lastCell = row.querySelector('[data-date]:last-of-type');
-    if (!firstCell || !lastCell) return;
-    const startDateStr = firstCell.getAttribute('data-date');
-    const endDateStr = lastCell.getAttribute('data-date');
-    if (!startDateStr || !endDateStr) return;
+  const weekNumber = String(getISOWeekNumber(startDate));
+  const isCurrentWeek = today >= startDate && today <= endDate;
 
-    const startDate = new Date(`${startDateStr}T00:00:00`);
-    const endDate = new Date(`${endDateStr}T23:59:59`);
-    const weekNumber = String(getISOWeekNumber(startDate));
-    const isCurrentWeek = today >= startDate && today <= endDate;
+  const item = document.createElement('div');
+  item.className = 'calendar-weekstrip__item';
+  if (isCurrentWeek) {
+    item.classList.add('is-current');
+  }
 
-    const item = document.createElement('div');
-    item.className = 'calendar-weekstrip__item';
-    if (isCurrentWeek) {
-      item.classList.add('is-current');
-    }
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'calendar-weekstrip__button';
+  button.setAttribute('data-week-index', '0');
+  button.innerHTML = `
+    <span>${t('weekStrip.week', 'Sett.')} ${weekNumber}</span>
+    <span class="calendar-weekstrip__week">${formatter.format(startDate)} – ${formatter.format(endDate)}</span>
+  `;
 
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'calendar-weekstrip__button';
-    button.setAttribute('data-week-index', String(index));
-    button.innerHTML = `
-      <span>${t('weekStrip.week', 'Sett.')} ${weekNumber}</span>
-      <span class="calendar-weekstrip__week">${formatter.format(startDate)} – ${formatter.format(endDate)}</span>
-    `;
-
-    const highlightRow = () => {
-      row.classList.add('is-hovered');
-      item.classList.add('is-hover');
-    };
-    const clearHighlight = () => {
-      row.classList.remove('is-hovered');
-      item.classList.remove('is-hover');
-    };
-
-    button.addEventListener('mouseenter', highlightRow);
-    button.addEventListener('focus', highlightRow);
-    button.addEventListener('mouseleave', clearHighlight);
-    button.addEventListener('blur', clearHighlight);
-
-    item.appendChild(button);
-    list.appendChild(item);
-  });
+  item.appendChild(button);
+  list.appendChild(item);
 }
 
 function createEventContent(info) {
