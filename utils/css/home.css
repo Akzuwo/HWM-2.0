@@ -312,6 +312,81 @@ main.changelog-main {
   gap: var(--space-lg);
 }
 
+.changelog-topbar {
+  width: min(1120px, 100%);
+  margin: clamp(1.5rem, 5vw, 3rem) auto 0;
+  padding: 0 clamp(1.5rem, 5vw, 3rem);
+  display: flex;
+  justify-content: flex-start;
+}
+
+.changelog-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: var(--home-text-secondary);
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  padding: 0.5rem 0.9rem;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.changelog-back:hover,
+.changelog-back:focus-visible {
+  color: var(--home-text-primary);
+  background: rgba(91, 141, 239, 0.18);
+  border-color: rgba(91, 141, 239, 0.35);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.changelog-language-switch {
+  width: 100%;
+  margin-top: 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--home-text-muted);
+}
+
+.changelog-language-switch__label {
+  font-weight: 600;
+  color: var(--home-text-secondary);
+}
+
+.changelog-language-switch a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--home-text-primary);
+  text-decoration: none;
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.changelog-language-switch a[aria-current='page'] {
+  background: rgba(91, 141, 239, 0.2);
+  border-color: rgba(91, 141, 239, 0.45);
+  color: #d4e3ff;
+}
+
+.changelog-language-switch a:hover,
+.changelog-language-switch a:focus-visible {
+  background: rgba(91, 141, 239, 0.18);
+  border-color: rgba(91, 141, 239, 0.35);
+  transform: translateY(-1px);
+  outline: none;
+}
+
 .changelog-entry {
   background: linear-gradient(150deg, rgba(59, 130, 246, 0.08), transparent 60%),
     var(--home-surface);
@@ -379,6 +454,14 @@ main.changelog-main {
   .home-page .nav-button,
   .changelog-page .nav-button {
     justify-content: center;
+  }
+
+  .changelog-topbar {
+    justify-content: center;
+  }
+
+  .changelog-language-switch {
+    flex-direction: column;
   }
 }
 

@@ -107,54 +107,241 @@ function menuButton() {
 }
 
 function initLanguageSelector() {
-    const langMap = {
-        de: { short: 'DE', long: 'Deutsch' },
-        en: { short: 'EN', long: 'English' },
-        it: { short: 'IT', long: 'Italiano' }
-    };
+    const languages = [
+        { code: 'de', short: 'DE', name: 'Deutsch', flag: '🇩🇪' },
+        { code: 'en', short: 'EN', name: 'English', flag: '🇬🇧' },
+        { code: 'it', short: 'IT', name: 'Italiano', flag: '🇮🇹' }
+    ];
 
-    function setup(id) {
-        const container = document.getElementById(id);
-        if (!container) return;
-        const button = container.querySelector('.language-button');
-        const currentSpan = button.querySelector('.current-lang');
-        const arrow = button.querySelector('.arrow');
-        const menu = container.querySelector('.language-menu');
-        const currentLang = window.location.pathname.split('/')[1];
-        const names = langMap[currentLang] || langMap.en;
-        currentSpan.textContent = names.short;
-        button.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const open = container.classList.toggle('open');
-            arrow.textContent = open ? '▲' : '▼';
-            currentSpan.textContent = open ? names.long : names.short;
-        });
-        menu.querySelectorAll('div').forEach(opt => {
-            const lang = opt.dataset.lang;
-            opt.textContent = langMap[lang].long;
-            opt.addEventListener('click', () => {
-                const parts = window.location.pathname.split('/');
-                parts[1] = lang;
-                window.location.pathname = parts.join('/');
-            });
-        });
+    const langMap = languages.reduce((map, entry) => {
+        map[entry.code] = entry;
+        return map;
+    }, {});
+
+    const dropdowns = Array.from(document.querySelectorAll('[data-language]'));
+    if (!dropdowns.length) {
+        return;
     }
 
-    setup('language-dropdown');
-    setup('language-dropdown-mobile');
+    const getCurrentLanguage = () => {
+        const parts = window.location.pathname.split('/');
+        const candidate = (parts[1] || '').toLowerCase();
+        return langMap[candidate] ? candidate : 'de';
+    };
 
-    document.addEventListener('click', () => {
-        document.querySelectorAll('.language-dropdown.open').forEach(c => {
-            c.classList.remove('open');
-            const arrow = c.querySelector('.arrow');
-            const currentSpan = c.querySelector('.current-lang');
-            const currentLang = window.location.pathname.split('/')[1];
-            const names = langMap[currentLang] || langMap.en;
-            if (arrow) arrow.textContent = '▼';
-            if (currentSpan) currentSpan.textContent = names.short;
+    const updateButtonLabel = (button, langCode) => {
+        const data = langMap[langCode] || langMap.en;
+        const code = button.querySelector('.language-button__code');
+        if (code) {
+            code.textContent = data.short;
+        }
+    };
+
+    const closeDropdown = (dropdown) => {
+        dropdown.classList.remove('is-open');
+        const button = dropdown.querySelector('[data-language-toggle]');
+        if (button) {
+            button.setAttribute('aria-expanded', 'false');
+        }
+        dropdown.querySelectorAll('[data-lang]').forEach((item) => {
+            item.setAttribute('tabindex', '-1');
         });
+    };
+
+    const openDropdown = (dropdown) => {
+        dropdown.classList.add('is-open');
+        const button = dropdown.querySelector('[data-language-toggle]');
+        if (button) {
+            button.setAttribute('aria-expanded', 'true');
+        }
+    };
+
+    const closeAll = (except) => {
+        dropdowns.forEach((dropdown) => {
+            if (dropdown !== except) {
+                closeDropdown(dropdown);
+            }
+        });
+    };
+
+    dropdowns.forEach((dropdown, index) => {
+        const button = dropdown.querySelector('[data-language-toggle]');
+        const menu = dropdown.querySelector('[data-language-menu]');
+        if (!button || !menu) {
+            return;
+        }
+
+        const menuId = menu.id || `language-menu-${index + 1}`;
+        menu.id = menuId;
+        menu.setAttribute('role', 'menu');
+        button.setAttribute('aria-controls', menuId);
+        button.setAttribute('aria-expanded', 'false');
+
+        const items = Array.from(menu.querySelectorAll('[data-lang]'));
+
+        const syncOptionState = (currentLang) => {
+            items.forEach((item) => {
+                const lang = item.dataset.lang;
+                const data = langMap[lang] || langMap.en;
+                const code = item.querySelector('.language-option__code');
+                if (code) code.textContent = data.short;
+                const name = item.querySelector('.language-option__name');
+                if (name) name.textContent = data.name;
+                const flag = item.querySelector('.language-option__flag');
+                if (flag) flag.textContent = data.flag;
+                item.setAttribute('role', 'menuitem');
+                item.setAttribute('tabindex', '-1');
+                if (lang === currentLang) {
+                    item.setAttribute('aria-current', 'true');
+                } else {
+                    item.removeAttribute('aria-current');
+                }
+            });
+        };
+
+        const focusItem = (indexToFocus) => {
+            if (!items.length) {
+                return;
+            }
+            const targetIndex = Math.max(0, Math.min(indexToFocus, items.length - 1));
+            items.forEach((item, position) => {
+                item.setAttribute('tabindex', position === targetIndex ? '0' : '-1');
+            });
+            const target = items[targetIndex];
+            if (target) {
+                target.focus();
+            }
+        };
+
+        const getCurrentIndex = (langCode) => {
+            const idx = items.findIndex((item) => item.dataset.lang === langCode);
+            return idx === -1 ? 0 : idx;
+        };
+
+        const selectLanguage = (lang) => {
+            if (!langMap[lang]) {
+                return;
+            }
+            closeDropdown(dropdown);
+            const parts = window.location.pathname.split('/');
+            if (parts.length > 1) {
+                parts[1] = lang;
+            } else {
+                parts.push(lang);
+            }
+            const nextPath = parts.join('/').replace(/\/{2,}/g, '/');
+            window.location.pathname = nextPath;
+        };
+
+        button.addEventListener('click', (event) => {
+            event.preventDefault();
+            const isOpen = dropdown.classList.contains('is-open');
+            closeAll(dropdown);
+            if (!isOpen) {
+                openDropdown(dropdown);
+                const current = getCurrentLanguage();
+                syncOptionState(current);
+                focusItem(getCurrentIndex(current));
+            } else {
+                closeDropdown(dropdown);
+            }
+        });
+
+        button.addEventListener('keydown', (event) => {
+            const current = getCurrentLanguage();
+            switch (event.key) {
+                case 'ArrowDown':
+                case 'Enter':
+                case ' ': {
+                    event.preventDefault();
+                    if (!dropdown.classList.contains('is-open')) {
+                        closeAll(dropdown);
+                        openDropdown(dropdown);
+                        syncOptionState(current);
+                    }
+                    focusItem(getCurrentIndex(current));
+                    break;
+                }
+                case 'ArrowUp': {
+                    event.preventDefault();
+                    if (!dropdown.classList.contains('is-open')) {
+                        closeAll(dropdown);
+                        openDropdown(dropdown);
+                        syncOptionState(current);
+                    }
+                    focusItem(items.length - 1);
+                    break;
+                }
+                case 'Escape': {
+                    event.preventDefault();
+                    closeDropdown(dropdown);
+                    button.focus();
+                    break;
+                }
+                default:
+                    break;
+            }
+        });
+
+        items.forEach((item, itemIndex) => {
+            item.addEventListener('click', () => selectLanguage(item.dataset.lang));
+            item.addEventListener('keydown', (event) => {
+                switch (event.key) {
+                    case 'ArrowDown':
+                        event.preventDefault();
+                        focusItem((itemIndex + 1) % items.length);
+                        break;
+                    case 'ArrowUp':
+                        event.preventDefault();
+                        focusItem((itemIndex - 1 + items.length) % items.length);
+                        break;
+                    case 'Home':
+                        event.preventDefault();
+                        focusItem(0);
+                        break;
+                    case 'End':
+                        event.preventDefault();
+                        focusItem(items.length - 1);
+                        break;
+                    case 'Enter':
+                    case ' ':
+                        event.preventDefault();
+                        selectLanguage(item.dataset.lang);
+                        break;
+                    case 'Escape':
+                        event.preventDefault();
+                        closeDropdown(dropdown);
+                        button.focus();
+                        break;
+                    default:
+                        break;
+                }
+            });
+        });
+
+        const initialLang = getCurrentLanguage();
+        updateButtonLabel(button, initialLang);
+        syncOptionState(initialLang);
+    });
+
+    document.addEventListener('click', (event) => {
+        if (!dropdowns.some((dropdown) => dropdown.contains(event.target))) {
+            dropdowns.forEach(closeDropdown);
+        }
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            const openDropdownEl = dropdowns.find((dropdown) => dropdown.classList.contains('is-open'));
+            if (openDropdownEl) {
+                closeDropdown(openDropdownEl);
+                const trigger = openDropdownEl.querySelector('[data-language-toggle]');
+                trigger?.focus();
+            }
+        }
     });
 }
+
 
 function initSimpleNav() {
     const nav = document.querySelector('.simple-nav');

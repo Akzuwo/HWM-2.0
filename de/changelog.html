@@ -10,31 +10,9 @@
 </head>
 <body class="changelog-page">
   <a class="skip-link" href="#main" data-i18n="common.skipToContent">Zum Inhalt springen</a>
-  <nav class="simple-nav" data-nav>
-    <div class="nav-title">
-      <img src="../media/logo.png" alt="" width="28" height="28" />
-      <span data-i18n="common.appName">Homework Manager</span>
-    </div>
-    <div class="nav-links" id="changelog-nav-links">
-      <a class="nav-button" href="index.html" data-i18n="common.nav.home">🏠 Start</a>
-      <a class="nav-button" href="kalender.html" data-i18n="common.nav.calendar">📅 Kalender</a>
-      <a class="nav-button" href="upcoming.html" data-i18n="common.nav.upcoming">🔔 Upcoming Events</a>
-      <a class="nav-button" href="stundenplan.html" data-i18n="common.nav.currentSubject">🕒 Aktuelles Fach</a>
-      <a class="nav-button" href="notenrechner.html" data-i18n="common.nav.grades">📊 Notenrechner</a>
-      <a class="nav-button" href="#" onclick="logout()" data-i18n="common.nav.logout">🚪 Abmelden</a>
-      <div class="language-dropdown" id="language-dropdown">
-        <button type="button" class="language-button">
-          <span class="current-lang">DE</span>
-          <span class="arrow">▼</span>
-        </button>
-        <div class="language-menu">
-          <div data-lang="de">Deutsch</div>
-          <div data-lang="en">English</div>
-          <div data-lang="it">Italiano</div>
-        </div>
-      </div>
-    </div>
-  </nav>
+  <header class="changelog-topbar">
+    <a class="changelog-back" href="index.html" data-i18n="changelog.back">← Zurück zur Übersicht</a>
+  </header>
 
   <main class="changelog-main" id="main">
     <header class="changelog-header">
@@ -71,6 +49,12 @@
     <a href="cdn-cgi/l/email-protection.html#81f5e8eceef6e8e6e6e4f3b9c1e6ece0e8ed" data-i18n="common.footer.contact">Kontakt</a>
     <span aria-hidden="true">|</span>
     <a href="changelog.html" aria-current="page" data-i18n="common.footer.changelog">Changelog</a>
+    <div class="changelog-language-switch">
+      <span class="changelog-language-switch__label" data-i18n="common.language.menuLabel">Sprache auswählen</span>
+      <a href="changelog.html" aria-current="page">DE</a>
+      <a href="../en/changelog.html">EN</a>
+      <a href="../it/changelog.html">IT</a>
+    </div>
   </footer>
 
   <script src="../utils/js/i18n.js" defer></script>

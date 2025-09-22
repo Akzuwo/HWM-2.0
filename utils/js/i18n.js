@@ -11,11 +11,17 @@
           grades: '📊 Notenrechner',
           currentSubject: '🕒 Aktuelles Fach',
           logout: '🚪 Abmelden',
+          primary: 'Hauptnavigation',
+          toggle: 'Navigationsmenü umschalten',
+          language: 'Sprache ändern',
         },
         footer: {
           copyright: '©️ Timo Wigger 2025',
           contact: 'Kontakt',
           changelog: 'Changelog',
+        },
+        language: {
+          menuLabel: 'Sprache auswählen',
         },
       },
       home: {
@@ -45,6 +51,7 @@
         title: 'Changelog',
         subtitle:
           'Hier findest du die Release-Notizen zum Homework Manager. Ausführliche Inhalte für Version 2.0 folgen in Kürze.',
+        back: '← Zurück zur Übersicht',
         release: {
           title: 'Release 2.0',
           date: 'Oktober 2025',
@@ -175,11 +182,17 @@
           grades: '📊 Grade Calculator',
           currentSubject: '🕒 Current Subject',
           logout: '🚪 Log out',
+          primary: 'Main navigation',
+          toggle: 'Toggle navigation menu',
+          language: 'Change language',
         },
         footer: {
           copyright: '©️ Timo Wigger 2025',
           contact: 'Contact',
           changelog: 'Changelog',
+        },
+        language: {
+          menuLabel: 'Select language',
         },
       },
       home: {
@@ -209,6 +222,7 @@
         title: 'Changelog',
         subtitle:
           'Release notes for Homework Manager live here. Detailed content for version 2.0 will arrive soon.',
+        back: '← Back to overview',
         release: {
           title: 'Release 2.0',
           date: 'October 2025',
@@ -338,11 +352,17 @@
           grades: '📊 Calcolatore di voti',
           currentSubject: '🕒 Materia attuale',
           logout: '🚪 Disconnettersi',
+          primary: 'Navigazione principale',
+          toggle: 'Apri il menu di navigazione',
+          language: 'Cambia lingua',
         },
         footer: {
           copyright: '©️ Timo Wigger 2025',
           contact: 'Contatto',
           changelog: 'Changelog',
+        },
+        language: {
+          menuLabel: 'Seleziona la lingua',
         },
       },
       home: {
@@ -372,6 +392,7 @@
         title: 'Changelog',
         subtitle:
           'Qui trovi le note di rilascio di Homework Manager. I contenuti completi per la versione 2.0 arriveranno a breve.',
+        back: '← Torna alla panoramica',
         release: {
           title: 'Release 2.0',
           date: 'Ottobre 2025',

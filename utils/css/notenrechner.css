@@ -249,61 +249,6 @@
   box-shadow: 0 6px 18px rgba(30, 75, 255, 0.25);
 }
 
-.noten-nav .language-dropdown {
-  position: relative;
-}
-
-.noten-nav .language-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: #1e1e1e;
-  border: 1px solid #333;
-  border-radius: 8px;
-  padding: 10px 16px;
-  color: inherit;
-  cursor: pointer;
-}
-
-.noten-nav .language-button:focus-visible {
-  outline: 2px solid #3f6cff;
-  outline-offset: 2px;
-}
-
-.noten-nav .language-menu {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 6px);
-  display: flex;
-  flex-direction: column;
-  background: #1a1a1a;
-  border: 1px solid #333;
-  border-radius: 8px;
-  min-width: 160px;
-  padding: 6px 0;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-4px);
-  transition: opacity 0.2s ease, transform 0.2s ease;
-  z-index: 250;
-}
-
-.noten-nav .language-dropdown.open .language-menu {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
-}
-
-.noten-nav .language-menu div {
-  padding: 8px 16px;
-  cursor: pointer;
-}
-
-.noten-nav .language-menu div:hover {
-  background: #2b2b2b;
-}
-
 @media (max-width: 720px) {
   #notenrechner-container .noten-inputs > * {
     flex: 1 1 100%;
@@ -315,10 +260,6 @@
 
   .noten-nav .nav-links {
     width: 100%;
-  }
-
-  .noten-nav .language-dropdown {
-    margin-left: auto;
   }
 }
 
