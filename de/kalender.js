@@ -585,25 +585,49 @@ function updateMonthLabel(calendar) {
   }
 }
 
-function setupMonthNavigation(calendar) {
-  const prevButton = document.querySelector('[data-calendar-nav="prev"]');
-  const nextButton = document.querySelector('[data-calendar-nav="next"]');
+function updateViewButtons(calendar) {
+  const buttons = document.querySelectorAll('[data-calendar-view]');
+  buttons.forEach((button) => {
+    const targetView = button.getAttribute('data-calendar-view');
+    const isActive = targetView === calendar.view.type;
+    button.classList.toggle('is-active', isActive);
+    button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+  });
+}
 
-  if (prevButton) {
-    prevButton.addEventListener('click', () => {
-      calendar.prev();
-      updateMonthLabel(calendar);
-    });
+function setupCalendarControls(calendar) {
+  const controls = document.querySelector('[data-calendar-controls]');
+  if (!controls) {
+    updateMonthLabel(calendar);
+    updateViewButtons(calendar);
+    return;
   }
 
-  if (nextButton) {
-    nextButton.addEventListener('click', () => {
-      calendar.next();
+  controls.querySelectorAll('[data-calendar-nav]').forEach((button) => {
+    const action = button.getAttribute('data-calendar-nav');
+    button.addEventListener('click', () => {
+      if (action === 'prev') {
+        calendar.prev();
+      } else if (action === 'next') {
+        calendar.next();
+      } else if (action === 'today') {
+        calendar.today();
+      }
       updateMonthLabel(calendar);
     });
-  }
+  });
+
+  controls.querySelectorAll('[data-calendar-view]').forEach((button) => {
+    const view = button.getAttribute('data-calendar-view');
+    button.addEventListener('click', () => {
+      calendar.changeView(view);
+      updateMonthLabel(calendar);
+      updateViewButtons(calendar);
+    });
+  });
 
   updateMonthLabel(calendar);
+  updateViewButtons(calendar);
 }
 
 function initialiseCalendar(events) {
@@ -615,11 +639,7 @@ function initialiseCalendar(events) {
   const calendar = new FullCalendar.Calendar(calendarEl, {
     initialView: determineInitialView(),
     locale: 'de',
-    headerToolbar: {
-      left: 'prev,today,next',
-      center: 'title',
-      right: 'dayGridMonth,timeGridWeek,timeGridDay'
-    },
+    headerToolbar: false,
     buttonText: {
       month: t('views.month', 'Monat'),
       week: t('views.week', 'Woche'),
@@ -641,12 +661,13 @@ function initialiseCalendar(events) {
     datesSet: () => {
       updateWeekStrip(calendar);
       updateMonthLabel(calendar);
+      updateViewButtons(calendar);
     }
   });
 
   calendar.render();
   updateWeekStrip(calendar);
-  setupMonthNavigation(calendar);
+  setupCalendarControls(calendar);
   calendarInstance = calendar;
 
   const handleResize = debounce(() => {
