@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-i18n="changelog.pageTitle">Changelog</title>
+  <link rel="icon" type="image/png" href="../media/logo.png" />
+  <link rel="stylesheet" href="../utils/css/style.css" />
+  <link rel="stylesheet" href="../utils/css/home.css" />
+</head>
+<body class="changelog-page">
+  <a class="skip-link" href="#main" data-i18n="common.skipToContent">Zum Inhalt springen</a>
+  <nav class="simple-nav" data-nav>
+    <div class="nav-title">
+      <img src="../media/logo.png" alt="" width="28" height="28" />
+      <span data-i18n="common.appName">Homework Manager</span>
+    </div>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="changelog-nav-links">
+      <span aria-hidden="true"></span>
+    </button>
+    <div class="nav-links" id="changelog-nav-links">
+      <a class="nav-button" href="index.html" data-i18n="common.nav.home">🏠 Start</a>
+      <a class="nav-button" href="kalender.html" data-i18n="common.nav.calendar">📅 Kalender</a>
+      <a class="nav-button" href="upcoming.html" data-i18n="common.nav.upcoming">🔔 Upcoming Events</a>
+      <a class="nav-button" href="stundenplan.html" data-i18n="common.nav.currentSubject">🕒 Aktuelles Fach</a>
+      <a class="nav-button" href="notenrechner.html" data-i18n="common.nav.grades">📊 Notenrechner</a>
+      <a class="nav-button" href="#" onclick="logout()" data-i18n="common.nav.logout">🚪 Abmelden</a>
+      <div class="language-dropdown" id="language-dropdown">
+        <button type="button" class="language-button">
+          <span class="current-lang">DE</span>
+          <span class="arrow">▼</span>
+        </button>
+        <div class="language-menu">
+          <div data-lang="de">Deutsch</div>
+          <div data-lang="en">English</div>
+          <div data-lang="it">Italiano</div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="changelog-main" id="main">
+    <header class="changelog-header">
+      <h1 data-i18n="changelog.title">Changelog</h1>
+      <p data-i18n="changelog.subtitle">Hier findest du die Release-Notizen zum Homework Manager. Ausführliche Inhalte für Version 2.0 folgen in Kürze.</p>
+    </header>
+
+    <section class="changelog-timeline">
+      <article class="changelog-entry">
+        <div class="changelog-entry__meta">
+          <h2 data-i18n="changelog.release.title">Release 2.0</h2>
+          <time datetime="2025-10-01" data-i18n="changelog.release.date">Oktober 2025</time>
+        </div>
+        <p data-i18n="changelog.release.summary">Die vollständigen Release-Notes für Version 2.0 werden aktuell vorbereitet. Nachfolgend findest du bereits eine Vorschau der wichtigsten Themen.</p>
+        <ul>
+          <li data-i18n="changelog.release.items.design">Überarbeitetes Design-System im dunklen Look für alle Kernmodule.</li>
+          <li data-i18n="changelog.release.items.performance">Optimierte Performance der Schnittstellen für schnellere Ladezeiten.</li>
+          <li data-i18n="changelog.release.items.overlays">Neu gestaltete Overlays und Dialoge für ein klareres Bearbeitungserlebnis.</li>
+        </ul>
+      </article>
+
+      <article class="changelog-entry">
+        <div class="changelog-entry__meta">
+          <h2 data-i18n="changelog.archive.title">Frühere Versionen</h2>
+        </div>
+        <p data-i18n="changelog.archive.placeholder">Ältere Changelogs werden derzeit konsolidiert und erscheinen hier demnächst.</p>
+      </article>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <span data-i18n="common.footer.copyright">©️ Timo Wigger 2025</span>
+    <span aria-hidden="true">|</span>
+    <a href="cdn-cgi/l/email-protection.html#81f5e8eceef6e8e6e6e4f3b9c1e6ece0e8ed" data-i18n="common.footer.contact">Kontakt</a>
+    <span aria-hidden="true">|</span>
+    <a href="changelog.html" aria-current="page" data-i18n="common.footer.changelog">Changelog</a>
+  </footer>
+
+  <script src="../utils/js/i18n.js" defer></script>
+  <script src="../utils/js/overlay.js" defer></script>
+  <script src="script.js" defer></script>
+</body>
+</html>
