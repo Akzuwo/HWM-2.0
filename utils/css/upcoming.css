@@ -220,29 +220,17 @@ body.upcoming-page .simple-nav.simple-nav--open .nav-toggle span::after {
     align-items: center;
   }
 
-  body.upcoming-page .nav-toggle {
-    display: inline-flex;
-  }
-
   body.upcoming-page .simple-nav .nav-links {
     width: 100%;
     flex-direction: column;
     align-items: stretch;
     padding-top: 12px;
-    max-height: 0;
-    opacity: 0;
-    pointer-events: none;
-    transform: translateY(-12px);
-    transition: max-height var(--upcoming-transition),
-      opacity var(--upcoming-transition),
-      transform var(--upcoming-transition);
-  }
-
-  body.upcoming-page .simple-nav.simple-nav--open .nav-links {
-    max-height: 600px;
+    display: flex;
+    gap: 12px;
+    max-height: none;
     opacity: 1;
     pointer-events: auto;
-    transform: translateY(0);
+    transform: none;
   }
 
   body.upcoming-page .nav-button {

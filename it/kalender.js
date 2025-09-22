@@ -433,6 +433,14 @@ async function handleExportClick(event) {
   }
 }
 
+function getISOWeekNumber(date) {
+  const target = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNumber = target.getUTCDay() || 7;
+  target.setUTCDate(target.getUTCDate() + 4 - dayNumber);
+  const yearStart = new Date(Date.UTC(target.getUTCFullYear(), 0, 1));
+  return Math.ceil(((target - yearStart) / 86400000 + 1) / 7);
+}
+
 function updateWeekStrip(calendar) {
   const container = document.querySelector('[data-week-strip]');
   const list = document.querySelector('[data-week-strip-list]');
@@ -462,8 +470,7 @@ function updateWeekStrip(calendar) {
 
     const startDate = new Date(`${startDateStr}T00:00:00`);
     const endDate = new Date(`${endDateStr}T23:59:59`);
-    const marker = calendar.dateEnv.createMarker(startDateStr);
-    const weekNumber = calendar.formatDate(marker, { week: 'numeric' });
+    const weekNumber = String(getISOWeekNumber(startDate));
     const isCurrentWeek = today >= startDate && today <= endDate;
 
     const item = document.createElement('div');
