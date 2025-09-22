@@ -482,8 +482,23 @@ button {
 }
 
 .simple-nav .nav-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
     font-weight: 700;
     font-size: 1.1rem;
+    line-height: 1;
+}
+
+.simple-nav .nav-title img {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+}
+
+.simple-nav .nav-title span {
+    line-height: 1.2;
+    display: block;
 }
 
 .simple-nav .nav-links {
