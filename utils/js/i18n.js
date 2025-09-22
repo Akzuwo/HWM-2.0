@@ -12,6 +12,54 @@
           currentSubject: '🕒 Aktuelles Fach',
           logout: '🚪 Abmelden',
         },
+        footer: {
+          copyright: '©️ Timo Wigger 2025',
+          contact: 'Kontakt',
+          changelog: 'Changelog',
+        },
+      },
+      home: {
+        pageTitle: 'Homework Manager',
+        heroTitle: 'Homework Manager 2.0',
+        description: {
+          lead:
+            'Der Homework Manager entstand, um Hausaufgaben, Prüfungen und Projekte transparent für die ganze Klasse bereitzustellen.',
+          body:
+            'Statt verstreuter Chats und vergessener Notizen bündelt die Plattform Termine, Erinnerungen und praktische Werkzeuge in einer klaren Oberfläche – jederzeit verfügbar und gemeinsam nutzbar.',
+        },
+        release: {
+          title: 'Release 2.0',
+          date: 'Oktober 2025',
+          summary:
+            'Wir feiern den Start von Homework Manager 2.0 – mit frischem Look and Feel und vielen Verbesserungen im Hintergrund. Die Highlights des Releases folgen in Kürze.',
+          highlights: {
+            design: 'Modernes Dark-Theme-Design für Kalender, Fächerübersicht und Tools.',
+            performance: 'Schnellere APIs für reibungsloses Laden der Hausaufgaben.',
+            overlays: 'Überarbeitete Overlays für komfortableres Bearbeiten von Einträgen.',
+          },
+          cta: 'Mehr erfahren',
+        },
+      },
+      changelog: {
+        pageTitle: 'Changelog',
+        title: 'Changelog',
+        subtitle:
+          'Hier findest du die Release-Notizen zum Homework Manager. Ausführliche Inhalte für Version 2.0 folgen in Kürze.',
+        release: {
+          title: 'Release 2.0',
+          date: 'Oktober 2025',
+          summary:
+            'Die vollständigen Release-Notes für Version 2.0 werden aktuell vorbereitet. Nachfolgend findest du bereits eine Vorschau der wichtigsten Themen.',
+          items: {
+            design: 'Überarbeitetes Design-System im dunklen Look für alle Kernmodule.',
+            performance: 'Optimierte Performance der Schnittstellen für schnellere Ladezeiten.',
+            overlays: 'Neu gestaltete Overlays und Dialoge für ein klareres Bearbeitungserlebnis.',
+          },
+        },
+        archive: {
+          title: 'Frühere Versionen',
+          placeholder: 'Ältere Changelogs werden derzeit konsolidiert und erscheinen hier demnächst.',
+        },
       },
       calendar: {
         pageTitle: 'Kalender',
@@ -128,6 +176,54 @@
           currentSubject: '🕒 Current Subject',
           logout: '🚪 Log out',
         },
+        footer: {
+          copyright: '©️ Timo Wigger 2025',
+          contact: 'Contact',
+          changelog: 'Changelog',
+        },
+      },
+      home: {
+        pageTitle: 'Homework Manager',
+        heroTitle: 'Homework Manager 2.0',
+        description: {
+          lead:
+            'Homework Manager was built to share homework, exams and projects transparently with the entire class.',
+          body:
+            'Instead of scattered chats and forgotten notes, the platform unifies schedules, reminders and handy utilities in one clear interface – available at any time and designed for teamwork.',
+        },
+        release: {
+          title: 'Release 2.0',
+          date: 'October 2025',
+          summary:
+            'We are launching Homework Manager 2.0 with a refreshed look and deep technical upgrades. Detailed highlights will follow soon.',
+          highlights: {
+            design: 'Cohesive dark theme visuals across calendar, subject view and tools.',
+            performance: 'Faster APIs for effortless homework syncing.',
+            overlays: 'Refined overlays that make editing entries more comfortable.',
+          },
+          cta: 'Learn more',
+        },
+      },
+      changelog: {
+        pageTitle: 'Changelog',
+        title: 'Changelog',
+        subtitle:
+          'Release notes for Homework Manager live here. Detailed content for version 2.0 will arrive soon.',
+        release: {
+          title: 'Release 2.0',
+          date: 'October 2025',
+          summary:
+            'The full release notes for version 2.0 are in progress. Below is a preview of the headline topics.',
+          items: {
+            design: 'Revamped dark design system applied to every core module.',
+            performance: 'Performance tuning across APIs for quicker load times.',
+            overlays: 'Redesigned overlays and dialogs for clearer editing workflows.',
+          },
+        },
+        archive: {
+          title: 'Earlier versions',
+          placeholder: 'Previous release notes are being curated and will appear here shortly.',
+        },
       },
       calendar: {
         pageTitle: 'Calendar',
@@ -236,12 +332,60 @@
         skipToContent: 'Salta al contenuto',
         appName: 'Homework Manager',
         nav: {
-          home: '🏠 Panoramica',
+          home: '🏠 Home',
           calendar: '📅 Calendario',
-          upcoming: '🔔 Prossimi eventi',
+          upcoming: '🔔 Eventi in arrivo',
           grades: '📊 Calcolatore di voti',
           currentSubject: '🕒 Materia attuale',
           logout: '🚪 Disconnettersi',
+        },
+        footer: {
+          copyright: '©️ Timo Wigger 2025',
+          contact: 'Contatto',
+          changelog: 'Changelog',
+        },
+      },
+      home: {
+        pageTitle: 'Homework Manager',
+        heroTitle: 'Homework Manager 2.0',
+        description: {
+          lead:
+            'Homework Manager è nato per condividere compiti, verifiche e progetti in modo trasparente con tutta la classe.',
+          body:
+            'Al posto di chat disperse e appunti dimenticati, la piattaforma riunisce scadenze, promemoria e strumenti utili in un\'unica interfaccia chiara – sempre disponibile e pensata per il lavoro di squadra.',
+        },
+        release: {
+          title: 'Release 2.0',
+          date: 'Ottobre 2025',
+          summary:
+            'Lanciamo Homework Manager 2.0 con un aspetto rinnovato e numerosi miglioramenti tecnici. I dettagli arriveranno a breve.',
+          highlights: {
+            design: 'Nuovo design dark theme per calendario, panoramica materie e strumenti.',
+            performance: 'API più rapide per sincronizzare i compiti senza attese.',
+            overlays: 'Overlay migliorati per modificare le voci con maggiore comodità.',
+          },
+          cta: 'Scopri di più',
+        },
+      },
+      changelog: {
+        pageTitle: 'Changelog',
+        title: 'Changelog',
+        subtitle:
+          'Qui trovi le note di rilascio di Homework Manager. I contenuti completi per la versione 2.0 arriveranno a breve.',
+        release: {
+          title: 'Release 2.0',
+          date: 'Ottobre 2025',
+          summary:
+            'Le note di rilascio complete per la versione 2.0 sono in preparazione. Qui trovi un\'anteprima dei punti principali.',
+          items: {
+            design: 'Design dark completamente aggiornato per tutti i moduli principali.',
+            performance: 'Prestazioni ottimizzate delle API per tempi di caricamento più rapidi.',
+            overlays: 'Overlay e dialoghi ridisegnati per un\'esperienza di modifica più chiara.',
+          },
+        },
+        archive: {
+          title: 'Versioni precedenti',
+          placeholder: 'Le note delle versioni passate sono in fase di raccolta e saranno disponibili qui a breve.',
         },
       },
       calendar: {

@@ -1,44 +1,35 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Homework Manager</title>
-  <link rel="icon" type="image/png" href="../media/logo.png">
-  <link rel="stylesheet" href="../utils/css/style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-i18n="home.pageTitle">Homework Manager</title>
+  <link rel="icon" type="image/png" href="../media/logo.png" />
+  <link rel="stylesheet" href="../utils/css/style.css" />
+  <link rel="stylesheet" href="../utils/css/home.css" />
 </head>
-  <body>
-    <div class="navbar">
-      <a class="imgbutton" href="index.html">
-        <img class="imgbuttonhover" src="../media/logo.png" alt="Logo">
-      </a>
-      <div class="navbarItems">
-        <a class="button" href="kalender.html">📅 Calendar</a>
-        <a class="button" href="upcoming.html">🔔 Upcoming Events</a>
-        <a class="button" href="stundenplan.html">🕒 Current Subject</a>
-        <a class="button" href="notenrechner.html">📊 Grade Calculator</a>
-        <a class="button" href="#" onclick="logout()">🚪 Log Out</a>
-      </div>
+<body class="home-page">
+  <a class="skip-link" href="#main" data-i18n="common.skipToContent">Skip to content</a>
+  <nav class="simple-nav" data-nav>
+    <div class="nav-title">
+      <img src="../media/logo.png" alt="" width="28" height="28" />
+      <span data-i18n="common.appName">Homework Manager</span>
+    </div>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="home-nav-links">
+      <span aria-hidden="true"></span>
+    </button>
+    <div class="nav-links" id="home-nav-links">
+      <a class="nav-button" href="index.html" aria-current="page" data-i18n="common.nav.home">🏠 Dashboard</a>
+      <a class="nav-button" href="kalender.html" data-i18n="common.nav.calendar">📅 Calendar</a>
+      <a class="nav-button" href="upcoming.html" data-i18n="common.nav.upcoming">🔔 Upcoming</a>
+      <a class="nav-button" href="stundenplan.html" data-i18n="common.nav.currentSubject">🕒 Current Subject</a>
+      <a class="nav-button" href="notenrechner.html" data-i18n="common.nav.grades">📊 Grade Calculator</a>
+      <a class="nav-button" href="#" onclick="logout()" data-i18n="common.nav.logout">🚪 Log out</a>
       <div class="language-dropdown" id="language-dropdown">
-        <button class="language-button"><span class="current-lang">EN</span> <span class="arrow">▼</span></button>
-        <div class="language-menu">
-          <div data-lang="de">Deutsch</div>
-          <div data-lang="en">English</div>
-          <div data-lang="it">Italiano</div>
-        </div>
-      </div>
-      <a href="javascript:void(0);" class="menubutton" onclick="menuButton()">
-        <i class="fa fa-bars"></i>
-      </a>
-    </div>
-    <div class="navbarMobileItems" id="navbarlinks">
-      <a class="button" href="kalender.html">📅 Calendar</a>
-      <a class="button" href="upcoming.html">🔔 Upcoming Events</a>
-      <a class="button" href="stundenplan.html">🕒 Current Subject</a>
-      <a class="button" href="notenrechner.html">📊 Grade Calculator</a>
-      <a class="button" href="#" onclick="logout()">🚪 Log Out</a>
-      <div class="language-dropdown" id="language-dropdown-mobile">
-        <button class="language-button"><span class="current-lang">EN</span> <span class="arrow">▼</span></button>
+        <button type="button" class="language-button">
+          <span class="current-lang">EN</span>
+          <span class="arrow">▼</span>
+        </button>
         <div class="language-menu">
           <div data-lang="de">Deutsch</div>
           <div data-lang="en">English</div>
@@ -46,44 +37,55 @@
         </div>
       </div>
     </div>
+  </nav>
 
-  <div class="content">
-    <h1>📚 Homework Manager</h1>
-    <section id="description">
-      <h2>📝 Project Description</h2>
-      <p>The Homework Manager grew out of a simple but frustrating problem: I was tired of asking for the homework in the class chat and getting no answer.</p>
-      <p>Of course, you could simply write the homework down on paper or enter it into a personal digital calendar. But that would have been too boring—and would have only helped me.</p>
-      <p>So I wanted to develop a solution that also benefits my classmates. That is how the Homework Manager came about: a program that offers a homework and exam calendar and includes some additional features.</p>
-      <h3>🔄️ Update 1.5</h3>
-      <p>The user interface was adjusted to guarantee better usability, and the "grade calculator" was implemented.</p>
-      <h3>🔄️ Update 1.6.x</h3>
-      <p>I am currently trying to redesign the user interface, but it quickly became clear that the possibilities of a purely Python interface are very limited or far too complicated to achieve a good result. The solution was to design the interface with HTML and CSS while keeping the functionality in Python.</p>
-      <h3>🔄 Update 1.6.1-BETA</h3>
-      <p>After extensive experiments, the website is now ready and works largely reliably, yet I noticed several potential problem points such as the requirement to download a software package and static assets tied to the software.</p>
-      <h3>🔄 Release 1.6.2</h3>
-      <p>The new Homework Manager website is online. No local installation is required anymore, the web interface can be designed much more flexibly, and assets are stored centrally on the server and can be updated dynamically. Changed timetables are now displayed automatically without installing a new version.</p>
-      <h3>🔄️ Update 1.6.3 & 1.6.4</h3>
-      <p>The website received several visual as well as security improvements, including new overlays. Based on user feedback, a new overlay was created that allows an administrator to edit or delete entries.</p>
-      <h3>🔄️ Update 1.7 incl Patch 00x1 & 00x2</h3>
-      <p>Various tweaks to the user interface now make it possible to create and edit entries directly in the calendar.</p>
-  </section>
-  </div>
+  <main class="home-main" id="main">
+    <section class="home-grid">
+      <article class="home-card home-card--intro">
+        <header class="home-card__header">
+          <span class="home-card__icon" aria-hidden="true">📚</span>
+          <h1 data-i18n="home.heroTitle">Homework Manager 2.0</h1>
+        </header>
+        <p data-i18n="home.description.lead">
+          Homework Manager was built to share homework, exams and projects transparently with the entire class.
+        </p>
+        <p data-i18n="home.description.body">
+          Instead of scattered chats and forgotten notes, the platform unifies schedules, reminders and handy utilities in one clear interface – available at any time and designed for teamwork.
+        </p>
+      </article>
 
+      <article class="home-card home-card--release">
+        <header class="home-card__header">
+          <span class="home-card__icon" aria-hidden="true">🚀</span>
+          <h2 data-i18n="home.release.title">Release 2.0</h2>
+        </header>
+        <p class="home-card__meta" data-i18n="home.release.date">October 2025</p>
+        <p data-i18n="home.release.summary">
+          We are launching Homework Manager 2.0 with a refreshed look and deep technical upgrades. Detailed highlights will follow soon.
+        </p>
+        <ul>
+          <li data-i18n="home.release.highlights.design">Cohesive dark theme visuals across calendar, subject view and tools.</li>
+          <li data-i18n="home.release.highlights.performance">Faster APIs for effortless homework syncing.</li>
+          <li data-i18n="home.release.highlights.overlays">Refined overlays that make editing entries more comfortable.</li>
+        </ul>
+        <a class="home-button" href="changelog.html">
+          <span aria-hidden="true">📄</span>
+          <span data-i18n="home.release.cta">Learn more</span>
+        </a>
+      </article>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <span data-i18n="common.footer.copyright">©️ Timo Wigger 2025</span>
+    <span aria-hidden="true">|</span>
+    <a href="cdn-cgi/l/email-protection.html#4b3f2226243c222c2c2e39034b2c262a222765282426" data-i18n="common.footer.contact">Contact</a>
+    <span aria-hidden="true">|</span>
+    <a href="changelog.html" data-i18n="common.footer.changelog">Changelog</a>
+  </footer>
+
+  <script src="../utils/js/i18n.js" defer></script>
   <script src="../utils/js/overlay.js" defer></script>
   <script src="script.js" defer></script>
-
-  <!-- Footer -->
-  <footer style="
-           text-align: center;
-           margin-top: 30px;
-           padding: 10px 0;
-           border-top: 1px solid #ccc;
-           font-size: 0.9em;
-         ">
-    ©️ Timo Wigger 2025 |
-    <a href="cdn-cgi/l/email-protection.html#81f5e8eceef6e8e6e6e4f3b9c1e6ece0e8edafe2eeec" style="color: inherit; text-decoration: underline;">
-      Contact
-    </a>
-  </footer>
 </body>
 </html>
