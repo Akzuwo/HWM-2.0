@@ -1,357 +1,389 @@
-/* Shared grade calculator styling */
-#notenrechner-container {
-  text-align: left;
+:root {
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1.25rem;
+  --space-lg: clamp(1.5rem, 2vw, 2.5rem);
+  --space-xl: clamp(2.5rem, 4vw, 4rem);
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --surface-elevated: #1f1f23;
+  --surface-muted: #18181c;
+  --surface-subtle: rgba(255, 255, 255, 0.04);
+  --surface-subtle-alt: rgba(255, 255, 255, 0.08);
+  --text-strong: #f8fafc;
+  --text-subtle: rgba(255, 255, 255, 0.72);
+  --text-faint: rgba(255, 255, 255, 0.48);
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --secondary: #303038;
+  --secondary-hover: #3a3a44;
+  --danger: #ef4444;
+  --danger-hover: #f87171;
+  --shadow-soft: 0 28px 60px rgba(0, 0, 0, 0.45);
+  --shadow-focus: 0 0 0 3px rgba(37, 99, 235, 0.45);
+  --shadow-danger: 0 0 0 3px rgba(239, 68, 68, 0.45);
+  --border-muted: rgba(255, 255, 255, 0.08);
 }
 
-#notenrechner-container .page-header {
-  margin-bottom: 32px;
-}
-
-#notenrechner-container .page-header h2 {
-  margin: 0;
-}
-
-#notenrechner-container .noten-main {
+main.grade-calculator {
+  margin: clamp(32px, 9vh, 96px) auto var(--space-xl);
+  max-width: clamp(720px, 70vw, 980px);
+  padding: var(--space-lg);
+  background: radial-gradient(circle at top left, rgba(59, 130, 246, 0.12), transparent 55%),
+    var(--surface-elevated);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: var(--space-lg);
+  text-align: left;
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-#notenrechner-container .noten-main > * {
+.grade-calculator__header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.grade-calculator__title {
+  font-size: clamp(1.65rem, 2.6vw, 2.4rem);
+  font-weight: 700;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  color: var(--text-strong);
+}
+
+.grade-calculator__title-icon {
+  font-size: 1.4em;
+}
+
+.grade-calculator__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.grade-calculator__form {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
   margin: 0;
 }
 
-#notenrechner-container .noten-inputs,
-#notenrechner-container .ziel-inputs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  align-items: stretch;
-}
-
-#notenrechner-container .field-group {
-  flex: 1 1 220px;
+.grade-calculator__field {
+  flex: 1 1 200px;
   min-width: 200px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin: 0;
+  gap: var(--space-xs);
 }
 
-#notenrechner-container .field-label {
-  display: block;
+.grade-calculator__label {
+  font-size: 0.85rem;
   font-weight: 600;
-  margin: 0;
+  color: var(--text-subtle);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
-#notenrechner-container .field-control {
+.grade-calculator__input {
   box-sizing: border-box;
   width: 100%;
-  margin: 0;
-  padding: 0 16px;
-  min-height: 48px;
-  background: #111;
-  border: 1px solid #3a3a3a;
-  border-radius: 8px;
-  color: #fff;
-  line-height: 1.5;
+  min-height: 52px;
+  padding: 0 var(--space-md);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-muted);
+  background: var(--surface-muted);
+  color: var(--text-strong);
+  font-size: 1rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
-#notenrechner-container .field-control:focus {
-  outline: 2px solid #3f6cff;
-  outline-offset: 2px;
+.grade-calculator__input::placeholder {
+  color: var(--text-faint);
 }
 
-#notenrechner-container .btn {
-  box-sizing: border-box;
+.grade-calculator__input:focus {
+  outline: none;
+  border-color: rgba(59, 130, 246, 0.55);
+  box-shadow: var(--shadow-focus);
+}
+
+.grade-calculator__input.invalid {
+  border-color: rgba(239, 68, 68, 0.8);
+  box-shadow: var(--shadow-danger);
+}
+
+.grade-calculator__error {
+  min-height: 1.1rem;
+  font-size: 0.85rem;
+  color: rgba(248, 113, 113, 0.95);
   margin: 0;
-  width: auto;
+}
+
+.grade-calculator__button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0 24px;
-  min-height: 48px;
-  border-radius: 10px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  gap: 0.5rem;
+  padding: 0.9rem 1.8rem;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 1rem;
+  text-decoration: none;
   border: 1px solid transparent;
-  background: #2b2b2b;
-  color: #f5f5f5;
-  transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.2s ease, color 0.2s ease,
+    border-color 0.2s ease;
+  cursor: pointer;
+  min-height: 52px;
 }
 
-#notenrechner-container .btn:focus-visible {
-  outline: 2px solid #3f6cff;
+.grade-calculator__button:focus-visible {
+  outline: 3px solid rgba(59, 130, 246, 0.55);
   outline-offset: 2px;
 }
 
-#notenrechner-container .btn--primary {
-  background: #1e4bff;
-  border-color: #1e4bff;
-  color: #fff;
-  box-shadow: 0 6px 18px rgba(30, 75, 255, 0.25);
+.grade-calculator__button--primary {
+  background: var(--primary);
+  color: #f9fafb;
+  box-shadow: 0 14px 32px rgba(37, 99, 235, 0.35);
 }
 
-#notenrechner-container .btn--primary:not(:disabled):hover {
-  background: #365dff;
-  box-shadow: 0 10px 24px rgba(54, 93, 255, 0.35);
-  transform: translateY(-2px);
+.grade-calculator__button--primary:hover:not(:disabled),
+.grade-calculator__button--primary:focus-visible:not(:disabled) {
+  background: var(--primary-hover);
 }
 
-#notenrechner-container .btn--ghost {
-  border-color: #3d3d3d;
+.grade-calculator__button--secondary {
+  background: var(--secondary);
+  color: #f4f4f5;
+  border-color: rgba(255, 255, 255, 0.05);
 }
 
-#notenrechner-container .btn--ghost:not(:disabled):hover {
-  background: #3a3a3a;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.35);
-  transform: translateY(-2px);
+.grade-calculator__button--secondary:hover:not(:disabled),
+.grade-calculator__button--secondary:focus-visible:not(:disabled) {
+  background: var(--secondary-hover);
 }
 
-#notenrechner-container .btn--danger {
-  background: #8b1e3f;
-  border-color: #b74b68;
-  color: #fff;
-}
-
-#notenrechner-container .btn--danger:not(:disabled):hover {
-  background: #a52b55;
-  box-shadow: 0 8px 16px rgba(165, 43, 85, 0.35);
-}
-
-#notenrechner-container .btn--danger:not(:disabled):active {
-  background: #731730;
-}
-
-#notenrechner-container .btn:disabled,
-#notenrechner-container .btn[aria-disabled="true"] {
-  background: #242424;
-  color: #777;
-  border-color: #242424;
-  box-shadow: none;
+.grade-calculator__button:disabled {
   cursor: not-allowed;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.5);
+  border-color: rgba(255, 255, 255, 0.06);
+  box-shadow: none;
   transform: none;
 }
 
-#notenrechner-container .noten-inputs .btn {
-  flex: 0 0 auto;
-  min-width: 160px;
-  align-self: flex-end;
-  height: 48px;
-}
-
-#notenrechner-container .ziel-inputs .btn {
-  flex: 0 0 auto;
-  min-width: 160px;
-  align-self: stretch;
-}
-
-#notenrechner-container .noten-actions {
+.grade-calculator__actions {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
 }
 
-#notenrechner-container .error-message {
-  color: #ff6b6b;
-  min-height: 1.2em;
-  margin: 0;
+.grade-calculator__table-wrapper {
+  overflow-x: auto;
 }
 
-#notenrechner-container .field-control.invalid,
-#notenrechner-container .edit-field.invalid {
-  border-color: #ff6b6b;
-  box-shadow: 0 0 0 1px rgba(255, 107, 107, 0.4);
+.grade-calculator__table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 var(--space-sm);
 }
 
-#notenrechner-container .delete-btn,
-#notenrechner-container .edit-btn {
-  margin: 0;
+.grade-calculator__table thead th {
+  text-align: left;
+  padding: 0 var(--space-md);
+  color: var(--text-subtle);
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.grade-calculator__table tbody tr {
+  background: var(--surface-subtle);
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.grade-calculator__table tbody tr:nth-child(even) {
+  background: var(--surface-subtle-alt);
+}
+
+.grade-calculator__table tbody tr:hover {
+  background: rgba(59, 130, 246, 0.18);
+}
+
+.grade-calculator__table tbody td {
+  padding: var(--space-sm) var(--space-md);
+  vertical-align: middle;
+  color: var(--text-strong);
+}
+
+.grade-calculator__table tbody td:first-child {
+  border-top-left-radius: var(--radius-md);
+  border-bottom-left-radius: var(--radius-md);
+}
+
+.grade-calculator__table tbody td:last-child {
+  border-top-right-radius: var(--radius-md);
+  border-bottom-right-radius: var(--radius-md);
+  text-align: right;
+}
+
+.grade-calculator__table button {
+  font: inherit;
+}
+
+.grade-calculator__delete-button {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: rgba(239, 68, 68, 0.18);
+  color: rgba(248, 113, 113, 0.95);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background 0.18s ease, transform 0.18s ease, border-color 0.18s ease;
 }
 
-#notenrechner-container .delete-btn {
-  padding: 0;
-  width: 32px;
-  height: 32px;
-  min-width: 32px;
-  min-height: 32px;
-  border-radius: 9999px;
-  background: #8b1e3f;
-  border: 1px solid #b74b68;
-  color: #fff;
-  font-size: 0.85rem;
-  line-height: 1;
-  transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
-}
-
-#notenrechner-container .delete-btn:hover {
-  background: #a52b55;
-  box-shadow: 0 6px 18px rgba(165, 43, 85, 0.35);
+.grade-calculator__delete-button:hover,
+.grade-calculator__delete-button:focus-visible {
+  background: rgba(239, 68, 68, 0.35);
+  border-color: rgba(248, 113, 113, 0.6);
+  color: #fee2e2;
+  outline: none;
   transform: translateY(-1px);
 }
 
-#notenrechner-container .delete-btn:active {
-  background: #731730;
-  transform: translateY(0);
+.grade-calculator__delete-button:focus-visible {
+  box-shadow: var(--shadow-danger);
 }
 
-#notenrechner-container .delete-btn:focus-visible {
-  outline: 2px solid rgba(255, 123, 156, 0.8);
-  outline-offset: 2px;
-}
-
-#notenrechner-container .edit-actions {
+.grade-calculator__summary {
   display: flex;
-  gap: 8px;
-  justify-content: flex-end;
+  flex-direction: column;
+  gap: var(--space-sm);
 }
 
-#notenrechner-container .edit-btn {
-  padding: 10px 16px;
-  border: none;
+.grade-calculator__summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--surface-muted);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-muted);
+}
+
+.grade-calculator__summary-label {
+  color: var(--text-subtle);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.grade-calculator__summary-value {
+  font-weight: 700;
+  font-size: 1.15rem;
+}
+
+.grade-calculator__footer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.grade-calculator__required {
   font-size: 1.1rem;
+  font-weight: 700;
+  padding: var(--space-sm) var(--space-md);
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-muted);
 }
 
-#notenrechner-container .edit-btn.save-btn {
-  background: #1f7a4d;
-  color: #fff;
+.grade-calculator__required[data-state="unreachable"] {
+  color: rgba(248, 113, 113, 0.95);
 }
 
-#notenrechner-container .edit-btn.save-btn:hover {
-  background: #2ba86a;
-}
-
-#notenrechner-container .edit-btn.cancel-btn:hover {
-  background: #c62852;
-}
-
-.noten-nav .nav-links {
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.noten-nav .nav-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 600;
-}
-
-.noten-nav .nav-button--active {
-  background: #1e4bff;
-  border-color: #1e4bff;
-  color: #fff;
-  box-shadow: 0 6px 18px rgba(30, 75, 255, 0.25);
-}
-
-@media (max-width: 720px) {
-  #notenrechner-container .noten-inputs > * {
-    flex: 1 1 100%;
-  }
-
-  #notenrechner-container .ziel-inputs > * {
-    flex: 1 1 100%;
-  }
-
-  .noten-nav .nav-links {
-    width: 100%;
-  }
-}
-
-#notenrechner-container .edit-field {
-  margin: 0;
-}
-
-#notenrechner-container .noten-tabelle {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 0;
-}
-
-#notenrechner-container .noten-tabelle th,
-#notenrechner-container .noten-tabelle td {
-  padding: 16px;
-  border-bottom: 1px solid #2d2d2d;
-  vertical-align: middle;
-  line-height: 1.5;
-}
-
-#notenrechner-container .noten-tabelle tbody tr:nth-child(even) {
-  background: rgba(255, 255, 255, 0.03);
-}
-
-#notenrechner-container .noten-tabelle tbody tr:hover {
-  background: rgba(30, 144, 255, 0.08);
-}
-
-#notenrechner-container .noten-summary {
-  margin: 0;
-  padding: 0 16px;
-  font-weight: 600;
-  text-align: left;
-}
-
-#notenrechner-container .ziel-inputs {
-  align-items: center;
-}
-
-#notenrechner-container .ziel-inputs .field-control {
-  flex: 1 1 220px;
-}
-
-#notenrechner-container .ziel-inputs .secondary-action {
-  flex: 0 0 auto;
-  min-width: 160px;
-}
-
-.page-actions {
+.grade-calculator__back {
   display: flex;
-  justify-content: flex-start;
-  margin-top: 32px;
+  justify-content: center;
 }
 
-.page-actions button {
-  width: auto;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 24px;
+.grade-calculator__table input.grade-calculator__input {
+  margin: 0;
   min-height: 48px;
 }
 
-@media (max-width: 700px) {
-  #notenrechner-container .input-row,
-  #notenrechner-container .noten-inputs,
-  #notenrechner-container .ziel-inputs {
-    flex-direction: column;
+.grade-calculator__table tr.editing {
+  background: rgba(59, 130, 246, 0.14);
+}
+
+.grade-calculator__edit-actions {
+  display: inline-flex;
+  gap: var(--space-xs);
+}
+
+.grade-calculator__edit-button {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-strong);
+  cursor: pointer;
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+
+.grade-calculator__edit-button:hover,
+.grade-calculator__edit-button:focus-visible {
+  background: rgba(37, 99, 235, 0.35);
+  outline: none;
+}
+
+@media (max-width: 720px) {
+  .grade-calculator__field {
+    flex: 1 1 100%;
+    min-width: unset;
+  }
+
+  .grade-calculator__form {
     align-items: stretch;
   }
 
-  #notenrechner-container .field-group {
-    max-width: none;
-  }
-
-  #notenrechner-container .primary-action,
-  #notenrechner-container .secondary-action,
-  #notenrechner-container .danger-secondary {
+  .grade-calculator__button {
     width: 100%;
   }
 
-  #notenrechner-container .noten-actions {
+  .grade-calculator__actions {
     justify-content: flex-start;
   }
 
-  #notenrechner-container .noten-actions button {
-    width: 100%;
+  .grade-calculator__back {
+    justify-content: stretch;
   }
+}
 
-  #notenrechner-container .noten-inputs .primary-action,
-  #notenrechner-container .ziel-inputs .secondary-action {
-    align-self: stretch;
+@media (prefers-reduced-motion: reduce) {
+  .grade-calculator__button,
+  .grade-calculator__table tbody tr,
+  .grade-calculator__delete-button {
+    transition: none;
   }
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
 }
