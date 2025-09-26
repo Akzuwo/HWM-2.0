@@ -148,28 +148,6 @@ body.changelog-page {
   align-items: center;
 }
 
-.skip-link {
-  position: absolute;
-  left: -999px;
-  top: auto;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  background: var(--home-accent);
-  color: #fff;
-  padding: var(--space-xs) var(--space-sm);
-  border-radius: 999px;
-  z-index: 300;
-}
-
-.skip-link:focus {
-  left: 12px;
-  top: 12px;
-  width: auto;
-  height: auto;
-  outline: 3px solid rgba(255, 255, 255, 0.6);
-}
-
 main.home-main,
 main.changelog-main {
   flex: 1;
