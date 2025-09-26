@@ -2,7 +2,6 @@
   const translations = {
     de: {
       common: {
-        skipToContent: 'Zum Inhalt springen',
         appName: 'Homework Manager',
         nav: {
           home: '🏠 Start',
@@ -173,7 +172,6 @@
     },
     en: {
       common: {
-        skipToContent: 'Skip to content',
         appName: 'Homework Manager',
         nav: {
           home: '🏠 Dashboard',
@@ -343,7 +341,6 @@
     },
     it: {
       common: {
-        skipToContent: 'Salta al contenuto',
         appName: 'Homework Manager',
         nav: {
           home: '🏠 Home',
