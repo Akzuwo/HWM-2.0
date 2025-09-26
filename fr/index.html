@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="fr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -9,22 +9,22 @@
   <link rel="stylesheet" href="../utils/css/home.css" />
 </head>
 <body class="home-page">
-  <nav class="simple-nav" data-nav data-i18n-attr="aria-label:common.nav.primary" aria-label="Main navigation">
+  <nav class="simple-nav" data-nav data-i18n-attr="aria-label:common.nav.primary" aria-label="Navigation principale">
     <a class="nav-title" href="index.html">
       <img src="../media/logo.png" alt="" width="32" height="32" />
       <span data-i18n="common.appName">Homework Manager</span>
     </a>
     <div class="nav-links" id="home-nav-links">
-      <a class="nav-button" href="index.html" data-i18n="common.nav.home" aria-current="page">🏠 Home</a>
-      <a class="nav-button" href="kalender.html" data-i18n="common.nav.calendar">📅 Calendario</a>
-      <a class="nav-button" href="upcoming.html" data-i18n="common.nav.upcoming">🔔 Prossimi eventi</a>
-      <a class="nav-button" href="stundenplan.html" data-i18n="common.nav.currentSubject">🕒 Lezione attuale</a>
-      <a class="nav-button" href="notenrechner.html" data-i18n="common.nav.grades">📊 Calcolatore voti</a>
-      <a class="nav-button" href="#" onclick="logout()" data-i18n="common.nav.logout">🚪 Disconnettersi</a>
+      <a class="nav-button" href="index.html" data-i18n="common.nav.home" aria-current="page">🏠 Tableau de bord</a>
+      <a class="nav-button" href="kalender.html" data-i18n="common.nav.calendar">📅 Calendrier</a>
+      <a class="nav-button" href="upcoming.html" data-i18n="common.nav.upcoming">🔔 À venir</a>
+      <a class="nav-button" href="stundenplan.html" data-i18n="common.nav.currentSubject">🕒 Matière actuelle</a>
+      <a class="nav-button" href="notenrechner.html" data-i18n="common.nav.grades">📊 Calculateur de notes</a>
+      <a class="nav-button" href="#" onclick="logout()" data-i18n="common.nav.logout">🚪 Déconnexion</a>
       <div class="language-dropdown" data-language>
         <button type="button" class="language-button" data-language-toggle aria-haspopup="true" aria-expanded="false" data-i18n-attr="aria-label:common.nav.language">
           <span class="language-button__icon" aria-hidden="true">🌐</span>
-          <span class="language-button__code">IT</span>
+          <span class="language-button__code">FR</span>
           <svg class="language-button__caret" viewBox="0 0 12 12" focusable="false" aria-hidden="true">
             <path d="M2.47 4.47a.75.75 0 0 1 1.06 0L6 6.94l2.47-2.47a.75.75 0 1 1 1.06 1.06L6.53 9.47a.75.75 0 0 1-1.06 0L2.47 5.53a.75.75 0 0 1 0-1.06z" />
           </svg>
@@ -80,33 +80,33 @@
       <article class="home-card home-card--intro">
         <header class="home-card__header">
           <span class="home-card__icon" aria-hidden="true">📚</span>
-          <h1 data-i18n="home.heroTitle">Homework Manager 2.0</h1>
+          <h1 data-i18n="home.heroTitle">Homework Manager 2.0</h1>
         </header>
         <p data-i18n="home.description.lead">
-          Homework Manager è nato per condividere compiti, verifiche e progetti in modo trasparente con tutta la classe.
+          Homework Manager a été créé pour partager les devoirs, évaluations et projets en toute transparence avec toute la classe.
         </p>
         <p data-i18n="home.description.body">
-          Al posto di chat disperse e appunti dimenticati, la piattaforma riunisce scadenze, promemoria e strumenti utili in un'unica interfaccia chiara – sempre disponibile e pensata per il lavoro di squadra.
+          Plutôt que des discussions dispersées et des notes oubliées, la plateforme rassemble horaires, rappels et outils pratiques dans une interface claire – disponible à tout moment et pensée pour le travail en équipe.
         </p>
       </article>
 
       <article class="home-card home-card--release">
         <header class="home-card__header">
           <span class="home-card__icon" aria-hidden="true">🚀</span>
-          <h2 data-i18n="home.release.title">Release 2.0</h2>
+          <h2 data-i18n="home.release.title">Version 2.0</h2>
         </header>
-        <p class="home-card__meta" data-i18n="home.release.date">Ottobre 2025</p>
+        <p class="home-card__meta" data-i18n="home.release.date">Octobre 2025</p>
         <p data-i18n="home.release.summary">
-          Lanciamo Homework Manager 2.0 con un aspetto rinnovato e numerosi miglioramenti tecnici. I dettagli arriveranno a breve.
+          Nous lançons Homework Manager 2.0 avec une apparence renouvelée et de profondes améliorations techniques. Les points forts détaillés suivront bientôt.
         </p>
         <ul>
-          <li data-i18n="home.release.highlights.design">Nuovo design dark theme per calendario, panoramica materie e strumenti.</li>
-          <li data-i18n="home.release.highlights.performance">API più rapide per sincronizzare i compiti senza attese.</li>
-          <li data-i18n="home.release.highlights.overlays">Overlay migliorati per modificare le voci con maggiore comodità.</li>
+          <li data-i18n="home.release.highlights.design">Habillage sombre harmonisé pour le calendrier, la vue des matières et les outils.</li>
+          <li data-i18n="home.release.highlights.performance">Des API plus rapides pour synchroniser les devoirs sans effort.</li>
+          <li data-i18n="home.release.highlights.overlays">Des fenêtres modales retravaillées pour modifier les entrées plus confortablement.</li>
         </ul>
         <a class="home-button" href="changelog.html">
           <span aria-hidden="true">📄</span>
-          <span data-i18n="home.release.cta">Scopri di più</span>
+          <span data-i18n="home.release.cta">En savoir plus</span>
         </a>
       </article>
     </section>
@@ -115,9 +115,9 @@
   <footer class="site-footer">
     <span data-i18n="common.footer.copyright">©️ Timo Wigger 2025</span>
     <span aria-hidden="true">|</span>
-    <a href="cdn-cgi/l/email-protection.html#81f5e8eceef6e8e6e6e4f3b9c1e6ece0e8ed" data-i18n="common.footer.contact">Contatto</a>
+    <a href="cdn-cgi/l/email-protection.html#4b3f2226243c222c2c2e39034b2c262a222765282426" data-i18n="common.footer.contact">Contact</a>
     <span aria-hidden="true">|</span>
-    <a href="changelog.html" data-i18n="common.footer.changelog">Changelog</a>
+    <a href="changelog.html" data-i18n="common.footer.changelog">Journal des modifications</a>
   </footer>
 
   <script src="../utils/js/i18n.js" defer></script>

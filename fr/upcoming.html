@@ -1,29 +1,30 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tagesübersicht</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Événements à venir</title>
   <link rel="icon" type="image/png" href="../media/logo.png">
   <link rel="stylesheet" href="../utils/css/style.css">
+  <link rel="stylesheet" href="../utils/css/upcoming.css">
 </head>
-<body>
-  <nav class="simple-nav" data-nav data-i18n-attr="aria-label:common.nav.primary" aria-label="Main navigation">
+<body class="upcoming-page">
+  <nav class="simple-nav" data-nav data-i18n-attr="aria-label:common.nav.primary" aria-label="Navigation principale">
     <a class="nav-title" href="index.html">
       <img src="../media/logo.png" alt="" width="32" height="32" />
       <span data-i18n="common.appName">Homework Manager</span>
     </a>
-    <div class="nav-links" id="overview-nav-links">
-      <a class="nav-button" href="index.html" data-i18n="common.nav.home">🏠 Start</a>
-      <a class="nav-button" href="kalender.html" data-i18n="common.nav.calendar">📅 Kalender</a>
-      <a class="nav-button" href="upcoming.html" data-i18n="common.nav.upcoming">🔔 Upcoming Events</a>
-      <a class="nav-button" href="stundenplan.html" data-i18n="common.nav.currentSubject" aria-current="page">🕒 Aktuelles Fach</a>
-      <a class="nav-button" href="notenrechner.html" data-i18n="common.nav.grades">📊 Notenrechner</a>
-      <a class="nav-button" href="#" onclick="logout()" data-i18n="common.nav.logout">🚪 Abmelden</a>
+    <div class="nav-links" id="upcoming-nav-links">
+      <a class="nav-button" href="index.html" data-i18n="common.nav.home">🏠 Tableau de bord</a>
+      <a class="nav-button" href="kalender.html" data-i18n="common.nav.calendar">📅 Calendrier</a>
+      <a class="nav-button" href="upcoming.html" data-i18n="common.nav.upcoming" aria-current="page">🔔 À venir</a>
+      <a class="nav-button" href="stundenplan.html" data-i18n="common.nav.currentSubject">🕒 Matière actuelle</a>
+      <a class="nav-button" href="notenrechner.html" data-i18n="common.nav.grades">📊 Calculateur de notes</a>
+      <a class="nav-button" href="#" onclick="logout()" data-i18n="common.nav.logout">🚪 Déconnexion</a>
       <div class="language-dropdown" data-language>
         <button type="button" class="language-button" data-language-toggle aria-haspopup="true" aria-expanded="false" data-i18n-attr="aria-label:common.nav.language">
           <span class="language-button__icon" aria-hidden="true">🌐</span>
-          <span class="language-button__code">DE</span>
+          <span class="language-button__code">FR</span>
           <svg class="language-button__caret" viewBox="0 0 12 12" focusable="false" aria-hidden="true">
             <path d="M2.47 4.47a.75.75 0 0 1 1.06 0L6 6.94l2.47-2.47a.75.75 0 1 1 1.06 1.06L6.53 9.47a.75.75 0 0 1-1.06 0L2.47 5.53a.75.75 0 0 1 0-1.06z" />
           </svg>
@@ -74,19 +75,35 @@
     </div>
   </nav>
 
-  <main class="page-container" id="main">
-    <header class="page-header">
-      <div>
-        <h1>📅 Tagesübersicht</h1>
-        <p id="pageDate" class="page-date"></p>
-      </div>
-      <a class="nav-button" href="stundenplan.html">◀️ Zurück</a>
+  <main class="upcoming" id="main">
+    <header class="upcoming__header">
+      <h1 class="upcoming__title">🔔 Événements à venir</h1>
+      <p class="upcoming__lead">Restez informé des événements scolaires à venir et planifiez sereinement.</p>
     </header>
 
-    <div id="overview" class="overview-grid">Lade Daten…</div>
+    <section
+      class="upcoming__list"
+      id="upcoming-list"
+      role="list"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <p class="upcoming__status">Chargement des données…</p>
+    </section>
+
+    <div class="upcoming__actions">
+      <button
+        type="button"
+        class="upcoming__button"
+        id="back-button"
+        aria-label="Retour à la page d’accueil"
+      >
+        ◀️ Retour à l’aperçu
+      </button>
+    </div>
   </main>
 
   <script src="script.js" defer></script>
-  <script src="tagesuebersicht.js" defer></script>
+  <script src="upcoming.js" defer></script>
 </body>
 </html>
