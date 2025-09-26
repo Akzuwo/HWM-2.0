@@ -68,60 +68,140 @@
       </div>
     </div>
   </nav>
-  <main class="container" id="main">
-    <header class="page-header">
-      <h2>📊 Grade Calculator</h2>
+  <main class="grade-calculator" id="main" data-grade-calculator>
+    <header class="grade-calculator__header">
+      <h1 class="grade-calculator__title">
+        <span class="grade-calculator__title-icon" aria-hidden="true">📊</span>
+        <span>Grade Calculator</span>
+      </h1>
     </header>
 
-    <section class="noten-main">
-      <div class="noten-inputs">
-        <div class="field-group">
-          <label class="field-label" for="note">Grade</label>
-          <input id="note" class="field-control" type="number" step="0.01" placeholder="e.g. 5.5">
+    <section class="grade-calculator__section" aria-labelledby="add-grade-heading">
+      <h2 id="add-grade-heading" class="visually-hidden">Add grade</h2>
+      <form class="grade-calculator__form" id="addForm" novalidate>
+        <div class="grade-calculator__field">
+          <label class="grade-calculator__label" for="note">Grade</label>
+          <input
+            id="note"
+            class="grade-calculator__input"
+            type="number"
+            step="0.5"
+            min="1"
+            max="6"
+            placeholder="e.g. 5.5"
+            aria-describedby="gradeError"
+            inputmode="decimal"
+          >
+          <p class="grade-calculator__error" id="gradeError" role="status" aria-live="polite"></p>
         </div>
-        <div class="field-group">
-          <label class="field-label" for="gewichtung">Weight</label>
-          <input id="gewichtung" class="field-control" type="number" step="0.01" placeholder="e.g. 1">
+        <div class="grade-calculator__field">
+          <label class="grade-calculator__label" for="gewichtung">Weight</label>
+          <input
+            id="gewichtung"
+            class="grade-calculator__input"
+            type="number"
+            step="0.01"
+            min="0"
+            placeholder="e.g. 1"
+            aria-describedby="weightError"
+            inputmode="decimal"
+          >
+          <p class="grade-calculator__error" id="weightError" role="status" aria-live="polite"></p>
         </div>
-        <button type="button" id="add" class="btn btn--primary" disabled aria-disabled="true">Add</button>
+        <button type="submit" id="add" class="grade-calculator__button grade-calculator__button--primary" disabled aria-disabled="true">
+          <span>Add</span>
+          <span aria-hidden="true">＋</span>
+        </button>
+      </form>
+
+      <div class="grade-calculator__actions">
+        <button type="button" id="clearAll" class="grade-calculator__button grade-calculator__button--secondary" disabled aria-disabled="true">
+          <span>Clear all</span>
+          <span aria-hidden="true">🗑️</span>
+        </button>
       </div>
 
-      <p id="inputError" class="error-message" aria-live="polite"></p>
-
-      <div class="noten-actions">
-        <button type="button" id="clearAll" class="btn btn--ghost" disabled aria-disabled="true">Clear all</button>
+      <div class="grade-calculator__table-wrapper">
+        <table id="notenTabelle" class="grade-calculator__table">
+          <thead>
+            <tr>
+              <th scope="col">No.</th>
+              <th scope="col">Grade</th>
+              <th scope="col">Weight</th>
+              <th scope="col" class="visually-hidden">Actions</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
       </div>
 
-      <table id="notenTabelle" class="noten-tabelle">
-        <thead>
-          <tr><th>No.</th><th>Grade</th><th>Weight</th><th></th></tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-
-      <div id="schnitt" class="noten-summary">Average: -</div>
-
-      <div id="zielInput" class="ziel-inputs">
-        <input id="ziel" class="field-control" type="number" step="0.01" placeholder="Target average">
-        <input id="zusaetzlich" class="field-control" type="number" step="0.01" placeholder="Weight of next grade">
-        <button type="button" id="berechnen" class="btn btn--ghost" disabled aria-disabled="true">Calculate</button>
+      <div class="grade-calculator__summary" aria-live="polite">
+        <div class="grade-calculator__summary-row" id="schnitt">
+          <span class="grade-calculator__summary-label">Average</span>
+          <span class="grade-calculator__summary-value" id="averageValue">–</span>
+        </div>
       </div>
-
-      <div id="zielNote" class="noten-summary">Required grade: -</div>
     </section>
 
-    <div id="buttons" class="page-actions">
-      <button type="button" class="btn btn--ghost back-button" onclick="window.location.href='index.html'">◀️ Back</button>
+    <section class="grade-calculator__section" aria-labelledby="target-heading">
+      <h2 id="target-heading" class="visually-hidden">Target average</h2>
+      <form class="grade-calculator__form" id="targetForm" novalidate>
+        <div class="grade-calculator__field">
+          <label class="grade-calculator__label" for="ziel">Target average</label>
+          <input
+            id="ziel"
+            class="grade-calculator__input"
+            type="number"
+            step="0.01"
+            min="1"
+            max="6"
+            placeholder="e.g. 5"
+            aria-describedby="targetError"
+            inputmode="decimal"
+          >
+          <p class="grade-calculator__error" id="targetError" role="status" aria-live="polite"></p>
+        </div>
+        <div class="grade-calculator__field">
+          <label class="grade-calculator__label" for="zusaetzlich">Weight of next grade</label>
+          <input
+            id="zusaetzlich"
+            class="grade-calculator__input"
+            type="number"
+            step="0.01"
+            min="0"
+            placeholder="e.g. 1"
+            aria-describedby="nextWeightError"
+            inputmode="decimal"
+          >
+          <p class="grade-calculator__error" id="nextWeightError" role="status" aria-live="polite"></p>
+        </div>
+        <button type="submit" id="berechnen" class="grade-calculator__button grade-calculator__button--primary" disabled aria-disabled="true">
+          <span>Calculate</span>
+          <span aria-hidden="true">=</span>
+        </button>
+      </form>
+
+      <div class="grade-calculator__footer" aria-live="polite">
+        <div class="grade-calculator__required" id="zielNote" data-state="idle">Required grade: –</div>
+      </div>
+    </section>
+
+    <div class="grade-calculator__back">
+      <a class="grade-calculator__button grade-calculator__button--secondary" href="index.html">
+        <span aria-hidden="true">◀️</span>
+        <span>Back</span>
+      </a>
     </div>
+
+    <footer class="current-subject__footer">
+      ©️ Timo Wigger 2025 |
+      <a href="cdn-cgi/l/email-protection.html#0a7e6367657d636d6d6f78324a6d676b636624696567">Contact</a>
+    </footer>
   </main>
   <script src="script.js" defer></script>
   <script src="../utils/js/overlay.js" defer></script>
   <script src="notenrechner.js" defer></script>
 
-  <footer style="text-align:center;margin-top:30px;padding:10px 0;border-top:1px solid #ccc;font-size:0.9em;">
-    ©️ Timo Wigger 2025 |
-    <a href="cdn-cgi/l/email-protection.html#0a7e6367657d636d6d6f78324a6d676b636624696567" style="color: inherit; text-decoration: underline;">Contact</a>
-  </footer>
 </body>
 <!-- Mirrored from homework-manager.akzuwo.ch/notenrechner by HTTrack Website Copier/3.x [XR&CO'2014], Fri, 22 Aug 2025 06:36:32 GMT -->
 </html>
