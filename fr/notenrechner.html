@@ -1,33 +1,33 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="fr">
 
 <!-- Mirrored from homework-manager.akzuwo.ch/notenrechner by HTTrack Website Copier/3.x [XR&CO'2014], Fri, 22 Aug 2025 06:36:31 GMT -->
 <!-- Added by HTTrack --><meta http-equiv="content-type" content="text/html;charset=utf-8" /><!-- /Added by HTTrack -->
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Calcolatore di voti</title>
+  <title>Calculateur de notes</title>
   <link rel="icon" type="image/png" href="../media/logo.png">
   <link rel="stylesheet" href="../utils/css/style.css">
   <link rel="stylesheet" href="../utils/css/notenrechner.css">
 </head>
 <body>
-  <nav class="simple-nav" data-nav data-i18n-attr="aria-label:common.nav.primary" aria-label="Main navigation">
+  <nav class="simple-nav" data-nav data-i18n-attr="aria-label:common.nav.primary" aria-label="Navigation principale">
     <a class="nav-title" href="index.html">
       <img src="../media/logo.png" alt="" width="32" height="32" />
       <span data-i18n="common.appName">Homework Manager</span>
     </a>
     <div class="nav-links" id="grades-nav-links">
-      <a class="nav-button" href="index.html" data-i18n="common.nav.home">🏠 Home</a>
-      <a class="nav-button" href="kalender.html" data-i18n="common.nav.calendar">📅 Calendario</a>
-      <a class="nav-button" href="upcoming.html" data-i18n="common.nav.upcoming">🔔 Prossimi eventi</a>
-      <a class="nav-button" href="stundenplan.html" data-i18n="common.nav.currentSubject">🕒 Lezione attuale</a>
-      <a class="nav-button" href="notenrechner.html" data-i18n="common.nav.grades" aria-current="page">📊 Calcolatore voti</a>
-      <a class="nav-button" href="#" onclick="logout()" data-i18n="common.nav.logout">🚪 Disconnettersi</a>
+      <a class="nav-button" href="index.html" data-i18n="common.nav.home">🏠 Tableau de bord</a>
+      <a class="nav-button" href="kalender.html" data-i18n="common.nav.calendar">📅 Calendrier</a>
+      <a class="nav-button" href="upcoming.html" data-i18n="common.nav.upcoming">🔔 À venir</a>
+      <a class="nav-button" href="stundenplan.html" data-i18n="common.nav.currentSubject">🕒 Matière actuelle</a>
+      <a class="nav-button" href="notenrechner.html" data-i18n="common.nav.grades" aria-current="page">📊 Calculateur de notes</a>
+      <a class="nav-button" href="#" onclick="logout()" data-i18n="common.nav.logout">🚪 Déconnexion</a>
       <div class="language-dropdown" data-language>
         <button type="button" class="language-button" data-language-toggle aria-haspopup="true" aria-expanded="false" data-i18n-attr="aria-label:common.nav.language">
           <span class="language-button__icon" aria-hidden="true">🌐</span>
-          <span class="language-button__code">IT</span>
+          <span class="language-button__code">FR</span>
           <svg class="language-button__caret" viewBox="0 0 12 12" focusable="false" aria-hidden="true">
             <path d="M2.47 4.47a.75.75 0 0 1 1.06 0L6 6.94l2.47-2.47a.75.75 0 1 1 1.06 1.06L6.53 9.47a.75.75 0 0 1-1.06 0L2.47 5.53a.75.75 0 0 1 0-1.06z" />
           </svg>
@@ -81,15 +81,15 @@
     <header class="grade-calculator__header">
       <h1 class="grade-calculator__title">
         <span class="grade-calculator__title-icon" aria-hidden="true">📊</span>
-        <span>Calcolatore di voti</span>
+        <span>Calculateur de notes</span>
       </h1>
     </header>
 
     <section class="grade-calculator__section" aria-labelledby="add-grade-heading">
-      <h2 id="add-grade-heading" class="visually-hidden">Aggiungi voto</h2>
+      <h2 id="add-grade-heading" class="visually-hidden">Ajouter une note</h2>
       <form class="grade-calculator__form" id="addForm" novalidate>
         <div class="grade-calculator__field">
-          <label class="grade-calculator__label" for="note">Voto</label>
+          <label class="grade-calculator__label" for="note">Note</label>
           <input
             id="note"
             class="grade-calculator__input"
@@ -97,35 +97,35 @@
             step="0.5"
             min="1"
             max="6"
-            placeholder="es. 5.5"
+            placeholder="p. ex. 5.5"
             aria-describedby="gradeError"
             inputmode="decimal"
           >
           <p class="grade-calculator__error" id="gradeError" role="status" aria-live="polite"></p>
         </div>
         <div class="grade-calculator__field">
-          <label class="grade-calculator__label" for="gewichtung">Peso</label>
+          <label class="grade-calculator__label" for="gewichtung">Pondération</label>
           <input
             id="gewichtung"
             class="grade-calculator__input"
             type="number"
             step="0.01"
             min="0"
-            placeholder="es. 1"
+            placeholder="p. ex. 1"
             aria-describedby="weightError"
             inputmode="decimal"
           >
           <p class="grade-calculator__error" id="weightError" role="status" aria-live="polite"></p>
         </div>
         <button type="submit" id="add" class="grade-calculator__button grade-calculator__button--primary" disabled aria-disabled="true">
-          <span>Aggiungi</span>
+          <span>Ajouter</span>
           <span aria-hidden="true">＋</span>
         </button>
       </form>
 
       <div class="grade-calculator__actions">
         <button type="button" id="clearAll" class="grade-calculator__button grade-calculator__button--secondary" disabled aria-disabled="true">
-          <span>Elimina tutti</span>
+          <span>Tout effacer</span>
           <span aria-hidden="true">🗑️</span>
         </button>
       </div>
@@ -134,10 +134,10 @@
         <table id="notenTabelle" class="grade-calculator__table">
           <thead>
             <tr>
-              <th scope="col">N.</th>
-              <th scope="col">Voto</th>
-              <th scope="col">Peso</th>
-              <th scope="col" class="visually-hidden">Azioni</th>
+              <th scope="col">N°</th>
+              <th scope="col">Note</th>
+              <th scope="col">Pondération</th>
+              <th scope="col" class="visually-hidden">Actions</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -146,17 +146,17 @@
 
       <div class="grade-calculator__summary" aria-live="polite">
         <div class="grade-calculator__summary-row" id="schnitt">
-          <span class="grade-calculator__summary-label">Media</span>
+          <span class="grade-calculator__summary-label">Moyenne</span>
           <span class="grade-calculator__summary-value" id="averageValue">–</span>
         </div>
       </div>
     </section>
 
     <section class="grade-calculator__section" aria-labelledby="target-heading">
-      <h2 id="target-heading" class="visually-hidden">Media desiderata</h2>
+      <h2 id="target-heading" class="visually-hidden">Moyenne cible</h2>
       <form class="grade-calculator__form" id="targetForm" novalidate>
         <div class="grade-calculator__field">
-          <label class="grade-calculator__label" for="ziel">Media desiderata</label>
+          <label class="grade-calculator__label" for="ziel">Moyenne cible</label>
           <input
             id="ziel"
             class="grade-calculator__input"
@@ -164,52 +164,53 @@
             step="0.01"
             min="1"
             max="6"
-            placeholder="es. 5"
+            placeholder="p. ex. 5"
             aria-describedby="targetError"
             inputmode="decimal"
           >
           <p class="grade-calculator__error" id="targetError" role="status" aria-live="polite"></p>
         </div>
         <div class="grade-calculator__field">
-          <label class="grade-calculator__label" for="zusaetzlich">Peso del prossimo voto</label>
+          <label class="grade-calculator__label" for="zusaetzlich">Pondération de la prochaine note</label>
           <input
             id="zusaetzlich"
             class="grade-calculator__input"
             type="number"
             step="0.01"
             min="0"
-            placeholder="es. 1"
+            placeholder="p. ex. 1"
             aria-describedby="nextWeightError"
             inputmode="decimal"
           >
           <p class="grade-calculator__error" id="nextWeightError" role="status" aria-live="polite"></p>
         </div>
         <button type="submit" id="berechnen" class="grade-calculator__button grade-calculator__button--primary" disabled aria-disabled="true">
-          <span>Calcola</span>
+          <span>Calculer</span>
           <span aria-hidden="true">=</span>
         </button>
       </form>
 
       <div class="grade-calculator__footer" aria-live="polite">
-        <div class="grade-calculator__required" id="zielNote" data-state="idle">Voto necessario: –</div>
+        <div class="grade-calculator__required" id="zielNote" data-state="idle">Note requise : –</div>
       </div>
     </section>
 
     <div class="grade-calculator__back">
       <a class="grade-calculator__button grade-calculator__button--secondary" href="index.html">
         <span aria-hidden="true">◀️</span>
-        <span>Indietro</span>
+        <span>Retour</span>
       </a>
     </div>
 
     <footer class="current-subject__footer">
       ©️ Timo Wigger 2025 |
-      <a href="cdn-cgi/l/email-protection.html#0a7e6367657d636d6d6f78324a6d676b636624696567">Contatto</a>
+      <a href="cdn-cgi/l/email-protection.html#0a7e6367657d636d6d6f78324a6d676b636624696567">Contact</a>
     </footer>
   </main>
   <script src="script.js" defer></script>
   <script src="../utils/js/overlay.js" defer></script>
   <script src="notenrechner.js" defer></script>
+
 </body>
 <!-- Mirrored from homework-manager.akzuwo.ch/notenrechner by HTTrack Website Copier/3.x [XR&CO'2014], Fri, 22 Aug 2025 06:36:32 GMT -->
 </html>

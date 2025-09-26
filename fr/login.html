@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connexion - Homework Manager</title>
+  <link rel="icon" type="image/png" href="../media/logo.png">
+  <link rel="stylesheet" href="../utils/css/style.css">
+</head>
+<body>
+  <div class="login-container">
+    <img src="../media/logo.png" alt="Logo" class="login-logo">
+    <h2 class="login-title">🔒 Connexion</h2>
+    <form class="login-form" onsubmit="event.preventDefault(); login();">
+      <div class="form-group">
+        <label for="passwort">Mot de passe</label>
+        <div class="password-field">
+          <input type="password" id="passwort" class="form-control" placeholder="Mot de passe" autofocus onkeyup="handlePasswordKey(event)">
+          <button type="button" id="toggle-password" class="toggle-password" aria-label="Afficher le mot de passe" onclick="togglePasswordVisibility()">
+            <span class="eye-icon" aria-hidden="true"></span>
+          </button>
+        </div>
+        <div id="login-feedback" class="login-feedback" role="alert" aria-live="polite"></div>
+      </div>
+      <div class="login-actions">
+        <button type="button" class="login-button" onclick="login()">Se connecter</button>
+        <button type="button" class="guest-button" onclick="guestLogin()">Continuer en tant qu'invité</button>
+        <p class="guest-info">Continuer en tant qu'invité</p>
+      </div>
+    </form>
+  </div>
+
+  <script src="../utils/js/overlay.js" defer></script>
+  <script src="script.js" defer></script>
+</body>
+</html>

@@ -619,4 +619,174 @@
   } else {
     document.addEventListener('DOMContentLoaded', () => apply());
   }
-})(window);
+})(window,
+    fr: {
+      common: {
+        appName: 'Homework Manager',
+        nav: {
+          home: '🏠 Tableau de bord',
+          calendar: '📅 Calendrier',
+          upcoming: '🔔 À venir',
+          grades: '📊 Calculateur de notes',
+          currentSubject: '🕒 Matière actuelle',
+          logout: '🚪 Déconnexion',
+          primary: 'Navigation principale',
+          toggle: 'Basculer le menu de navigation',
+          language: 'Changer de langue',
+        },
+        footer: {
+          copyright: '©️ Timo Wigger 2025',
+          contact: 'Contact',
+          changelog: 'Journal des modifications',
+        },
+        language: {
+          menuLabel: 'Sélectionner la langue',
+        },
+      },
+      home: {
+        pageTitle: 'Homework Manager',
+        heroTitle: 'Homework Manager 2.0',
+        description: {
+          lead:
+            'Homework Manager a été créé pour partager les devoirs, évaluations et projets en toute transparence avec toute la classe.',
+          body:
+            'Plutôt que des discussions dispersées et des notes oubliées, la plateforme rassemble horaires, rappels et outils pratiques dans une interface claire – disponible à tout moment et pensée pour le travail en équipe.',
+        },
+        release: {
+          title: 'Version 2.0',
+          date: 'Octobre 2025',
+          summary:
+            'Nous lançons Homework Manager 2.0 avec une apparence renouvelée et de profondes améliorations techniques. Les points forts détaillés suivront bientôt.',
+          highlights: {
+            design: 'Habillage sombre harmonisé pour le calendrier, la vue des matières et les outils.',
+            performance: 'Des API plus rapides pour synchroniser les devoirs sans effort.',
+            overlays: 'Des fenêtres modales retravaillées pour modifier les entrées plus confortablement.',
+          },
+          cta: 'En savoir plus',
+        },
+      },
+      changelog: {
+        pageTitle: 'Journal des modifications',
+        title: 'Journal des modifications',
+        subtitle:
+          'Retrouvez ici les notes de version de Homework Manager. Le contenu détaillé pour la version 2.0 arrivera bientôt.',
+        back: '← Retour à l’aperçu',
+        release: {
+          title: 'Version 2.0',
+          date: 'Octobre 2025',
+          summary:
+            'Les notes de version complètes pour la version 2.0 sont en préparation. Ci-dessous, un aperçu des sujets principaux.',
+          items: {
+            design: 'Système visuel sombre repensé pour tous les modules principaux.',
+            performance: 'Optimisations de performance des API pour des chargements plus rapides.',
+            overlays: 'Fenêtres et boîtes de dialogue retravaillées pour des modifications plus fluides.',
+          },
+        },
+        archive: {
+          title: 'Versions précédentes',
+          placeholder: 'Les notes des versions antérieures sont en cours de préparation et seront bientôt disponibles ici.',
+        },
+      },
+      calendar: {
+        pageTitle: 'Calendrier',
+        heading: '📅 Calendrier',
+        description: 'Gardez devoirs, évaluations et événements en vue grâce à une interface sombre harmonisée.',
+        status: {
+          loading: 'Chargement du calendrier …',
+          error: 'Impossible de charger les entrées du calendrier !',
+        },
+        views: {
+          month: 'Mois',
+          week: 'Semaine',
+          day: 'Jour',
+        },
+        monthNav: {
+          label: 'Navigation par mois',
+          previous: 'Mois précédent',
+          next: 'Mois suivant',
+          current: 'Mois en cours',
+        },
+        actions: {
+          create: {
+            label: 'Nouvelle entrée',
+            tooltip: 'Créer une nouvelle entrée de calendrier',
+            disabled: 'Seuls les administrateurs peuvent créer des entrées',
+          },
+          export: {
+            label: 'Exporter',
+            tooltip: 'Exporter le calendrier au format ICS',
+            loading: 'Export en cours…',
+            success: 'Calendrier exporté avec succès.',
+            error: 'Échec de l’export du calendrier.',
+            fileName: 'homework-calendar.ics',
+          },
+          back: {
+            label: 'Retour à l’aperçu',
+            tooltip: 'Revenir au tableau de bord',
+          },
+        },
+        actionBar: {
+          label: 'Actions du calendrier',
+        },
+        weekStrip: {
+          label: 'Semaines du calendrier',
+          week: 'Sem',
+        },
+        legend: {
+          homework: 'Devoir',
+          exam: 'Évaluation',
+          event: 'Événement',
+        },
+        formMessages: {
+          invalidDate: 'Veuillez saisir une date valide au format JJ.MM.AAAA.',
+          invalidEnd: 'L’heure de fin ne peut pas être antérieure à l’heure de début.',
+          missingSubject: 'Veuillez choisir une matière.',
+          missingEventTitle: 'Veuillez saisir un titre d’événement.',
+        },
+        modal: {
+          viewTitle: 'Entrée du calendrier',
+          noDescription: '<em>Aucune description disponible.</em>',
+          close: 'Fermer',
+          createTitle: '📝 Créer une nouvelle entrée',
+          labels: {
+            type: 'Type',
+            subject: 'Matière',
+            eventTitle: 'Titre de l’événement',
+            date: 'Date',
+            dateWithFormat: 'Date (JJ.MM.AAAA)',
+            start: 'Heure de début',
+            end: 'Heure de fin',
+            description: 'Description',
+            descriptionOptional: 'Description (facultatif)',
+          },
+          placeholders: {
+            subject: '– sélectionner –',
+            eventTitle: 'Nom de l’événement',
+            description: 'Détails de l’entrée',
+            descriptionShort: 'Résumé',
+            date: '18.09.2025',
+          },
+          hints: {
+            eventTitle: 'Champ obligatoire pour les événements.',
+          },
+          buttons: {
+            cancel: 'Annuler',
+            close: 'Fermer',
+            save: 'Enregistrer',
+            saveLoading: 'Enregistrement…',
+            delete: 'Supprimer',
+            deleteLoading: 'Suppression…',
+            add: 'Ajouter',
+            addLoading: 'Ajout en cours…',
+          },
+          confirmDelete: 'Voulez-vous vraiment supprimer cette entrée ?',
+          messages: {
+            saveError: 'Impossible d’enregistrer l’entrée.',
+            deleteError: 'Impossible de supprimer l’entrée.',
+            saveSuccess: 'Entrée enregistrée avec succès !',
+            saveRetry: 'Impossible d’enregistrer l’entrée après plusieurs tentatives. Veuillez réessayer plus tard.',
+          },
+        },
+      },
+    },
+  };

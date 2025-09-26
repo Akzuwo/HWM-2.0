@@ -1,33 +1,33 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="fr">
 
 <!-- Mirrored from homework-manager.akzuwo.ch/stundenplan by HTTrack Website Copier/3.x [XR&CO'2014], Fri, 22 Aug 2025 06:36:31 GMT -->
 <!-- Added by HTTrack --><meta http-equiv="content-type" content="text/html;charset=utf-8" /><!-- /Added by HTTrack -->
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Aktuelles Fach</title>
+  <title>Matière actuelle</title>
   <link rel="icon" type="image/png" href="../media/logo.png">
   <link rel="stylesheet" href="../utils/css/style.css">
   <link rel="stylesheet" href="../utils/css/stundenplan.css">
 </head>
 <body>
-  <nav class="simple-nav" data-nav data-i18n-attr="aria-label:common.nav.primary" aria-label="Main navigation">
+  <nav class="simple-nav" data-nav data-i18n-attr="aria-label:common.nav.primary" aria-label="Navigation principale">
     <a class="nav-title" href="index.html">
       <img src="../media/logo.png" alt="" width="32" height="32" />
       <span data-i18n="common.appName">Homework Manager</span>
     </a>
     <div class="nav-links" id="current-nav-links">
-      <a class="nav-button" href="index.html" data-i18n="common.nav.home">🏠 Start</a>
-      <a class="nav-button" href="kalender.html" data-i18n="common.nav.calendar">📅 Kalender</a>
-      <a class="nav-button" href="upcoming.html" data-i18n="common.nav.upcoming">🔔 Upcoming Events</a>
-      <a class="nav-button" href="stundenplan.html" data-i18n="common.nav.currentSubject" aria-current="page">🕒 Aktuelles Fach</a>
-      <a class="nav-button" href="notenrechner.html" data-i18n="common.nav.grades">📊 Notenrechner</a>
-      <a class="nav-button" href="#" onclick="logout()" data-i18n="common.nav.logout">🚪 Abmelden</a>
+      <a class="nav-button" href="index.html" data-i18n="common.nav.home">🏠 Tableau de bord</a>
+      <a class="nav-button" href="kalender.html" data-i18n="common.nav.calendar">📅 Calendrier</a>
+      <a class="nav-button" href="upcoming.html" data-i18n="common.nav.upcoming">🔔 À venir</a>
+      <a class="nav-button" href="stundenplan.html" data-i18n="common.nav.currentSubject" aria-current="page">🕒 Matière actuelle</a>
+      <a class="nav-button" href="notenrechner.html" data-i18n="common.nav.grades">📊 Calculateur de notes</a>
+      <a class="nav-button" href="#" onclick="logout()" data-i18n="common.nav.logout">🚪 Déconnexion</a>
       <div class="language-dropdown" data-language>
         <button type="button" class="language-button" data-language-toggle aria-haspopup="true" aria-expanded="false" data-i18n-attr="aria-label:common.nav.language">
           <span class="language-button__icon" aria-hidden="true">🌐</span>
-          <span class="language-button__code">DE</span>
+          <span class="language-button__code">FR</span>
           <svg class="language-button__caret" viewBox="0 0 12 12" focusable="false" aria-hidden="true">
             <path d="M2.47 4.47a.75.75 0 0 1 1.06 0L6 6.94l2.47-2.47a.75.75 0 1 1 1.06 1.06L6.53 9.47a.75.75 0 0 1-1.06 0L2.47 5.53a.75.75 0 0 1 0-1.06z" />
           </svg>
@@ -81,13 +81,13 @@
     <header class="current-subject__header">
       <h1 class="current-subject__title">
         <span class="current-subject__title-icon" aria-hidden="true">🕒</span>
-        <span>Aktuelles Fach</span>
+        <span>Matière actuelle</span>
         <span class="current-subject__title-subject" data-subject-name>· —</span>
       </h1>
     </header>
     <section class="current-subject__status">
       <div class="current-subject__countdown" aria-live="polite">
-        <span class="current-subject__countdown-label" data-countdown-label>Verbleibende Zeit</span>
+        <span class="current-subject__countdown-label" data-countdown-label>Temps restant</span>
         <span class="current-subject__countdown-value" data-countdown-value>--:--</span>
       </div>
       <div
@@ -103,41 +103,41 @@
     </section>
     <div class="current-subject__grid">
       <section class="current-subject__section" aria-labelledby="current-lesson-heading">
-        <h2 id="current-lesson-heading">Aktuelle Stunde</h2>
+        <h2 id="current-lesson-heading">Cours en cours</h2>
         <p class="current-subject__empty-note" data-current-empty hidden>
-          Aktuell findet keine Stunde statt.
+          Aucun cours en cours.
         </p>
         <dl class="current-subject__info-list" data-current-details>
           <div class="current-subject__info-row">
-            <dt>Start</dt>
+            <dt>Début</dt>
             <dd class="is-mono" data-current-start>--:--</dd>
           </div>
           <div class="current-subject__info-row">
-            <dt>Ende</dt>
+            <dt>Fin</dt>
             <dd class="is-mono" data-current-end>--:--</dd>
           </div>
           <div class="current-subject__info-row">
-            <dt>Raum</dt>
+            <dt>Salle</dt>
             <dd data-current-room>–</dd>
           </div>
         </dl>
       </section>
       <section class="current-subject__section" aria-labelledby="next-lesson-heading">
-        <h2 id="next-lesson-heading">Nächste Stunde</h2>
+        <h2 id="next-lesson-heading">Cours suivant</h2>
         <p class="current-subject__empty-note" data-next-empty hidden>
-          Keine weiteren Stunden heute.
+          Pas d’autres cours aujourd’hui.
         </p>
         <dl class="current-subject__info-list" data-next-details>
           <div class="current-subject__info-row">
-            <dt>Fach</dt>
+            <dt>Matière</dt>
             <dd data-next-subject>–</dd>
           </div>
           <div class="current-subject__info-row">
-            <dt>Start</dt>
+            <dt>Début</dt>
             <dd class="is-mono" data-next-start>--:--</dd>
           </div>
           <div class="current-subject__info-row">
-            <dt>Raum</dt>
+            <dt>Salle</dt>
             <dd data-next-room>–</dd>
           </div>
         </dl>
@@ -147,16 +147,16 @@
     <div class="current-subject__actions">
       <a class="current-subject__button current-subject__button--primary" href="tagesuebersicht.html">
         <span aria-hidden="true">📅</span>
-        <span>Tagesübersicht</span>
+        <span>Vue quotidienne</span>
       </a>
       <a class="current-subject__button current-subject__button--secondary" href="index.html">
         <span aria-hidden="true">◀️</span>
-        <span>Zurück</span>
+        <span>Retour</span>
       </a>
     </div>
     <footer class="current-subject__footer">
       ©️ Timo Wigger 2025 |
-      <a href="cdn-cgi/l/email-protection.html#17637e7a78607e707072652f57707a767e7b3974787a">Kontakt</a>
+      <a href="cdn-cgi/l/email-protection.html#17637e7a78607e707072652f57707a767e7b3974787a">Contact</a>
     </footer>
   </main>
 

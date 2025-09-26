@@ -1,6 +1,6 @@
 (function () {
   const DEFAULT_ENDPOINT = 'https://homework-manager-2-0-backend.onrender.com/aktuelles_fach';
-  const FREE_TOKENS = ['frei', 'free', 'libero', '-'];
+  const FREE_TOKENS = ['frei', 'free', 'libero', 'libre', '-'];
   const DEFAULT_REFRESH = 30000;
   const DEFAULT_COUNTDOWN_UPDATE = 1000;
 

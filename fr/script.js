@@ -1,29 +1,26 @@
 // LOGIN & SESSION MANAGEMENT
 const LOGIN_TEXT = {
-    show: 'Mostra password',
-    hide: 'Nascondi password',
-    empty: 'Inserisci una password.',
-    wrong: 'Password errata – riprova.'
+    show: 'Afficher le mot de passe',
+    hide: 'Masquer le mot de passe',
+    empty: 'Veuillez saisir un mot de passe.',
+    wrong: 'Mot de passe incorrect – veuillez réessayer.'
 };
 
 const CREATE_DISABLED_MESSAGE = (window.hmI18n && window.hmI18n.get('calendar.actions.create.disabled'))
-    || 'Solo gli admin possono creare voci';
+    || 'Seuls les administrateurs peuvent créer des entrées';
 
 const CALENDAR_MODAL_SCOPE = window.hmI18n ? window.hmI18n.scope('calendar.modal') : (key, fallback) => fallback;
 
 const CALENDAR_MODAL_BUTTONS = {
-    add: CALENDAR_MODAL_SCOPE('buttons.add', 'Aggiungi'),
-    addLoading: CALENDAR_MODAL_SCOPE('buttons.addLoading', 'Aggiunta …'),
-    save: CALENDAR_MODAL_SCOPE('buttons.save', 'Salva'),
-    saveLoading: CALENDAR_MODAL_SCOPE('buttons.saveLoading', 'Salvataggio …')
+    add: CALENDAR_MODAL_SCOPE('buttons.add', 'Ajouter une entrée'),
+    addLoading: CALENDAR_MODAL_SCOPE('buttons.addLoading', 'Ajout en cours…'),
+    save: CALENDAR_MODAL_SCOPE('buttons.save', 'Enregistrer'),
+    saveLoading: CALENDAR_MODAL_SCOPE('buttons.saveLoading', 'Enregistrement…')
 };
 
 const CALENDAR_MODAL_MESSAGES = {
-    saveSuccess: CALENDAR_MODAL_SCOPE('messages.saveSuccess', 'Voce salvata con successo!'),
-    saveRetry: CALENDAR_MODAL_SCOPE(
-        'messages.saveRetry',
-        'Non è stato possibile salvare la voce dopo vari tentativi. Riprova più tardi.'
-    )
+    saveSuccess: CALENDAR_MODAL_SCOPE('messages.saveSuccess', 'Entrée enregistrée avec succès !'),
+    saveRetry: CALENDAR_MODAL_SCOPE('messages.saveRetry', 'Impossible d’enregistrer l’entrée après plusieurs tentatives. Veuillez réessayer plus tard.')
 };
 
 function setLoginFeedback(message = '', isError = false) {
@@ -433,7 +430,7 @@ async function openCalendar() {
 
         const res = await fetch('https://homework-manager-2-0-backend.onrender.com/entries');
         if (!res.ok) {
-            throw new Error(`Errore API (${res.status})`);
+            throw new Error(`API error (${res.status})`);
         }
         const entries = await res.json();
         const colorMap = { hausaufgabe: '#007bff', pruefung: '#dc3545', event: '#28a745' };
@@ -469,7 +466,7 @@ async function openCalendar() {
 
         calendar.render();
     } catch (err) {
-        console.error('Errore durante il caricamento o il rendering del calendario:', err);
+        console.error('Error loading or rendering the calendar:', err);
     }
 }
 
@@ -482,9 +479,9 @@ async function loadCurrentSubject() {
     const res = await fetch('https://homework-manager-2-0-backend.onrender.com/aktuelles_fach');
     const data = await res.json();
     document.getElementById('content').innerHTML = `
-      <h2>Materia attuale: ${data.fach}</h2>
-      <h3>Rimanente: ${data.verbleibend}</h3>
-      <p><strong>Aula:</strong> ${data.raum}</p>
+      <h2>Current Subject: ${data.fach}</h2>
+      <h3>Remaining: ${data.verbleibend}</h3>
+      <p><strong>Room:</strong> ${data.raum}</p>
     `;
   }
   clearInterval(fachInterval);
@@ -497,10 +494,10 @@ async function aktuellesFachLaden() {
   const res = await fetch('https://homework-manager-2-0-backend.onrender.com/aktuelles_fach');
   const data = await res.json();
   document.getElementById('fachInfo').innerHTML = `
-    <p><strong>Materia:</strong> ${data.fach}</p>
-    <p><strong>Termina alle:</strong> ${data.endet || '-'} </p>
-    <p><strong>Rimanente:</strong> ${data.verbleibend}</p>
-    <p><strong>Aula:</strong> ${data.raum}</p>
+    <p><strong>Subject:</strong> ${data.fach}</p>
+    <p><strong>Ends at:</strong> ${data.endet || '-'} </p>
+    <p><strong>Remaining:</strong> ${data.verbleibend}</p>
+    <p><strong>Room:</strong> ${data.raum}</p>
   `;
 }
 
@@ -526,10 +523,10 @@ function closeEntryModal() {
 }
 
 const ENTRY_FORM_MESSAGES = {
-    invalidDate: 'Inserisci una data valida nel formato GG.MM.AAAA.',
-    invalidEnd: "L'orario di fine non può precedere l'inizio.",
-    missingSubject: 'Seleziona una materia.',
-    missingEventTitle: "Inserisci un titolo per l\'evento."
+    invalidDate: 'Please enter a valid date in the format DD.MM.YYYY.',
+    invalidEnd: 'The end time must not be earlier than the start time.',
+    missingSubject: 'Please choose a subject.',
+    missingEventTitle: 'Please enter an event title.'
 };
 
 if (window.hmI18n) {
@@ -750,7 +747,7 @@ function showEntryForm() {
     const overlay = document.getElementById('entry-modal-overlay');
     const form = document.getElementById('entry-form');
     if (!overlay || !form) {
-        console.error("Impossibile trovare l'overlay della voce.");
+        console.error('Entry overlay not found.');
         return;
     }
 
@@ -791,7 +788,7 @@ async function saveEntry(event) {
 
     const form = document.getElementById('entry-form');
     if (!form) {
-        console.error('Modulo di inserimento mancante.');
+        console.error('Entry form missing.');
         return;
     }
 
@@ -813,7 +810,7 @@ async function saveEntry(event) {
     const saveButton = document.getElementById('saveButton');
 
     if (!typeField || !dateField || !startField || !saveButton) {
-        console.error('Campi del modulo mancanti.');
+        console.error('Form fields are missing.');
         return;
     }
 
@@ -873,15 +870,15 @@ async function saveEntry(event) {
                     controller?.setType('event');
                 }
             } else {
-                console.error("Errore del server durante il salvataggio:", result.message);
+                console.error("Server error while saving:", result.message);
             }
         } catch (error) {
-            console.error("Errore di rete durante il salvataggio:", error);
+            console.error("Network error while saving:", error);
         }
 
         if (!success) {
             attempt++;
-            console.warn(`Tentativo di salvataggio ${attempt} fallito. Nuovo tentativo tra 2 secondi.`);
+            console.warn(`Save attempt ${attempt} failed. Retrying in 2 seconds.`);
             // Warte 2000ms, bevor erneut versucht wird
             await new Promise(resolve => setTimeout(resolve, 2000));
         }
@@ -890,13 +887,14 @@ async function saveEntry(event) {
     if (!success) {
         showOverlay(CALENDAR_MODAL_MESSAGES.saveRetry);
     } else {
-        // Reimposta campi di input
+        // Reset input fields
         if (form) {
             form.reset();
             controller?.setType('event');
         }
     }
 
+    // Re-enable button
     saveButton.disabled = false;
     saveButton.innerText = CALENDAR_MODAL_BUTTONS.add;
 }

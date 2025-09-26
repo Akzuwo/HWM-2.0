@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-i18n="changelog.pageTitle">Journal des modifications</title>
+  <link rel="icon" type="image/png" href="../media/logo.png" />
+  <link rel="stylesheet" href="../utils/css/style.css" />
+  <link rel="stylesheet" href="../utils/css/home.css" />
+</head>
+<body class="changelog-page">
+  <header class="changelog-topbar">
+    <a class="changelog-back" href="index.html" data-i18n="changelog.back">← Retour à l’aperçu</a>
+  </header>
+
+  <main class="changelog-main" id="main">
+    <header class="changelog-header">
+      <h1 data-i18n="changelog.title">Journal des modifications</h1>
+      <p data-i18n="changelog.subtitle">Retrouvez ici les notes de version de Homework Manager. Le contenu détaillé pour la version 2.0 arrivera bientôt.</p>
+    </header>
+
+    <section class="changelog-timeline">
+      <article class="changelog-entry">
+        <div class="changelog-entry__meta">
+          <h2 data-i18n="changelog.release.title">Version 2.0</h2>
+          <time datetime="2025-10-01" data-i18n="changelog.release.date">Octobre 2025</time>
+        </div>
+        <p data-i18n="changelog.release.summary">Les notes de version complètes pour la version 2.0 sont en préparation. Ci-dessous, un aperçu des sujets principaux.</p>
+        <ul>
+          <li data-i18n="changelog.release.items.design">Système visuel sombre repensé pour tous les modules principaux.</li>
+          <li data-i18n="changelog.release.items.performance">Optimisations de performance des API pour des chargements plus rapides.</li>
+          <li data-i18n="changelog.release.items.overlays">Fenêtres et boîtes de dialogue retravaillées pour des modifications plus fluides.</li>
+        </ul>
+      </article>
+
+      <article class="changelog-entry">
+        <div class="changelog-entry__meta">
+          <h2 data-i18n="changelog.archive.title">Versions précédentes</h2>
+        </div>
+        <p data-i18n="changelog.archive.placeholder">Les notes des versions antérieures sont en cours de préparation et seront bientôt disponibles ici.</p>
+      </article>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <span data-i18n="common.footer.copyright">©️ Timo Wigger 2025</span>
+    <span aria-hidden="true">|</span>
+    <a href="cdn-cgi/l/email-protection.html#4b3f2226243c222c2c2e39034b2c262a222765282426" data-i18n="common.footer.contact">Contact</a>
+    <span aria-hidden="true">|</span>
+    <a href="changelog.html" aria-current="page" data-i18n="common.footer.changelog">Journal des modifications</a>
+    <div class="changelog-language-switch">
+      <span class="changelog-language-switch__label" data-i18n="common.language.menuLabel">Sélectionner la langue</span>
+      <a href="../de/changelog.html">DE</a>
+      <a href="../en/changelog.html">EN</a>
+      <a href="../it/changelog.html">IT</a>
+      <a href="changelog.html" aria-current="page">FR</a>
+    </div>
+  </footer>
+
+  <script src="../utils/js/i18n.js" defer></script>
+  <script src="../utils/js/overlay.js" defer></script>
+  <script src="script.js" defer></script>
+</body>
+</html>

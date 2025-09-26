@@ -110,7 +110,8 @@ function initLanguageSelector() {
     const languages = [
         { code: 'de', short: 'DE', name: 'Deutsch', flag: '🇩🇪' },
         { code: 'en', short: 'EN', name: 'English', flag: '🇬🇧' },
-        { code: 'it', short: 'IT', name: 'Italiano', flag: '🇮🇹' }
+        { code: 'it', short: 'IT', name: 'Italiano', flag: '🇮🇹' },
+        { code: 'fr', short: 'FR', name: 'Français', flag: '🇫🇷' }
     ];
 
     const langMap = languages.reduce((map, entry) => {
