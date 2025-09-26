@@ -8,14 +8,12 @@
   <link rel="stylesheet" href="../utils/css/style.css">
 </head>
 <body>
+  <a class="skip-link" href="#main" data-i18n="common.skipToContent">Zum Inhalt springen</a>
     <nav class="simple-nav" data-nav data-i18n-attr="aria-label:common.nav.primary" aria-label="Main navigation">
     <a class="nav-title" href="index.html">
       <img src="../media/logo.png" alt="" width="32" height="32" />
       <span data-i18n="common.appName">Homework Manager</span>
     </a>
-    <button class="nav-toggle" type="button" aria-expanded="false" data-i18n-attr="aria-label:common.nav.toggle">
-      <span aria-hidden="true"></span>
-    </button>
     <div class="nav-links" id="overview-nav-links">
       <a class="nav-button" href="index.html" data-i18n="common.nav.home">🏠 Start</a>
       <a class="nav-button" href="kalender.html" data-i18n="common.nav.calendar">📅 Kalender</a>
@@ -67,7 +65,7 @@
     </div>
   </nav>
 
-  <main class="page-container">
+  <main class="page-container" id="main">
     <header class="page-header">
       <div>
         <h1>📅 Tagesübersicht</h1>

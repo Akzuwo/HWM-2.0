@@ -12,15 +12,13 @@
   <link rel="stylesheet" href="../utils/css/notenrechner.css">
 </head>
 <body>
-    <nav class="simple-nav noten-nav" data-nav data-i18n-attr="aria-label:common.nav.primary" aria-label="Main navigation">
+  <a class="skip-link" href="#main" data-i18n="common.skipToContent">Salta al contenuto</a>
+    <nav class="simple-nav" data-nav data-i18n-attr="aria-label:common.nav.primary" aria-label="Main navigation">
     <a class="nav-title" href="index.html">
       <img src="../media/logo.png" alt="" width="32" height="32" />
       <span data-i18n="common.appName">Homework Manager</span>
     </a>
-    <button class="nav-toggle" type="button" aria-expanded="false" data-i18n-attr="aria-label:common.nav.toggle">
-      <span aria-hidden="true"></span>
-    </button>
-    <div class="nav-links">
+    <div class="nav-links" id="grades-nav-links">
       <a class="nav-button" href="index.html" data-i18n="common.nav.home">🏠 Home</a>
       <a class="nav-button" href="kalender.html" data-i18n="common.nav.calendar">📅 Calendario</a>
       <a class="nav-button" href="upcoming.html" data-i18n="common.nav.upcoming">🔔 Prossimi eventi</a>
@@ -70,12 +68,12 @@
       </div>
     </div>
   </nav>
-  <div class="container" id="notenrechner-container">
+  <main class="container" id="main">
     <header class="page-header">
       <h2>📊 Calcolatore di voti</h2>
     </header>
 
-    <main class="noten-main">
+    <section class="noten-main">
       <div class="noten-inputs">
         <div class="field-group">
           <label class="field-label" for="note">Voto</label>
@@ -110,12 +108,12 @@
       </div>
 
       <div id="zielNote" class="noten-summary">Voto necessario: -</div>
-    </main>
+    </section>
 
     <div id="buttons" class="page-actions">
       <button type="button" class="btn btn--ghost back-button" onclick="window.location.href='index.html'">◀️ Indietro</button>
     </div>
-  </div>
+  </main>
   <script src="script.js" defer></script>
   <script src="../utils/js/overlay.js" defer></script>
   <script src="notenrechner.js" defer></script>

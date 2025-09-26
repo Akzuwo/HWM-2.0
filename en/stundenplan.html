@@ -12,14 +12,12 @@
   <link rel="stylesheet" href="../utils/css/stundenplan.css">
 </head>
 <body>
+  <a class="skip-link" href="#main" data-i18n="common.skipToContent">Skip to content</a>
     <nav class="simple-nav" data-nav data-i18n-attr="aria-label:common.nav.primary" aria-label="Main navigation">
     <a class="nav-title" href="index.html">
       <img src="../media/logo.png" alt="" width="32" height="32" />
       <span data-i18n="common.appName">Homework Manager</span>
     </a>
-    <button class="nav-toggle" type="button" aria-expanded="false" data-i18n-attr="aria-label:common.nav.toggle">
-      <span aria-hidden="true"></span>
-    </button>
     <div class="nav-links" id="current-nav-links">
       <a class="nav-button" href="index.html" data-i18n="common.nav.home">🏠 Dashboard</a>
       <a class="nav-button" href="kalender.html" data-i18n="common.nav.calendar">📅 Calendar</a>
@@ -70,7 +68,7 @@
       </div>
     </div>
   </nav>
-  <main class="current-subject" data-current-subject>
+  <main class="current-subject" data-current-subject id="main">
     <header class="current-subject__header">
       <h1 class="current-subject__title">
         <span class="current-subject__title-icon" aria-hidden="true">🕒</span>
@@ -153,6 +151,7 @@
     </footer>
   </main>
 
+  <script src="script.js" defer></script>
   <script src="../utils/js/overlay.js" defer></script>
   <script src="../utils/js/current-subject.js" defer></script>
   <script src="stundenplan.js" defer></script>
