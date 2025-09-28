@@ -680,3 +680,359 @@ button {
     text-align: center;
     color: #9c9c9c;
 }
+
+.site-footer,
+.current-subject__footer {
+    display: none !important;
+}
+
+.hm-footer {
+    margin: clamp(3rem, 6vh, 4.5rem) auto 2rem;
+    padding: 1.5rem clamp(1.5rem, 4vw, 3.5rem) 0;
+    max-width: min(1100px, 90vw);
+    color: rgba(226, 232, 240, 0.72);
+    font-size: 0.9rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    border-top: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.hm-footer__legal {
+    display: flex;
+    gap: 0.35rem;
+    white-space: nowrap;
+}
+
+.hm-footer__links {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+}
+
+.hm-footer__link {
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    text-decoration: none;
+    position: relative;
+    transition: color 0.2s ease;
+}
+
+.hm-footer__link:hover,
+.hm-footer__link:focus-visible {
+    color: rgba(96, 165, 250, 0.9);
+    outline: none;
+}
+
+.hm-footer__divider {
+    opacity: 0.4;
+    font-size: 1.1em;
+}
+
+.hm-toast-container {
+    position: fixed;
+    inset-inline-end: clamp(1rem, 4vw, 3rem);
+    inset-block-start: clamp(1rem, 4vw, 3rem);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    z-index: 1400;
+    pointer-events: none;
+}
+
+.hm-toast {
+    min-width: 240px;
+    max-width: 360px;
+    border-radius: 12px;
+    padding: 0.85rem 1.25rem;
+    background: rgba(15, 23, 42, 0.85);
+    color: #f8fafc;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    opacity: 0;
+    transform: translateY(-8px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    pointer-events: auto;
+    position: relative;
+}
+
+.hm-toast.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.hm-toast--success {
+    border-color: rgba(74, 222, 128, 0.5);
+}
+
+.hm-toast--error {
+    border-color: rgba(248, 113, 113, 0.5);
+}
+
+.hm-toast__close {
+    position: absolute;
+    inset-inline-end: 0.25rem;
+    inset-block-start: 0.1rem;
+    background: none;
+    border: none;
+    color: inherit;
+    font-size: 1.25rem;
+    cursor: pointer;
+}
+
+.hm-contact-modal {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1500;
+}
+
+.hm-contact-modal.is-visible {
+    display: flex;
+}
+
+.hm-contact-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.75);
+    backdrop-filter: blur(8px);
+}
+
+.hm-contact-modal__dialog {
+    position: relative;
+    background: #101522;
+    border-radius: 18px;
+    padding: clamp(1.5rem, 4vw, 2.25rem);
+    width: min(640px, 92vw);
+    box-shadow: 0 32px 70px rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    color: #e2e8f0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.hm-contact-modal__close {
+    position: absolute;
+    inset-inline-end: 1rem;
+    inset-block-start: 1rem;
+    background: none;
+    border: none;
+    color: inherit;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.hm-contact-modal__header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.hm-contact-modal__lead {
+    margin: 0;
+    color: rgba(148, 163, 184, 0.85);
+    font-size: 0.95rem;
+}
+
+.hm-contact-modal__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.hm-contact-modal__field--full {
+    grid-column: 1 / -1;
+}
+
+.hm-contact-modal__field label {
+    display: block;
+    margin-bottom: 0.35rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+}
+
+.hm-contact-modal__field input,
+.hm-contact-modal__field textarea {
+    width: 100%;
+    border-radius: 12px;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    background: rgba(15, 23, 42, 0.85);
+    color: inherit;
+    padding: 0.75rem 1rem;
+    font: inherit;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hm-contact-modal__field textarea {
+    resize: vertical;
+}
+
+.hm-contact-modal__field input:focus,
+.hm-contact-modal__field textarea:focus {
+    outline: none;
+    border-color: rgba(96, 165, 250, 0.65);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+}
+
+.hm-contact-modal__hint {
+    margin: 0.35rem 0 0;
+    font-size: 0.85rem;
+    color: rgba(148, 163, 184, 0.75);
+}
+
+.hm-contact-modal__error {
+    min-height: 1em;
+    margin: 0.4rem 0 0;
+    font-size: 0.85rem;
+    color: rgba(248, 113, 113, 0.9);
+}
+
+.hm-contact-modal__privacy {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.hm-contact-modal__checkbox {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.hm-contact-modal__checkbox input {
+    margin-top: 0.2rem;
+}
+
+.hm-contact-modal__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.hm-contact-modal__button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 999px;
+    padding: 0.75rem 1.75rem;
+    border: 1px solid transparent;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.hm-contact-modal__button--primary {
+    background: rgba(59, 130, 246, 0.9);
+    color: #f8fafc;
+    box-shadow: 0 18px 36px rgba(37, 99, 235, 0.3);
+}
+
+.hm-contact-modal__button--primary[data-loading] {
+    cursor: progress;
+    opacity: 0.7;
+}
+
+.hm-contact-modal__button--primary:hover,
+.hm-contact-modal__button--primary:focus-visible {
+    background: rgba(37, 99, 235, 0.95);
+    outline: none;
+}
+
+.hm-contact-modal__button--secondary {
+    background: rgba(30, 41, 59, 0.8);
+    color: rgba(226, 232, 240, 0.85);
+    border-color: rgba(148, 163, 184, 0.25);
+}
+
+.hm-contact-modal__button--secondary:hover,
+.hm-contact-modal__button--secondary:focus-visible {
+    background: rgba(30, 41, 59, 0.95);
+    outline: none;
+}
+
+.hm-contact-modal__spinner {
+    width: 1rem;
+    height: 1rem;
+    border-radius: 999px;
+    border: 2px solid rgba(248, 250, 252, 0.45);
+    border-top-color: transparent;
+    display: none;
+}
+
+.hm-contact-modal__button--primary[data-loading] .hm-contact-modal__spinner {
+    display: inline-block;
+    animation: hm-contact-spin 0.75s linear infinite;
+}
+
+@keyframes hm-contact-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.hm-contact-modal__fallback {
+    margin-top: 1rem;
+    padding: 0.75rem 1rem;
+    border-radius: 12px;
+    background: rgba(148, 163, 184, 0.12);
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.hm-contact-modal__fallback-link {
+    color: rgba(96, 165, 250, 0.9);
+    text-decoration: underline;
+}
+
+.hm-contact-modal__honeypot {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+body.hm-contact-modal-open {
+    overflow: hidden;
+}
+
+@media (max-width: 720px) {
+    .hm-contact-modal__grid {
+        grid-template-columns: 1fr;
+    }
+
+    .hm-footer {
+        justify-content: center;
+        gap: 0.75rem;
+    }
+
+    .hm-toast-container {
+        inset-inline-end: 1rem;
+        inset-block-start: 1rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hm-footer__link,
+    .hm-toast,
+    .hm-contact-modal__button,
+    .hm-contact-modal__spinner {
+        transition: none;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+    }
+}

@@ -17,7 +17,10 @@
         footer: {
           copyright: '©️ Timo Wigger 2025',
           contact: 'Kontakt',
+          imprint: 'Impressum',
+          privacy: 'Datenschutz',
           changelog: 'Changelog',
+          navigation: 'Footer-Navigation',
         },
         language: {
           menuLabel: 'Sprache auswählen',
@@ -169,6 +172,25 @@
           },
         },
       },
+      contact: {
+        title: 'Kontakt aufnehmen',
+        description: 'Schreibe uns eine Nachricht – wir melden uns so schnell wie möglich.',
+        name: 'Name',
+        email: 'E-Mail-Adresse',
+        subject: 'Betreff',
+        message: 'Nachricht',
+        attachment: 'Datei anhängen (optional)',
+        attachmentHint: 'Max. 2 MB',
+        privacy: 'Mit dem Absenden stimme ich der Verarbeitung meiner Angaben zu.',
+        submit: 'Nachricht senden',
+        cancel: 'Abbrechen',
+        success: 'Vielen Dank! Deine Nachricht wurde erfolgreich verschickt.',
+        error: 'Nachricht konnte nicht gesendet werden. Bitte versuche es später erneut.',
+        errorValidation: 'Bitte überprüfe die markierten Felder.',
+        fallbackTitle: 'Alternativ kannst du uns auch per E-Mail erreichen:',
+        fallbackCta: 'E-Mail schreiben',
+        close: 'Schließen',
+      },
     },
     en: {
       common: {
@@ -187,7 +209,10 @@
         footer: {
           copyright: '©️ Timo Wigger 2025',
           contact: 'Contact',
+          imprint: 'Legal notice',
+          privacy: 'Privacy policy',
           changelog: 'Changelog',
+          navigation: 'Footer navigation',
         },
         language: {
           menuLabel: 'Select language',
@@ -338,6 +363,25 @@
           },
         },
       },
+      contact: {
+        title: 'Get in touch',
+        description: 'Send us a message and we will get back to you as soon as possible.',
+        name: 'Name',
+        email: 'Email address',
+        subject: 'Subject',
+        message: 'Message',
+        attachment: 'Attach file (optional)',
+        attachmentHint: 'Max. 2 MB',
+        privacy: 'By submitting you agree to the processing of your data.',
+        submit: 'Send message',
+        cancel: 'Cancel',
+        success: 'Thank you! Your message has been sent successfully.',
+        error: 'We could not send your message. Please try again later.',
+        errorValidation: 'Please review the highlighted fields.',
+        fallbackTitle: 'You can also reach us via email:',
+        fallbackCta: 'Write an email',
+        close: 'Close',
+      },
     },
     it: {
       common: {
@@ -356,7 +400,10 @@
         footer: {
           copyright: '©️ Timo Wigger 2025',
           contact: 'Contatto',
+          imprint: 'Note legali',
+          privacy: 'Privacy',
           changelog: 'Changelog',
+          navigation: 'Navigazione footer',
         },
         language: {
           menuLabel: 'Seleziona la lingua',
@@ -507,119 +554,26 @@
           },
         },
       },
+      contact: {
+        title: 'Contattaci',
+        description: 'Scrivici e ti risponderemo il prima possibile.',
+        name: 'Nome',
+        email: 'Indirizzo e-mail',
+        subject: 'Oggetto',
+        message: 'Messaggio',
+        attachment: 'Allega file (opzionale)',
+        attachmentHint: 'Max 2 MB',
+        privacy: 'Inviando accetti il trattamento dei tuoi dati.',
+        submit: 'Invia messaggio',
+        cancel: 'Annulla',
+        success: 'Grazie! Il tuo messaggio è stato inviato con successo.',
+        error: 'Impossibile inviare il messaggio. Riprova più tardi.',
+        errorValidation: 'Controlla i campi evidenziati.',
+        fallbackTitle: 'Puoi anche scriverci via email:',
+        fallbackCta: 'Scrivi un’email',
+        close: 'Chiudi',
+      },
     },
-  };
-
-  const FALLBACK_LOCALE = 'de';
-  let currentLocale = null;
-
-  function normaliseLocale(locale) {
-    if (!locale) return null;
-    const lower = locale.toLowerCase();
-    if (translations[lower]) return lower;
-    const short = lower.split('-')[0];
-    return translations[short] ? short : null;
-  }
-
-  function detectLocale() {
-    return (
-      normaliseLocale(document.documentElement.getAttribute('lang')) ||
-      normaliseLocale(navigator.language) ||
-      FALLBACK_LOCALE
-    );
-  }
-
-  function getFromLocale(locale, pathParts) {
-    return pathParts.reduce((acc, key) => {
-      if (acc && Object.prototype.hasOwnProperty.call(acc, key)) {
-        return acc[key];
-      }
-      return undefined;
-    }, translations[locale]);
-  }
-
-  function get(path, fallback) {
-    if (!path) return fallback;
-    const parts = path.split('.');
-    const primary = getFromLocale(currentLocale, parts);
-    if (primary !== undefined) {
-      return primary;
-    }
-    if (currentLocale !== FALLBACK_LOCALE) {
-      const fallbackValue = getFromLocale(FALLBACK_LOCALE, parts);
-      if (fallbackValue !== undefined) {
-        return fallbackValue;
-      }
-    }
-    return fallback;
-  }
-
-  function apply(root = document) {
-    const scope = root instanceof Element || root instanceof DocumentFragment ? root : document;
-    scope.querySelectorAll('[data-i18n]').forEach((element) => {
-      const key = element.getAttribute('data-i18n');
-      if (!key) return;
-      const value = get(key);
-      if (value !== undefined && value !== null) {
-        if (element.hasAttribute('data-i18n-html')) {
-          element.innerHTML = value;
-        } else {
-          element.textContent = value;
-        }
-      }
-    });
-
-    scope.querySelectorAll('[data-i18n-attr]').forEach((element) => {
-      const map = element.getAttribute('data-i18n-attr');
-      if (!map) return;
-      map.split(',').forEach((pair) => {
-        const [attr, key] = pair.split(':').map((item) => item && item.trim());
-        if (!attr || !key) return;
-        const value = get(key);
-        if (value !== undefined && value !== null) {
-          element.setAttribute(attr, value);
-        }
-      });
-    });
-  }
-
-  function setLocale(nextLocale) {
-    const normalised = normaliseLocale(nextLocale) || FALLBACK_LOCALE;
-    if (normalised === currentLocale) {
-      return;
-    }
-    currentLocale = normalised;
-    document.documentElement.setAttribute('lang', currentLocale);
-    document.documentElement.setAttribute('data-locale', currentLocale);
-    apply();
-  }
-
-  function getLocale() {
-    return currentLocale;
-  }
-
-  function scope(prefix) {
-    return (key, fallback) => get(prefix ? `${prefix}.${key}` : key, fallback);
-  }
-
-  currentLocale = detectLocale();
-  document.documentElement.setAttribute('data-locale', currentLocale);
-
-  global.hmI18n = {
-    get,
-    apply,
-    setLocale,
-    getLocale,
-    scope,
-    translations,
-  };
-
-  if (document.readyState !== 'loading') {
-    apply();
-  } else {
-    document.addEventListener('DOMContentLoaded', () => apply());
-  }
-})(window,
     fr: {
       common: {
         appName: 'Homework Manager',
@@ -637,7 +591,10 @@
         footer: {
           copyright: '©️ Timo Wigger 2025',
           contact: 'Contact',
+          imprint: 'Mentions légales',
+          privacy: 'Protection des données',
           changelog: 'Journal des modifications',
+          navigation: 'Navigation du pied de page',
         },
         language: {
           menuLabel: 'Sélectionner la langue',
@@ -788,5 +745,136 @@
           },
         },
       },
+      contact: {
+        title: 'Nous contacter',
+        description: 'Envoyez-nous un message et nous vous répondrons rapidement.',
+        name: 'Nom',
+        email: 'Adresse e-mail',
+        subject: 'Objet',
+        message: 'Message',
+        attachment: 'Joindre un fichier (optionnel)',
+        attachmentHint: 'Max. 2 Mo',
+        privacy: 'En envoyant ce formulaire, vous acceptez le traitement de vos données.',
+        submit: 'Envoyer le message',
+        cancel: 'Annuler',
+        success: 'Merci ! Votre message a bien été envoyé.',
+        error: 'Impossible d’envoyer votre message. Veuillez réessayer plus tard.',
+        errorValidation: 'Veuillez vérifier les champs mis en évidence.',
+        fallbackTitle: 'Vous pouvez également nous écrire par e-mail :',
+        fallbackCta: 'Envoyer un e-mail',
+        close: 'Fermer',
+      },
     },
+
   };
+
+  const FALLBACK_LOCALE = 'de';
+  let currentLocale = null;
+
+  function normaliseLocale(locale) {
+    if (!locale) return null;
+    const lower = locale.toLowerCase();
+    if (translations[lower]) return lower;
+    const short = lower.split('-')[0];
+    return translations[short] ? short : null;
+  }
+
+  function detectLocale() {
+    return (
+      normaliseLocale(document.documentElement.getAttribute('lang')) ||
+      normaliseLocale(navigator.language) ||
+      FALLBACK_LOCALE
+    );
+  }
+
+  function getFromLocale(locale, pathParts) {
+    return pathParts.reduce((acc, key) => {
+      if (acc && Object.prototype.hasOwnProperty.call(acc, key)) {
+        return acc[key];
+      }
+      return undefined;
+    }, translations[locale]);
+  }
+
+  function get(path, fallback) {
+    if (!path) return fallback;
+    const parts = path.split('.');
+    const primary = getFromLocale(currentLocale, parts);
+    if (primary !== undefined) {
+      return primary;
+    }
+    if (currentLocale !== FALLBACK_LOCALE) {
+      const fallbackValue = getFromLocale(FALLBACK_LOCALE, parts);
+      if (fallbackValue !== undefined) {
+        return fallbackValue;
+      }
+    }
+    return fallback;
+  }
+
+  function apply(root = document) {
+    const scope = root instanceof Element || root instanceof DocumentFragment ? root : document;
+    scope.querySelectorAll('[data-i18n]').forEach((element) => {
+      const key = element.getAttribute('data-i18n');
+      if (!key) return;
+      const value = get(key);
+      if (value !== undefined && value !== null) {
+        if (element.hasAttribute('data-i18n-html')) {
+          element.innerHTML = value;
+        } else {
+          element.textContent = value;
+        }
+      }
+    });
+
+    scope.querySelectorAll('[data-i18n-attr]').forEach((element) => {
+      const map = element.getAttribute('data-i18n-attr');
+      if (!map) return;
+      map.split(',').forEach((pair) => {
+        const [attr, key] = pair.split(':').map((item) => item && item.trim());
+        if (!attr || !key) return;
+        const value = get(key);
+        if (value !== undefined && value !== null) {
+          element.setAttribute(attr, value);
+        }
+      });
+    });
+  }
+
+  function setLocale(nextLocale) {
+    const normalised = normaliseLocale(nextLocale) || FALLBACK_LOCALE;
+    if (normalised === currentLocale) {
+      return;
+    }
+    currentLocale = normalised;
+    document.documentElement.setAttribute('lang', currentLocale);
+    document.documentElement.setAttribute('data-locale', currentLocale);
+    apply();
+  }
+
+  function getLocale() {
+    return currentLocale;
+  }
+
+  function scope(prefix) {
+    return (key, fallback) => get(prefix ? `${prefix}.${key}` : key, fallback);
+  }
+
+  currentLocale = detectLocale();
+  document.documentElement.setAttribute('data-locale', currentLocale);
+
+  global.hmI18n = {
+    get,
+    apply,
+    setLocale,
+    getLocale,
+    scope,
+    translations,
+  };
+
+  if (document.readyState !== 'loading') {
+    apply();
+  } else {
+    document.addEventListener('DOMContentLoaded', () => apply());
+  }
+})(window);

@@ -22,7 +22,12 @@ const messages = {
   targetRange: 'The target average must be between 1 and 6.',
   nextWeight: 'The next grade weight must be greater than 0.',
   requiredGradeLabel: 'Required grade',
-  unachievable: 'Not achievable'
+  unachievable: 'Not achievable',
+  unachievableDetail: 'Target not reachable (max. {max})',
+  deleteAction: 'Remove grade',
+  editAction: 'Edit grade',
+  saveAction: 'Save changes',
+  cancelAction: 'Cancel editing'
 };
 
 const noten = [];
@@ -32,9 +37,18 @@ const MIN_GRADE = 1;
 const MAX_GRADE = 6;
 const STEP_PRECISION = 1e-9;
 
+function toNumber(rawValue) {
+  if (!rawValue) {
+    return NaN;
+  }
+  const normalised = rawValue.replace(/\s+/g, '').replace(/,/g, '.');
+  const parsed = Number.parseFloat(normalised);
+  return Number.isNaN(parsed) ? NaN : parsed;
+}
+
 function parseValue(input) {
   const value = input.value.trim();
-  return value === '' ? NaN : parseFloat(value);
+  return toNumber(value);
 }
 
 function isValidGrade(value) {
@@ -46,11 +60,16 @@ function isPositive(value) {
 }
 
 function setFieldState(input, errorElement, message, shouldShow) {
+  if (!input || !errorElement) {
+    return;
+  }
   if (message && shouldShow) {
     input.classList.add('invalid');
+    input.setAttribute('aria-invalid', 'true');
     errorElement.textContent = message;
   } else {
     input.classList.remove('invalid');
+    input.removeAttribute('aria-invalid');
     errorElement.textContent = '';
   }
 }
@@ -58,6 +77,15 @@ function setFieldState(input, errorElement, message, shouldShow) {
 function resetRequiredGrade() {
   requiredGrade.textContent = `${messages.requiredGradeLabel}: –`;
   requiredGrade.dataset.state = 'idle';
+}
+
+function focusNoteField() {
+  if (typeof noteInput.focus === 'function') {
+    noteInput.focus();
+    if (typeof noteInput.select === 'function') {
+      noteInput.select();
+    }
+  }
 }
 
 function updateButtonStates() {
@@ -83,8 +111,8 @@ function updateButtonStates() {
 function validateInputs(showFeedback = false) {
   const gradeRaw = noteInput.value.trim();
   const weightRaw = weightInput.value.trim();
-  const gradeValue = gradeRaw === '' ? NaN : parseFloat(gradeRaw);
-  const weightValue = weightRaw === '' ? NaN : parseFloat(weightRaw);
+  const gradeValue = toNumber(gradeRaw);
+  const weightValue = toNumber(weightRaw);
 
   let gradeMessage = '';
   let weightMessage = '';
@@ -118,8 +146,8 @@ function validateInputs(showFeedback = false) {
 function validateGoalInputs(showFeedback = false) {
   const targetRaw = targetInput.value.trim();
   const nextWeightRaw = nextWeightInput.value.trim();
-  const targetValue = targetRaw === '' ? NaN : parseFloat(targetRaw);
-  const nextWeightValue = nextWeightRaw === '' ? NaN : parseFloat(nextWeightRaw);
+  const targetValue = toNumber(targetRaw);
+  const nextWeightValue = toNumber(nextWeightRaw);
 
   let targetMessage = '';
   let nextWeightMessage = '';
@@ -159,6 +187,8 @@ function resetInputs() {
   weightInput.value = '';
   noteInput.classList.remove('invalid');
   weightInput.classList.remove('invalid');
+  noteInput.removeAttribute('aria-invalid');
+  weightInput.removeAttribute('aria-invalid');
   gradeError.textContent = '';
   weightError.textContent = '';
   updateButtonStates();
@@ -167,6 +197,8 @@ function resetInputs() {
 function resetTargetInputs() {
   targetInput.classList.remove('invalid');
   nextWeightInput.classList.remove('invalid');
+  targetInput.removeAttribute('aria-invalid');
+  nextWeightInput.removeAttribute('aria-invalid');
   targetError.textContent = '';
   nextWeightError.textContent = '';
   updateButtonStates();
@@ -185,6 +217,7 @@ function noteHinzufuegen(event) {
   noten.push({ note, gewichtung });
   editingIndex = null;
   resetInputs();
+  focusNoteField();
   notenListeUpdate();
   schnittBerechnen();
   validateGoalInputs(false);
@@ -222,7 +255,8 @@ function zielBerechnen(event) {
   }
 
   if (required < MIN_GRADE - STEP_PRECISION || required > MAX_GRADE + STEP_PRECISION) {
-    requiredGrade.textContent = `${messages.requiredGradeLabel}: ${messages.unachievable}`;
+    const detail = messages.unachievableDetail.replace('{max}', MAX_GRADE.toFixed(1));
+    requiredGrade.textContent = `${messages.requiredGradeLabel}: ${detail}`;
     requiredGrade.dataset.state = 'unreachable';
   } else {
     requiredGrade.textContent = `${messages.requiredGradeLabel}: ${required.toFixed(2)}`;
@@ -238,8 +272,8 @@ function cancelEdit() {
 function saveEdit(index, gradeField, weightField) {
   const gradeRaw = gradeField.value.trim();
   const weightRaw = weightField.value.trim();
-  const gradeValue = gradeRaw === '' ? NaN : parseFloat(gradeRaw);
-  const weightValue = weightRaw === '' ? NaN : parseFloat(weightRaw);
+  const gradeValue = toNumber(gradeRaw);
+  const weightValue = toNumber(weightRaw);
 
   let gradeMessage = '';
   let weightMessage = '';
@@ -262,14 +296,18 @@ function saveEdit(index, gradeField, weightField) {
 
   if (gradeMessage) {
     gradeField.classList.add('invalid');
+    gradeField.setAttribute('aria-invalid', 'true');
   } else {
     gradeField.classList.remove('invalid');
+    gradeField.removeAttribute('aria-invalid');
   }
 
   if (weightMessage) {
     weightField.classList.add('invalid');
+    weightField.setAttribute('aria-invalid', 'true');
   } else {
     weightField.classList.remove('invalid');
+    weightField.removeAttribute('aria-invalid');
   }
 
   const combinedMessage = gradeMessage || weightMessage;
@@ -319,13 +357,13 @@ function createEditControls(row, index, entry) {
   saveButton.type = 'button';
   saveButton.className = 'grade-calculator__edit-button';
   saveButton.textContent = '✔';
-  saveButton.setAttribute('aria-label', 'Save changes');
+  saveButton.setAttribute('aria-label', messages.saveAction);
 
   const cancelButton = document.createElement('button');
   cancelButton.type = 'button';
   cancelButton.className = 'grade-calculator__edit-button';
   cancelButton.textContent = '✖';
-  cancelButton.setAttribute('aria-label', 'Cancel editing');
+  cancelButton.setAttribute('aria-label', messages.cancelAction);
 
   actionsCell.appendChild(saveButton);
   actionsCell.appendChild(cancelButton);
@@ -373,11 +411,28 @@ function notenListeUpdate() {
       weightCell.textContent = entry.gewichtung.toFixed(2);
 
       const actionsCell = document.createElement('td');
+      actionsCell.classList.add('grade-calculator__actions');
+
+      const editButton = document.createElement('button');
+      editButton.type = 'button';
+      editButton.className = 'grade-calculator__edit-trigger';
+      editButton.textContent = '✎';
+      editButton.title = messages.editAction;
+      editButton.setAttribute('aria-label', messages.editAction);
+
       const deleteButton = document.createElement('button');
       deleteButton.type = 'button';
       deleteButton.className = 'grade-calculator__delete-button';
       deleteButton.textContent = '✕';
-      deleteButton.setAttribute('aria-label', 'Delete grade');
+      deleteButton.title = messages.deleteAction;
+      deleteButton.setAttribute('aria-label', messages.deleteAction);
+
+      editButton.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        editingIndex = index;
+        notenListeUpdate();
+      });
 
       deleteButton.addEventListener('click', (event) => {
         event.stopPropagation();
@@ -391,6 +446,7 @@ function notenListeUpdate() {
         validateGoalInputs(false);
       });
 
+      actionsCell.appendChild(editButton);
       actionsCell.appendChild(deleteButton);
 
       row.appendChild(numberCell);
@@ -425,3 +481,4 @@ resetRequiredGrade();
 validateInputs(false);
 validateGoalInputs(false);
 notenListeUpdate();
+focusNoteField();

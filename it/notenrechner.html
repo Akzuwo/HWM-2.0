@@ -86,7 +86,7 @@
     </header>
 
     <section class="grade-calculator__section" aria-labelledby="add-grade-heading">
-      <h2 id="add-grade-heading" class="visually-hidden">Aggiungi voto</h2>
+      <h2 id="add-grade-heading" class="grade-calculator__section-title">Aggiungi voto</h2>
       <form class="grade-calculator__form grade-calculator__form--inline" id="addForm" novalidate>
         <div class="grade-calculator__field">
           <label class="grade-calculator__label" for="note">Voto</label>
@@ -110,7 +110,7 @@
             class="grade-calculator__input"
             type="number"
             step="0.01"
-            min="0"
+            min="0.01"
             placeholder="es. 1"
             aria-describedby="weightError"
             inputmode="decimal"
@@ -146,7 +146,7 @@
     </section>
 
     <section class="grade-calculator__section" aria-labelledby="target-heading">
-      <h2 id="target-heading" class="visually-hidden">Media desiderata</h2>
+      <h2 id="target-heading" class="grade-calculator__section-title">Calcola media obiettivo</h2>
       <form class="grade-calculator__form grade-calculator__form--inline" id="targetForm" novalidate>
         <div class="grade-calculator__field">
           <label class="grade-calculator__label" for="ziel">Media desiderata</label>
@@ -170,7 +170,7 @@
             class="grade-calculator__input"
             type="number"
             step="0.01"
-            min="0"
+            min="0.01"
             placeholder="es. 1"
             aria-describedby="nextWeightError"
             inputmode="decimal"
@@ -195,13 +195,11 @@
       </a>
     </div>
 
-    <footer class="current-subject__footer">
-      ©️ Timo Wigger 2025 |
-      <a href="cdn-cgi/l/email-protection.html#0a7e6367657d636d6d6f78324a6d676b636624696567">Contatto</a>
-    </footer>
   </main>
   <script src="script.js" defer></script>
   <script src="../utils/js/overlay.js" defer></script>
+  <script src="../utils/js/toast.js" defer></script>
+  <script src="../utils/js/footer.js" defer></script>
   <script src="notenrechner.js" defer></script>
 </body>
 <!-- Mirrored from homework-manager.akzuwo.ch/notenrechner by HTTrack Website Copier/3.x [XR&CO'2014], Fri, 22 Aug 2025 06:36:32 GMT -->
