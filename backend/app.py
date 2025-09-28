@@ -1,6 +1,11 @@
 import os
 import json
 import datetime
+import re
+import time
+import smtplib
+from email.message import EmailMessage
+
 from ics import Calendar, Event
 import pytz
 from flask import Flask, jsonify, request, session, make_response, send_from_directory, Response
@@ -46,6 +51,67 @@ DB_CONFIG = {
 pool = pooling.MySQLConnectionPool(pool_name="mypool", pool_size=5, pool_reset_session=True, **DB_CONFIG)
 def get_connection():
     return pool.get_connection()
+
+
+CONTACT_MAX_FILE_SIZE = int(os.getenv('CONTACT_MAX_FILE_SIZE', 2 * 1024 * 1024))
+CONTACT_RATE_LIMIT = {}
+CONTACT_RATE_LIMIT_WINDOW = int(os.getenv('CONTACT_RATE_LIMIT_WINDOW', 3600))
+CONTACT_RATE_LIMIT_MAX = int(os.getenv('CONTACT_RATE_LIMIT_MAX', 5))
+CONTACT_MIN_DURATION_MS = int(os.getenv('CONTACT_MIN_DURATION_MS', 3000))
+CONTACT_MIN_MESSAGE_LENGTH = int(os.getenv('CONTACT_MIN_MESSAGE_LENGTH', 20))
+CONTACT_SMTP_HOST = os.getenv('CONTACT_SMTP_HOST')
+CONTACT_SMTP_PORT = int(os.getenv('CONTACT_SMTP_PORT', 587))
+CONTACT_SMTP_USER = os.getenv('CONTACT_SMTP_USER')
+CONTACT_SMTP_PASSWORD = os.getenv('CONTACT_SMTP_PASSWORD')
+CONTACT_RECIPIENT = os.getenv('CONTACT_RECIPIENT') or CONTACT_SMTP_USER
+CONTACT_FROM_ADDRESS = os.getenv('CONTACT_FROM_ADDRESS', CONTACT_SMTP_USER or CONTACT_RECIPIENT)
+CONTACT_EMAIL_REGEX = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
+
+
+def _check_contact_rate_limit(ip_address: str) -> bool:
+    now = time.time()
+    entry = CONTACT_RATE_LIMIT.get(ip_address)
+    if entry and now < entry['reset']:
+        entry['count'] += 1
+    else:
+        entry = {'count': 1, 'reset': now + CONTACT_RATE_LIMIT_WINDOW}
+        CONTACT_RATE_LIMIT[ip_address] = entry
+    return entry['count'] <= CONTACT_RATE_LIMIT_MAX
+
+
+def _send_contact_email(name: str, email_address: str, subject: str, body: str, attachment=None) -> None:
+    if not CONTACT_SMTP_HOST or not CONTACT_RECIPIENT:
+        raise RuntimeError('Contact email is not configured')
+
+    message = EmailMessage()
+    final_subject = subject.strip() or 'Kontaktanfrage'
+    message['Subject'] = f"[Homework Manager] {final_subject}"
+    sender = CONTACT_FROM_ADDRESS or email_address
+    if sender:
+        message['From'] = sender
+    message['To'] = CONTACT_RECIPIENT
+    if email_address:
+        message['Reply-To'] = email_address
+
+    message.set_content(body)
+
+    if attachment:
+        file_data, filename, content_type = attachment
+        if file_data:
+            maintype, subtype = (content_type or 'application/octet-stream').split('/', 1)
+            message.add_attachment(file_data, maintype=maintype, subtype=subtype, filename=filename)
+
+    if CONTACT_SMTP_PORT == 465:
+        server = smtplib.SMTP_SSL(CONTACT_SMTP_HOST, CONTACT_SMTP_PORT, timeout=10)
+    else:
+        server = smtplib.SMTP(CONTACT_SMTP_HOST, CONTACT_SMTP_PORT, timeout=10)
+        server.starttls()
+
+    if CONTACT_SMTP_USER and CONTACT_SMTP_PASSWORD:
+        server.login(CONTACT_SMTP_USER, CONTACT_SMTP_PASSWORD)
+
+    server.send_message(message)
+    server.quit()
 
 
 # Tabelle für den Stundenplan sicherstellen
@@ -197,6 +263,92 @@ def entries():
     cursor.close()
     conn.close()
     return jsonify(rows)
+
+
+@app.route('/api/contact', methods=['POST'])
+def submit_contact():
+    form = request.form
+    honeypot = form.get('hm_contact_website')
+    if honeypot:
+        return jsonify({'status': 'ok'}), 200
+
+    name = (form.get('name') or '').strip()
+    email_address = (form.get('email') or '').strip()
+    subject = (form.get('subject') or '').strip()
+    message_text = (form.get('message') or '').strip()
+    consent_given = form.get('consent') in ('true', 'on', '1')
+    started_raw = form.get('hm-contact-start')
+
+    errors = {}
+
+    if not name:
+        errors['name'] = 'required'
+    if not email_address or not CONTACT_EMAIL_REGEX.match(email_address):
+        errors['email'] = 'invalid'
+    if not subject:
+        errors['subject'] = 'required'
+    if len(message_text) < CONTACT_MIN_MESSAGE_LENGTH:
+        errors['message'] = 'too_short'
+    if not consent_given:
+        errors['consent'] = 'required'
+
+    try:
+        started_ms = int(started_raw) if started_raw else 0
+    except ValueError:
+        started_ms = 0
+
+    if started_ms:
+        elapsed = (time.time() * 1000) - started_ms
+        if elapsed < CONTACT_MIN_DURATION_MS:
+            errors['general'] = 'too_fast'
+
+    attachment_tuple = None
+    uploaded_file = request.files.get('attachment')
+    if uploaded_file and uploaded_file.filename:
+        try:
+            uploaded_file.stream.seek(0, os.SEEK_END)
+            size = uploaded_file.stream.tell()
+            uploaded_file.stream.seek(0)
+        except Exception:
+            size = None
+        if size and size > CONTACT_MAX_FILE_SIZE:
+            return jsonify({'message': 'attachment_too_large'}), 413
+        file_data = uploaded_file.read()
+        if file_data and len(file_data) > CONTACT_MAX_FILE_SIZE:
+            return jsonify({'message': 'attachment_too_large'}), 413
+        if file_data:
+            attachment_tuple = (file_data, uploaded_file.filename, uploaded_file.mimetype)
+
+    if errors:
+        return jsonify({'message': 'invalid', 'errors': errors}), 400
+
+    if not (CONTACT_SMTP_HOST and CONTACT_RECIPIENT):
+        return jsonify({'message': 'unavailable'}), 503
+
+    forwarded_for = request.headers.get('X-Forwarded-For', '')
+    ip_address = (forwarded_for.split(',')[0].strip() if forwarded_for else request.remote_addr) or 'unknown'
+
+    if not _check_contact_rate_limit(ip_address):
+        return jsonify({'message': 'rate_limited'}), 429
+
+    timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    body = (
+        f"Name: {name}\n"
+        f"E-Mail: {email_address}\n"
+        f"Betreff: {subject or '-'}\n"
+        f"Einwilligung: {'ja' if consent_given else 'nein'}\n"
+        f"IP-Adresse: {ip_address}\n"
+        f"Zeitstempel: {timestamp}\n\n"
+        f"Nachricht:\n{message_text.strip()}\n"
+    )
+
+    try:
+        _send_contact_email(name, email_address, subject, body, attachment_tuple)
+    except Exception as exc:
+        app.logger.exception('Fehler beim Versenden der Kontaktanfrage: %s', exc)
+        return jsonify({'message': 'send_failed'}), 502
+
+    return jsonify({'status': 'ok'}), 200
 
 # --- LOGIN / LOGOUT ---
 @app.route('/api/login', methods=['POST'])
