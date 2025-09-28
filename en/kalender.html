@@ -110,6 +110,10 @@
         <span class="calendar-weekstrip__label" data-i18n="calendar.weekStrip.label">Calendar weeks</span>
         <div class="calendar-weekstrip__list" data-week-strip-list role="listbox"></div>
       </div>
+      <div class="calendar-api-hint" data-api-hint hidden>
+        <span aria-hidden="true">⏳</span>
+        <span data-i18n="calendar.apiHint.starting">Backend is starting … this may take up to 2 minutes.</span>
+      </div>
       <div class="calendar-controls" data-calendar-controls>
         <div
           class="calendar-month-nav"
@@ -249,11 +253,8 @@
           aria-label="Close"
           data-i18n-attr="aria-label:calendar.modal.buttons.close"
         >
+          <span aria-hidden="true">×</span>
           <span class="visually-hidden" data-i18n="calendar.modal.buttons.close">Close</span>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M18 6 6 18"></path>
-            <path d="M6 6l12 12"></path>
-          </svg>
         </button>
         <div class="hm-modal__title-wrapper">
           <h2 id="fc-modal-title" class="hm-modal__title" data-i18n="calendar.modal.viewTitle">Calendar entry</h2>
@@ -299,6 +300,7 @@
               <option value="pruefung" data-i18n="calendar.legend.exam">Exam</option>
               <option value="event" data-i18n="calendar.legend.event">Event</option>
             </select>
+            <p class="hm-modal__error" data-error-for="type"></p>
           </div>
 
           <div class="hm-modal__field is-hidden" data-field="event-title">
@@ -310,6 +312,7 @@
               placeholder="Event name"
               data-i18n-attr="placeholder:calendar.modal.placeholders.eventTitle"
             />
+            <p class="hm-modal__error" data-error-for="event-title"></p>
           </div>
 
           <div class="hm-modal__field" data-field="subject">
@@ -338,21 +341,35 @@
               <option>PH</option>
               <option>SMU</option>
             </select>
+            <p class="hm-modal__error" data-error-for="subject"></p>
           </div>
 
           <div class="hm-modal__field" data-field="date">
-            <label for="fc-edit-date" data-i18n="calendar.modal.labels.date">Date</label>
-            <input type="date" id="fc-edit-date" name="datum" required />
+            <label for="fc-edit-date" data-i18n="calendar.modal.labels.dateWithFormat">Date (DD.MM.YYYY)</label>
+            <input
+              type="text"
+              id="fc-edit-date"
+              name="datum"
+              inputmode="numeric"
+              pattern="\d{2}\.\d{2}\.\d{4}"
+              autocomplete="off"
+              required
+              placeholder="18.09.2025"
+              data-i18n-attr="placeholder:calendar.modal.placeholders.date"
+            />
+            <p class="hm-modal__error" data-error-for="date"></p>
           </div>
 
           <div class="hm-modal__field" data-field="start">
             <label for="fc-edit-start" data-i18n="calendar.modal.labels.start">Start time</label>
-            <input type="time" id="fc-edit-start" name="startzeit" />
+            <input type="time" id="fc-edit-start" name="startzeit" required step="60" />
+            <p class="hm-modal__error" data-error-for="start"></p>
           </div>
 
           <div class="hm-modal__field" data-field="end">
             <label for="fc-edit-end" data-i18n="calendar.modal.labels.end">End time</label>
-            <input type="time" id="fc-edit-end" name="endzeit" />
+            <input type="time" id="fc-edit-end" name="endzeit" step="60" />
+            <p class="hm-modal__error" data-error-for="end"></p>
           </div>
 
           <div class="hm-modal__field" data-field="description">
@@ -364,6 +381,7 @@
               placeholder="Details"
               data-i18n-attr="placeholder:calendar.modal.placeholders.description"
             ></textarea>
+            <p class="hm-modal__error" data-error-for="description"></p>
           </div>
         </div>
 
@@ -408,11 +426,8 @@
           aria-label="Close"
           data-i18n-attr="aria-label:calendar.modal.buttons.close"
         >
+          <span aria-hidden="true">×</span>
           <span class="visually-hidden" data-i18n="calendar.modal.buttons.close">Close</span>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M18 6 6 18"></path>
-            <path d="M6 6l12 12"></path>
-          </svg>
         </button>
         <div class="hm-modal__title-wrapper">
           <h2 class="hm-modal__title" data-i18n="calendar.modal.createTitle">Create entry</h2>
@@ -428,6 +443,7 @@
               <option value="pruefung" data-i18n="calendar.legend.exam">Exam</option>
               <option value="event" data-i18n="calendar.legend.event">Event</option>
             </select>
+            <p class="hm-modal__error" data-error-for="type"></p>
           </div>
 
           <div class="hm-modal__field is-hidden" data-field="event-title">
@@ -440,6 +456,7 @@
               data-i18n-attr="placeholder:calendar.modal.placeholders.eventTitle"
             />
             <p class="field-hint" data-i18n="calendar.modal.hints.eventTitle">Required for events.</p>
+            <p class="hm-modal__error" data-error-for="event-title"></p>
           </div>
 
           <div class="hm-modal__field" data-field="subject">
@@ -468,21 +485,35 @@
               <option>PH</option>
               <option>SMU</option>
             </select>
+            <p class="hm-modal__error" data-error-for="subject"></p>
           </div>
 
           <div class="hm-modal__field" data-field="date">
-            <label for="datum" data-i18n="calendar.modal.labels.date">Date</label>
-            <input type="date" id="datum" name="datum" required />
+            <label for="datum" data-i18n="calendar.modal.labels.dateWithFormat">Date (DD.MM.YYYY)</label>
+            <input
+              type="text"
+              id="datum"
+              name="datum"
+              inputmode="numeric"
+              pattern="\d{2}\.\d{2}\.\d{4}"
+              autocomplete="off"
+              required
+              placeholder="18.09.2025"
+              data-i18n-attr="placeholder:calendar.modal.placeholders.date"
+            />
+            <p class="hm-modal__error" data-error-for="date"></p>
           </div>
 
           <div class="hm-modal__field" data-field="start">
             <label for="startzeit" data-i18n="calendar.modal.labels.start">Start time</label>
-            <input type="time" id="startzeit" name="startzeit" required />
+            <input type="time" id="startzeit" name="startzeit" required step="60" />
+            <p class="hm-modal__error" data-error-for="start"></p>
           </div>
 
           <div class="hm-modal__field" data-field="end">
             <label for="endzeit" data-i18n="calendar.modal.labels.end">End time</label>
-            <input type="time" id="endzeit" name="endzeit" />
+            <input type="time" id="endzeit" name="endzeit" step="60" />
+            <p class="hm-modal__error" data-error-for="end"></p>
           </div>
 
           <div class="hm-modal__field" data-field="description">
@@ -494,6 +525,7 @@
               placeholder="Summary"
               data-i18n-attr="placeholder:calendar.modal.placeholders.descriptionShort"
             ></textarea>
+            <p class="hm-modal__error" data-error-for="description"></p>
           </div>
         </div>
 

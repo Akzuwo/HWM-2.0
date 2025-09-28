@@ -209,6 +209,27 @@ body.calendar-theme main {
   flex-direction: column;
   gap: clamp(1.2rem, 2vw, 1.75rem);
   overflow: hidden;
+  min-height: clamp(520px, 72vh, 900px);
+}
+
+.calendar-shell #calendar {
+  min-height: clamp(420px, 62vh, 780px);
+}
+
+.calendar-api-hint {
+  display: none;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(124, 163, 255, 0.12);
+  color: var(--muted-strong);
+  font-size: 0.85rem;
+}
+
+.calendar-api-hint.is-visible {
+  display: flex;
 }
 
 .calendar-controls {
@@ -733,7 +754,7 @@ body.hm-modal-open {
 .hm-modal-overlay {
   position: fixed;
   inset: 0;
-  z-index: 4000;
+  z-index: 6000;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -753,8 +774,8 @@ body.hm-modal-open {
 }
 
 .hm-modal {
-  width: clamp(320px, 92vw, 720px);
-  max-height: min(92vh, 720px);
+  width: clamp(360px, 90vw, 720px);
+  max-height: 90vh;
   display: flex;
   flex-direction: column;
   background: rgba(16, 20, 31, 0.96);
@@ -773,12 +794,16 @@ body.hm-modal-open {
 }
 
 .hm-modal__header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr;
   align-items: center;
   gap: var(--space-3);
-  padding: 1.25rem 1.75rem;
+  padding: 1.1rem 1.6rem 1.1rem 1.6rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, rgba(16, 20, 31, 0.96) 0%, rgba(16, 20, 31, 0.88) 92%, rgba(16, 20, 31, 0.4) 100%);
 }
 
 .hm-modal__header-spacer {
@@ -791,6 +816,9 @@ body.hm-modal-open {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
+  justify-self: center;
+  text-align: center;
 }
 
 .hm-modal__section,
@@ -810,8 +838,8 @@ body.hm-modal-open {
 }
 
 .hm-modal__close {
-  width: 2.35rem;
-  height: 2.35rem;
+  width: 2.25rem;
+  height: 2.25rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -819,12 +847,13 @@ body.hm-modal-open {
   border: none;
   background: var(--danger);
   color: #fff;
-  font-size: 1.25rem;
+  font-size: 1.35rem;
   line-height: 1;
   transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
-.hm-modal__close:hover {
+.hm-modal__close:hover,
+.hm-modal__close:focus-visible {
   background: var(--danger-strong);
 }
 
@@ -838,6 +867,7 @@ body.hm-modal-open {
 .hm-modal__body {
   flex: 1 1 auto;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 1.35rem 1.75rem 1.6rem;
   display: flex;
   flex-direction: column;
@@ -849,18 +879,33 @@ body.hm-modal-open {
 }
 
 .hm-modal__footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
-  justify-content: flex-end;
+  justify-content: center;
   padding: 1.1rem 1.75rem 1.5rem;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(0deg, rgba(16, 20, 31, 0.96) 0%, rgba(16, 20, 31, 0.88) 85%, rgba(16, 20, 31, 0.4) 100%);
 }
 
 .hm-modal__field {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+}
+
+.hm-modal__field.is-invalid label {
+  color: var(--danger-strong);
+}
+
+.hm-modal__field.is-invalid input,
+.hm-modal__field.is-invalid select,
+.hm-modal__field.is-invalid textarea {
+  border-color: rgba(239, 83, 80, 0.6);
+  box-shadow: 0 0 0 1px rgba(239, 83, 80, 0.35);
 }
 
 .hm-modal__field label {
@@ -883,6 +928,19 @@ body.hm-modal-open {
   min-height: 120px;
 }
 
+.hm-modal__error {
+  margin: -0.25rem 0 0;
+  min-height: 1.1rem;
+  font-size: 0.78rem;
+  color: var(--danger-strong);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.hm-modal__error.is-visible {
+  opacity: 1;
+}
+
 .hm-modal__desc {
   padding: 0 1.75rem 1.5rem;
   color: var(--muted);
@@ -890,10 +948,11 @@ body.hm-modal-open {
 }
 
 .hm-modal__footer .hm-btn {
-  padding: 0.55rem 1.25rem;
-  border-radius: var(--radius-sm);
+  padding: 0.55rem 1.4rem;
+  border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.16);
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
+  min-width: 8rem;
 }
 
 .hm-btn.hm-btn--primary {
@@ -923,6 +982,76 @@ body.hm-modal-open {
   margin: 0;
   font-size: 0.75rem;
   color: var(--muted);
+}
+
+.calendar-toast-container {
+  position: fixed;
+  top: calc(var(--nav-height) + 1.25rem);
+  right: clamp(1rem, 3vw, 2.5rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: min(320px, 80vw);
+  z-index: 6500;
+  pointer-events: none;
+}
+
+.hm-toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(16, 20, 31, 0.95);
+  color: var(--fg);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  pointer-events: auto;
+}
+
+.hm-toast.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.hm-toast__icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.hm-toast__message {
+  flex: 1 1 auto;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.hm-toast--success {
+  border-color: rgba(52, 211, 153, 0.35);
+  background: rgba(40, 160, 116, 0.25);
+}
+
+.hm-toast--error {
+  border-color: rgba(239, 83, 80, 0.4);
+  background: rgba(239, 83, 80, 0.22);
+}
+
+.hm-toast--info {
+  border-color: rgba(124, 163, 255, 0.35);
+  background: rgba(124, 163, 255, 0.18);
+}
+
+@media (max-width: 768px) {
+  .calendar-toast-container {
+    top: auto;
+    bottom: 1.25rem;
+    right: 50%;
+    transform: translateX(50%);
+    width: min(92vw, 360px);
+    align-items: center;
+  }
 }
 
 @media (max-width: 1023px) {

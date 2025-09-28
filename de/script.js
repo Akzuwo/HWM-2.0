@@ -20,11 +20,15 @@ const CALENDAR_MODAL_BUTTONS = {
 
 const CALENDAR_MODAL_MESSAGES = {
     saveSuccess: CALENDAR_MODAL_SCOPE('messages.saveSuccess', 'Eintrag wurde erfolgreich gespeichert!'),
+    saveError: CALENDAR_MODAL_SCOPE('messages.saveError', 'Fehler beim Speichern.'),
     saveRetry: CALENDAR_MODAL_SCOPE(
         'messages.saveRetry',
         'Der Eintrag konnte nach mehreren Versuchen nicht gespeichert werden. Bitte versuche es später noch einmal.'
-    )
+    ),
+    deleteSuccess: CALENDAR_MODAL_SCOPE('messages.deleteSuccess', 'Eintrag wurde gelöscht.')
 };
+
+let entryFormController = null;
 
 function setLoginFeedback(message = '', isError = false) {
     const feedback = document.getElementById('login-feedback');
@@ -519,9 +523,13 @@ function closeEntryModal() {
     const form = document.getElementById('entry-form');
     if (form) {
         form.reset();
-        const controller = setupModalFormInteractions(form);
-        controller?.setType('event');
-        controller?.evaluate();
+        entryFormController = setupModalFormInteractions(form);
+        if (entryFormController) {
+            entryFormController.clearErrors?.();
+            entryFormController.setType('event');
+            entryFormController.syncEnd?.();
+            entryFormController.evaluate();
+        }
     }
 }
 
@@ -529,7 +537,9 @@ const ENTRY_FORM_MESSAGES = {
     invalidDate: 'Bitte gib ein gültiges Datum im Format TT.MM.JJJJ ein.',
     invalidEnd: 'Die Endzeit darf nicht vor der Startzeit liegen.',
     missingSubject: 'Bitte wähle ein Fach aus.',
-    missingEventTitle: 'Bitte gib einen Event-Titel ein.'
+    missingEventTitle: 'Bitte gib einen Event-Titel ein.',
+    missingStart: 'Bitte gib eine Startzeit an.',
+    missingType: 'Bitte wähle einen Eintragstyp aus.'
 };
 
 if (window.hmI18n) {
@@ -559,6 +569,14 @@ function parseSwissDate(value) {
         .padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
 }
 
+function formatSwissDate(value) {
+    if (!value) return '';
+    const parts = value.split('-');
+    if (parts.length !== 3) return '';
+    const [year, month, day] = parts;
+    return `${day.padStart(2, '0')}.${month.padStart(2, '0')}.${year.padStart(4, '0')}`;
+}
+
 function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES) {
     if (!form) {
         return null;
@@ -569,6 +587,21 @@ function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES)
     }
 
     let messages = { ...initialMessages };
+    const fieldGroups = new Map();
+    form.querySelectorAll('.hm-modal__field').forEach((group) => {
+        const key = group.dataset.field;
+        if (key) {
+            fieldGroups.set(key, group);
+        }
+    });
+    const errorTargets = new Map();
+    form.querySelectorAll('.hm-modal__error').forEach((node) => {
+        const key = node.dataset.errorFor;
+        if (key) {
+            errorTargets.set(key, node);
+        }
+    });
+
     const typeSelect = form.querySelector('[data-field="type"] select');
     const subjectGroup = form.querySelector('[data-field="subject"]');
     const subjectSelect = subjectGroup ? subjectGroup.querySelector('select') : null;
@@ -577,67 +610,120 @@ function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES)
     const dateInput = form.querySelector('[data-field="date"] input');
     const startInput = form.querySelector('[data-field="start"] input');
     const endInput = form.querySelector('[data-field="end"] input');
+    const descriptionInput = form.querySelector('[data-field="description"] textarea');
     const saveButton = form.querySelector('[data-role="submit"]');
     const cancelButton = form.querySelector('[data-role="cancel"]');
 
-    const setInvalidState = (input) => {
-        if (!input) return;
-        input.classList.toggle('is-invalid', !input.checkValidity());
+    const setFieldError = (name, message) => {
+        const group = fieldGroups.get(name);
+        const errorNode = errorTargets.get(name);
+        const hasMessage = Boolean(message);
+        if (group) {
+            group.classList.toggle('is-invalid', hasMessage);
+        }
+        if (errorNode) {
+            errorNode.textContent = message || '';
+            errorNode.classList.toggle('is-visible', hasMessage);
+        }
+    };
+
+    const clearAllErrors = () => {
+        errorTargets.forEach((_, key) => setFieldError(key, ''));
+        [typeSelect, subjectSelect, eventTitleInput, dateInput, startInput, endInput, descriptionInput].forEach((input) => {
+            if (input) {
+                input.setCustomValidity('');
+            }
+        });
+    };
+
+    const syncEndAvailability = () => {
+        if (!endInput) return;
+        const hasStart = Boolean(startInput && startInput.value);
+        if (!hasStart) {
+            endInput.value = '';
+            endInput.disabled = true;
+            endInput.setCustomValidity('');
+            setFieldError('end', '');
+        } else {
+            endInput.disabled = false;
+        }
     };
 
     const evaluate = () => {
-        const isEvent = typeSelect && typeSelect.value === 'event';
+        const typeValue = typeSelect ? typeSelect.value : '';
+        if (typeSelect) {
+            if (!typeValue) {
+                typeSelect.setCustomValidity(messages.missingType || '');
+                setFieldError('type', messages.missingType || '');
+            } else {
+                typeSelect.setCustomValidity('');
+                setFieldError('type', '');
+            }
+        }
+
+        const isEvent = typeValue === 'event';
+
+        if (subjectSelect) {
+            subjectSelect.required = !isEvent;
+            if (!isEvent && !subjectSelect.value) {
+                subjectSelect.setCustomValidity(messages.missingSubject || '');
+                setFieldError('subject', messages.missingSubject || '');
+            } else {
+                subjectSelect.setCustomValidity('');
+                setFieldError('subject', '');
+            }
+        }
+
+        if (eventTitleInput) {
+            eventTitleInput.required = isEvent;
+            if (isEvent && !eventTitleInput.value.trim()) {
+                eventTitleInput.setCustomValidity(messages.missingEventTitle || '');
+                setFieldError('event-title', messages.missingEventTitle || '');
+            } else {
+                eventTitleInput.setCustomValidity('');
+                setFieldError('event-title', '');
+            }
+        }
 
         if (dateInput) {
             const iso = parseSwissDate(dateInput.value);
             if (!iso) {
                 dateInput.setCustomValidity(messages.invalidDate || '');
+                setFieldError('date', messages.invalidDate || '');
             } else {
                 dateInput.setCustomValidity('');
+                setFieldError('date', '');
+                dateInput.dataset.isoValue = iso;
             }
         }
 
-        if (subjectSelect) {
-            if (!isEvent && !subjectSelect.value) {
-                subjectSelect.setCustomValidity(messages.missingSubject || '');
-            } else {
-                subjectSelect.setCustomValidity('');
-            }
-        }
+        syncEndAvailability();
 
-        if (eventTitleInput) {
-            if (isEvent) {
-                const trimmed = eventTitleInput.value.trim();
-                if (!trimmed) {
-                    eventTitleInput.setCustomValidity(messages.missingEventTitle || '');
-                } else {
-                    eventTitleInput.setCustomValidity('');
-                }
-            } else {
-                eventTitleInput.setCustomValidity('');
-            }
-        }
-
-        if (startInput && endInput) {
+        if (startInput) {
             if (!startInput.value) {
-                endInput.value = '';
-                endInput.disabled = true;
-                endInput.setCustomValidity('');
+                startInput.setCustomValidity(messages.missingStart || '');
+                setFieldError('start', messages.missingStart || '');
             } else {
-                endInput.disabled = false;
-                if (endInput.value && endInput.value < startInput.value) {
-                    endInput.setCustomValidity(messages.invalidEnd || '');
-                } else {
-                    endInput.setCustomValidity('');
-                }
+                startInput.setCustomValidity('');
+                setFieldError('start', '');
             }
         }
 
-        [dateInput, startInput, endInput, subjectSelect, eventTitleInput].forEach(setInvalidState);
+        if (endInput && !endInput.disabled) {
+            if (endInput.value && startInput && startInput.value && endInput.value < startInput.value) {
+                endInput.setCustomValidity(messages.invalidEnd || '');
+                setFieldError('end', messages.invalidEnd || '');
+            } else {
+                endInput.setCustomValidity('');
+                setFieldError('end', '');
+            }
+        }
 
         if (saveButton) {
             saveButton.disabled = !form.checkValidity();
         }
+
+        return form.checkValidity();
     };
 
     const toggleTypeFields = () => {
@@ -645,37 +731,36 @@ function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES)
         if (subjectGroup) {
             subjectGroup.classList.toggle('is-hidden', Boolean(isEvent));
         }
-        if (subjectSelect) {
-            subjectSelect.required = !isEvent;
-            if (isEvent) {
-                subjectSelect.value = '';
-                subjectSelect.setCustomValidity('');
-            }
-        }
         if (eventTitleGroup) {
             eventTitleGroup.classList.toggle('is-hidden', !isEvent);
         }
-        if (eventTitleInput) {
-            eventTitleInput.required = isEvent;
-            if (!isEvent) {
-                eventTitleInput.value = '';
-                eventTitleInput.setCustomValidity('');
-            }
+        if (isEvent && subjectSelect) {
+            subjectSelect.value = '';
+            subjectSelect.setCustomValidity('');
+            setFieldError('subject', '');
+        }
+        if (!isEvent && eventTitleInput) {
+            eventTitleInput.value = '';
+            eventTitleInput.setCustomValidity('');
+            setFieldError('event-title', '');
         }
         evaluate();
     };
 
     if (typeSelect) {
-        typeSelect.addEventListener('change', toggleTypeFields);
+        typeSelect.addEventListener('change', () => {
+            toggleTypeFields();
+        });
     }
 
-    [dateInput, startInput, endInput, subjectSelect, eventTitleInput].forEach((input) => {
+    [dateInput, startInput, endInput, subjectSelect, eventTitleInput, descriptionInput].forEach((input) => {
         if (!input) return;
-        input.addEventListener('input', evaluate);
-        input.addEventListener('blur', () => setInvalidState(input));
+        const events = ['input'];
         if (input.tagName === 'SELECT') {
-            input.addEventListener('change', evaluate);
+            events.push('change');
         }
+        events.forEach((evt) => input.addEventListener(evt, () => evaluate()));
+        input.addEventListener('blur', () => evaluate());
     });
 
     if (cancelButton) {
@@ -690,9 +775,10 @@ function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES)
 
     form.addEventListener('reset', () => {
         window.setTimeout(() => {
+            clearAllErrors();
             if (dateInput) {
                 dateInput.value = '';
-                dateInput.setCustomValidity('');
+                dateInput.dataset.isoValue = '';
             }
             if (startInput) {
                 startInput.value = '';
@@ -700,15 +786,12 @@ function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES)
             if (endInput) {
                 endInput.value = '';
                 endInput.disabled = true;
-                endInput.setCustomValidity('');
             }
             if (eventTitleInput) {
                 eventTitleInput.value = '';
-                eventTitleInput.setCustomValidity('');
             }
             if (subjectSelect) {
                 subjectSelect.value = '';
-                subjectSelect.setCustomValidity('');
             }
             if (typeSelect) {
                 typeSelect.value = 'event';
@@ -731,22 +814,30 @@ function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES)
                 typeSelect.value = value;
                 toggleTypeFields();
             }
-        }
+        },
+        clearErrors: clearAllErrors,
+        syncEnd: syncEndAvailability
     };
 
     form._modalController = controller;
 
+    syncEndAvailability();
     toggleTypeFields();
     evaluate();
 
     return controller;
 }
 
-function showEntryForm() {
+function showEntryForm(preselectedIsoDate = null) {
     if (sessionStorage.getItem('role') !== 'admin') {
-        showOverlay(CREATE_DISABLED_MESSAGE);
+        if (window.hmToast) {
+            window.hmToast.show({ message: CREATE_DISABLED_MESSAGE, variant: 'info' });
+        } else {
+            showOverlay(CREATE_DISABLED_MESSAGE);
+        }
         return;
     }
+
     const overlay = document.getElementById('entry-modal-overlay');
     const form = document.getElementById('entry-form');
     if (!overlay || !form) {
@@ -755,18 +846,29 @@ function showEntryForm() {
     }
 
     form.reset();
-    const controller = setupModalFormInteractions(form);
-    if (controller) {
-        controller.setType('event');
-        controller.evaluate();
+    entryFormController = setupModalFormInteractions(form);
+    if (entryFormController) {
+        entryFormController.clearErrors?.();
+        entryFormController.setType('event');
+        entryFormController.syncEnd?.();
+        entryFormController.evaluate();
     }
+
+    const dateInput = form.querySelector('[data-field="date"] input');
+    if (preselectedIsoDate && dateInput) {
+        dateInput.value = formatSwissDate(preselectedIsoDate);
+        dateInput.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
     const saveButton = form.querySelector('#saveButton');
     if (saveButton) {
         saveButton.disabled = true;
         saveButton.textContent = CALENDAR_MODAL_BUTTONS.add;
     }
 
-    const initialFocus = form.querySelector('[data-hm-modal-initial-focus]') || form.querySelector('select, input, textarea, button');
+    const initialFocus =
+        form.querySelector('[data-hm-modal-initial-focus]') || form.querySelector('select, input, textarea, button');
+
     if (window.hmModal) {
         window.hmModal.open(overlay, {
             initialFocus,
@@ -795,8 +897,8 @@ async function saveEntry(event) {
         return;
     }
 
-    const controller = setupModalFormInteractions(form);
-    controller?.evaluate();
+    entryFormController = setupModalFormInteractions(form);
+    entryFormController?.evaluate();
 
     if (!form.checkValidity()) {
         form.reportValidity();
@@ -820,84 +922,74 @@ async function saveEntry(event) {
     const typ = typeField.value;
     const fach = subjectField ? subjectField.value.trim() : '';
     const beschreibung = descriptionField ? descriptionField.value.trim() : '';
-    const datumInput = dateField.value.trim();
+    const datumIso = parseSwissDate(dateField.value.trim());
     const startzeitInput = startField.value;
     const endzeitInput = endField && !endField.disabled ? endField.value : '';
     const eventTitle = eventTitleField ? eventTitleField.value.trim() : '';
 
-    const isoDate = parseSwissDate(datumInput);
-    if (!isoDate) {
-        showOverlay(ENTRY_FORM_MESSAGES.invalidDate);
+    if (!datumIso) {
+        entryFormController?.evaluate();
         dateField.focus();
         return;
     }
 
     if (endzeitInput && startzeitInput && endzeitInput < startzeitInput) {
-        showOverlay(ENTRY_FORM_MESSAGES.invalidEnd);
+        if (endField) {
+            endField.setCustomValidity(ENTRY_FORM_MESSAGES.invalidEnd || '');
+        }
+        entryFormController?.evaluate();
+        endField?.focus();
         return;
     }
 
-    const startzeit = startzeitInput ? `${startzeitInput}:00` : null;
-    const endzeit = endzeitInput ? `${endzeitInput}:00` : null;
     const isEvent = typ === 'event';
-
     const payloadBeschreibung = isEvent
         ? eventTitle + (beschreibung ? `\n\n${beschreibung}` : '')
         : beschreibung;
     const payloadSubject = isEvent ? '' : fach;
 
+    const startzeit = startzeitInput ? `${startzeitInput}:00` : null;
+    const endzeit = endzeitInput ? `${endzeitInput}:00` : null;
+
     saveButton.disabled = true;
-    saveButton.innerText = CALENDAR_MODAL_BUTTONS.saveLoading;
+    saveButton.textContent = CALENDAR_MODAL_BUTTONS.addLoading;
 
-    let success = false;
-    let attempt = 0;
-    const maxAttempts = 10;
+    try {
+        const response = await fetch('https://homework-manager-2-0-backend.onrender.com/add_entry', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ typ, fach: payloadSubject, beschreibung: payloadBeschreibung, datum: datumIso, startzeit, endzeit })
+        });
 
-    while (!success && attempt < maxAttempts) {
-        try {
-            const response = await fetch('https://homework-manager-2-0-backend.onrender.com/add_entry', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ typ, fach: payloadSubject, beschreibung: payloadBeschreibung, datum: isoDate, startzeit, endzeit })
-            });
-            const result = await response.json();
-
-            if (result.status === "ok") {
-                success = true;
-                showOverlay(CALENDAR_MODAL_MESSAGES.saveSuccess);
-                closeEntryModal();
-                document.getElementById('overlay-close')
-                    .addEventListener('click', () => location.reload(), { once: true });
-                if (form) {
-                    form.reset();
-                    controller?.setType('event');
-                }
-            } else {
-                console.error("Server-Fehler beim Speichern:", result.message);
-            }
-        } catch (error) {
-            console.error("Netzwerk-Fehler beim Speichern:", error);
+        if (!response.ok) {
+            throw new Error(`${response.status}`);
         }
 
-        if (!success) {
-            attempt++;
-            console.warn(`Speicher-Versuch ${attempt} fehlgeschlagen. Neuer Versuch in 2 Sekunden.`);
-            await new Promise(resolve => setTimeout(resolve, 2000));
+        const result = await response.json().catch(() => ({}));
+        if (!result || result.status !== 'ok') {
+            throw new Error(result?.message || 'unknown_error');
         }
+
+        if (window.hmToast) {
+            window.hmToast.show({ message: CALENDAR_MODAL_MESSAGES.saveSuccess, variant: 'success' });
+        } else {
+            showOverlay(CALENDAR_MODAL_MESSAGES.saveSuccess);
+        }
+
+        closeEntryModal();
+        window.hmCalendar?.refresh?.();
+    } catch (error) {
+        console.error('Fehler beim Speichern:', error);
+        const errorMessage = CALENDAR_MODAL_MESSAGES.saveError || CALENDAR_MODAL_MESSAGES.saveRetry;
+        if (window.hmToast) {
+            window.hmToast.show({ message: errorMessage, variant: 'error' });
+        } else {
+            showOverlay(errorMessage);
+        }
+    } finally {
+        saveButton.disabled = false;
+        saveButton.textContent = CALENDAR_MODAL_BUTTONS.add;
     }
-
-    if (!success) {
-        showOverlay(CALENDAR_MODAL_MESSAGES.saveRetry);
-    } else {
-        if (form) {
-            form.reset();
-            controller?.setType('event');
-        }
-    }
-
-    // Button wieder aktivieren
-    saveButton.disabled = false;
-    saveButton.innerText = CALENDAR_MODAL_BUTTONS.add;
 }
 
 // Initialcheck beim Laden der Seite

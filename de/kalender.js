@@ -41,6 +41,31 @@ const modalButtons = {
 
 let editFormController = null;
 let calendarInstance = null;
+let apiHintResolved = false;
+
+function getApiHintElement() {
+  return document.querySelector('[data-api-hint]');
+}
+
+function showApiHint() {
+  if (apiHintResolved) {
+    return;
+  }
+  const hint = getApiHintElement();
+  if (hint) {
+    hint.hidden = false;
+    hint.classList.add('is-visible');
+  }
+}
+
+function hideApiHint() {
+  const hint = getApiHintElement();
+  if (hint) {
+    hint.classList.remove('is-visible');
+    hint.hidden = true;
+  }
+  apiHintResolved = true;
+}
 
 function mdBold(text = '') {
   return text.replace(/\*(.*?)\*/g, '<strong>$1</strong>');
@@ -180,24 +205,26 @@ function openModal(event) {
   }
   if (dateInput) {
     dateInput.value = formatSwissDateFromISO(datum);
+    dateInput.dispatchEvent(new Event('input', { bubbles: true }));
   }
   if (startInput) {
     startInput.value = parseTimeLabel(startzeit);
+    startInput.dispatchEvent(new Event('input', { bubbles: true }));
   }
   if (endInput) {
     endInput.value = parseTimeLabel(endzeit);
-    if (startInput && !startInput.value) {
-      endInput.value = '';
-      endInput.disabled = true;
-    }
+    endInput.dispatchEvent(new Event('input', { bubbles: true }));
   }
   if (descInput) {
     descInput.value = detailDescription;
   }
 
-  editFormController = setupModalFormInteractions(document.getElementById('fc-edit-form'), ENTRY_FORM_MESSAGES);
+  const editForm = document.getElementById('fc-edit-form');
+  editFormController = setupModalFormInteractions(editForm, ENTRY_FORM_MESSAGES);
   if (editFormController) {
+    editFormController.clearErrors?.();
     editFormController.setType(type);
+    editFormController.syncEnd?.();
     editFormController.evaluate();
   }
 
@@ -234,8 +261,12 @@ function closeModal() {
   if (editForm) {
     editForm.reset();
     editFormController = setupModalFormInteractions(editForm, ENTRY_FORM_MESSAGES);
-    editFormController?.setType('event');
-    editFormController?.evaluate();
+    if (editFormController) {
+      editFormController.clearErrors?.();
+      editFormController.setType('event');
+      editFormController.syncEnd?.();
+      editFormController.evaluate();
+    }
     editForm.classList.add('is-hidden');
   }
   if (viewMode) {
@@ -273,18 +304,28 @@ async function saveEdit(evt) {
   const descInput = document.getElementById('fc-edit-desc');
   const submitButton = form.querySelector('[data-role="submit"]');
 
-  const type = typeSelect ? typeSelect.value : '';
-  const isoDate = dateInput ? parseSwissDate(dateInput.value.trim()) : null;
-  if (!isoDate) {
-    showOverlay(ENTRY_FORM_MESSAGES.invalidDate);
-    dateInput?.focus();
+  if (!typeSelect || !dateInput || !startInput || !submitButton) {
+    console.error('Fehlende Formularelemente.');
     return;
   }
 
-  const startValue = startInput ? startInput.value : '';
+  const type = typeSelect.value;
+  const isoDate = parseSwissDate(dateInput.value.trim());
+  const startValue = startInput.value;
   const endValue = endInput && !endInput.disabled ? endInput.value : '';
+
+  if (!isoDate) {
+    editFormController?.evaluate();
+    dateInput.focus();
+    return;
+  }
+
   if (endValue && startValue && endValue < startValue) {
-    showOverlay(ENTRY_FORM_MESSAGES.invalidEnd);
+    if (endInput) {
+      endInput.setCustomValidity(ENTRY_FORM_MESSAGES.invalidEnd || '');
+    }
+    editFormController?.evaluate();
+    endInput?.focus();
     return;
   }
 
@@ -296,10 +337,8 @@ async function saveEdit(evt) {
     ? eventTitle + (beschreibung ? `\n\n${beschreibung}` : '')
     : beschreibung;
 
-  if (submitButton) {
-    submitButton.disabled = true;
-    submitButton.textContent = modalButtons.saveLoading;
-  }
+  submitButton.disabled = true;
+  submitButton.textContent = modalButtons.saveLoading;
 
   try {
     const res = await fetch(`${API_BASE}/update_entry`, {
@@ -322,16 +361,22 @@ async function saveEdit(evt) {
       const err = await res.text().catch(() => '');
       throw new Error(err || `Status ${res.status}`);
     }
+    if (window.hmToast) {
+      window.hmToast.show({ message: CALENDAR_MODAL_MESSAGES.saveSuccess, variant: 'success' });
+    }
     closeModal();
-    location.reload();
+    window.hmCalendar?.refresh?.();
   } catch (e) {
     console.error('Fehler beim Speichern:', e);
-    showOverlay(`${modalText.saveError}\n${e.message}`);
-  } finally {
-    if (submitButton) {
-      submitButton.disabled = false;
-      submitButton.textContent = modalButtons.save;
+    const message = `${modalText.saveError}\n${e.message}`;
+    if (window.hmToast) {
+      window.hmToast.show({ message, variant: 'error' });
+    } else {
+      showOverlay(message);
     }
+  } finally {
+    submitButton.disabled = false;
+    submitButton.textContent = modalButtons.save;
   }
 }
 
@@ -354,11 +399,19 @@ async function deleteEntry() {
       const err = await res.text().catch(() => '');
       throw new Error(err || `Status ${res.status}`);
     }
+    if (window.hmToast) {
+      window.hmToast.show({ message: CALENDAR_MODAL_MESSAGES.deleteSuccess, variant: 'success' });
+    }
     closeModal();
-    location.reload();
+    window.hmCalendar?.refresh?.();
   } catch (e) {
     console.error('Fehler beim Löschen:', e);
-    showOverlay(`${modalText.deleteError}\n${e.message}`);
+    const message = `${modalText.deleteError}\n${e.message}`;
+    if (window.hmToast) {
+      window.hmToast.show({ message, variant: 'error' });
+    } else {
+      showOverlay(message);
+    }
   } finally {
     if (deleteButton) {
       deleteButton.disabled = false;
@@ -420,10 +473,16 @@ async function handleExportClick(event) {
     downloadLink.click();
     document.body.removeChild(downloadLink);
     URL.revokeObjectURL(url);
-    showOverlay(actionText.exportSuccess);
+    if (window.hmToast) {
+      window.hmToast.show({ message: actionText.exportSuccess, variant: 'success' });
+    }
   } catch (error) {
     console.error('Export fehlgeschlagen', error);
-    showOverlay(actionText.exportError);
+    if (window.hmToast) {
+      window.hmToast.show({ message: actionText.exportError, variant: 'error' });
+    } else {
+      showOverlay(actionText.exportError);
+    }
   } finally {
     button.classList.remove('is-loading');
     button.disabled = false;
@@ -638,6 +697,14 @@ function initialiseCalendar(events) {
     initialView: determineInitialView(),
     locale: 'de',
     headerToolbar: false,
+    height: 'auto',
+    expandRows: true,
+    eventTimeFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
+    slotLabelFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
+    dayMaxEventRows: true,
+    dayMaxEvents: true,
+    moreLinkClick: 'popover',
+    moreLinkContent: (args) => `+${args.num} ${t('moreLink', 'weitere')}`,
     buttonText: {
       month: t('views.month', 'Monat'),
       week: t('views.week', 'Woche'),
@@ -646,11 +713,7 @@ function initialiseCalendar(events) {
     events,
     eventContent: createEventContent,
     dateClick: (info) => {
-      showEntryForm();
-      const dateInput = document.getElementById('datum');
-      if (dateInput) {
-        dateInput.value = formatSwissDateFromISO(info.dateStr);
-      }
+      showEntryForm(info.dateStr);
     },
     eventClick: (info) => {
       info.jsEvent.preventDefault();
@@ -681,6 +744,8 @@ async function loadCalendar() {
   if (!calendarEl) return;
   calendarEl.textContent = t('status.loading', 'Kalender wird geladen …');
 
+  showApiHint();
+
   try {
     const res = await fetch(`${API_BASE}/entries`);
     if (!res.ok) {
@@ -690,13 +755,19 @@ async function loadCalendar() {
     const entries = await res.json();
     const events = entries.map(normaliseEvent);
     initialiseCalendar(events);
+    hideApiHint();
   } catch (err) {
     console.error('Fehler beim Laden des Kalenders:', err);
     calendarEl.textContent = t('status.error', 'Fehler beim Laden der Kalendereinträge!');
+    hideApiHint();
   }
 }
 
 window.addEventListener('DOMContentLoaded', () => {
   initActionBar();
   loadCalendar();
+  window.hmCalendar = {
+    refresh: loadCalendar,
+    openCreate: showEntryForm
+  };
 });

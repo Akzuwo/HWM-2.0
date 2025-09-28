@@ -122,7 +122,13 @@
           invalidEnd: 'Die Endzeit darf nicht vor der Startzeit liegen.',
           missingSubject: 'Bitte wähle ein Fach aus.',
           missingEventTitle: 'Bitte gib einen Event-Titel ein.',
+          missingStart: 'Bitte gib eine Startzeit an.',
+          missingType: 'Bitte wähle einen Eintragstyp aus.',
         },
+        apiHint: {
+          starting: 'Backend startet … kann bis zu 2 Minuten dauern.',
+        },
+        moreLink: 'weitere',
         modal: {
           viewTitle: 'Kalender-Eintrag',
           noDescription: '<em>Keine Beschreibung vorhanden.</em>',
@@ -166,6 +172,7 @@
             saveSuccess: 'Eintrag wurde erfolgreich gespeichert!',
             saveRetry:
               'Der Eintrag konnte nach mehreren Versuchen nicht gespeichert werden. Bitte versuche es später noch einmal.',
+            deleteSuccess: 'Eintrag wurde gelöscht.',
           },
         },
       },
@@ -292,7 +299,13 @@
           invalidEnd: 'The end time must not be before the start time.',
           missingSubject: 'Please choose a subject.',
           missingEventTitle: 'Please enter an event title.',
+          missingStart: 'Please enter a start time.',
+          missingType: 'Please choose an entry type.',
         },
+        apiHint: {
+          starting: 'Backend is starting … this may take up to 2 minutes.',
+        },
+        moreLink: 'more',
         modal: {
           viewTitle: 'Calendar entry',
           noDescription: '<em>No description provided.</em>',
@@ -314,7 +327,7 @@
             eventTitle: 'Event name',
             description: 'Entry details',
             descriptionShort: 'Short description',
-            date: '09/18/2025',
+            date: '18.09.2025',
           },
           hints: {
             eventTitle: 'Required for events.',
@@ -335,6 +348,7 @@
             deleteError: 'Unable to delete the entry.',
             saveSuccess: 'Entry saved successfully!',
             saveRetry: 'We could not save the entry after several attempts. Please try again later.',
+            deleteSuccess: 'Entry deleted successfully.',
           },
         },
       },
@@ -461,7 +475,13 @@
           invalidEnd: 'L\'orario di fine non può precedere l\'orario di inizio.',
           missingSubject: 'Seleziona una materia.',
           missingEventTitle: 'Inserisci un titolo per l\'evento.',
+          missingStart: 'Inserisci un orario di inizio.',
+          missingType: 'Seleziona un tipo di voce.',
         },
+        apiHint: {
+          starting: 'Il backend si sta avviando… potrebbe richiedere fino a 2 minuti.',
+        },
+        moreLink: 'altri',
         modal: {
           viewTitle: 'Voce di calendario',
           noDescription: '<em>Nessuna descrizione disponibile.</em>',
@@ -504,6 +524,7 @@
             deleteError: 'Impossibile eliminare la voce.',
             saveSuccess: 'Voce salvata con successo!',
             saveRetry: 'Non è stato possibile salvare la voce dopo vari tentativi. Riprova più tardi.',
+            deleteSuccess: 'Voce eliminata con successo.',
           },
         },
       },
@@ -742,7 +763,13 @@
           invalidEnd: 'L’heure de fin ne peut pas être antérieure à l’heure de début.',
           missingSubject: 'Veuillez choisir une matière.',
           missingEventTitle: 'Veuillez saisir un titre d’événement.',
+          missingStart: 'Veuillez indiquer une heure de début.',
+          missingType: 'Veuillez choisir un type d’entrée.',
         },
+        apiHint: {
+          starting: 'Le backend démarre… cela peut prendre jusqu’à 2 minutes.',
+        },
+        moreLink: 'autres',
         modal: {
           viewTitle: 'Entrée du calendrier',
           noDescription: '<em>Aucune description disponible.</em>',
@@ -785,6 +812,7 @@
             deleteError: 'Impossible de supprimer l’entrée.',
             saveSuccess: 'Entrée enregistrée avec succès !',
             saveRetry: 'Impossible d’enregistrer l’entrée après plusieurs tentatives. Veuillez réessayer plus tard.',
+            deleteSuccess: 'Entrée supprimée avec succès.',
           },
         },
       },

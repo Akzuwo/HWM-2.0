@@ -16,7 +16,7 @@ const TYPE_LABELS = {
 const actionText = {
   exportLabel: t('actions.export.label', 'Esporta'),
   exportLoading: t('actions.export.loading', 'Esportazione …'),
-  exportError: t('actions.export.error', 'Errore durante l\'esportazione del calendario.'),
+  exportError: t('actions.export.error', "Errore durante l'esportazione del calendario."),
   exportSuccess: t('actions.export.success', 'Calendario esportato con successo.'),
   exportFileName: t('actions.export.fileName', 'homework-calendar.ics'),
   backTooltip: t('actions.back.tooltip', 'Torna alla pagina iniziale'),
@@ -41,6 +41,31 @@ const modalButtons = {
 
 let editFormController = null;
 let calendarInstance = null;
+let apiHintResolved = false;
+
+function getApiHintElement() {
+  return document.querySelector('[data-api-hint]');
+}
+
+function showApiHint() {
+  if (apiHintResolved) {
+    return;
+  }
+  const hint = getApiHintElement();
+  if (hint) {
+    hint.hidden = false;
+    hint.classList.add('is-visible');
+  }
+}
+
+function hideApiHint() {
+  const hint = getApiHintElement();
+  if (hint) {
+    hint.classList.remove('is-visible');
+    hint.hidden = true;
+  }
+  apiHintResolved = true;
+}
 
 function mdBold(text = '') {
   return text.replace(/\*(.*?)\*/g, '<strong>$1</strong>');
@@ -124,7 +149,7 @@ function openModal(event) {
   const overlay = document.getElementById('fc-modal-overlay');
   const subjectLabel = document.querySelector('[data-view-label="subject"]');
   if (!overlay) {
-    console.error("Overlay del modal non trovato.");
+    console.error('Overlay del modal non trovato.');
     return;
   }
 
@@ -180,24 +205,26 @@ function openModal(event) {
   }
   if (dateInput) {
     dateInput.value = formatSwissDateFromISO(datum);
+    dateInput.dispatchEvent(new Event('input', { bubbles: true }));
   }
   if (startInput) {
     startInput.value = parseTimeLabel(startzeit);
+    startInput.dispatchEvent(new Event('input', { bubbles: true }));
   }
   if (endInput) {
     endInput.value = parseTimeLabel(endzeit);
-    if (startInput && !startInput.value) {
-      endInput.value = '';
-      endInput.disabled = true;
-    }
+    endInput.dispatchEvent(new Event('input', { bubbles: true }));
   }
   if (descInput) {
     descInput.value = detailDescription;
   }
 
-  editFormController = setupModalFormInteractions(document.getElementById('fc-edit-form'), ENTRY_FORM_MESSAGES);
+  const editForm = document.getElementById('fc-edit-form');
+  editFormController = setupModalFormInteractions(editForm, ENTRY_FORM_MESSAGES);
   if (editFormController) {
+    editFormController.clearErrors?.();
     editFormController.setType(type);
+    editFormController.syncEnd?.();
     editFormController.evaluate();
   }
 
@@ -234,8 +261,12 @@ function closeModal() {
   if (editForm) {
     editForm.reset();
     editFormController = setupModalFormInteractions(editForm, ENTRY_FORM_MESSAGES);
-    editFormController?.setType('event');
-    editFormController?.evaluate();
+    if (editFormController) {
+      editFormController.clearErrors?.();
+      editFormController.setType('event');
+      editFormController.syncEnd?.();
+      editFormController.evaluate();
+    }
     editForm.classList.add('is-hidden');
   }
   if (viewMode) {
@@ -273,33 +304,41 @@ async function saveEdit(evt) {
   const descInput = document.getElementById('fc-edit-desc');
   const submitButton = form.querySelector('[data-role="submit"]');
 
-  const type = typeSelect ? typeSelect.value : '';
-  const isoDate = dateInput ? parseSwissDate(dateInput.value.trim()) : null;
-  if (!isoDate) {
-    showOverlay(ENTRY_FORM_MESSAGES.invalidDate);
-    dateInput?.focus();
+  if (!typeSelect || !dateInput || !startInput || !submitButton) {
+    console.error('Elementi del modulo mancanti.');
     return;
   }
 
-  const startValue = startInput ? startInput.value : '';
+  const type = typeSelect.value;
+  const isoDate = parseSwissDate(dateInput.value.trim());
+  const startValue = startInput.value;
   const endValue = endInput && !endInput.disabled ? endInput.value : '';
-  if (endValue && startValue && endValue < startValue) {
-    showOverlay(ENTRY_FORM_MESSAGES.invalidEnd);
+
+  if (!isoDate) {
+    editFormController?.evaluate();
+    dateInput.focus();
     return;
   }
 
-  const subject = type === 'event' ? '' : (subjectSelect ? subjectSelect.value.trim() : '');
+  if (endValue && startValue && endValue < startValue) {
+    if (endInput) {
+      endInput.setCustomValidity(ENTRY_FORM_MESSAGES.invalidEnd || '');
+    }
+    editFormController?.evaluate();
+    endInput?.focus();
+    return;
+  }
+
+  const fach = type === 'event' ? '' : (subjectSelect ? subjectSelect.value.trim() : '');
   const eventTitle = type === 'event' ? (eventTitleInput ? eventTitleInput.value.trim() : '') : '';
-  const description = descInput ? descInput.value.trim() : '';
+  const beschreibung = descInput ? descInput.value.trim() : '';
 
   const payloadDescription = type === 'event'
-    ? eventTitle + (description ? `\n\n${description}` : '')
-    : description;
+    ? eventTitle + (beschreibung ? `\n\n${beschreibung}` : '')
+    : beschreibung;
 
-  if (submitButton) {
-    submitButton.disabled = true;
-    submitButton.textContent = modalButtons.saveLoading;
-  }
+  submitButton.disabled = true;
+  submitButton.textContent = modalButtons.saveLoading;
 
   try {
     const res = await fetch(`${API_BASE}/update_entry`, {
@@ -315,23 +354,29 @@ async function saveEdit(evt) {
         description: payloadDescription,
         startzeit: startValue ? `${startValue}:00` : null,
         endzeit: endValue ? `${endValue}:00` : null,
-        fach: subject
+        fach
       })
     });
     if (!res.ok) {
       const err = await res.text().catch(() => '');
       throw new Error(err || `Status ${res.status}`);
     }
+    if (window.hmToast) {
+      window.hmToast.show({ message: CALENDAR_MODAL_MESSAGES.saveSuccess, variant: 'success' });
+    }
     closeModal();
-    location.reload();
+    window.hmCalendar?.refresh?.();
   } catch (e) {
     console.error('Errore durante il salvataggio:', e);
-    showOverlay(`${modalText.saveError}\n${e.message}`);
-  } finally {
-    if (submitButton) {
-      submitButton.disabled = false;
-      submitButton.textContent = modalButtons.save;
+    const message = `${modalText.saveError}\n${e.message}`;
+    if (window.hmToast) {
+      window.hmToast.show({ message, variant: 'error' });
+    } else {
+      showOverlay(message);
     }
+  } finally {
+    submitButton.disabled = false;
+    submitButton.textContent = modalButtons.save;
   }
 }
 
@@ -354,11 +399,19 @@ async function deleteEntry() {
       const err = await res.text().catch(() => '');
       throw new Error(err || `Status ${res.status}`);
     }
+    if (window.hmToast) {
+      window.hmToast.show({ message: CALENDAR_MODAL_MESSAGES.deleteSuccess, variant: 'success' });
+    }
     closeModal();
-    location.reload();
+    window.hmCalendar?.refresh?.();
   } catch (e) {
-    console.error('Errore durante l\'eliminazione:', e);
-    showOverlay(`${modalText.deleteError}\n${e.message}`);
+    console.error('Errore durante l'eliminazione:', e);
+    const message = `${modalText.deleteError}\n${e.message}`;
+    if (window.hmToast) {
+      window.hmToast.show({ message, variant: 'error' });
+    } else {
+      showOverlay(message);
+    }
   } finally {
     if (deleteButton) {
       deleteButton.disabled = false;
@@ -420,10 +473,16 @@ async function handleExportClick(event) {
     downloadLink.click();
     document.body.removeChild(downloadLink);
     URL.revokeObjectURL(url);
-    showOverlay(actionText.exportSuccess);
+    if (window.hmToast) {
+      window.hmToast.show({ message: actionText.exportSuccess, variant: 'success' });
+    }
   } catch (error) {
-    console.error('Esportazione fallita', error);
-    showOverlay(actionText.exportError);
+    console.error('Esportazione non riuscita', error);
+    if (window.hmToast) {
+      window.hmToast.show({ message: actionText.exportError, variant: 'error' });
+    } else {
+      showOverlay(actionText.exportError);
+    }
   } finally {
     button.classList.remove('is-loading');
     button.disabled = false;
@@ -638,6 +697,14 @@ function initialiseCalendar(events) {
     initialView: determineInitialView(),
     locale: 'it',
     headerToolbar: false,
+    height: 'auto',
+    expandRows: true,
+    eventTimeFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
+    slotLabelFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
+    dayMaxEventRows: true,
+    dayMaxEvents: true,
+    moreLinkClick: 'popover',
+    moreLinkContent: (args) => `+${args.num} ${t('moreLink', 'altri')}`,
     buttonText: {
       month: t('views.month', 'Mese'),
       week: t('views.week', 'Settimana'),
@@ -646,11 +713,7 @@ function initialiseCalendar(events) {
     events,
     eventContent: createEventContent,
     dateClick: (info) => {
-      showEntryForm();
-      const dateInput = document.getElementById('datum');
-      if (dateInput) {
-        dateInput.value = formatSwissDateFromISO(info.dateStr);
-      }
+      showEntryForm(info.dateStr);
     },
     eventClick: (info) => {
       info.jsEvent.preventDefault();
@@ -681,6 +744,8 @@ async function loadCalendar() {
   if (!calendarEl) return;
   calendarEl.textContent = t('status.loading', 'Caricamento del calendario …');
 
+  showApiHint();
+
   try {
     const res = await fetch(`${API_BASE}/entries`);
     if (!res.ok) {
@@ -690,13 +755,19 @@ async function loadCalendar() {
     const entries = await res.json();
     const events = entries.map(normaliseEvent);
     initialiseCalendar(events);
+    hideApiHint();
   } catch (err) {
     console.error('Errore durante il caricamento del calendario:', err);
     calendarEl.textContent = t('status.error', 'Impossibile caricare le voci del calendario!');
+    hideApiHint();
   }
 }
 
 window.addEventListener('DOMContentLoaded', () => {
   initActionBar();
   loadCalendar();
+  window.hmCalendar = {
+    refresh: loadCalendar,
+    openCreate: showEntryForm
+  };
 });
