@@ -1,7 +1,6 @@
 const noteInput = document.getElementById('note');
 const weightInput = document.getElementById('gewichtung');
 const addButton = document.getElementById('add');
-const clearAllButton = document.getElementById('clearAll');
 const targetInput = document.getElementById('ziel');
 const nextWeightInput = document.getElementById('zusaetzlich');
 const calculateButton = document.getElementById('berechnen');
@@ -19,7 +18,6 @@ const messages = {
   invalidNumber: 'Inserisci numeri validi.',
   required: 'Compila questo campo.',
   gradeRange: 'Il voto deve essere tra 1 e 6.',
-  halfStep: 'Il voto deve essere in passi di 0.5.',
   weightPositive: 'Il peso deve essere maggiore di 0.',
   targetRange: 'La media desiderata deve essere tra 1 e 6.',
   nextWeight: 'Il peso del prossimo voto deve essere maggiore di 0.',
@@ -41,14 +39,6 @@ function parseValue(input) {
 
 function isValidGrade(value) {
   return Number.isFinite(value) && value >= MIN_GRADE && value <= MAX_GRADE;
-}
-
-function isHalfStep(value) {
-  if (!Number.isFinite(value)) {
-    return false;
-  }
-  const doubled = value * 2;
-  return Math.abs(doubled - Math.round(doubled)) < STEP_PRECISION;
 }
 
 function isPositive(value) {
@@ -76,7 +66,7 @@ function updateButtonStates() {
   const targetValue = parseValue(targetInput);
   const nextWeightValue = parseValue(nextWeightInput);
 
-  const enableAdd = isValidGrade(gradeValue) && isHalfStep(gradeValue) && isPositive(weightValue);
+  const enableAdd = isValidGrade(gradeValue) && isPositive(weightValue);
   const enableCalc =
     isValidGrade(targetValue) &&
     isPositive(nextWeightValue) &&
@@ -88,9 +78,6 @@ function updateButtonStates() {
   calculateButton.disabled = !enableCalc;
   calculateButton.setAttribute('aria-disabled', String(!enableCalc));
 
-  const disableClear = noten.length === 0;
-  clearAllButton.disabled = disableClear;
-  clearAllButton.setAttribute('aria-disabled', String(disableClear));
 }
 
 function validateInputs(showFeedback = false) {
@@ -108,8 +95,6 @@ function validateInputs(showFeedback = false) {
     gradeMessage = messages.invalidNumber;
   } else if (!isValidGrade(gradeValue)) {
     gradeMessage = messages.gradeRange;
-  } else if (!isHalfStep(gradeValue)) {
-    gradeMessage = messages.halfStep;
   }
 
   if (weightRaw === '') {
@@ -265,8 +250,6 @@ function saveEdit(index, gradeField, weightField) {
     gradeMessage = messages.invalidNumber;
   } else if (!isValidGrade(gradeValue)) {
     gradeMessage = messages.gradeRange;
-  } else if (!isHalfStep(gradeValue)) {
-    gradeMessage = messages.halfStep;
   }
 
   if (weightRaw === '') {
@@ -313,7 +296,7 @@ function createEditControls(row, index, entry) {
   const gradeCell = document.createElement('td');
   const gradeField = document.createElement('input');
   gradeField.type = 'number';
-  gradeField.step = '0.5';
+  gradeField.step = '0.01';
   gradeField.min = String(MIN_GRADE);
   gradeField.max = String(MAX_GRADE);
   gradeField.value = entry.note;
@@ -432,18 +415,6 @@ function notenListeUpdate() {
 
 addForm.addEventListener('submit', noteHinzufuegen);
 targetForm.addEventListener('submit', zielBerechnen);
-
-clearAllButton.addEventListener('click', () => {
-  noten.length = 0;
-  editingIndex = null;
-  resetInputs();
-  targetInput.value = '';
-  nextWeightInput.value = '';
-  resetTargetInputs();
-  resetRequiredGrade();
-  notenListeUpdate();
-  schnittBerechnen();
-});
 
 noteInput.addEventListener('input', () => validateInputs(false));
 weightInput.addEventListener('input', () => validateInputs(false));
