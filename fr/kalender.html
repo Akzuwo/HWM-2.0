@@ -243,7 +243,13 @@
     </div>
   </footer>
 
-  <div id="fc-modal-overlay" class="hm-modal-overlay" onclick="closeModal()">
+  <div
+    id="fc-modal-overlay"
+    class="hm-modal-overlay"
+    aria-hidden="true"
+    data-hm-modal-overlay
+    onclick="closeModal()"
+  >
     <div class="hm-modal" role="dialog" aria-modal="true" tabindex="-1" onclick="event.stopPropagation()">
       <header class="hm-modal__header">
         <button
@@ -416,7 +422,13 @@
     </div>
   </div>
 
-  <div id="entry-modal-overlay" class="hm-modal-overlay" onclick="closeEntryModal()">
+  <div
+    id="entry-modal-overlay"
+    class="hm-modal-overlay"
+    aria-hidden="true"
+    data-hm-modal-overlay
+    onclick="closeEntryModal()"
+  >
     <div class="hm-modal" role="dialog" aria-modal="true" tabindex="-1" onclick="event.stopPropagation()">
       <header class="hm-modal__header">
         <button
