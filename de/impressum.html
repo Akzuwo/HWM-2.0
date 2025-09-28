@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Impressum · Homework Manager</title>
+  <link rel="icon" type="image/png" href="../media/logo.png" />
+  <link rel="stylesheet" href="../utils/css/style.css" />
+  <link rel="stylesheet" href="../utils/css/legal.css" />
+</head>
+<body class="legal-page">
+  <nav class="simple-nav" data-nav data-i18n-attr="aria-label:common.nav.primary" aria-label="Hauptnavigation">
+    <a class="nav-title" href="index.html">
+      <img src="../media/logo.png" alt="" width="32" height="32" />
+      <span>Homework Manager</span>
+    </a>
+    <div class="nav-links">
+      <a class="nav-button" href="index.html">🏠 Start</a>
+      <a class="nav-button" href="kalender.html">📅 Kalender</a>
+      <a class="nav-button" href="upcoming.html">🔔 Upcoming Events</a>
+      <a class="nav-button" href="stundenplan.html">🕒 Aktuelles Fach</a>
+      <a class="nav-button" href="notenrechner.html">📊 Notenrechner</a>
+      <a class="nav-button" href="#" onclick="logout()">🚪 Abmelden</a>
+      <div class="language-dropdown" data-language>
+        <button type="button" class="language-button" data-language-toggle aria-haspopup="true" aria-expanded="false" aria-label="Sprache wählen">
+          <span class="language-button__icon" aria-hidden="true">🌐</span>
+          <span class="language-button__code">DE</span>
+          <svg class="language-button__caret" viewBox="0 0 12 12" focusable="false" aria-hidden="true">
+            <path d="M2.47 4.47a.75.75 0 0 1 1.06 0L6 6.94l2.47-2.47a.75.75 0 1 1 1.06 1.06L6.53 9.47a.75.75 0 0 1-1.06 0L2.47 5.53a.75.75 0 0 1 0-1.06z" />
+          </svg>
+        </button>
+        <ul class="language-menu" role="menu" data-language-menu aria-label="Sprachauswahl">
+          <li role="none">
+            <button type="button" class="language-option" data-lang="de" role="menuitem">
+              <span class="language-option__flag" aria-hidden="true">🇩🇪</span>
+              <span class="language-option__text">
+                <span class="language-option__code">DE</span>
+                <span aria-hidden="true">–</span>
+                <span class="language-option__name">Deutsch</span>
+              </span>
+            </button>
+          </li>
+          <li role="none">
+            <button type="button" class="language-option" data-lang="en" role="menuitem">
+              <span class="language-option__flag" aria-hidden="true">🇬🇧</span>
+              <span class="language-option__text">
+                <span class="language-option__code">EN</span>
+                <span aria-hidden="true">–</span>
+                <span class="language-option__name">English</span>
+              </span>
+            </button>
+          </li>
+          <li role="none">
+            <button type="button" class="language-option" data-lang="it" role="menuitem">
+              <span class="language-option__flag" aria-hidden="true">🇮🇹</span>
+              <span class="language-option__text">
+                <span class="language-option__code">IT</span>
+                <span aria-hidden="true">–</span>
+                <span class="language-option__name">Italiano</span>
+              </span>
+            </button>
+          </li>
+          <li role="none">
+            <button type="button" class="language-option" data-lang="fr" role="menuitem">
+              <span class="language-option__flag" aria-hidden="true">🇫🇷</span>
+              <span class="language-option__text">
+                <span class="language-option__code">FR</span>
+                <span aria-hidden="true">–</span>
+                <span class="language-option__name">Français</span>
+              </span>
+            </button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <main class="legal-main" id="main">
+    <header class="legal-header">
+      <h1 class="legal-title">Impressum</h1>
+      <p class="legal-subtitle">Rechtliche Angaben und Kontaktinformationen zum Homework Manager.</p>
+    </header>
+
+    <section class="legal-section">
+      <h2>Verantwortliche Stelle</h2>
+      <article class="legal-card">
+        <dl>
+          <div>
+            <dt>Name</dt>
+            <dd>Timo Wigger</dd>
+          </div>
+          <div>
+            <dt>Projekt</dt>
+            <dd>Homework Manager</dd>
+          </div>
+          <div>
+            <dt>E-Mail</dt>
+            <dd><a class="hm-footer__link" href="mailto:kontakt@homework-manager.akzuwo.ch">kontakt@homework-manager.akzuwo.ch</a></dd>
+          </div>
+          <div>
+            <dt>Postanschrift</dt>
+            <dd>Wird auf Anfrage im Rahmen der gesetzlichen Vorgaben mitgeteilt.</dd>
+          </div>
+        </dl>
+        <p class="legal-note">Verantwortlich für den Inhalt nach Art. 14 Abs. 1 RevD-DSG sowie § 18 Abs. 2 MStV.</p>
+      </article>
+    </section>
+
+    <section class="legal-section">
+      <h2>Kontakt</h2>
+      <article class="legal-card">
+        <p>Allgemeine Anfragen zum Projekt, Support oder Hinweise zu Inhalten nehmen wir bevorzugt per E-Mail entgegen. Eine Rückmeldung erfolgt in der Regel innerhalb von zwei Werktagen.</p>
+        <p class="legal-note">Für Datenschutzanfragen verwende bitte ebenfalls die oben genannte Kontaktadresse und gib den Betreff „Datenschutz" an.</p>
+      </article>
+    </section>
+
+    <section class="legal-section">
+      <h2>Haftungshinweise</h2>
+      <article class="legal-card">
+        <p>Alle Inhalte wurden mit größter Sorgfalt erstellt. Für die Richtigkeit, Vollständigkeit und Aktualität der Inhalte übernehmen wir jedoch keine Gewähr. Als Diensteanbieter sind wir für eigene Inhalte nach den allgemeinen Gesetzen verantwortlich, nicht jedoch verpflichtet, übermittelte oder gespeicherte fremde Informationen zu überwachen.</p>
+        <p>Verpflichtungen zur Entfernung oder Sperrung der Nutzung von Informationen nach den allgemeinen Gesetzen bleiben hiervon unberührt. Eine entsprechende Haftung ist jedoch erst ab dem Zeitpunkt der Kenntnis einer konkreten Rechtsverletzung möglich.</p>
+      </article>
+    </section>
+
+    <section class="legal-section">
+      <h2>Urheberrecht</h2>
+      <article class="legal-card">
+        <p>Die durch den Betreiber erstellten Inhalte und Werke auf diesen Seiten unterliegen dem schweizerischen Urheberrecht. Beiträge Dritter sind als solche gekennzeichnet. Die Vervielfältigung, Bearbeitung, Verbreitung und jede Art der Verwertung außerhalb der Grenzen des Urheberrechtes bedürfen der schriftlichen Zustimmung des jeweiligen Autors bzw. Erstellers.</p>
+      </article>
+    </section>
+  </main>
+
+  <script src="../utils/js/i18n.js" defer></script>
+  <script src="../utils/js/overlay.js" defer></script>
+  <script src="../utils/js/toast.js" defer></script>
+  <script src="../utils/js/footer.js" defer></script>
+  <script src="script.js" defer></script>
+</body>
+</html>

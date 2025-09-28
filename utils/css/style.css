@@ -710,7 +710,9 @@ button {
     display: inline-flex;
     align-items: center;
     gap: 0.65rem;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+    overflow-x: auto;
 }
 
 .hm-footer__link {
