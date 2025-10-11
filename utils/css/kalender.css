@@ -269,17 +269,6 @@ body.calendar-theme main {
   background: rgba(124, 163, 255, 0.24);
 }
 
-.calendar-view-switch {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 0.35rem;
-  flex-wrap: wrap;
-}
-
 .calendar-view-switch__button {
   border: 1px solid transparent;
   background: transparent;
