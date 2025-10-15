@@ -179,7 +179,7 @@ function openModal(event) {
     eventTitleInput.value = isEvent ? eventTitle : '';
   }
   if (dateInput) {
-    dateInput.value = formatSwissDateFromISO(datum);
+    dateInput.value = datum || '';
   }
   if (startInput) {
     startInput.value = parseTimeLabel(startzeit);
@@ -649,7 +649,7 @@ function initialiseCalendar(events) {
       showEntryForm();
       const dateInput = document.getElementById('datum');
       if (dateInput) {
-        dateInput.value = formatSwissDateFromISO(info.dateStr);
+        dateInput.value = info.dateStr;
       }
     },
     eventClick: (info) => {
