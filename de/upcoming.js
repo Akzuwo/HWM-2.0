@@ -47,20 +47,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     const entries = await res.json();
+    const now = new Date();
+    const cutoff = new Date(now.getTime() - 2 * 60 * 60 * 1000);
+
     const events = entries
       .filter(e => (e.typ || '').toLowerCase() === 'event')
       .map(e => {
         const iso = `${e.datum}T${e.startzeit || '00:00:00'}`;
         const dateObj = new Date(iso);
+        const hasTime = Boolean(e.startzeit);
+        const relevantTime = hasTime
+          ? dateObj
+          : new Date(`${e.datum}T23:59:59`);
         return {
           id: e.id,
           fach: e.fach || '',
           beschreibung: e.beschreibung || '',
           dateObj,
-          hasTime: Boolean(e.startzeit)
+          hasTime,
+          relevantTime
         };
       })
-      .sort((a, b) => a.dateObj - b.dateObj);
+      .filter(event => event.relevantTime >= cutoff)
+      .sort((a, b) => a.dateObj - b.dateObj)
+      .map(({ relevantTime, ...event }) => event);
 
     listEl.innerHTML = '';
 
