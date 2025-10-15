@@ -121,6 +121,7 @@ main.grade-calculator {
   color: var(--text-subtle);
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  line-height: 1;
 }
 
 .grade-calculator__input {
