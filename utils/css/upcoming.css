@@ -303,6 +303,40 @@ main.upcoming {
   background: rgba(255, 255, 255, 0.02);
 }
 
+.upcoming__status--loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: clamp(40px, 6vw, 56px);
+  border-style: solid;
+  border-color: var(--upcoming-border-strong);
+  color: var(--upcoming-text-primary);
+  font-size: 1.05rem;
+  font-weight: 600;
+  background:
+      linear-gradient(
+        165deg,
+        rgba(99, 102, 241, 0.16) 0%,
+        rgba(99, 102, 241, 0.08) 48%,
+        rgba(99, 102, 241, 0.03) 100%
+      ),
+    var(--upcoming-surface);
+  box-shadow:
+    inset 0 18px 36px rgba(63, 108, 255, 0.16),
+    var(--upcoming-shadow);
+}
+
+.upcoming__status--loading::before {
+  content: '';
+  width: clamp(44px, 6vw, 60px);
+  height: clamp(44px, 6vw, 60px);
+  border-radius: 999px;
+  border: 3px solid rgba(99, 102, 241, 0.22);
+  border-top-color: var(--upcoming-accent);
+  animation: upcoming-spin 0.9s linear infinite;
+}
+
 .upcoming-card {
   background: var(--upcoming-surface);
   border-radius: var(--upcoming-card-radius);
@@ -316,6 +350,9 @@ main.upcoming {
   transition: transform var(--upcoming-transition),
     box-shadow var(--upcoming-transition),
     border-color var(--upcoming-transition);
+}
+
+.upcoming-card--enter {
   opacity: 0;
   transform: translateY(16px);
   animation: upcoming-card-enter 420ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
@@ -468,6 +505,12 @@ main.upcoming {
     transform: none !important;
     box-shadow: var(--upcoming-shadow);
     opacity: 1;
+  }
+}
+
+@keyframes upcoming-spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 

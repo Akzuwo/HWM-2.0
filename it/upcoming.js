@@ -14,14 +14,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
-  const setStatus = (message) => {
+  const setStatus = (message, variant = 'default') => {
     listEl.innerHTML = '';
     const status = document.createElement('p');
     status.className = 'upcoming__status';
+    if (variant === 'loading') {
+      status.classList.add('upcoming__status--loading');
+    }
     status.textContent = message;
     listEl.appendChild(status);
   };
 
+  setStatus('Caricamento dati…', 'loading');
   listEl.setAttribute('aria-busy', 'true');
 
   const dateFormatter = new Intl.DateTimeFormat('it-IT', {
@@ -82,9 +86,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     events.forEach((event, index) => {
       const card = document.createElement('article');
-      card.className = 'upcoming-card';
+      card.className = 'upcoming-card upcoming-card--enter';
       card.setAttribute('role', 'listitem');
       card.style.setProperty('--card-order', String(index));
+      card.addEventListener(
+        'animationend',
+        () => {
+          card.classList.remove('upcoming-card--enter');
+        },
+        { once: true }
+      );
 
       const badges = document.createElement('div');
       badges.className = 'upcoming-card__badges';
