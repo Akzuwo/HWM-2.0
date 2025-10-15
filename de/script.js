@@ -519,6 +519,7 @@ function closeEntryModal() {
     const form = document.getElementById('entry-form');
     if (form) {
         form.reset();
+        form.dataset.allowEmptySubject = 'false';
         const controller = setupModalFormInteractions(form);
         controller?.setType('event');
         controller?.evaluate();
@@ -580,6 +581,9 @@ function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES)
     if (!form) {
         return null;
     }
+    if (!('allowEmptySubject' in form.dataset)) {
+        form.dataset.allowEmptySubject = 'false';
+    }
     if (form.dataset.enhanced === 'true' && form._modalController) {
         form._modalController.evaluate();
         return form._modalController;
@@ -604,6 +608,7 @@ function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES)
 
     const evaluate = () => {
         const isEvent = typeSelect && typeSelect.value === 'event';
+        const allowEmptySubject = form.dataset.allowEmptySubject === 'true';
 
         if (dateInput) {
             const iso = parseSwissDate(dateInput.value);
@@ -615,7 +620,9 @@ function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES)
         }
 
         if (subjectSelect) {
-            if (!isEvent && !subjectSelect.value) {
+            const shouldRequireSubject = !isEvent && !allowEmptySubject;
+            subjectSelect.required = shouldRequireSubject;
+            if (shouldRequireSubject && !subjectSelect.value) {
                 subjectSelect.setCustomValidity(messages.missingSubject || '');
             } else {
                 subjectSelect.setCustomValidity('');
@@ -659,13 +666,16 @@ function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES)
 
     const toggleTypeFields = () => {
         const isEvent = typeSelect && typeSelect.value === 'event';
+        const allowEmptySubject = form.dataset.allowEmptySubject === 'true';
         if (subjectGroup) {
             subjectGroup.classList.toggle('is-hidden', Boolean(isEvent));
         }
         if (subjectSelect) {
-            subjectSelect.required = !isEvent;
+            subjectSelect.required = !isEvent && !allowEmptySubject;
             if (isEvent) {
                 subjectSelect.value = '';
+                subjectSelect.setCustomValidity('');
+            } else if (!subjectSelect.required && !subjectSelect.value) {
                 subjectSelect.setCustomValidity('');
             }
         }
@@ -772,6 +782,7 @@ function showEntryForm() {
     }
 
     form.reset();
+    form.dataset.allowEmptySubject = 'false';
     const controller = setupModalFormInteractions(form);
     if (controller) {
         controller.setType('event');
