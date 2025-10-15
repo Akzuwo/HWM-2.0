@@ -541,11 +541,27 @@ if (window.hmI18n) {
 
 function parseSwissDate(value) {
     if (!value) return null;
-    const match = value.trim().match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
-    if (!match) return null;
-    const day = Number(match[1]);
-    const month = Number(match[2]);
-    const year = Number(match[3]);
+    const trimmed = value.trim();
+
+    let day;
+    let month;
+    let year;
+
+    let match = trimmed.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+    if (match) {
+        day = Number(match[1]);
+        month = Number(match[2]);
+        year = Number(match[3]);
+    } else {
+        match = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (!match) {
+            return null;
+        }
+        year = Number(match[1]);
+        month = Number(match[2]);
+        day = Number(match[3]);
+    }
+
     const date = new Date(Date.UTC(year, month - 1, day));
     if (
         date.getUTCFullYear() !== year ||
@@ -554,6 +570,7 @@ function parseSwissDate(value) {
     ) {
         return null;
     }
+
     return `${year.toString().padStart(4, '0')}-${month
         .toString()
         .padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
