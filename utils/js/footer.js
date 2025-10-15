@@ -461,10 +461,105 @@
     });
   }
 
+  function shouldAnimatePageTransition() {
+    return !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  function initPageTransitions() {
+    if (!shouldAnimatePageTransition()) {
+      return;
+    }
+
+    if (document.querySelector('.hm-page-transition')) {
+      return;
+    }
+
+    const overlay = document.createElement('div');
+    overlay.className = 'hm-page-transition is-active';
+    overlay.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(overlay);
+
+    const finishEnter = () => {
+      requestAnimationFrame(() => {
+        overlay.classList.remove('is-active');
+        document.body.classList.remove('is-transitioning');
+      });
+    };
+
+    const startExit = () => {
+      document.body.classList.add('is-transitioning');
+      overlay.classList.add('is-active');
+    };
+
+    window.addEventListener('pageshow', (event) => {
+      if (event.persisted) {
+        finishEnter();
+      }
+    });
+
+    finishEnter();
+
+    document.addEventListener('click', (event) => {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+        return;
+      }
+
+      const anchor = event.target instanceof Element ? event.target.closest('a[href]') : null;
+      if (!anchor) {
+        return;
+      }
+
+      if (anchor.target && anchor.target !== '_self') {
+        return;
+      }
+
+      if (anchor.hasAttribute('download') || anchor.getAttribute('rel') === 'external') {
+        return;
+      }
+
+      const href = anchor.getAttribute('href');
+      if (!href || href.startsWith('#')) {
+        return;
+      }
+
+      let url;
+      try {
+        url = new URL(anchor.href, window.location.href);
+      } catch (error) {
+        return;
+      }
+
+      if (!['http:', 'https:'].includes(url.protocol)) {
+        return;
+      }
+
+      if (url.origin !== window.location.origin) {
+        return;
+      }
+
+      const isSameLocation = url.pathname === window.location.pathname && url.search === window.location.search;
+      if (isSameLocation && !url.hash) {
+        return;
+      }
+
+      event.preventDefault();
+      startExit();
+
+      window.setTimeout(() => {
+        window.location.href = url.href;
+      }, 220);
+    });
+
+    window.addEventListener('beforeunload', () => {
+      startExit();
+    });
+  }
+
   function init() {
     removeLegacyFooters();
     ensureFooter();
     ensureModal();
+    initPageTransitions();
   }
 
   if (document.readyState === 'loading') {

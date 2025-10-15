@@ -6,6 +6,35 @@ body {
     margin: 0;
 }
 
+body.is-transitioning {
+    pointer-events: none;
+    cursor: progress;
+}
+
+.hm-page-transition {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(circle at top left, rgba(91, 141, 239, 0.35), transparent 55%),
+        radial-gradient(circle at bottom right, rgba(30, 64, 175, 0.35), transparent 45%),
+        #0b0f1a;
+    opacity: 0;
+    transform: scale(1);
+    transition: opacity 260ms ease, transform 360ms ease;
+    z-index: 2147483647;
+}
+
+.hm-page-transition.is-active {
+    opacity: 1;
+    transform: scale(1.02);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hm-page-transition {
+        transition: none;
+    }
+}
+
 .container, #login {
     max-width: 800px;
     margin: 20px auto;
