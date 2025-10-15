@@ -95,13 +95,14 @@ main.grade-calculator {
 .grade-calculator__form--inline {
   display: grid;
   grid-template-columns: repeat(2, minmax(200px, 1fr)) minmax(160px, max-content);
-  align-items: end;
+  align-items: start;
   gap: var(--space-md);
 }
 
 .grade-calculator__form--inline .grade-calculator__button {
   min-width: 160px;
-  align-self: end;
+  align-self: start;
+  margin-top: calc(0.85rem + var(--space-xs));
   height: var(--control-height);
   padding: 0 var(--space-md);
 }
@@ -120,6 +121,7 @@ main.grade-calculator {
   color: var(--text-subtle);
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  line-height: 1;
 }
 
 .grade-calculator__input {
@@ -476,6 +478,7 @@ main.grade-calculator .current-subject__footer a:focus-visible {
   .grade-calculator__form--inline .grade-calculator__button {
     width: 100%;
     align-self: stretch;
+    margin-top: 0;
   }
 
   .grade-calculator__back {
