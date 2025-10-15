@@ -166,6 +166,7 @@
           messages: {
             saveError: 'Fehler beim Speichern.',
             deleteError: 'Fehler beim Löschen.',
+            deleteSuccess: 'Eintrag wurde gelöscht.',
             saveSuccess: 'Eintrag wurde erfolgreich gespeichert!',
             saveRetry:
               'Der Eintrag konnte nach mehreren Versuchen nicht gespeichert werden. Bitte versuche es später noch einmal.',
@@ -358,6 +359,7 @@
           messages: {
             saveError: 'Unable to save the entry.',
             deleteError: 'Unable to delete the entry.',
+            deleteSuccess: 'Entry deleted successfully!',
             saveSuccess: 'Entry saved successfully!',
             saveRetry: 'We could not save the entry after several attempts. Please try again later.',
           },
@@ -549,6 +551,7 @@
           messages: {
             saveError: 'Impossibile salvare la voce.',
             deleteError: 'Impossibile eliminare la voce.',
+            deleteSuccess: 'Voce eliminata con successo.',
             saveSuccess: 'Voce salvata con successo!',
             saveRetry: 'Non è stato possibile salvare la voce dopo vari tentativi. Riprova più tardi.',
           },
@@ -740,6 +743,7 @@
           messages: {
             saveError: 'Impossible d’enregistrer l’entrée.',
             deleteError: 'Impossible de supprimer l’entrée.',
+            deleteSuccess: 'Entrée supprimée avec succès.',
             saveSuccess: 'Entrée enregistrée avec succès !',
             saveRetry: 'Impossible d’enregistrer l’entrée après plusieurs tentatives. Veuillez réessayer plus tard.',
           },

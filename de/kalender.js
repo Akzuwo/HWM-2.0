@@ -29,6 +29,7 @@ const modalText = {
   eventTitleLabel: modalT('labels.eventTitle', 'Event-Titel'),
   deleteConfirm: modalT('confirmDelete', 'Möchtest du diesen Eintrag wirklich löschen?'),
   deleteError: modalT('messages.deleteError', 'Fehler beim Löschen.'),
+  deleteSuccess: modalT('messages.deleteSuccess', 'Eintrag wurde gelöscht.'),
   saveError: modalT('messages.saveError', 'Fehler beim Speichern.')
 };
 
@@ -41,6 +42,7 @@ const modalButtons = {
 
 let editFormController = null;
 let calendarInstance = null;
+let resizeHandler = null;
 
 function mdBold(text = '') {
   return text.replace(/\*(.*?)\*/g, '<strong>$1</strong>');
@@ -122,6 +124,7 @@ function openModal(event) {
   const { type, typeLabel, description, fach, datum, startzeit, endzeit } = event.extendedProps;
 
   const overlay = document.getElementById('fc-modal-overlay');
+  const editForm = document.getElementById('fc-edit-form');
   const subjectLabel = document.querySelector('[data-view-label="subject"]');
   if (!overlay) {
     console.error('Modal-Overlay nicht gefunden.');
@@ -178,6 +181,10 @@ function openModal(event) {
   if (eventTitleInput) {
     eventTitleInput.value = isEvent ? eventTitle : '';
   }
+  if (editForm) {
+    const allowEmptySubject = !subjectSelect?.value && type !== 'event';
+    editForm.dataset.allowEmptySubject = allowEmptySubject ? 'true' : 'false';
+  }
   if (dateInput) {
     dateInput.value = datum || '';
   }
@@ -233,6 +240,7 @@ function closeModal() {
   }
   if (editForm) {
     editForm.reset();
+    editForm.dataset.allowEmptySubject = 'false';
     editFormController = setupModalFormInteractions(editForm, ENTRY_FORM_MESSAGES);
     editFormController?.setType('event');
     editFormController?.evaluate();
@@ -323,7 +331,8 @@ async function saveEdit(evt) {
       throw new Error(err || `Status ${res.status}`);
     }
     closeModal();
-    location.reload();
+    await loadCalendar();
+    showOverlay(CALENDAR_MODAL_MESSAGES.saveSuccess);
   } catch (e) {
     console.error('Fehler beim Speichern:', e);
     showOverlay(`${modalText.saveError}\n${e.message}`);
@@ -355,7 +364,8 @@ async function deleteEntry() {
       throw new Error(err || `Status ${res.status}`);
     }
     closeModal();
-    location.reload();
+    await loadCalendar();
+    showOverlay(modalText.deleteSuccess);
   } catch (e) {
     console.error('Fehler beim Löschen:', e);
     showOverlay(`${modalText.deleteError}\n${e.message}`);
@@ -601,6 +611,12 @@ function setupCalendarControls(calendar) {
     return;
   }
 
+  if (controls.dataset.enhanced === 'true') {
+    updateMonthLabel(calendar);
+    updateViewButtons(calendar);
+    return;
+  }
+
   controls.querySelectorAll('[data-calendar-nav]').forEach((button) => {
     const action = button.getAttribute('data-calendar-nav');
     button.addEventListener('click', () => {
@@ -626,11 +642,21 @@ function setupCalendarControls(calendar) {
 
   updateMonthLabel(calendar);
   updateViewButtons(calendar);
+  controls.dataset.enhanced = 'true';
 }
 
 function initialiseCalendar(events) {
   const calendarEl = document.getElementById('calendar');
   if (!calendarEl) return;
+
+  if (calendarInstance) {
+    calendarInstance.destroy();
+    calendarInstance = null;
+  }
+  if (resizeHandler) {
+    window.removeEventListener('resize', resizeHandler);
+    resizeHandler = null;
+  }
 
   calendarEl.innerHTML = '';
 
@@ -668,12 +694,12 @@ function initialiseCalendar(events) {
   setupCalendarControls(calendar);
   calendarInstance = calendar;
 
-  const handleResize = debounce(() => {
+  resizeHandler = debounce(() => {
     if (!calendarInstance) return;
     updateWeekStrip(calendarInstance);
   }, 180);
 
-  window.addEventListener('resize', handleResize);
+  window.addEventListener('resize', resizeHandler);
 }
 
 async function loadCalendar() {

@@ -398,14 +398,21 @@ def update_entry():
             end = f"{end}:00"
         end = end[:8]
 
-    if typ != 'event' and not fach:
-        return jsonify(status='error', message='fach ist für diesen Typ erforderlich'), 400
-    if typ == 'event' and not fach:
-        fach = ''
-
     conn = get_connection()
     cur = conn.cursor()
     try:
+        cur.execute("SELECT fach FROM eintraege WHERE id=%s", (id,))
+        row = cur.fetchone()
+        if not row:
+            return jsonify(status='error', message='Eintrag nicht gefunden'), 404
+
+        existing_fach = (row[0] or '').strip()
+
+        if typ != 'event' and not fach and existing_fach:
+            return jsonify(status='error', message='fach ist für diesen Typ erforderlich'), 400
+        if typ == 'event' and not fach:
+            fach = ''
+
         cur.execute(
             "UPDATE eintraege SET beschreibung=%s, datum=%s, startzeit=%s, endzeit=%s, typ=%s, fach=%s WHERE id=%s",
             (desc, date, start, end, typ, fach, id)
@@ -413,6 +420,7 @@ def update_entry():
         conn.commit()
         return jsonify(status='ok')
     except Exception as e:
+        conn.rollback()
         return jsonify(status='error', message=str(e)), 500
     finally:
         cur.close()
