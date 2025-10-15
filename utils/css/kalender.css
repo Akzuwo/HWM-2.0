@@ -404,6 +404,67 @@ body.calendar-theme main {
   position: relative;
 }
 
+#calendar[data-state='loading'] {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.15rem;
+  min-height: clamp(320px, 42vh, 520px);
+  padding: clamp(36px, 6vw, 72px) clamp(20px, 5vw, 40px);
+  text-align: center;
+  color: var(--muted);
+  background: linear-gradient(
+      165deg,
+      rgba(124, 163, 255, 0.12) 0%,
+      rgba(16, 20, 31, 0.72) 55%,
+      rgba(16, 20, 31, 0.86) 100%
+    );
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(144, 181, 255, 0.18);
+  box-shadow:
+    inset 0 24px 48px rgba(8, 11, 19, 0.35),
+    0 18px 52px rgba(8, 11, 19, 0.45);
+}
+
+#calendar[data-state='loading']::after {
+  display: none;
+}
+
+#calendar[data-state='error'] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: clamp(32px, 6vw, 56px);
+  min-height: clamp(280px, 38vh, 420px);
+  color: var(--danger-strong);
+  background: rgba(239, 83, 80, 0.08);
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(239, 83, 80, 0.28);
+  box-shadow: inset 0 0 0 1px rgba(239, 83, 80, 0.12);
+}
+
+#calendar[data-state='error']::after {
+  display: none;
+}
+
+.calendar-loading__spinner {
+  width: clamp(44px, 6vw, 62px);
+  height: clamp(44px, 6vw, 62px);
+  border-radius: 999px;
+  border: 3px solid rgba(144, 181, 255, 0.24);
+  border-top-color: var(--accent-strong);
+  animation: calendar-spin 0.9s linear infinite;
+}
+
+.calendar-loading__text {
+  font-size: clamp(1.05rem, 1.8vw, 1.2rem);
+  font-weight: 500;
+  color: var(--fg);
+  text-shadow: 0 4px 18px rgba(8, 11, 19, 0.55);
+}
+
 #calendar::after {
   content: '';
   position: absolute;
@@ -570,6 +631,15 @@ body.calendar-theme main {
   text-overflow: ellipsis;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
+  transform-origin: center;
+}
+
+.fc .calendar-event--enter {
+  opacity: 0;
+  transform: translateY(14px) scale(0.96);
+  animation: calendar-event-pop 420ms cubic-bezier(0.22, 1, 0.36, 1)
+    forwards;
+  animation-delay: var(--calendar-event-delay, 0s);
 }
 
 .fc .calendar-event__title {
@@ -616,6 +686,23 @@ body.calendar-theme main {
 
 .fc .fc-timegrid-event-harness .calendar-event {
   border-radius: var(--radius-sm);
+}
+
+@keyframes calendar-event-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(16px) scale(0.94);
+  }
+
+  60% {
+    opacity: 1;
+    transform: translateY(-4px) scale(1.01);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .fc .fc-timegrid-slot {

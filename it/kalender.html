@@ -189,7 +189,16 @@
           Mese corrente
         </span>
       </div>
-      <div id="calendar" data-i18n="calendar.status.loading">Caricamento del calendario …</div>
+      <div
+        id="calendar"
+        data-state="loading"
+        role="status"
+        aria-live="polite"
+        aria-busy="true"
+        data-i18n="calendar.status.loading"
+      >
+        Caricamento del calendario …
+      </div>
     </section>
   </main>
 

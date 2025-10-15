@@ -189,7 +189,16 @@
           Aktueller Monat
         </span>
       </div>
-      <div id="calendar" data-i18n="calendar.status.loading">Kalender wird geladen …</div>
+      <div
+        id="calendar"
+        data-state="loading"
+        role="status"
+        aria-live="polite"
+        aria-busy="true"
+        data-i18n="calendar.status.loading"
+      >
+        Kalender wird geladen …
+      </div>
     </section>
   </main>
 

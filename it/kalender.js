@@ -43,6 +43,7 @@ const modalButtons = {
 let editFormController = null;
 let calendarInstance = null;
 let resizeHandler = null;
+let calendarAnimationIndex = 0;
 
 function mdBold(text = '') {
   return text.replace(/\*(.*?)\*/g, '<strong>$1</strong>');
@@ -645,6 +646,33 @@ function setupCalendarControls(calendar) {
   controls.dataset.enhanced = 'true';
 }
 
+function prepareCalendarContainer(calendarEl) {
+  calendarEl.removeAttribute('role');
+  calendarEl.removeAttribute('aria-live');
+  calendarEl.setAttribute('aria-busy', 'false');
+  calendarEl.removeAttribute('data-state');
+  calendarEl.innerHTML = '';
+}
+
+function showCalendarLoading(calendarEl, message) {
+  calendarEl.setAttribute('data-state', 'loading');
+  calendarEl.setAttribute('role', 'status');
+  calendarEl.setAttribute('aria-live', 'polite');
+  calendarEl.setAttribute('aria-busy', 'true');
+  calendarEl.innerHTML = `
+    <span class="calendar-loading__spinner" aria-hidden="true"></span>
+    <span class="calendar-loading__text">${message}</span>
+  `;
+}
+
+function showCalendarError(calendarEl, message) {
+  calendarEl.setAttribute('data-state', 'error');
+  calendarEl.setAttribute('role', 'alert');
+  calendarEl.setAttribute('aria-live', 'polite');
+  calendarEl.setAttribute('aria-busy', 'false');
+  calendarEl.textContent = message;
+}
+
 function initialiseCalendar(events) {
   const calendarEl = document.getElementById('calendar');
   if (!calendarEl) return;
@@ -658,7 +686,8 @@ function initialiseCalendar(events) {
     resizeHandler = null;
   }
 
-  calendarEl.innerHTML = '';
+  prepareCalendarContainer(calendarEl);
+  calendarAnimationIndex = 0;
 
   const calendar = new FullCalendar.Calendar(calendarEl, {
     initialView: determineInitialView(),
@@ -671,6 +700,23 @@ function initialiseCalendar(events) {
     },
     events,
     eventContent: createEventContent,
+    eventDidMount: (info) => {
+      const eventContent = info.el.querySelector('.calendar-event');
+      if (!eventContent) return;
+      const delayIndex = calendarAnimationIndex % 10;
+      const delay = `${delayIndex * 60}ms`;
+      calendarAnimationIndex += 1;
+      eventContent.style.setProperty('--calendar-event-delay', delay);
+      eventContent.classList.add('calendar-event--enter');
+      eventContent.addEventListener(
+        'animationend',
+        () => {
+          eventContent.classList.remove('calendar-event--enter');
+          eventContent.style.removeProperty('--calendar-event-delay');
+        },
+        { once: true }
+      );
+    },
     dateClick: (info) => {
       showEntryForm();
       const dateInput = document.getElementById('datum');
@@ -705,7 +751,7 @@ function initialiseCalendar(events) {
 async function loadCalendar() {
   const calendarEl = document.getElementById('calendar');
   if (!calendarEl) return;
-  calendarEl.textContent = t('status.loading', 'Caricamento del calendario …');
+  showCalendarLoading(calendarEl, t('status.loading', 'Caricamento del calendario …'));
 
   try {
     const res = await fetch(`${API_BASE}/entries`);
@@ -718,7 +764,7 @@ async function loadCalendar() {
     initialiseCalendar(events);
   } catch (err) {
     console.error('Errore durante il caricamento del calendario:', err);
-    calendarEl.textContent = t('status.error', 'Impossibile caricare le voci del calendario!');
+    showCalendarError(calendarEl, t('status.error', 'Impossibile caricare le voci del calendario!'));
   }
 }
 
