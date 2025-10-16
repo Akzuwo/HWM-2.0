@@ -16,7 +16,7 @@
   <main class="changelog-main" id="main">
     <header class="changelog-header">
       <h1 data-i18n="changelog.title">Journal des modifications</h1>
-      <p data-i18n="changelog.subtitle">Retrouvez ici les notes de version de Homework Manager. Le contenu détaillé pour la version 2.0 arrivera bientôt.</p>
+      <p data-i18n="changelog.subtitle">Découvrez les notes de version de Homework Manager – avec les temps forts de la version 2.0 et des mises à jour précédentes.</p>
     </header>
 
     <section class="changelog-timeline">
@@ -25,11 +25,12 @@
           <h2 data-i18n="changelog.release.title">Version 2.0</h2>
           <time datetime="2025-10-01" data-i18n="changelog.release.date">Octobre 2025</time>
         </div>
-        <p data-i18n="changelog.release.summary">Les notes de version complètes pour la version 2.0 sont en préparation. Ci-dessous, un aperçu des sujets principaux.</p>
+        <p data-i18n="changelog.release.summary">Homework Manager 2.0 propose une expérience entièrement repensée et riche en nouveautés. Voici les éléments clés du lancement.</p>
         <ul>
-          <li data-i18n="changelog.release.items.design">Système visuel sombre repensé pour tous les modules principaux.</li>
-          <li data-i18n="changelog.release.items.performance">Optimisations de performance des API pour des chargements plus rapides.</li>
-          <li data-i18n="changelog.release.items.overlays">Fenêtres et boîtes de dialogue retravaillées pour des modifications plus fluides.</li>
+          <li data-i18n="changelog.release.items.design">Interface entièrement réinventée avec un thème sombre cohérent et une typographie soignée.</li>
+          <li data-i18n="changelog.release.items.events">Nouveau module « Événement » pour planifier sorties, clubs et rendez-vous spéciaux.</li>
+          <li data-i18n="changelog.release.items.dayView">Vue quotidienne regroupant devoirs, examens et événements dans un flux focalisé.</li>
+          <li data-i18n="changelog.release.items.account">Fondations posées pour le futur système de comptes (travail en cours) afin de faciliter l’usage partagé.</li>
         </ul>
       </article>
 
@@ -37,7 +38,28 @@
         <div class="changelog-entry__meta">
           <h2 data-i18n="changelog.archive.title">Versions précédentes</h2>
         </div>
-        <p data-i18n="changelog.archive.placeholder">Les notes des versions antérieures sont en cours de préparation et seront bientôt disponibles ici.</p>
+        <div class="changelog-subentry">
+          <h3 data-i18n="changelog.archive.release171.title">Version 1.7.1</h3>
+          <p data-i18n="changelog.archive.release171.summary">La version 1.7.1 dynamise le calendrier et apporte un polissage bienvenu à l’interface.</p>
+          <ul>
+            <li data-i18n="changelog.archive.release171.items.calendar">Les admins peuvent désormais créer des entrées directement dans le calendrier et les modifier aussitôt.</li>
+            <li data-i18n="changelog.archive.release171.items.uiFixes">Plusieurs problèmes d’affichage ont été corrigés.</li>
+            <li data-i18n="changelog.archive.release171.items.formatting">Les descriptions de tâches prennent en charge le gras et l’italique pour mieux mettre en avant les informations.</li>
+          </ul>
+        </div>
+        <div class="changelog-subentry">
+          <h4 data-i18n="changelog.archive.release171.patch01.title">Patch 0x01</h4>
+          <ul>
+            <li data-i18n="changelog.archive.release171.patch01.items.overlayButton">Correction de l’affichage du bouton de fermeture dans les fenêtres du calendrier.</li>
+            <li data-i18n="changelog.archive.release171.patch01.items.uiTweaks">Autres ajustements visuels mineurs sans impact sur les fonctionnalités.</li>
+          </ul>
+        </div>
+        <div class="changelog-subentry">
+          <h4 data-i18n="changelog.archive.release171.patch02.title">Patch 0x02</h4>
+          <ul>
+            <li data-i18n="changelog.archive.release171.patch02.items.scheduleUi">Interface de l’emploi du temps rafraîchie.</li>
+          </ul>
+        </div>
       </article>
     </section>
   </main>
@@ -61,6 +83,7 @@
   <script src="../utils/js/overlay.js" defer></script>
   <script src="../utils/js/toast.js" defer></script>
   <script src="../utils/js/footer.js" defer></script>
+  <script src="../utils/js/changelog.js" defer></script>
   <script src="script.js" defer></script>
 </body>
 </html>
