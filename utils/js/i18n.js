@@ -52,47 +52,22 @@
         pageTitle: 'Changelog',
         title: 'Changelog',
         subtitle:
-          'Hier findest du die Release-Notizen zum Homework Manager – inklusive der Highlights aus Version 2.0 und früheren Updates.',
+          'Hier findest du die Release-Notizen zum Homework Manager. Ausführliche Inhalte für Version 2.0 folgen in Kürze.',
         back: '← Zurück zur Übersicht',
         release: {
           title: 'Release 2.0',
           date: 'Oktober 2025',
           summary:
-            'Homework Manager 2.0 liefert ein vollständig erneuertes Erlebnis mit frischen Funktionen. Das sind die Highlights des Releases.',
+            'Die vollständigen Release-Notes für Version 2.0 werden aktuell vorbereitet. Nachfolgend findest du bereits eine Vorschau der wichtigsten Themen.',
           items: {
-            design:
-              'Rundum neu gestaltete Benutzeroberfläche mit harmonischem Dark-Theme und präziser Typografie.',
-            events: 'Frisches „Event“-Feature für spontane Veranstaltungen, AGs und besondere Termine.',
-            dayView: 'Neue Tagesübersicht bündelt Aufgaben, Prüfungen und Events in einem fokussierten Feed.',
-            account:
-              'Grundstein für das kommende Account-System (Work in Progress) – die Teamarbeit ist vorbereitet.',
+            design: 'Überarbeitetes Design-System im dunklen Look für alle Kernmodule.',
+            performance: 'Optimierte Performance der Schnittstellen für schnellere Ladezeiten.',
+            overlays: 'Neu gestaltete Overlays und Dialoge für ein klareres Bearbeitungserlebnis.',
           },
         },
         archive: {
           title: 'Frühere Versionen',
-          release171: {
-            title: 'Release 1.7.1',
-            summary:
-              'Release 1.7.1 sorgt für mehr Tempo im Kalender und poliert das Interface mit gezielten Verbesserungen.',
-            items: {
-              calendar: 'Admins können Kalendereinträge direkt anlegen und bei Bedarf sofort bearbeiten.',
-              uiFixes: 'Mehrere Darstellungsfehler im UI wurden behoben.',
-              formatting: 'Aufgabenbeschreibungen unterstützen jetzt Fett- und Kursivformatierungen.',
-            },
-            patch01: {
-              title: 'Patch 0x01',
-              items: {
-                overlayButton: 'Der Schließen-Button der Kalender-Overlays wird wieder korrekt dargestellt.',
-                uiTweaks: 'Weitere visuelle Feinschliffe an UI-Elementen – ohne Änderungen an ihren Funktionen.',
-              },
-            },
-            patch02: {
-              title: 'Patch 0x02',
-              items: {
-                scheduleUi: 'Stundenplan-Ansicht optisch überarbeitet.',
-              },
-            },
-          },
+          placeholder: 'Ältere Changelogs werden derzeit konsolidiert und erscheinen hier demnächst.',
         },
       },
       calendar: {
@@ -270,47 +245,22 @@
         pageTitle: 'Changelog',
         title: 'Changelog',
         subtitle:
-          'Explore the Homework Manager release notes featuring the highlights of version 2.0 and earlier updates.',
+          'Release notes for Homework Manager live here. Detailed content for version 2.0 will arrive soon.',
         back: '← Back to overview',
         release: {
           title: 'Release 2.0',
           date: 'October 2025',
           summary:
-            'Homework Manager 2.0 delivers a fully refreshed experience packed with new capabilities. Here are the headline improvements.',
+            'The full release notes for version 2.0 are in progress. Below is a preview of the headline topics.',
           items: {
-            design:
-              'Completely redesigned interface with a cohesive dark theme and refined typography.',
-            events: 'Brand-new “Event” feature to capture club meetings, outings, and special occasions.',
-            dayView: 'Day overview gathers assignments, exams, and events into one focused stream.',
-            account:
-              'Foundation for the upcoming account system (work in progress) to enable shared access.',
+            design: 'Revamped dark design system applied to every core module.',
+            performance: 'Performance tuning across APIs for quicker load times.',
+            overlays: 'Redesigned overlays and dialogs for clearer editing workflows.',
           },
         },
         archive: {
           title: 'Earlier versions',
-          release171: {
-            title: 'Release 1.7.1',
-            summary:
-              'Release 1.7.1 keeps the calendar moving forward and polishes established workflows.',
-            items: {
-              calendar: 'Admins can now create calendar entries on the spot and edit them immediately.',
-              uiFixes: 'Resolved several visual glitches across the interface.',
-              formatting: 'Task descriptions now support bold and italic formatting for richer storytelling.',
-            },
-            patch01: {
-              title: 'Patch 0x01',
-              items: {
-                overlayButton: 'Fixed the close button alignment on calendar overlays.',
-                uiTweaks: 'Additional fine-tuning of UI components without changing their behavior.',
-              },
-            },
-            patch02: {
-              title: 'Patch 0x02',
-              items: {
-                scheduleUi: 'Updated the timetable view with refreshed styling.',
-              },
-            },
-          },
+          placeholder: 'Previous release notes are being curated and will appear here shortly.',
         },
       },
       calendar: {
@@ -487,50 +437,22 @@
         pageTitle: 'Changelog',
         title: 'Changelog',
         subtitle:
-          'Consulta le note di rilascio di Homework Manager con i punti salienti della versione 2.0 e degli aggiornamenti precedenti.',
+          'Qui trovi le note di rilascio di Homework Manager. I contenuti completi per la versione 2.0 arriveranno a breve.',
         back: '← Torna alla panoramica',
         release: {
           title: 'Release 2.0',
           date: 'Ottobre 2025',
           summary:
-            'Homework Manager 2.0 offre un’esperienza completamente rinnovata ricca di novità. Ecco i miglioramenti principali.',
+            'Le note di rilascio complete per la versione 2.0 sono in preparazione. Qui trovi un\'anteprima dei punti principali.',
           items: {
-            design:
-              'Interfaccia riprogettata da cima a fondo con un tema scuro coerente e tipografia curata.',
-            events: 'Nuova funzione «Eventi» per pianificare uscite, club e appuntamenti speciali.',
-            dayView:
-              'La panoramica giornaliera riunisce compiti, verifiche ed eventi in un unico flusso concentrato.',
-            account:
-              'Posa le basi per il futuro sistema di account (work in progress) e la collaborazione condivisa.',
+            design: 'Design dark completamente aggiornato per tutti i moduli principali.',
+            performance: 'Prestazioni ottimizzate delle API per tempi di caricamento più rapidi.',
+            overlays: 'Overlay e dialoghi ridisegnati per un\'esperienza di modifica più chiara.',
           },
         },
         archive: {
           title: 'Versioni precedenti',
-          release171: {
-            title: 'Release 1.7.1',
-            summary:
-              'La release 1.7.1 dà nuova energia al calendario e rifinisce l’interfaccia esistente.',
-            items: {
-              calendar:
-                'Gli admin possono ora creare voci direttamente nel calendario e modificarle all’istante.',
-              uiFixes: 'Corrette diverse anomalie di visualizzazione nell’interfaccia.',
-              formatting:
-                'Le descrizioni delle attività supportano ora grassetto e corsivo per evidenziare meglio le informazioni.',
-            },
-            patch01: {
-              title: 'Patch 0x01',
-              items: {
-                overlayButton: 'Risolto l’allineamento del pulsante di chiusura nelle finestre del calendario.',
-                uiTweaks: 'Ulteriori piccoli ritocchi ai componenti dell’interfaccia senza alterarne le funzioni.',
-              },
-            },
-            patch02: {
-              title: 'Patch 0x02',
-              items: {
-                scheduleUi: 'Interfaccia dell’orario aggiornata graficamente.',
-              },
-            },
-          },
+          placeholder: 'Le note delle versioni passate sono in fase di raccolta e saranno disponibili qui a breve.',
         },
       },
       calendar: {
@@ -707,49 +629,22 @@
         pageTitle: 'Journal des modifications',
         title: 'Journal des modifications',
         subtitle:
-          'Découvrez les notes de version de Homework Manager – avec les temps forts de la version 2.0 et des mises à jour précédentes.',
+          'Retrouvez ici les notes de version de Homework Manager. Le contenu détaillé pour la version 2.0 arrivera bientôt.',
         back: '← Retour à l’aperçu',
         release: {
           title: 'Version 2.0',
           date: 'Octobre 2025',
           summary:
-            'Homework Manager 2.0 propose une expérience entièrement repensée et riche en nouveautés. Voici les éléments clés du lancement.',
+            'Les notes de version complètes pour la version 2.0 sont en préparation. Ci-dessous, un aperçu des sujets principaux.',
           items: {
-            design:
-              'Interface entièrement réinventée avec un thème sombre cohérent et une typographie soignée.',
-            events: 'Nouveau module « Événement » pour planifier sorties, clubs et rendez-vous spéciaux.',
-            dayView: 'Vue quotidienne regroupant devoirs, examens et événements dans un flux focalisé.',
-            account:
-              'Fondations posées pour le futur système de comptes (travail en cours) afin de faciliter l’usage partagé.',
+            design: 'Système visuel sombre repensé pour tous les modules principaux.',
+            performance: 'Optimisations de performance des API pour des chargements plus rapides.',
+            overlays: 'Fenêtres et boîtes de dialogue retravaillées pour des modifications plus fluides.',
           },
         },
         archive: {
           title: 'Versions précédentes',
-          release171: {
-            title: 'Version 1.7.1',
-            summary:
-              'La version 1.7.1 dynamise le calendrier et apporte un polissage bienvenu à l’interface.',
-            items: {
-              calendar:
-                'Les admins peuvent désormais créer des entrées directement dans le calendrier et les modifier aussitôt.',
-              uiFixes: 'Plusieurs problèmes d’affichage ont été corrigés.',
-              formatting:
-                'Les descriptions de tâches prennent en charge le gras et l’italique pour mieux mettre en avant les informations.',
-            },
-            patch01: {
-              title: 'Patch 0x01',
-              items: {
-                overlayButton: 'Correction de l’affichage du bouton de fermeture dans les fenêtres du calendrier.',
-                uiTweaks: 'Autres ajustements visuels mineurs sans impact sur les fonctionnalités.',
-              },
-            },
-            patch02: {
-              title: 'Patch 0x02',
-              items: {
-                scheduleUi: 'Interface de l’emploi du temps rafraîchie.',
-              },
-            },
-          },
+          placeholder: 'Les notes des versions antérieures sont en cours de préparation et seront bientôt disponibles ici.',
         },
       },
       calendar: {
