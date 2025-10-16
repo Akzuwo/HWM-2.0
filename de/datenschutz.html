@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Datenschutzerklärung · Homework Manager</title>
+  <link rel="icon" type="image/png" href="../media/logo.png" />
+  <link rel="stylesheet" href="../utils/css/style.css" />
+  <link rel="stylesheet" href="../utils/css/legal.css" />
+</head>
+<body class="legal-page">
+  <nav class="simple-nav" data-nav data-i18n-attr="aria-label:common.nav.primary" aria-label="Hauptnavigation">
+    <a class="nav-title" href="index.html">
+      <img src="../media/logo.png" alt="" width="32" height="32" />
+      <span>Homework Manager</span>
+    </a>
+    <div class="nav-links">
+      <a class="nav-button" href="index.html">🏠 Start</a>
+      <a class="nav-button" href="kalender.html">📅 Kalender</a>
+      <a class="nav-button" href="upcoming.html">🔔 Upcoming Events</a>
+      <a class="nav-button" href="stundenplan.html">🕒 Aktuelles Fach</a>
+      <a class="nav-button" href="notenrechner.html">📊 Notenrechner</a>
+      <a class="nav-button" href="#" onclick="logout()">🚪 Abmelden</a>
+      <div class="language-dropdown" data-language>
+        <button type="button" class="language-button" data-language-toggle aria-haspopup="true" aria-expanded="false" aria-label="Sprache wählen">
+          <span class="language-button__icon" aria-hidden="true">🌐</span>
+          <span class="language-button__code">DE</span>
+          <svg class="language-button__caret" viewBox="0 0 12 12" focusable="false" aria-hidden="true">
+            <path d="M2.47 4.47a.75.75 0 0 1 1.06 0L6 6.94l2.47-2.47a.75.75 0 1 1 1.06 1.06L6.53 9.47a.75.75 0 0 1-1.06 0L2.47 5.53a.75.75 0 0 1 0-1.06z" />
+          </svg>
+        </button>
+        <ul class="language-menu" role="menu" data-language-menu aria-label="Sprachauswahl">
+          <li role="none">
+            <button type="button" class="language-option" data-lang="de" role="menuitem">
+              <span class="language-option__flag" aria-hidden="true">🇩🇪</span>
+              <span class="language-option__text">
+                <span class="language-option__code">DE</span>
+                <span aria-hidden="true">–</span>
+                <span class="language-option__name">Deutsch</span>
+              </span>
+            </button>
+          </li>
+          <li role="none">
+            <button type="button" class="language-option" data-lang="en" role="menuitem">
+              <span class="language-option__flag" aria-hidden="true">🇬🇧</span>
+              <span class="language-option__text">
+                <span class="language-option__code">EN</span>
+                <span aria-hidden="true">–</span>
+                <span class="language-option__name">English</span>
+              </span>
+            </button>
+          </li>
+          <li role="none">
+            <button type="button" class="language-option" data-lang="it" role="menuitem">
+              <span class="language-option__flag" aria-hidden="true">🇮🇹</span>
+              <span class="language-option__text">
+                <span class="language-option__code">IT</span>
+                <span aria-hidden="true">–</span>
+                <span class="language-option__name">Italiano</span>
+              </span>
+            </button>
+          </li>
+          <li role="none">
+            <button type="button" class="language-option" data-lang="fr" role="menuitem">
+              <span class="language-option__flag" aria-hidden="true">🇫🇷</span>
+              <span class="language-option__text">
+                <span class="language-option__code">FR</span>
+                <span aria-hidden="true">–</span>
+                <span class="language-option__name">Français</span>
+              </span>
+            </button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <main class="legal-main" id="main">
+    <header class="legal-header">
+      <h1 class="legal-title">Datenschutzerklärung</h1>
+      <p class="legal-subtitle">Wie wir mit personenbezogenen Daten im Homework Manager umgehen.</p>
+    </header>
+
+    <section class="legal-section">
+      <h2>Verantwortliche Stelle</h2>
+      <article class="legal-card">
+        <dl>
+          <div>
+            <dt>Name</dt>
+            <dd>Timo Wigger</dd>
+          </div>
+          <div>
+            <dt>Projekt</dt>
+            <dd>Homework Manager</dd>
+          </div>
+          <div>
+            <dt>E-Mail</dt>
+            <dd><a class="hm-footer__link" href="mailto:kontakt@homework-manager.akzuwo.ch">kontakt@homework-manager.akzuwo.ch</a></dd>
+          </div>
+          <div>
+            <dt>Postanschrift</dt>
+            <dd>Wird auf Anfrage im Rahmen der gesetzlichen Vorgaben mitgeteilt.</dd>
+          </div>
+        </dl>
+        <p class="legal-note">Verantwortlich für die Datenbearbeitung im Sinne des schweizerischen RevD-DSG sowie, soweit anwendbar, Art. 4 Nr. 7 DSGVO.</p>
+      </article>
+    </section>
+
+    <section class="legal-section">
+      <h2>Welche Daten wir verarbeiten</h2>
+      <article class="legal-card">
+        <p>Wir verarbeiten ausschließlich die Informationen, die du aktiv im Homework Manager speicherst. Dazu gehören unter anderem Aufgaben, Fächer, Noten und Termine. Zusätzlich werden technische Metadaten wie das Datum der letzten Anmeldung gespeichert, um dein Konto zu schützen.</p>
+        <p>Wir setzen keine Tracking- oder Analyse-Dienste von Drittanbietern ein. Deine Daten verbleiben auf unseren Systemen und werden nicht zu Werbezwecken weitergegeben.</p>
+      </article>
+    </section>
+
+    <section class="legal-section">
+      <h2>Zwecke und Rechtsgrundlagen</h2>
+      <article class="legal-card">
+        <p>Wir nutzen deine Daten, um den Homework Manager bereitzustellen, deine Inhalte zu synchronisieren und bei Supportanfragen reagieren zu können. Die Datenbearbeitung erfolgt auf Basis unserer berechtigten Interessen an einem funktionsfähigen Dienst sowie, sofern ein Benutzerkonto besteht, zur Erfüllung (vor)vertraglicher Pflichten.</p>
+        <p class="legal-note">Rechtsgrundlagen sind insbesondere Art. 6 Abs. 1 lit. b und f DSGVO sowie die entsprechenden Bestimmungen des RevD-DSG.</p>
+      </article>
+    </section>
+
+    <section class="legal-section">
+      <h2>Speicherdauer und Sicherheit</h2>
+      <article class="legal-card">
+        <p>Wir speichern deine Daten nur so lange, wie es für die Nutzung des Homework Managers erforderlich ist. Wenn du dein Konto löschen lässt oder uns zur Löschung aufforderst, entfernen wir deine personenbezogenen Daten, sofern keine gesetzlichen Aufbewahrungspflichten entgegenstehen.</p>
+        <p>Aktuelle Sicherheitsmaßnahmen wie verschlüsselte Verbindungen und rollenbasierte Zugriffe schützen deine Informationen vor unbefugtem Zugriff.</p>
+      </article>
+    </section>
+
+    <section class="legal-section">
+      <h2>Deine Rechte</h2>
+      <article class="legal-card">
+        <p>Du kannst jederzeit deine Rechte im Hinblick auf deine personenbezogenen Daten wahrnehmen. Dazu zählen insbesondere:</p>
+        <ul>
+          <li>Auskunft über die gespeicherten Daten zu deiner Person,</li>
+          <li>Berichtigung unrichtiger oder unvollständiger Daten,</li>
+          <li>Löschung deiner Daten, sofern keine gesetzlichen Vorgaben entgegenstehen,</li>
+          <li>Einschränkung der Verarbeitung sowie Widerspruch gegen bestimmte Verarbeitungen,</li>
+          <li>Übertragbarkeit der Daten in einem strukturierten, gängigen Format.</li>
+        </ul>
+      </article>
+    </section>
+
+    <section class="legal-section">
+      <h2>Fragen zum Datenschutz</h2>
+      <article class="legal-card">
+        <p>Für Anliegen oder Fragen rund um den Datenschutz erreichst du uns unter der oben genannten Kontaktadresse. Bitte gib im Betreff deiner Nachricht „Datenschutzanfrage" an, damit wir dein Anliegen schneller zuordnen können.</p>
+      </article>
+    </section>
+  </main>
+
+  <script src="../utils/js/i18n.js" defer></script>
+  <script src="../utils/js/overlay.js" defer></script>
+  <script src="../utils/js/toast.js" defer></script>
+  <script src="../utils/js/footer.js" defer></script>
+  <script src="script.js" defer></script>
+</body>
+</html>
