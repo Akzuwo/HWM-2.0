@@ -3,8 +3,33 @@ const LOGIN_TEXT = {
     show: 'Show password',
     hide: 'Hide password',
     empty: 'Please enter a password.',
-    wrong: 'Wrong password – please try again.'
+    wrong: 'Wrong password – please try again.',
+    title: '🔒 Login',
+    passwordLabel: 'Password',
+    placeholder: 'Password',
+    submit: 'Log in',
+    guestButton: 'Continue as guest',
+    guestInfo: 'Continue without an account',
+    loginButton: '🔐 Log in',
+    logoutButton: '🚪 Log out',
+    close: 'Close'
 };
+
+let authOverlayInitialized = false;
+let authOverlayPreviousFocus = null;
+
+function ensureRole() {
+    const role = sessionStorage.getItem('role');
+    if (role === 'admin') {
+        return 'admin';
+    }
+    sessionStorage.setItem('role', 'guest');
+    return 'guest';
+}
+
+function isAdmin() {
+    return sessionStorage.getItem('role') === 'admin';
+}
 
 const CREATE_DISABLED_MESSAGE = (window.hmI18n && window.hmI18n.get('calendar.actions.create.disabled'))
     || 'Only admins can create entries';
@@ -44,6 +69,20 @@ function focusPasswordField() {
     }
 }
 
+function resetAuthForm() {
+    const input = document.getElementById('passwort');
+    if (input) {
+        input.value = '';
+        input.type = 'password';
+    }
+    const toggle = document.getElementById('toggle-password');
+    if (toggle) {
+        toggle.setAttribute('aria-label', LOGIN_TEXT.show);
+        toggle.classList.remove('visible');
+    }
+    setLoginFeedback('');
+}
+
 function togglePasswordVisibility() {
     const input = document.getElementById('passwort');
     const toggle = document.getElementById('toggle-password');
@@ -62,11 +101,174 @@ function handlePasswordKey(event) {
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+function attachLoginFieldListeners() {
     const input = document.getElementById('passwort');
-    if (!input) return;
-    input.addEventListener('input', () => setLoginFeedback(''));
-});
+    if (input && input.dataset.authListeners !== 'true') {
+        input.addEventListener('input', () => setLoginFeedback(''));
+        input.addEventListener('keyup', handlePasswordKey);
+        input.dataset.authListeners = 'true';
+    }
+
+    const toggle = document.getElementById('toggle-password');
+    if (toggle && toggle.dataset.authListeners !== 'true') {
+        toggle.addEventListener('click', togglePasswordVisibility);
+        toggle.dataset.authListeners = 'true';
+    }
+}
+
+function createAuthOverlay() {
+    let overlay = document.getElementById('auth-overlay');
+    if (overlay) {
+        attachLoginFieldListeners();
+        return overlay;
+    }
+
+    overlay = document.createElement('div');
+    overlay.id = 'auth-overlay';
+    overlay.className = 'auth-overlay';
+    overlay.setAttribute('aria-hidden', 'true');
+    overlay.innerHTML = `
+        <div class="auth-overlay__backdrop" data-auth-close></div>
+        <div class="login-container" role="dialog" aria-modal="true" aria-labelledby="auth-overlay-title">
+            <button type="button" class="auth-overlay__close" data-auth-close aria-label="${LOGIN_TEXT.close}">×</button>
+            <img src="../media/logo.png" alt="Logo" class="login-logo">
+            <h2 class="login-title" id="auth-overlay-title">${LOGIN_TEXT.title}</h2>
+            <form class="login-form" novalidate>
+                <div class="form-group">
+                    <label for="passwort">${LOGIN_TEXT.passwordLabel}</label>
+                    <div class="password-field">
+                        <input type="password" id="passwort" class="form-control" placeholder="${LOGIN_TEXT.placeholder}" autocomplete="current-password" />
+                        <button type="button" id="toggle-password" class="toggle-password" aria-label="${LOGIN_TEXT.show}">
+                            <span class="eye-icon" aria-hidden="true"></span>
+                        </button>
+                    </div>
+                    <div id="login-feedback" class="login-feedback" role="alert" aria-live="polite"></div>
+                </div>
+                <div class="login-actions">
+                    <button type="submit" class="login-button">${LOGIN_TEXT.submit}</button>
+                    <button type="button" class="guest-button" data-auth-guest>${LOGIN_TEXT.guestButton}</button>
+                    <p class="guest-info">${LOGIN_TEXT.guestInfo}</p>
+                </div>
+            </form>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    overlay.querySelectorAll('[data-auth-close]').forEach((element) => {
+        element.addEventListener('click', closeAuthOverlay);
+    });
+
+    overlay.addEventListener('click', (event) => {
+        if (event.target === overlay) {
+            closeAuthOverlay();
+        }
+    });
+
+    const form = overlay.querySelector('.login-form');
+    if (form) {
+        form.addEventListener('submit', (event) => {
+            event.preventDefault();
+            login();
+        });
+    }
+
+    const guestButton = overlay.querySelector('[data-auth-guest]');
+    if (guestButton) {
+        guestButton.addEventListener('click', guestLogin);
+    }
+
+    attachLoginFieldListeners();
+
+    return overlay;
+}
+
+function initAuthOverlay() {
+    if (!authOverlayInitialized) {
+        createAuthOverlay();
+        authOverlayInitialized = true;
+    } else {
+        attachLoginFieldListeners();
+    }
+    return document.getElementById('auth-overlay');
+}
+
+function updateAuthButton() {
+    const button = document.querySelector('[data-auth-button]');
+    if (!button) {
+        return;
+    }
+
+    button.textContent = isAdmin() ? LOGIN_TEXT.logoutButton : LOGIN_TEXT.loginButton;
+}
+
+function setupAuthButton() {
+    const button = document.querySelector('[data-auth-button]');
+    if (!button) {
+        return;
+    }
+
+    if (button.dataset.authBound === 'true') {
+        updateAuthButton();
+        return;
+    }
+
+    button.addEventListener('click', () => {
+        if (isAdmin()) {
+            logout();
+        } else {
+            openAuthOverlay(button);
+        }
+    });
+
+    button.dataset.authBound = 'true';
+    updateAuthButton();
+}
+
+function handleAuthOverlayEscape(event) {
+    if (event.key === 'Escape') {
+        closeAuthOverlay();
+    }
+}
+
+function openAuthOverlay(trigger) {
+    const overlay = initAuthOverlay();
+    if (!overlay) {
+        return;
+    }
+
+    authOverlayPreviousFocus = trigger || document.activeElement;
+    resetAuthForm();
+    overlay.classList.add('is-visible');
+    overlay.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('has-auth-overlay');
+    attachLoginFieldListeners();
+    window.setTimeout(() => focusPasswordField(), 0);
+    document.addEventListener('keydown', handleAuthOverlayEscape);
+}
+
+function closeAuthOverlay() {
+    const overlay = document.getElementById('auth-overlay');
+    if (!overlay) {
+        return;
+    }
+
+    overlay.classList.remove('is-visible');
+    overlay.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('has-auth-overlay');
+    document.removeEventListener('keydown', handleAuthOverlayEscape);
+    resetAuthForm();
+
+    if (authOverlayPreviousFocus && typeof authOverlayPreviousFocus.focus === 'function') {
+        try {
+            authOverlayPreviousFocus.focus();
+        } catch (error) {
+            /* ignore focus errors */
+        }
+    }
+
+    authOverlayPreviousFocus = null;
+}
 
 function login() {
     const input = document.getElementById('passwort');
@@ -80,7 +282,8 @@ function login() {
     if (pw === 'l23a-admin') {
         sessionStorage.setItem('role', 'admin');
         setLoginFeedback('');
-        window.location.href = 'index.html';
+        closeAuthOverlay();
+        window.location.reload();
     } else {
         setLoginFeedback(LOGIN_TEXT.wrong, true);
         focusPasswordField();
@@ -89,12 +292,14 @@ function login() {
 
 function guestLogin() {
     sessionStorage.setItem('role', 'guest');
-    window.location.href = 'index.html';
+    updateAuthButton();
+    closeAuthOverlay();
 }
 
 function logout() {
-    sessionStorage.clear();
-    window.location.href = 'login.html';
+    sessionStorage.setItem('role', 'guest');
+    closeAuthOverlay();
+    window.location.reload();
 }
 
 function menuButton() {
@@ -396,23 +601,17 @@ function initSimpleNav() {
 }
 
 function checkLogin() {
-    const role = sessionStorage.getItem('role');
-    const isLoginPage = window.location.href.toLowerCase().includes('login');
+    const isLoginPage = window.location.pathname.toLowerCase().includes('login.html');
+    ensureRole();
 
-    // Kein eingeloggter Benutzer → nur weiterleiten, wenn wir nicht bereits auf der Login-Seite sind
-    if (!role) {
-        if (!isLoginPage) {
-            window.location.href = 'login.html';
-        }
-        return;
-    }
-
-    // Eingeloggt, aber auf der Login-Seite? Dann direkt zum Dashboard
     if (isLoginPage) {
-        window.location.href = 'index.html';
+        window.location.replace('index.html');
         return;
     }
 
+    initAuthOverlay();
+    setupAuthButton();
+    updateAuthButton();
 }
 
   
