@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy · Homework Manager</title>
+  <link rel="icon" type="image/png" href="../media/logo.png" />
+  <link rel="stylesheet" href="../utils/css/style.css" />
+  <link rel="stylesheet" href="../utils/css/legal.css" />
+</head>
+<body class="legal-page">
+  <nav class="simple-nav" data-nav data-i18n-attr="aria-label:common.nav.primary" aria-label="Main navigation">
+    <a class="nav-title" href="index.html">
+      <img src="../media/logo.png" alt="" width="32" height="32" />
+      <span>Homework Manager</span>
+    </a>
+    <div class="nav-links">
+      <a class="nav-button" href="index.html">🏠 Home</a>
+      <a class="nav-button" href="kalender.html">📅 Calendar</a>
+      <a class="nav-button" href="upcoming.html">🔔 Upcoming Events</a>
+      <a class="nav-button" href="stundenplan.html">🕒 Current Subject</a>
+      <a class="nav-button" href="notenrechner.html">📊 Grade Calculator</a>
+      <a class="nav-button" href="#" onclick="logout()">🚪 Log out</a>
+      <div class="language-dropdown" data-language>
+        <button type="button" class="language-button" data-language-toggle aria-haspopup="true" aria-expanded="false" aria-label="Choose language">
+          <span class="language-button__icon" aria-hidden="true">🌐</span>
+          <span class="language-button__code">EN</span>
+          <svg class="language-button__caret" viewBox="0 0 12 12" focusable="false" aria-hidden="true">
+            <path d="M2.47 4.47a.75.75 0 0 1 1.06 0L6 6.94l2.47-2.47a.75.75 0 1 1 1.06 1.06L6.53 9.47a.75.75 0 0 1-1.06 0L2.47 5.53a.75.75 0 0 1 0-1.06z" />
+          </svg>
+        </button>
+        <ul class="language-menu" role="menu" data-language-menu aria-label="Language menu">
+          <li role="none">
+            <button type="button" class="language-option" data-lang="de" role="menuitem">
+              <span class="language-option__flag" aria-hidden="true">🇩🇪</span>
+              <span class="language-option__text">
+                <span class="language-option__code">DE</span>
+                <span aria-hidden="true">–</span>
+                <span class="language-option__name">Deutsch</span>
+              </span>
+            </button>
+          </li>
+          <li role="none">
+            <button type="button" class="language-option" data-lang="en" role="menuitem">
+              <span class="language-option__flag" aria-hidden="true">🇬🇧</span>
+              <span class="language-option__text">
+                <span class="language-option__code">EN</span>
+                <span aria-hidden="true">–</span>
+                <span class="language-option__name">English</span>
+              </span>
+            </button>
+          </li>
+          <li role="none">
+            <button type="button" class="language-option" data-lang="it" role="menuitem">
+              <span class="language-option__flag" aria-hidden="true">🇮🇹</span>
+              <span class="language-option__text">
+                <span class="language-option__code">IT</span>
+                <span aria-hidden="true">–</span>
+                <span class="language-option__name">Italiano</span>
+              </span>
+            </button>
+          </li>
+          <li role="none">
+            <button type="button" class="language-option" data-lang="fr" role="menuitem">
+              <span class="language-option__flag" aria-hidden="true">🇫🇷</span>
+              <span class="language-option__text">
+                <span class="language-option__code">FR</span>
+                <span aria-hidden="true">–</span>
+                <span class="language-option__name">Français</span>
+              </span>
+            </button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <main class="legal-main" id="main">
+    <header class="legal-header">
+      <h1 class="legal-title">Privacy Policy</h1>
+      <p class="legal-subtitle">How we handle personal data in the Homework Manager.</p>
+    </header>
+
+    <section class="legal-section">
+      <h2>Data Controller</h2>
+      <article class="legal-card">
+        <dl>
+          <div>
+            <dt>Name</dt>
+            <dd>Timo Wigger</dd>
+          </div>
+          <div>
+            <dt>Project</dt>
+            <dd>Homework Manager</dd>
+          </div>
+          <div>
+            <dt>E-mail</dt>
+            <dd><a class="hm-footer__link" href="mailto:kontakt@homework-manager.akzuwo.ch">kontakt@homework-manager.akzuwo.ch</a></dd>
+          </div>
+          <div>
+            <dt>Postal address</dt>
+            <dd>Provided upon request in line with applicable legal requirements.</dd>
+          </div>
+        </dl>
+        <p class="legal-note">Responsible for processing within the meaning of the Swiss RevD-DSG and, where applicable, Art. 4(7) GDPR.</p>
+      </article>
+    </section>
+
+    <section class="legal-section">
+      <h2>Data We Process</h2>
+      <article class="legal-card">
+        <p>We only process the information you actively store in Homework Manager, such as assignments, subjects, grades, and events. Technical metadata like the date of your last sign-in is retained to keep your account secure.</p>
+        <p>No third-party tracking or analytics services are used. Your data stays on our systems and is never shared for advertising purposes.</p>
+      </article>
+    </section>
+
+    <section class="legal-section">
+      <h2>Purpose and Legal Basis</h2>
+      <article class="legal-card">
+        <p>We use your data to provide Homework Manager, synchronise your content, and respond to support requests. Processing is based on our legitimate interest in running a reliable service and, where an account exists, on fulfilling pre-contractual or contractual obligations.</p>
+        <p class="legal-note">Legal bases include Art. 6(1)(b) and Art. 6(1)(f) GDPR as well as the relevant provisions of the RevD-DSG.</p>
+      </article>
+    </section>
+
+    <section class="legal-section">
+      <h2>Retention and Security</h2>
+      <article class="legal-card">
+        <p>We retain your data only for as long as necessary to provide Homework Manager. When you delete your account or ask us to erase your data, we remove personal information unless statutory retention duties require otherwise.</p>
+        <p>Current security measures such as encrypted connections and role-based access protect your information from unauthorised access.</p>
+      </article>
+    </section>
+
+    <section class="legal-section">
+      <h2>Your Rights</h2>
+      <article class="legal-card">
+        <p>You may exercise your rights regarding your personal data at any time, including the right to:</p>
+        <ul>
+          <li>request access to the data we store about you,</li>
+          <li>rectify inaccurate or incomplete information,</li>
+          <li>erase your data where no legal obligations prevent it,</li>
+          <li>restrict processing or object to specific uses,</li>
+          <li>receive your data in a structured, commonly used format.</li>
+        </ul>
+      </article>
+    </section>
+
+    <section class="legal-section">
+      <h2>Privacy Contact</h2>
+      <article class="legal-card">
+        <p>If you have any questions about privacy, please contact us using the address above. Add “Privacy request” to the subject line so we can address your enquiry quickly.</p>
+      </article>
+    </section>
+  </main>
+
+  <script src="../utils/js/i18n.js" defer></script>
+  <script src="../utils/js/overlay.js" defer></script>
+  <script src="../utils/js/toast.js" defer></script>
+  <script src="../utils/js/footer.js" defer></script>
+  <script src="script.js" defer></script>
+</body>
+</html>
