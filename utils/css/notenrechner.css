@@ -95,13 +95,19 @@ main.grade-calculator {
 .grade-calculator__form--inline {
   display: grid;
   grid-template-columns: repeat(2, minmax(200px, 1fr)) minmax(160px, max-content);
-  align-items: start;
+  align-items: center;
   gap: var(--space-md);
+}
+
+.grade-calculator__form--inline .grade-calculator__action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--control-height);
 }
 
 .grade-calculator__form--inline .grade-calculator__button {
   min-width: 160px;
-  align-self: end;
   margin-top: 0;
   height: var(--control-height);
   padding: 0 var(--space-md);
