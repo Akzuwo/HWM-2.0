@@ -192,7 +192,7 @@
           </div>
           <div class="hm-contact-modal__fallback" id="${FALLBACK_ID}" hidden>
             <strong>${translate('contact.fallbackTitle')}</strong>
-            <a class="hm-contact-modal__fallback-link" href="mailto:kontakt@homework-manager.akzuwo.ch">${translate('contact.fallbackCta')}</a>
+            <a class="hm-contact-modal__fallback-link" href="mailto:timowigger8@gmail.com">${translate('contact.fallbackCta')}</a>
           </div>
           <input type="text" name="${HONEYPOT_FIELD}" class="hm-contact-modal__honeypot" tabindex="-1" autocomplete="off" aria-hidden="true">
         </form>

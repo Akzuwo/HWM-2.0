@@ -4,7 +4,9 @@ body.legal-page {
   opacity: 0;
   transform: translateY(1.5rem);
   transition: opacity 0.6s ease, transform 0.6s ease;
-  background: linear-gradient(180deg, rgba(17, 25, 40, 0.08) 0%, rgba(17, 25, 40, 0) 35%);
+  background: radial-gradient(circle at top left, rgba(91, 141, 239, 0.18), transparent 55%),
+    radial-gradient(circle at bottom right, rgba(30, 64, 175, 0.16), transparent 45%),
+    #0b0f1a;
 }
 
 body.legal-page.legal-loaded {
@@ -28,7 +30,7 @@ body.legal-page.legal-loaded {
   position: absolute;
   inset: auto 1.5rem -1.5rem;
   height: 1px;
-  background: linear-gradient(90deg, rgba(17, 25, 40, 0.12), rgba(17, 25, 40, 0));
+  background: linear-gradient(90deg, rgba(148, 163, 184, 0.28), rgba(15, 23, 42, 0));
   opacity: 0;
   transition: opacity 0.6s ease;
 }
@@ -45,15 +47,17 @@ body.legal-page.legal-loaded {
 }
 
 .legal-card {
-  box-shadow: 0 18px 45px -30px rgba(17, 25, 40, 0.45);
-  backdrop-filter: blur(12px);
-  background-color: rgba(255, 255, 255, 0.85);
-  transition: transform 0.4s ease, box-shadow 0.4s ease;
+  box-shadow: 0 22px 48px -28px rgba(8, 12, 22, 0.65);
+  backdrop-filter: blur(18px);
+  background: linear-gradient(160deg, rgba(13, 18, 30, 0.86), rgba(16, 24, 38, 0.78));
+  border: 1px solid rgba(94, 123, 190, 0.22);
+  transition: transform 0.4s ease, box-shadow 0.4s ease, border-color 0.4s ease;
 }
 
 .legal-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 22px 55px -28px rgba(17, 25, 40, 0.55);
+  box-shadow: 0 26px 58px -30px rgba(11, 17, 29, 0.7);
+  border-color: rgba(125, 162, 240, 0.4);
 }
 
 .legal-section ul li {
@@ -65,7 +69,7 @@ body.legal-page.legal-loaded {
   content: '•';
   position: absolute;
   left: 0.35rem;
-  color: var(--hm-primary-500, #2f66f6);
+  color: var(--hm-primary-500, #7ba6ff);
   font-weight: 600;
 }
 

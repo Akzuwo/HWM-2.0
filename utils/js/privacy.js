@@ -32,22 +32,32 @@
     }
 
     var observer = new IntersectionObserver(
-      function (entries, currentObserver) {
+      function (entries) {
         entries.forEach(function (entry) {
+          var element = entry.target;
           if (entry.isIntersecting) {
-            entry.target.classList.add('is-visible');
-            currentObserver.unobserve(entry.target);
+            var initialDelay = Number(element.dataset.initialDelay || '0');
+            var hasAnimated = element.dataset.hasAnimated === 'true';
+            var delay = hasAnimated ? 0 : initialDelay;
+
+            element.style.setProperty('--section-delay', delay + 'ms');
+            element.classList.add('is-visible');
+            element.dataset.hasAnimated = 'true';
+          } else if (entry.intersectionRatio === 0 && element.dataset.hasAnimated === 'true') {
+            element.classList.remove('is-visible');
+            element.style.setProperty('--section-delay', '0ms');
           }
         });
       },
       {
         root: null,
-        threshold: 0.1,
+        threshold: [0, 0.2, 0.4, 0.6, 0.8, 1],
         rootMargin: '0px 0px -10% 0px'
       }
     );
 
     animatedElements.forEach(function (element, index) {
+      element.dataset.initialDelay = String(index * 80);
       element.style.setProperty('--section-delay', index * 80 + 'ms');
       observer.observe(element);
     });
