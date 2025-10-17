@@ -33,6 +33,8 @@ class DummyCursor:
                 'email': admin['email'],
                 'password_hash': admin['password_hash'],
                 'is_active': admin.get('is_active', 1),
+                'role': admin.get('role', 'admin'),
+                'class_id': admin.get('class_id'),
             }
             if self.dictionary:
                 self._result = result
@@ -42,6 +44,8 @@ class DummyCursor:
                     result['email'],
                     result['password_hash'],
                     result['is_active'],
+                    result['role'],
+                    result['class_id'],
                 )
         elif normalized.startswith("update users set last_login_at"):
             admin = self.storage.get('admin')
@@ -97,6 +101,8 @@ def app_client(monkeypatch):
             'email': 'admin@example.com',
             'password_hash': auth_utils.hash_password('adminpw'),
             'is_active': 1,
+            'role': 'admin',
+            'class_id': 1,
             'last_login_updates': [],
         },
         'verifications': [],
