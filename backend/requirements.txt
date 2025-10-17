@@ -4,3 +4,4 @@ mysql-connector-python
 gunicorn
 pytz
 ics
+argon2-cffi

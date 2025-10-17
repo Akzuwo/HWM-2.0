@@ -6,6 +6,7 @@ import smtplib
 from collections import OrderedDict
 from contextlib import closing
 from email.message import EmailMessage
+from typing import Dict, Optional, Tuple
 
 from ics import Calendar, Event
 import pytz
@@ -13,6 +14,8 @@ from flask import Flask, jsonify, request, session, make_response, send_from_dir
 from flask_cors import CORS
 import mysql.connector
 from mysql.connector import pooling
+
+from auth.utils import calculate_token_expiry, generate_token, verify_password
 
 # ---------- APP INITIALISIEREN ----------
 app = Flask(__name__, static_url_path="/")
@@ -26,8 +29,6 @@ app.config.update(
 # Secrets laden
 with open('/etc/secrets/hwm-session-secret', encoding='utf-8') as f:
     app.secret_key = f.read().strip()
-with open('/etc/secrets/hwm-pw', encoding='utf-8') as f:
-    ADMIN_PASSWORD = f.read().strip()
 
 # ---------- CORS ----------
 CORS(
@@ -80,6 +81,11 @@ CONTACT_RECIPIENT = os.getenv('CONTACT_RECIPIENT') or CONTACT_SMTP_USER
 CONTACT_FROM_ADDRESS = os.getenv('CONTACT_FROM_ADDRESS', CONTACT_SMTP_USER or CONTACT_RECIPIENT)
 CONTACT_EMAIL_REGEX = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
 
+EMAIL_VERIFICATION_TOKEN_LIFETIME_SECONDS = int(os.getenv('EMAIL_VERIFICATION_TOKEN_LIFETIME_SECONDS', 3600))
+EMAIL_VERIFICATION_FROM_ADDRESS = os.getenv('EMAIL_VERIFICATION_FROM_ADDRESS', CONTACT_FROM_ADDRESS or CONTACT_SMTP_USER or CONTACT_RECIPIENT)
+EMAIL_VERIFICATION_SUBJECT = os.getenv('EMAIL_VERIFICATION_SUBJECT', 'Bitte E-Mail-Adresse bestätigen')
+EMAIL_VERIFICATION_LINK_BASE = os.getenv('EMAIL_VERIFICATION_LINK_BASE', 'https://homework-manager.akzuwo.ch/verify-email')
+
 
 def _check_contact_rate_limit(ip_address: str) -> bool:
     now = time.time()
@@ -92,19 +98,27 @@ def _check_contact_rate_limit(ip_address: str) -> bool:
     return entry['count'] <= CONTACT_RATE_LIMIT_MAX
 
 
-def _send_contact_email(name: str, email_address: str, subject: str, body: str, attachment=None) -> None:
-    if not CONTACT_SMTP_HOST or not CONTACT_RECIPIENT:
-        raise RuntimeError('Contact email is not configured')
+def _deliver_email(
+    to_address: str,
+    subject: str,
+    body: str,
+    *,
+    sender: Optional[str] = None,
+    reply_to: Optional[str] = None,
+    attachment: Optional[Tuple[bytes, str, Optional[str]]] = None,
+) -> None:
+    if not CONTACT_SMTP_HOST:
+        raise RuntimeError('Email delivery is not configured')
 
     message = EmailMessage()
-    final_subject = subject.strip() or 'Kontaktanfrage'
-    message['Subject'] = f"[Homework Manager] {final_subject}"
-    sender = CONTACT_FROM_ADDRESS or email_address
-    if sender:
-        message['From'] = sender
-    message['To'] = CONTACT_RECIPIENT
-    if email_address:
-        message['Reply-To'] = email_address
+    message['Subject'] = subject.strip() or 'Homework Manager'
+    message['To'] = to_address
+
+    final_sender = sender or CONTACT_FROM_ADDRESS or CONTACT_SMTP_USER or CONTACT_RECIPIENT
+    if final_sender:
+        message['From'] = final_sender
+    if reply_to:
+        message['Reply-To'] = reply_to
 
     message.set_content(body)
 
@@ -114,17 +128,133 @@ def _send_contact_email(name: str, email_address: str, subject: str, body: str, 
             maintype, subtype = (content_type or 'application/octet-stream').split('/', 1)
             message.add_attachment(file_data, maintype=maintype, subtype=subtype, filename=filename)
 
-    if CONTACT_SMTP_PORT == 465:
-        server = smtplib.SMTP_SSL(CONTACT_SMTP_HOST, CONTACT_SMTP_PORT, timeout=10)
+    server = None
+    try:
+        if CONTACT_SMTP_PORT == 465:
+            server = smtplib.SMTP_SSL(CONTACT_SMTP_HOST, CONTACT_SMTP_PORT, timeout=10)
+        else:
+            server = smtplib.SMTP(CONTACT_SMTP_HOST, CONTACT_SMTP_PORT, timeout=10)
+            server.starttls()
+
+        if CONTACT_SMTP_USER and CONTACT_SMTP_PASSWORD:
+            server.login(CONTACT_SMTP_USER, CONTACT_SMTP_PASSWORD)
+
+        server.send_message(message)
+    finally:
+        if server is not None:
+            server.quit()
+
+
+def _send_contact_email(name: str, email_address: str, subject: str, body: str, attachment=None) -> None:
+    if not CONTACT_RECIPIENT:
+        raise RuntimeError('Contact email is not configured')
+
+    final_subject = subject.strip() or 'Kontaktanfrage'
+    prefixed_subject = f"[Homework Manager] {final_subject}"
+    sender = CONTACT_FROM_ADDRESS or email_address or CONTACT_SMTP_USER or CONTACT_RECIPIENT
+
+    _deliver_email(
+        CONTACT_RECIPIENT,
+        prefixed_subject,
+        body,
+        sender=sender,
+        reply_to=email_address or None,
+        attachment=attachment,
+    )
+
+
+def _send_verification_email(email_address: str, token: str, expires_at: datetime.datetime) -> None:
+    if not email_address:
+        raise ValueError('email_address is required')
+
+    if EMAIL_VERIFICATION_LINK_BASE:
+        separator = '&' if '?' in EMAIL_VERIFICATION_LINK_BASE else '?'
+        verification_link = f"{EMAIL_VERIFICATION_LINK_BASE}{separator}token={token}"
     else:
-        server = smtplib.SMTP(CONTACT_SMTP_HOST, CONTACT_SMTP_PORT, timeout=10)
-        server.starttls()
+        verification_link = token
 
-    if CONTACT_SMTP_USER and CONTACT_SMTP_PASSWORD:
-        server.login(CONTACT_SMTP_USER, CONTACT_SMTP_PASSWORD)
+    expiration_text = expires_at.strftime('%d.%m.%Y %H:%M UTC')
+    body = (
+        "Hallo,\n\n"
+        "bitte bestätige deine E-Mail-Adresse für den Homework Manager über den folgenden Link:\n"
+        f"{verification_link}\n\n"
+        f"Der Link ist bis {expiration_text} gültig.\n\n"
+        "Falls du diese Anfrage nicht gestellt hast, ignoriere diese E-Mail.\n"
+    )
 
-    server.send_message(message)
-    server.quit()
+    _deliver_email(
+        email_address,
+        EMAIL_VERIFICATION_SUBJECT,
+        body,
+        sender=EMAIL_VERIFICATION_FROM_ADDRESS,
+    )
+
+
+def _load_admin_user(conn) -> Optional[Dict[str, object]]:
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute(
+            "SELECT id, email, password_hash, is_active FROM users WHERE role='admin' ORDER BY id ASC LIMIT 1"
+        )
+        row = cursor.fetchone()
+    finally:
+        cursor.close()
+
+    if not row:
+        return None
+
+    is_active = row.get('is_active')
+    try:
+        if is_active is not None and int(is_active) == 0:
+            return None
+    except (TypeError, ValueError):
+        pass
+
+    return row
+
+
+def _mark_user_login(conn, user_id: int) -> None:
+    cursor = conn.cursor()
+    try:
+        timestamp = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+        cursor.execute(
+            "UPDATE users SET last_login_at=%s WHERE id=%s",
+            (timestamp, user_id),
+        )
+        conn.commit()
+    except mysql.connector.Error:
+        conn.rollback()
+        raise
+    finally:
+        cursor.close()
+
+
+def _create_email_verification(conn, user: Dict[str, object]) -> Tuple[str, datetime.datetime]:
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "DELETE FROM email_verifications WHERE user_id=%s AND verified_at IS NULL",
+            (user['id'],),
+        )
+        token = generate_token()
+        expires_at = calculate_token_expiry(EMAIL_VERIFICATION_TOKEN_LIFETIME_SECONDS)
+        cursor.execute(
+            "INSERT INTO email_verifications (user_id, email, token, expires_at) VALUES (%s, %s, %s, %s)",
+            (user['id'], user['email'], token, expires_at),
+        )
+        conn.commit()
+    except mysql.connector.Error:
+        conn.rollback()
+        raise
+    finally:
+        cursor.close()
+
+    try:
+        _send_verification_email(user['email'], token, expires_at)
+    except Exception as exc:
+        raise RuntimeError('verification_email_failed') from exc
+
+    return token, expires_at
 
 
 def _validate_columns(table_name, columns, requirements):
@@ -466,14 +596,70 @@ def submit_contact():
 @app.route('/api/login', methods=['POST'])
 def api_login():
     data = request.json or {}
-    if data.get('password') == ADMIN_PASSWORD:
+    password = (data.get('password') or '').strip()
+    if not password:
+        return jsonify(status='error', message='Ungültiges Passwort'), 401
+
+    try:
+        conn = get_connection()
+    except Exception:
+        return jsonify(status='error', message='database_unavailable'), 503
+
+    with closing(conn):
+        try:
+            admin_user = _load_admin_user(conn)
+        except mysql.connector.Error:
+            app.logger.exception('Failed to load admin user for login')
+            return jsonify(status='error', message='database_unavailable'), 503
+
+        if not admin_user:
+            return jsonify(status='error', message='admin_not_configured'), 503
+
+        if not verify_password(admin_user.get('password_hash'), password):
+            return jsonify(status='error', message='Ungültiges Passwort'), 401
+
         session['role'] = 'admin'
-        return jsonify(status='ok')
-    return jsonify(status='error', message='Ungültiges Passwort'), 401
+        try:
+            _mark_user_login(conn, int(admin_user['id']))
+        except (mysql.connector.Error, KeyError, ValueError):
+            app.logger.exception('Failed to update last login for admin %s', admin_user)
+
+    return jsonify(status='ok')
 
 @app.route('/api/logout', methods=['POST'])
 def api_logout():
     session.clear()
+    return jsonify(status='ok')
+
+
+@app.route('/api/admin/resend-verification', methods=['POST'])
+def resend_admin_verification():
+    if session.get('role') != 'admin':
+        return jsonify(status='error', message='Forbidden'), 403
+
+    try:
+        conn = get_connection()
+    except Exception:
+        return jsonify(status='error', message='database_unavailable'), 503
+
+    with closing(conn):
+        try:
+            admin_user = _load_admin_user(conn)
+        except mysql.connector.Error:
+            app.logger.exception('Failed to load admin user for verification')
+            return jsonify(status='error', message='database_unavailable'), 503
+
+        if not admin_user:
+            return jsonify(status='error', message='admin_not_found'), 404
+
+        try:
+            _create_email_verification(conn, admin_user)
+        except mysql.connector.Error:
+            app.logger.exception('Failed to create verification token for admin %s', admin_user)
+            return jsonify(status='error', message='verification_failed'), 500
+        except RuntimeError:
+            return jsonify(status='error', message='mail_failed'), 502
+
     return jsonify(status='ok')
 
 @app.route('/api/secure-data')
