@@ -1,6 +1,8 @@
 // LOGIN & SESSION MANAGEMENT
 const LOGIN_TEXT = {
     title: '🔒 Login',
+    registerTitle: '🆕 Konto erstellen',
+    registerSubtitle: 'Registriere dich mit deiner Schul-E-Mail-Adresse.',
     emailLabel: 'E-Mail-Adresse',
     emailPlaceholder: 'name@example.com',
     passwordLabel: 'Passwort',
@@ -24,6 +26,8 @@ const LOGIN_TEXT = {
     passwordResetError: 'Zurücksetzen nicht möglich. Versuche es später noch einmal.',
     submit: 'Anmelden',
     submitLoading: 'Anmelden …',
+    registerSubmit: 'Registrieren',
+    registerSubmitLoading: 'Registrieren …',
     guestButton: 'Als Gast fortfahren',
     guestInfo: 'Fortfahren ohne Konto',
     loginButton: '🔐 Anmelden',
@@ -37,11 +41,24 @@ const LOGIN_TEXT = {
         guest: 'Gast'
     },
     genericError: 'Beim Anmelden ist ein Fehler aufgetreten. Bitte versuche es später erneut.',
+    registerPasswordMismatch: 'Die Passwörter stimmen nicht überein.',
+    registerWeakPassword: 'Das Passwort muss mindestens 8 Zeichen lang sein.',
+    registerEmailInvalid: 'Bitte gib eine gültige Schul-E-Mail-Adresse ein.',
+    registerEmailExists: 'Für diese E-Mail-Adresse existiert bereits ein Konto.',
+    registerPasswordConfirmLabel: 'Passwort bestätigen',
+    registerClassLabel: 'Klasse (optional)',
+    registerClassPlaceholder: 'z. B. 3a',
+    registerClassNotFound: 'Diese Klasse wurde nicht gefunden.',
+    registerGenericError: 'Registrierung derzeit nicht möglich. Bitte versuche es später erneut.',
+    registerSuccess: 'Fast geschafft! Wir haben dir eine Bestätigungsmail gesendet.',
+    switchToRegister: 'Neu hier? Konto erstellen',
+    switchToLogin: 'Schon registriert? Anmelden',
     close: 'Schließen'
 };
 
 const AUTH_API = {
     login: '/api/auth/login',
+    register: '/api/auth/register',
     logout: '/api/auth/logout',
     resend: '/api/auth/resend',
     passwordReset: '/api/auth/password-reset'
@@ -261,6 +278,29 @@ function getPasswordInput(form) {
     return form ? form.querySelector('[data-auth-password]') : null;
 }
 
+function getPasswordConfirmInput(form) {
+    return form ? form.querySelector('[data-auth-password-confirm]') : null;
+}
+
+function getClassInput(form) {
+    return form ? form.querySelector('[data-auth-class]') : null;
+}
+
+function getAuthMode(form) {
+    if (!form) {
+        return 'login';
+    }
+    return form.dataset.authMode === 'register' ? 'register' : 'login';
+}
+
+function getSubmitLabel(form, isLoading) {
+    const mode = getAuthMode(form);
+    if (mode === 'register') {
+        return isLoading ? LOGIN_TEXT.registerSubmitLoading : LOGIN_TEXT.registerSubmit;
+    }
+    return isLoading ? LOGIN_TEXT.submitLoading : LOGIN_TEXT.submit;
+}
+
 function setLoginFeedback(message = '', variant = 'neutral', form = null) {
     const targets = form ? [form] : queryAuthForms();
     targets.forEach((currentForm) => {
@@ -326,7 +366,7 @@ function setFormLoading(form, isLoading) {
     const submit = form.querySelector('[data-auth-submit]');
     if (submit) {
         submit.disabled = Boolean(isLoading);
-        submit.textContent = isLoading ? LOGIN_TEXT.submitLoading : LOGIN_TEXT.submit;
+        submit.textContent = getSubmitLabel(form, Boolean(isLoading));
     }
     const resend = form.querySelector('[data-auth-resend]');
     if (resend && resend.dataset.locked === 'true') {
@@ -351,16 +391,94 @@ function applyEmailPrefill(form) {
     }
 }
 
+function setAuthMode(form, mode, options = {}) {
+    if (!form) {
+        return;
+    }
+
+    const { preserveFeedback = false, preserveVerification = false } = options;
+    const normalizedMode = mode === 'register' ? 'register' : 'login';
+    form.dataset.authMode = normalizedMode;
+    form.classList.toggle('is-register-mode', normalizedMode === 'register');
+
+    const container = form.closest('.login-container');
+    if (container) {
+        const title = container.querySelector('[data-auth-title]');
+        if (title) {
+            title.textContent = normalizedMode === 'register' ? LOGIN_TEXT.registerTitle : LOGIN_TEXT.title;
+        }
+        const description = container.querySelector('[data-auth-description]');
+        if (description) {
+            if (normalizedMode === 'register' && LOGIN_TEXT.registerSubtitle) {
+                description.textContent = LOGIN_TEXT.registerSubtitle;
+                description.hidden = false;
+            } else {
+                description.hidden = true;
+            }
+        }
+    }
+
+    form.querySelectorAll('[data-auth-register-only]').forEach((element) => {
+        element.hidden = normalizedMode !== 'register';
+    });
+    form.querySelectorAll('[data-auth-login-only]').forEach((element) => {
+        element.hidden = normalizedMode === 'register';
+    });
+
+    const switchToRegister = form.querySelector('[data-auth-switch="register"]');
+    const switchToLogin = form.querySelector('[data-auth-switch="login"]');
+    if (switchToRegister) {
+        switchToRegister.hidden = normalizedMode === 'register';
+    }
+    if (switchToLogin) {
+        switchToLogin.hidden = normalizedMode !== 'register';
+    }
+
+    const forgotButton = form.querySelector('[data-auth-forgot]');
+    if (forgotButton) {
+        forgotButton.hidden = normalizedMode === 'register';
+    }
+
+    const submit = form.querySelector('[data-auth-submit]');
+    if (submit) {
+        submit.textContent = getSubmitLabel(form, false);
+    }
+
+    const passwordInput = getPasswordInput(form);
+    if (passwordInput) {
+        passwordInput.setAttribute('autocomplete', normalizedMode === 'register' ? 'new-password' : 'current-password');
+    }
+
+    const confirmInput = getPasswordConfirmInput(form);
+    if (confirmInput) {
+        confirmInput.required = normalizedMode === 'register';
+        if (normalizedMode !== 'register') {
+            confirmInput.value = '';
+        }
+    }
+
+    if (!preserveFeedback) {
+        setLoginFeedback('', 'neutral', form);
+    }
+
+    if (!preserveVerification) {
+        hideVerificationBanner(form);
+    }
+}
+
 function bindAuthForms() {
     queryAuthForms().forEach((form) => {
         if (form.dataset.authBound === 'true') {
+            setAuthMode(form, getAuthMode(form), { preserveFeedback: true, preserveVerification: true });
             applyEmailPrefill(form);
             return;
         }
 
+        setAuthMode(form, form.dataset.authMode || 'login');
+
         form.addEventListener('submit', (event) => {
             event.preventDefault();
-            login(form);
+            handleAuthSubmit(form);
         });
 
         const emailInput = getEmailInput(form);
@@ -372,7 +490,7 @@ function bindAuthForms() {
             emailInput.addEventListener('keydown', (event) => {
                 if (event.key === 'Enter') {
                     event.preventDefault();
-                    login(form);
+                    handleAuthSubmit(form);
                 }
             });
         }
@@ -383,15 +501,46 @@ function bindAuthForms() {
             passwordInput.addEventListener('keydown', (event) => {
                 if (event.key === 'Enter') {
                     event.preventDefault();
-                    login(form);
+                    handleAuthSubmit(form);
                 }
             });
+        }
+
+        const confirmInput = getPasswordConfirmInput(form);
+        if (confirmInput) {
+            confirmInput.addEventListener('input', () => setLoginFeedback('', 'neutral', form));
+            confirmInput.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    handleAuthSubmit(form);
+                }
+            });
+        }
+
+        const classInput = getClassInput(form);
+        if (classInput) {
+            classInput.addEventListener('input', () => setLoginFeedback('', 'neutral', form));
         }
 
         const toggle = form.querySelector('[data-auth-toggle]');
         if (toggle) {
             toggle.addEventListener('click', () => togglePasswordVisibility(form));
         }
+
+        form.querySelectorAll('[data-auth-switch]').forEach((button) => {
+            button.addEventListener('click', () => {
+                const targetMode = button.dataset.authSwitch === 'register' ? 'register' : 'login';
+                setAuthMode(form, targetMode);
+                if (targetMode === 'register') {
+                    const targetPassword = getPasswordInput(form);
+                    if (targetPassword) {
+                        targetPassword.focus();
+                    }
+                } else {
+                    focusPasswordField(form);
+                }
+            });
+        });
 
         const guestButton = form.querySelector('[data-auth-guest]');
         if (guestButton) {
@@ -450,7 +599,8 @@ function createAuthOverlay() {
         <div class="login-container" role="dialog" aria-modal="true" aria-labelledby="auth-overlay-title">
             <button type="button" class="auth-overlay__close" data-auth-close aria-label="${LOGIN_TEXT.close}">×</button>
             <img src="../media/logo.png" alt="Logo" class="login-logo">
-            <h2 class="login-title" id="auth-overlay-title">${LOGIN_TEXT.title}</h2>
+            <h2 class="login-title" id="auth-overlay-title" data-auth-title>${LOGIN_TEXT.title}</h2>
+            <p class="login-description" data-auth-description hidden>${LOGIN_TEXT.registerSubtitle}</p>
             <p class="login-status" data-auth-status>${getAuthStatusText()}</p>
             <form class="login-form" data-auth-form novalidate>
                 <div class="login-banner" data-auth-verification hidden>
@@ -472,8 +622,18 @@ function createAuthOverlay() {
                     </div>
                     <div class="login-feedback" data-auth-feedback role="alert" aria-live="polite" hidden></div>
                 </div>
+                <div class="form-group" data-auth-register-only hidden>
+                    <label for="overlay-password-confirm">${LOGIN_TEXT.registerPasswordConfirmLabel}</label>
+                    <input type="password" id="overlay-password-confirm" class="form-control" placeholder="${LOGIN_TEXT.passwordPlaceholder}" autocomplete="new-password" data-auth-password-confirm>
+                </div>
+                <div class="form-group" data-auth-register-only hidden>
+                    <label for="overlay-class">${LOGIN_TEXT.registerClassLabel}</label>
+                    <input type="text" id="overlay-class" class="form-control" placeholder="${LOGIN_TEXT.registerClassPlaceholder}" autocomplete="organization" data-auth-class>
+                </div>
                 <div class="login-links">
-                    <button type="button" class="login-link" data-auth-forgot>${LOGIN_TEXT.forgotPassword}</button>
+                    <button type="button" class="login-link" data-auth-forgot data-auth-login-only>${LOGIN_TEXT.forgotPassword}</button>
+                    <button type="button" class="login-link" data-auth-switch="register">${LOGIN_TEXT.switchToRegister}</button>
+                    <button type="button" class="login-link" data-auth-switch="login" hidden>${LOGIN_TEXT.switchToLogin}</button>
                 </div>
                 <div class="login-actions">
                     <button type="submit" class="login-button" data-auth-submit>${LOGIN_TEXT.submit}</button>
@@ -522,6 +682,7 @@ function openAuthOverlay(trigger) {
     const form = overlay.querySelector('[data-auth-form]');
     hideVerificationBanner(form);
     setLoginFeedback('', 'neutral', form);
+    setAuthMode(form, 'login');
     applyEmailPrefill(form);
 
     overlay.classList.add('is-visible');
@@ -558,6 +719,133 @@ function closeAuthOverlay() {
     }
 
     authOverlayPreviousFocus = null;
+}
+
+function handleAuthSubmit(form) {
+    if (getAuthMode(form) === 'register') {
+        register(form);
+    } else {
+        login(form);
+    }
+}
+
+async function register(form) {
+    const targetForm = form || getActiveAuthForm();
+    if (!targetForm) {
+        return;
+    }
+
+    const emailInput = getEmailInput(targetForm);
+    const passwordInput = getPasswordInput(targetForm);
+    const confirmInput = getPasswordConfirmInput(targetForm);
+    const classInput = getClassInput(targetForm);
+
+    const email = emailInput ? emailInput.value.trim().toLowerCase() : '';
+    const password = passwordInput ? passwordInput.value : '';
+    const confirmation = confirmInput ? confirmInput.value : '';
+    const classIdentifier = classInput ? classInput.value.trim() : '';
+
+    if (!email) {
+        setLoginFeedback(LOGIN_TEXT.emailRequired, 'error', targetForm);
+        emailInput?.focus();
+        return;
+    }
+
+    if (!password) {
+        setLoginFeedback(LOGIN_TEXT.passwordRequired, 'error', targetForm);
+        if (passwordInput) {
+            passwordInput.focus();
+        }
+        return;
+    }
+
+    if (password.length < 8) {
+        setLoginFeedback(LOGIN_TEXT.registerWeakPassword, 'error', targetForm);
+        if (passwordInput) {
+            passwordInput.focus();
+        }
+        return;
+    }
+
+    if (confirmInput && password !== confirmation) {
+        setLoginFeedback(LOGIN_TEXT.registerPasswordMismatch, 'error', targetForm);
+        confirmInput.focus();
+        return;
+    }
+
+    setLoginFeedback('', 'neutral', targetForm);
+    hideVerificationBanner(targetForm);
+    setFormLoading(targetForm, true);
+
+    try {
+        const payload = { email, password };
+        if (classIdentifier) {
+            payload.class = classIdentifier;
+        }
+
+        const response = await fetch(AUTH_API.register, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+            if (response.status === 400 && data && data.errors) {
+                if (data.errors.email === 'invalid_email') {
+                    setLoginFeedback(LOGIN_TEXT.registerEmailInvalid, 'error', targetForm);
+                    emailInput?.focus();
+                    return;
+                }
+                if (data.errors.password === 'weak_password') {
+                    setLoginFeedback(LOGIN_TEXT.registerWeakPassword, 'error', targetForm);
+                    if (passwordInput) {
+                        passwordInput.focus();
+                    }
+                    return;
+                }
+            }
+
+            if (response.status === 404 && data && data.message === 'class_not_found') {
+                setLoginFeedback(LOGIN_TEXT.registerClassNotFound, 'error', targetForm);
+                classInput?.focus();
+                return;
+            }
+
+            if (response.status === 409 && data && data.message === 'email_exists') {
+                setLoginFeedback(LOGIN_TEXT.registerEmailExists, 'error', targetForm);
+                emailInput?.focus();
+                return;
+            }
+
+            setLoginFeedback(LOGIN_TEXT.registerGenericError, 'error', targetForm);
+            return;
+        }
+
+        setLoginFeedback(LOGIN_TEXT.registerSuccess, 'success', targetForm);
+        rememberEmail(email);
+
+        if (passwordInput) {
+            passwordInput.value = '';
+        }
+        if (confirmInput) {
+            confirmInput.value = '';
+        }
+        if (classInput) {
+            classInput.value = '';
+        }
+
+        setAuthMode(targetForm, 'login', { preserveFeedback: true, preserveVerification: true });
+        showVerificationBanner(targetForm);
+        focusPasswordField(targetForm);
+    } catch (error) {
+        console.error('Registrierung fehlgeschlagen', error);
+        setLoginFeedback(LOGIN_TEXT.registerGenericError, 'error', targetForm);
+    } finally {
+        setFormLoading(targetForm, false);
+    }
 }
 
 async function login(form) {
