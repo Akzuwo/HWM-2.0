@@ -10,7 +10,8 @@
 <body>
   <div class="login-container">
     <img src="../media/logo.png" alt="Logo" class="login-logo">
-    <h2 class="login-title">🔒 Login</h2>
+    <h2 class="login-title" data-auth-title>🔒 Login</h2>
+    <p class="login-description" data-auth-description hidden>Registrati con la tua e-mail scolastica.</p>
     <p class="login-status" data-auth-status>Non connesso</p>
     <form class="login-form" data-auth-form novalidate>
       <div class="login-banner" data-auth-verification hidden>
@@ -32,8 +33,18 @@
         </div>
         <div class="login-feedback" data-auth-feedback role="alert" aria-live="polite" hidden></div>
       </div>
+      <div class="form-group" data-auth-register-only hidden>
+        <label for="login-password-confirm">Conferma password</label>
+        <input type="password" id="login-password-confirm" class="form-control" placeholder="Password" autocomplete="new-password" data-auth-password-confirm>
+      </div>
+      <div class="form-group" data-auth-register-only hidden>
+        <label for="login-class">Classe (facoltativo)</label>
+        <input type="text" id="login-class" class="form-control" placeholder="es. 3a" autocomplete="organization" data-auth-class>
+      </div>
       <div class="login-links">
-        <button type="button" class="login-link" data-auth-forgot>Password dimenticata?</button>
+        <button type="button" class="login-link" data-auth-forgot data-auth-login-only>Password dimenticata?</button>
+        <button type="button" class="login-link" data-auth-switch="register">Nuovo qui? Crea un account</button>
+        <button type="button" class="login-link" data-auth-switch="login" hidden>Hai già un account? Accedi</button>
       </div>
       <div class="login-actions">
         <button type="submit" class="login-button" data-auth-submit>Accedi</button>
