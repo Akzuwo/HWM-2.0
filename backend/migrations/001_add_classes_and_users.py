@@ -129,6 +129,26 @@ def _ensure_class_schedules_table(cursor: mysql.connector.cursor.MySQLCursor) ->
     )
 
 
+def _ensure_admin_audit_logs_table(cursor: mysql.connector.cursor.MySQLCursor) -> None:
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS admin_audit_logs (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            actor_id INT NOT NULL,
+            action VARCHAR(64) NOT NULL,
+            entity_type VARCHAR(64) NOT NULL,
+            entity_id INT NULL,
+            details JSON NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_admin_audit_actor (actor_id),
+            INDEX idx_admin_audit_entity (entity_type, entity_id),
+            CONSTRAINT fk_admin_audit_actor FOREIGN KEY (actor_id)
+                REFERENCES users(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """
+    )
+
+
 def _ensure_table_engine(
     cursor: mysql.connector.cursor.MySQLCursor, table: str, engine: str = "InnoDB"
 ) -> None:
@@ -253,6 +273,7 @@ def _run_migration() -> None:
         _ensure_users_table(cursor)
         _ensure_email_verifications_table(cursor)
         _ensure_class_schedules_table(cursor)
+        _ensure_admin_audit_logs_table(cursor)
         _ensure_seed_admin_user(cursor)
         default_class_id = _get_default_class_id(cursor)
         _ensure_stundenplan_entries(cursor, default_class_id)

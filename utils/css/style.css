@@ -1127,3 +1127,296 @@ body.hm-contact-modal-open {
         animation-iteration-count: 1 !important;
     }
 }
+
+/* Admin dashboard */
+.admin-dashboard {
+    max-width: 1100px;
+    margin: clamp(1.5rem, 4vw, 3rem) auto;
+    padding: clamp(1.5rem, 3vw, 2.5rem);
+    background: rgba(12, 16, 26, 0.92);
+    border-radius: 18px;
+    box-shadow: 0 25px 60px rgba(3, 6, 14, 0.45);
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    color: #f8fafc;
+}
+
+.admin-dashboard__header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    margin-bottom: 1.5rem;
+}
+
+.admin-dashboard__header h1 {
+    font-size: clamp(1.6rem, 3vw, 2rem);
+    margin: 0;
+}
+
+.admin-dashboard__header p {
+    margin: 0;
+    color: rgba(226, 232, 240, 0.75);
+}
+
+.admin-dashboard__nav {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+}
+
+.admin-dashboard__actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 1rem;
+}
+
+.admin-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    padding: 0.55rem 1.15rem;
+    font: inherit;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, 0.32);
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(14, 116, 144, 0.35));
+    color: inherit;
+    cursor: pointer;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.admin-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 24px rgba(14, 116, 144, 0.35);
+}
+
+.admin-button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.admin-button--ghost {
+    background: transparent;
+    border-color: rgba(148, 163, 184, 0.22);
+}
+
+.admin-button--ghost:hover {
+    border-color: rgba(99, 102, 241, 0.45);
+    box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.35);
+}
+
+.admin-button.is-active {
+    border-color: rgba(99, 102, 241, 0.55);
+    box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.45);
+}
+
+.admin-table-container {
+    position: relative;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: rgba(11, 15, 26, 0.8);
+}
+
+.admin-table th,
+.admin-table td {
+    padding: 0.85rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.admin-table th {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.75rem;
+    color: rgba(226, 232, 240, 0.72);
+}
+
+.admin-table tr:last-child td {
+    border-bottom: none;
+}
+
+.admin-table-container.is-loading::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(3px);
+}
+
+.admin-table-empty {
+    padding: 2rem;
+    text-align: center;
+    color: rgba(226, 232, 240, 0.7);
+}
+
+.admin-table-container.is-empty .admin-table {
+    display: none;
+}
+
+.admin-table__actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+.admin-message {
+    margin-top: 1.25rem;
+    padding: 0.85rem 1.1rem;
+    border-radius: 12px;
+    background: rgba(45, 212, 191, 0.12);
+    color: #f0fdfa;
+    border: 1px solid rgba(45, 212, 191, 0.35);
+}
+
+.admin-message[data-type="error"] {
+    background: rgba(239, 68, 68, 0.12);
+    color: #fee2e2;
+    border-color: rgba(239, 68, 68, 0.45);
+}
+
+.admin-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.admin-pagination__buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.admin-dialog-backdrop {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(10, 12, 20, 0.65);
+    backdrop-filter: blur(6px);
+    opacity: 0;
+    transition: opacity 0.18s ease;
+    z-index: 2000;
+}
+
+.admin-dialog-backdrop.is-visible {
+    opacity: 1;
+}
+
+.admin-dialog {
+    width: min(520px, 92vw);
+    background: #0f172a;
+    border-radius: 18px;
+    padding: 1.25rem 1.5rem;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    box-shadow: 0 25px 60px rgba(2, 6, 23, 0.55);
+}
+
+.admin-dialog__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.admin-dialog__title {
+    margin: 0;
+    font-size: 1.25rem;
+}
+
+.admin-dialog__close {
+    background: none;
+    border: none;
+    color: inherit;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.admin-dialog__body {
+    margin-bottom: 1rem;
+}
+
+.admin-dialog__footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem;
+}
+
+.admin-dialog__message {
+    margin-right: auto;
+    color: rgba(248, 113, 113, 0.9);
+    display: none;
+}
+
+.admin-dialog__message:not(:empty) {
+    display: block;
+}
+
+.admin-form {
+    display: grid;
+    gap: 1rem;
+}
+
+.admin-form__field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.admin-form__field--checkbox {
+    flex-direction: row;
+    align-items: center;
+}
+
+.admin-form__label {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(226, 232, 240, 0.7);
+}
+
+.admin-form input,
+.admin-form select,
+.admin-form textarea {
+    width: 100%;
+    padding: 0.75rem 0.85rem;
+    border-radius: 10px;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    background: rgba(15, 23, 42, 0.75);
+    color: inherit;
+    font: inherit;
+}
+
+.admin-form textarea {
+    resize: vertical;
+}
+
+.admin-form__help {
+    font-size: 0.75rem;
+    color: rgba(226, 232, 240, 0.65);
+}
+
+@media (max-width: 720px) {
+    .admin-dashboard {
+        padding: 1.25rem;
+    }
+    .admin-dashboard__actions {
+        justify-content: center;
+    }
+    .admin-pagination {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .admin-table__actions {
+        flex-wrap: wrap;
+    }
+}
