@@ -1,34 +1,741 @@
 // LOGIN & SESSION MANAGEMENT
 const LOGIN_TEXT = {
+    title: '🔒 Login',
+    emailLabel: 'E-Mail-Adresse',
+    emailPlaceholder: 'name@example.com',
+    passwordLabel: 'Passwort',
+    passwordPlaceholder: 'Passwort',
     show: 'Passwort anzeigen',
     hide: 'Passwort verbergen',
-    empty: 'Bitte gib ein Passwort ein.',
-    wrong: 'Falsches Passwort – bitte erneut versuchen.',
-    title: '🔒 Login',
-    passwordLabel: 'Passwort',
-    placeholder: 'Passwort',
+    emailRequired: 'Bitte gib eine E-Mail-Adresse ein.',
+    passwordRequired: 'Bitte gib ein Passwort ein.',
+    invalidCredentials: 'E-Mail oder Passwort ist falsch.',
+    inactive: 'Dein Konto wurde deaktiviert. Bitte kontaktiere eine Lehrkraft oder den Administrator.',
+    emailNotVerified: 'Bitte bestätige zuerst deine E-Mail-Adresse.',
+    verificationTitle: 'E-Mail-Bestätigung erforderlich',
+    verificationDescription: 'Wir haben dir einen Link zur Bestätigung gesendet. Du kannst hier eine neue E-Mail anfordern.',
+    verificationResend: 'Bestätigungsmail erneut senden',
+    verificationResendLoading: 'Sende …',
+    resendSuccess: 'Falls ein Konto existiert, wurde der Link erneut verschickt.',
+    resendError: 'Die E-Mail konnte nicht gesendet werden. Bitte versuche es später erneut.',
+    forgotPassword: 'Passwort vergessen?',
+    forgotPasswordMissingEmail: 'Bitte gib zuerst deine E-Mail-Adresse ein.',
+    passwordResetSent: 'Falls ein Konto existiert, wurde ein Reset-Link gesendet.',
+    passwordResetError: 'Zurücksetzen nicht möglich. Versuche es später noch einmal.',
     submit: 'Anmelden',
+    submitLoading: 'Anmelden …',
     guestButton: 'Als Gast fortfahren',
     guestInfo: 'Fortfahren ohne Konto',
     loginButton: '🔐 Anmelden',
     logoutButton: '🚪 Abmelden',
+    authStatusGuest: 'Nicht angemeldet',
+    authStatusSignedIn: (roleLabel) => `Angemeldet als ${roleLabel}`,
+    roleLabels: {
+        admin: 'Administrator',
+        teacher: 'Class-Admin',
+        student: 'Schüler',
+        guest: 'Gast'
+    },
+    genericError: 'Beim Anmelden ist ein Fehler aufgetreten. Bitte versuche es später erneut.',
     close: 'Schließen'
 };
 
+const AUTH_API = {
+    login: '/api/auth/login',
+    logout: '/api/auth/logout',
+    resend: '/api/auth/resend',
+    passwordReset: '/api/auth/password-reset'
+};
+
+const AUTH_PATHS = {
+    home: 'index.html',
+    admin: 'admin/dashboard.html',
+    login: 'login.html'
+};
+
+const SESSION_STORAGE_KEY = 'hm.session';
+
+const DEFAULT_SESSION = {
+    role: 'guest',
+    email: '',
+    emailVerified: false,
+    isAdmin: false,
+    isClassAdmin: false
+};
+
+let sessionState = normalizeSession(loadStoredSession());
+let lastAuthEmail = sessionState.email || '';
 let authOverlayInitialized = false;
 let authOverlayPreviousFocus = null;
 
-function ensureRole() {
-    const role = sessionStorage.getItem('role');
-    if (role === 'admin') {
-        return 'admin';
+function normalizeRole(value) {
+    if (!value) {
+        return 'guest';
     }
-    sessionStorage.setItem('role', 'guest');
-    return 'guest';
+    const normalized = String(value).trim().toLowerCase();
+    if (normalized === 'admin' || normalized === 'teacher' || normalized === 'student') {
+        return normalized;
+    }
+    if (normalized === 'guest') {
+        return 'guest';
+    }
+    return 'student';
+}
+
+function normalizeSession(data = {}) {
+    const role = normalizeRole(data.role);
+    return {
+        role,
+        email: data.email || '',
+        emailVerified: Boolean(data.emailVerified),
+        isAdmin: role === 'admin',
+        isClassAdmin: role === 'admin' || role === 'teacher'
+    };
+}
+
+function loadStoredSession() {
+    try {
+        const raw = sessionStorage.getItem(SESSION_STORAGE_KEY);
+        if (!raw) {
+            return { ...DEFAULT_SESSION };
+        }
+        const parsed = JSON.parse(raw);
+        return { ...DEFAULT_SESSION, ...parsed };
+    } catch (error) {
+        return { ...DEFAULT_SESSION };
+    }
+}
+
+function persistSession() {
+    sessionStorage.setItem(
+        SESSION_STORAGE_KEY,
+        JSON.stringify({
+            role: sessionState.role,
+            email: sessionState.email,
+            emailVerified: sessionState.emailVerified
+        })
+    );
+}
+
+function setAuthenticatedSession(role, email) {
+    sessionState = normalizeSession({
+        role,
+        email,
+        emailVerified: true
+    });
+    lastAuthEmail = email;
+    persistSession();
+    updateAuthUI();
+}
+
+function clearSessionState() {
+    sessionState = { ...DEFAULT_SESSION };
+    lastAuthEmail = '';
+    sessionStorage.removeItem(SESSION_STORAGE_KEY);
+    updateAuthUI();
 }
 
 function isAdmin() {
-    return sessionStorage.getItem('role') === 'admin';
+    return sessionState.isAdmin;
+}
+
+function isClassAdmin() {
+    return sessionState.isClassAdmin;
+}
+
+function isAuthenticated() {
+    return sessionState.role !== 'guest';
+}
+
+function getRoleLabel(role = sessionState.role) {
+    const labels = LOGIN_TEXT.roleLabels || {};
+    return labels[role] || role;
+}
+
+function getAuthStatusText() {
+    if (!isAuthenticated()) {
+        return LOGIN_TEXT.authStatusGuest;
+    }
+    const roleLabel = getRoleLabel();
+    if (typeof LOGIN_TEXT.authStatusSignedIn === 'function') {
+        return LOGIN_TEXT.authStatusSignedIn(roleLabel);
+    }
+    return LOGIN_TEXT.authStatusSignedIn || roleLabel;
+}
+
+function updateAuthStatus() {
+    const text = getAuthStatusText();
+    const authenticated = isAuthenticated();
+    document.querySelectorAll('[data-auth-status]').forEach((element) => {
+        element.textContent = text;
+        element.classList.toggle('is-authenticated', authenticated);
+    });
+}
+
+function ensureRoleHintElement(button) {
+    if (!button) {
+        return null;
+    }
+    let hint = button.nextElementSibling;
+    if (!hint || !hint.hasAttribute('data-auth-role-hint')) {
+        hint = document.createElement('span');
+        hint.className = 'auth-role-hint';
+        hint.setAttribute('data-auth-role-hint', 'true');
+        button.insertAdjacentElement('afterend', hint);
+    }
+    return hint;
+}
+
+function updateRoleHint() {
+    const button = document.querySelector('[data-auth-button]');
+    const hint = ensureRoleHintElement(button);
+    if (!hint) {
+        return;
+    }
+    const text = getAuthStatusText();
+    hint.textContent = text;
+    hint.dataset.role = sessionState.role;
+    hint.classList.toggle('is-hidden', !text);
+    hint.classList.toggle('is-authenticated', isAuthenticated());
+}
+
+function updateAuthButton() {
+    const button = document.querySelector('[data-auth-button]');
+    if (!button) {
+        return;
+    }
+    button.textContent = isAuthenticated() ? LOGIN_TEXT.logoutButton : LOGIN_TEXT.loginButton;
+}
+
+function setupAuthButton() {
+    const button = document.querySelector('[data-auth-button]');
+    if (!button) {
+        return;
+    }
+
+    if (button.dataset.authBound === 'true') {
+        updateAuthButton();
+        return;
+    }
+
+    button.addEventListener('click', () => {
+        if (isAuthenticated()) {
+            logout();
+        } else {
+            openAuthOverlay(button);
+        }
+    });
+
+    button.dataset.authBound = 'true';
+    updateAuthButton();
+}
+
+function updateFeatureVisibility() {
+    const shouldHide = !isAuthenticated();
+    const actionBar = document.querySelector('.calendar-action-bar');
+    if (actionBar) {
+        actionBar.classList.toggle('is-hidden', shouldHide);
+    }
+    document.querySelectorAll('[data-action="create"]').forEach((element) => {
+        const hideForNonAdmins = !isAdmin();
+        element.classList.toggle('is-hidden', hideForNonAdmins);
+    });
+}
+
+function updateAuthUI() {
+    updateAuthButton();
+    updateRoleHint();
+    updateAuthStatus();
+    updateFeatureVisibility();
+}
+
+function queryAuthForms() {
+    return Array.from(document.querySelectorAll('[data-auth-form]'));
+}
+
+function getEmailInput(form) {
+    return form ? form.querySelector('[data-auth-email]') : null;
+}
+
+function getPasswordInput(form) {
+    return form ? form.querySelector('[data-auth-password]') : null;
+}
+
+function setLoginFeedback(message = '', variant = 'neutral', form = null) {
+    const targets = form ? [form] : queryAuthForms();
+    targets.forEach((currentForm) => {
+        const feedback = currentForm.querySelector('[data-auth-feedback]');
+        if (!feedback) {
+            return;
+        }
+        feedback.textContent = message;
+        const isError = variant === 'error' && Boolean(message);
+        const isSuccess = variant === 'success' && Boolean(message);
+        feedback.classList.toggle('error', isError);
+        feedback.classList.toggle('success', isSuccess);
+        feedback.hidden = !message;
+    });
+}
+
+function togglePasswordVisibility(form) {
+    const input = getPasswordInput(form);
+    const toggle = form ? form.querySelector('[data-auth-toggle]') : null;
+    if (!input || !toggle) {
+        return;
+    }
+    const shouldShow = input.type === 'password';
+    input.type = shouldShow ? 'text' : 'password';
+    toggle.setAttribute('aria-label', shouldShow ? LOGIN_TEXT.hide : LOGIN_TEXT.show);
+    toggle.classList.toggle('visible', shouldShow);
+    input.focus();
+}
+
+function focusPasswordField(form) {
+    const input = getPasswordInput(form);
+    if (input) {
+        input.focus();
+        if (typeof input.select === 'function') {
+            input.select();
+        }
+    }
+}
+
+function getVerificationBanner(form) {
+    return form ? form.querySelector('[data-auth-verification]') : null;
+}
+
+function hideVerificationBanner(form) {
+    const banner = getVerificationBanner(form);
+    if (banner) {
+        banner.hidden = true;
+    }
+}
+
+function showVerificationBanner(form) {
+    const banner = getVerificationBanner(form);
+    if (!banner) {
+        return;
+    }
+    banner.hidden = false;
+}
+
+function setFormLoading(form, isLoading) {
+    if (!form) {
+        return;
+    }
+    const submit = form.querySelector('[data-auth-submit]');
+    if (submit) {
+        submit.disabled = Boolean(isLoading);
+        submit.textContent = isLoading ? LOGIN_TEXT.submitLoading : LOGIN_TEXT.submit;
+    }
+    const resend = form.querySelector('[data-auth-resend]');
+    if (resend && resend.dataset.locked === 'true') {
+        resend.disabled = Boolean(isLoading);
+    }
+}
+
+function rememberEmail(email) {
+    if (!email) {
+        return;
+    }
+    lastAuthEmail = email;
+}
+
+function applyEmailPrefill(form) {
+    if (!form || !lastAuthEmail) {
+        return;
+    }
+    const emailInput = getEmailInput(form);
+    if (emailInput && !emailInput.value) {
+        emailInput.value = lastAuthEmail;
+    }
+}
+
+function bindAuthForms() {
+    queryAuthForms().forEach((form) => {
+        if (form.dataset.authBound === 'true') {
+            applyEmailPrefill(form);
+            return;
+        }
+
+        form.addEventListener('submit', (event) => {
+            event.preventDefault();
+            login(form);
+        });
+
+        const emailInput = getEmailInput(form);
+        if (emailInput) {
+            emailInput.addEventListener('input', () => {
+                rememberEmail(emailInput.value.trim());
+                setLoginFeedback('', 'neutral', form);
+            });
+            emailInput.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    login(form);
+                }
+            });
+        }
+
+        const passwordInput = getPasswordInput(form);
+        if (passwordInput) {
+            passwordInput.addEventListener('input', () => setLoginFeedback('', 'neutral', form));
+            passwordInput.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    login(form);
+                }
+            });
+        }
+
+        const toggle = form.querySelector('[data-auth-toggle]');
+        if (toggle) {
+            toggle.addEventListener('click', () => togglePasswordVisibility(form));
+        }
+
+        const guestButton = form.querySelector('[data-auth-guest]');
+        if (guestButton) {
+            guestButton.addEventListener('click', () => guestLogin());
+        }
+
+        const resendButton = form.querySelector('[data-auth-resend]');
+        if (resendButton) {
+            resendButton.addEventListener('click', () => resendVerification(form));
+        }
+
+        const forgotButton = form.querySelector('[data-auth-forgot]');
+        if (forgotButton) {
+            forgotButton.addEventListener('click', () => handlePasswordReset(form));
+        }
+
+        form.dataset.authBound = 'true';
+        applyEmailPrefill(form);
+    });
+}
+
+function getActiveAuthForm() {
+    const overlay = document.getElementById('auth-overlay');
+    if (overlay && overlay.classList.contains('is-visible')) {
+        const overlayForm = overlay.querySelector('[data-auth-form]');
+        if (overlayForm) {
+            return overlayForm;
+        }
+    }
+    const standalone = document.querySelector('.login-container [data-auth-form]');
+    if (standalone) {
+        return standalone;
+    }
+    return queryAuthForms()[0] || null;
+}
+
+function handleAuthOverlayEscape(event) {
+    if (event.key === 'Escape') {
+        closeAuthOverlay();
+    }
+}
+
+function createAuthOverlay() {
+    let overlay = document.getElementById('auth-overlay');
+    if (overlay) {
+        bindAuthForms();
+        return overlay;
+    }
+
+    overlay = document.createElement('div');
+    overlay.id = 'auth-overlay';
+    overlay.className = 'auth-overlay';
+    overlay.setAttribute('aria-hidden', 'true');
+    overlay.innerHTML = `
+        <div class="auth-overlay__backdrop" data-auth-close></div>
+        <div class="login-container" role="dialog" aria-modal="true" aria-labelledby="auth-overlay-title">
+            <button type="button" class="auth-overlay__close" data-auth-close aria-label="${LOGIN_TEXT.close}">×</button>
+            <img src="../media/logo.png" alt="Logo" class="login-logo">
+            <h2 class="login-title" id="auth-overlay-title">${LOGIN_TEXT.title}</h2>
+            <p class="login-status" data-auth-status>${getAuthStatusText()}</p>
+            <form class="login-form" data-auth-form novalidate>
+                <div class="login-banner" data-auth-verification hidden>
+                    <strong>${LOGIN_TEXT.verificationTitle}</strong>
+                    <p>${LOGIN_TEXT.verificationDescription}</p>
+                    <button type="button" class="login-link" data-auth-resend>${LOGIN_TEXT.verificationResend}</button>
+                </div>
+                <div class="form-group">
+                    <label for="overlay-email">${LOGIN_TEXT.emailLabel}</label>
+                    <input type="email" id="overlay-email" class="form-control" placeholder="${LOGIN_TEXT.emailPlaceholder}" autocomplete="email" data-auth-email>
+                </div>
+                <div class="form-group">
+                    <label for="overlay-password">${LOGIN_TEXT.passwordLabel}</label>
+                    <div class="password-field">
+                        <input type="password" id="overlay-password" class="form-control" placeholder="${LOGIN_TEXT.passwordPlaceholder}" autocomplete="current-password" data-auth-password>
+                        <button type="button" class="toggle-password" data-auth-toggle aria-label="${LOGIN_TEXT.show}">
+                            <span class="eye-icon" aria-hidden="true"></span>
+                        </button>
+                    </div>
+                    <div class="login-feedback" data-auth-feedback role="alert" aria-live="polite" hidden></div>
+                </div>
+                <div class="login-links">
+                    <button type="button" class="login-link" data-auth-forgot>${LOGIN_TEXT.forgotPassword}</button>
+                </div>
+                <div class="login-actions">
+                    <button type="submit" class="login-button" data-auth-submit>${LOGIN_TEXT.submit}</button>
+                    <button type="button" class="guest-button" data-auth-guest>${LOGIN_TEXT.guestButton}</button>
+                    <p class="guest-info">${LOGIN_TEXT.guestInfo}</p>
+                </div>
+            </form>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    overlay.querySelectorAll('[data-auth-close]').forEach((element) => {
+        element.addEventListener('click', closeAuthOverlay);
+    });
+
+    overlay.addEventListener('click', (event) => {
+        if (event.target === overlay) {
+            closeAuthOverlay();
+        }
+    });
+
+    bindAuthForms();
+
+    return overlay;
+}
+
+function initAuthOverlay() {
+    if (!authOverlayInitialized) {
+        createAuthOverlay();
+        authOverlayInitialized = true;
+    } else {
+        bindAuthForms();
+    }
+    return document.getElementById('auth-overlay');
+}
+
+function openAuthOverlay(trigger) {
+    const overlay = initAuthOverlay();
+    if (!overlay) {
+        return;
+    }
+
+    authOverlayPreviousFocus = trigger || document.activeElement;
+
+    const form = overlay.querySelector('[data-auth-form]');
+    hideVerificationBanner(form);
+    setLoginFeedback('', 'neutral', form);
+    applyEmailPrefill(form);
+
+    overlay.classList.add('is-visible');
+    overlay.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('has-auth-overlay');
+    bindAuthForms();
+    updateAuthStatus();
+
+    window.setTimeout(() => focusPasswordField(form), 0);
+    document.addEventListener('keydown', handleAuthOverlayEscape);
+}
+
+function closeAuthOverlay() {
+    const overlay = document.getElementById('auth-overlay');
+    if (!overlay) {
+        return;
+    }
+
+    overlay.classList.remove('is-visible');
+    overlay.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('has-auth-overlay');
+    document.removeEventListener('keydown', handleAuthOverlayEscape);
+
+    const form = overlay.querySelector('[data-auth-form]');
+    hideVerificationBanner(form);
+    setLoginFeedback('', 'neutral', form);
+
+    if (authOverlayPreviousFocus && typeof authOverlayPreviousFocus.focus === 'function') {
+        try {
+            authOverlayPreviousFocus.focus();
+        } catch (error) {
+            /* ignore */
+        }
+    }
+
+    authOverlayPreviousFocus = null;
+}
+
+async function login(form) {
+    const targetForm = form || getActiveAuthForm();
+    if (!targetForm) {
+        return;
+    }
+
+    const emailInput = getEmailInput(targetForm);
+    const passwordInput = getPasswordInput(targetForm);
+    const email = emailInput ? emailInput.value.trim().toLowerCase() : '';
+    const password = passwordInput ? passwordInput.value : '';
+
+    if (!email) {
+        setLoginFeedback(LOGIN_TEXT.emailRequired, 'error', targetForm);
+        emailInput?.focus();
+        return;
+    }
+
+    if (!password) {
+        setLoginFeedback(LOGIN_TEXT.passwordRequired, 'error', targetForm);
+        focusPasswordField(targetForm);
+        return;
+    }
+
+    setLoginFeedback('', 'neutral', targetForm);
+    hideVerificationBanner(targetForm);
+    setFormLoading(targetForm, true);
+
+    try {
+        const response = await fetch(AUTH_API.login, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ email, password })
+        });
+
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+            if (data && data.message === 'email_not_verified') {
+                setLoginFeedback(LOGIN_TEXT.emailNotVerified, 'error', targetForm);
+                showVerificationBanner(targetForm);
+                rememberEmail(email);
+            } else if (data && data.message === 'invalid_credentials') {
+                setLoginFeedback(LOGIN_TEXT.invalidCredentials, 'error', targetForm);
+                focusPasswordField(targetForm);
+            } else if (data && data.message === 'inactive') {
+                setLoginFeedback(LOGIN_TEXT.inactive, 'error', targetForm);
+            } else {
+                setLoginFeedback(LOGIN_TEXT.genericError, 'error', targetForm);
+            }
+            return;
+        }
+
+        const role = data && data.role ? data.role : 'student';
+        setAuthenticatedSession(role, email);
+        closeAuthOverlay();
+
+        if (isAdmin()) {
+            window.location.href = AUTH_PATHS.admin;
+            return;
+        }
+
+        if (window.location.pathname.toLowerCase().includes(AUTH_PATHS.login)) {
+            window.location.href = AUTH_PATHS.home;
+        } else {
+            window.location.reload();
+        }
+    } catch (error) {
+        console.error('Login fehlgeschlagen', error);
+        setLoginFeedback(LOGIN_TEXT.genericError, 'error', targetForm);
+    } finally {
+        setFormLoading(targetForm, false);
+    }
+}
+
+async function resendVerification(form) {
+    const targetForm = form || getActiveAuthForm();
+    if (!targetForm) {
+        return;
+    }
+    const emailInput = getEmailInput(targetForm);
+    const email = emailInput && emailInput.value ? emailInput.value.trim().toLowerCase() : lastAuthEmail;
+    if (!email) {
+        setLoginFeedback(LOGIN_TEXT.emailRequired, 'error', targetForm);
+        emailInput?.focus();
+        return;
+    }
+    const button = targetForm.querySelector('[data-auth-resend]');
+    if (button) {
+        button.disabled = true;
+        button.dataset.locked = 'true';
+        button.textContent = LOGIN_TEXT.verificationResendLoading;
+    }
+    try {
+        const response = await fetch(AUTH_API.resend, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        if (response.ok) {
+            setLoginFeedback(LOGIN_TEXT.resendSuccess, 'success', targetForm);
+            rememberEmail(email);
+        } else {
+            setLoginFeedback(LOGIN_TEXT.resendError, 'error', targetForm);
+        }
+    } catch (error) {
+        console.error('Resend fehlgeschlagen', error);
+        setLoginFeedback(LOGIN_TEXT.resendError, 'error', targetForm);
+    } finally {
+        if (button) {
+            button.disabled = false;
+            button.dataset.locked = 'false';
+            button.textContent = LOGIN_TEXT.verificationResend;
+        }
+    }
+}
+
+async function handlePasswordReset(form) {
+    const targetForm = form || getActiveAuthForm();
+    if (!targetForm) {
+        return;
+    }
+
+    const emailInput = getEmailInput(targetForm);
+    const email = emailInput ? emailInput.value.trim().toLowerCase() : '';
+    if (!email) {
+        setLoginFeedback(LOGIN_TEXT.forgotPasswordMissingEmail, 'error', targetForm);
+        emailInput?.focus();
+        return;
+    }
+
+    const button = targetForm.querySelector('[data-auth-forgot]');
+    if (button) {
+        button.disabled = true;
+    }
+
+    try {
+        const response = await fetch(AUTH_API.passwordReset, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+
+        if (response.ok) {
+            setLoginFeedback(LOGIN_TEXT.passwordResetSent, 'success', targetForm);
+            rememberEmail(email);
+        } else {
+            setLoginFeedback(LOGIN_TEXT.passwordResetError, 'error', targetForm);
+        }
+    } catch (error) {
+        console.error('Passwort-Zurücksetzen fehlgeschlagen', error);
+        setLoginFeedback(LOGIN_TEXT.passwordResetError, 'error', targetForm);
+    } finally {
+        if (button) {
+            button.disabled = false;
+        }
+    }
+}
+
+function guestLogin() {
+    clearSessionState();
+    closeAuthOverlay();
+}
+
+async function logout() {
+    try {
+        await fetch(AUTH_API.logout, {
+            method: 'POST',
+            credentials: 'include'
+        });
+    } catch (error) {
+        console.error('Logout fehlgeschlagen', error);
+    } finally {
+        clearSessionState();
+        window.location.reload();
+    }
 }
 
 const CREATE_DISABLED_MESSAGE = (window.hmI18n && window.hmI18n.get('calendar.actions.create.disabled'))
@@ -50,260 +757,6 @@ const CALENDAR_MODAL_MESSAGES = {
         'Der Eintrag konnte nach mehreren Versuchen nicht gespeichert werden. Bitte versuche es später noch einmal.'
     )
 };
-
-function setLoginFeedback(message = '', isError = false) {
-    const feedback = document.getElementById('login-feedback');
-    if (!feedback) return;
-    feedback.textContent = message;
-    if (message) {
-        feedback.classList.toggle('error', Boolean(isError));
-    } else {
-        feedback.classList.remove('error');
-    }
-}
-
-function focusPasswordField() {
-    const input = document.getElementById('passwort');
-    if (input) {
-        input.focus();
-        if (typeof input.select === 'function') {
-            input.select();
-        }
-    }
-}
-
-function resetAuthForm() {
-    const input = document.getElementById('passwort');
-    if (input) {
-        input.value = '';
-        input.type = 'password';
-    }
-    const toggle = document.getElementById('toggle-password');
-    if (toggle) {
-        toggle.setAttribute('aria-label', LOGIN_TEXT.show);
-        toggle.classList.remove('visible');
-    }
-    setLoginFeedback('');
-}
-
-function togglePasswordVisibility() {
-    const input = document.getElementById('passwort');
-    const toggle = document.getElementById('toggle-password');
-    if (!input || !toggle) return;
-    const shouldShow = input.type === 'password';
-    input.type = shouldShow ? 'text' : 'password';
-    toggle.setAttribute('aria-label', shouldShow ? LOGIN_TEXT.hide : LOGIN_TEXT.show);
-    toggle.classList.toggle('visible', shouldShow);
-    input.focus();
-}
-
-function handlePasswordKey(event) {
-    if (event.key === 'Enter') {
-        event.preventDefault();
-        login();
-    }
-}
-
-function attachLoginFieldListeners() {
-    const input = document.getElementById('passwort');
-    if (input && input.dataset.authListeners !== 'true') {
-        input.addEventListener('input', () => setLoginFeedback(''));
-        input.addEventListener('keyup', handlePasswordKey);
-        input.dataset.authListeners = 'true';
-    }
-
-    const toggle = document.getElementById('toggle-password');
-    if (toggle && toggle.dataset.authListeners !== 'true') {
-        toggle.addEventListener('click', togglePasswordVisibility);
-        toggle.dataset.authListeners = 'true';
-    }
-}
-
-function createAuthOverlay() {
-    let overlay = document.getElementById('auth-overlay');
-    if (overlay) {
-        attachLoginFieldListeners();
-        return overlay;
-    }
-
-    overlay = document.createElement('div');
-    overlay.id = 'auth-overlay';
-    overlay.className = 'auth-overlay';
-    overlay.setAttribute('aria-hidden', 'true');
-    overlay.innerHTML = `
-        <div class="auth-overlay__backdrop" data-auth-close></div>
-        <div class="login-container" role="dialog" aria-modal="true" aria-labelledby="auth-overlay-title">
-            <button type="button" class="auth-overlay__close" data-auth-close aria-label="${LOGIN_TEXT.close}">×</button>
-            <img src="../media/logo.png" alt="Logo" class="login-logo">
-            <h2 class="login-title" id="auth-overlay-title">${LOGIN_TEXT.title}</h2>
-            <form class="login-form" novalidate>
-                <div class="form-group">
-                    <label for="passwort">${LOGIN_TEXT.passwordLabel}</label>
-                    <div class="password-field">
-                        <input type="password" id="passwort" class="form-control" placeholder="${LOGIN_TEXT.placeholder}" autocomplete="current-password" />
-                        <button type="button" id="toggle-password" class="toggle-password" aria-label="${LOGIN_TEXT.show}">
-                            <span class="eye-icon" aria-hidden="true"></span>
-                        </button>
-                    </div>
-                    <div id="login-feedback" class="login-feedback" role="alert" aria-live="polite"></div>
-                </div>
-                <div class="login-actions">
-                    <button type="submit" class="login-button">${LOGIN_TEXT.submit}</button>
-                    <button type="button" class="guest-button" data-auth-guest>${LOGIN_TEXT.guestButton}</button>
-                    <p class="guest-info">${LOGIN_TEXT.guestInfo}</p>
-                </div>
-            </form>
-        </div>
-    `;
-
-    document.body.appendChild(overlay);
-
-    overlay.querySelectorAll('[data-auth-close]').forEach((element) => {
-        element.addEventListener('click', closeAuthOverlay);
-    });
-
-    overlay.addEventListener('click', (event) => {
-        if (event.target === overlay) {
-            closeAuthOverlay();
-        }
-    });
-
-    const form = overlay.querySelector('.login-form');
-    if (form) {
-        form.addEventListener('submit', (event) => {
-            event.preventDefault();
-            login();
-        });
-    }
-
-    const guestButton = overlay.querySelector('[data-auth-guest]');
-    if (guestButton) {
-        guestButton.addEventListener('click', guestLogin);
-    }
-
-    attachLoginFieldListeners();
-
-    return overlay;
-}
-
-function initAuthOverlay() {
-    if (!authOverlayInitialized) {
-        createAuthOverlay();
-        authOverlayInitialized = true;
-    } else {
-        attachLoginFieldListeners();
-    }
-    return document.getElementById('auth-overlay');
-}
-
-function updateAuthButton() {
-    const button = document.querySelector('[data-auth-button]');
-    if (!button) {
-        return;
-    }
-
-    button.textContent = isAdmin() ? LOGIN_TEXT.logoutButton : LOGIN_TEXT.loginButton;
-}
-
-function setupAuthButton() {
-    const button = document.querySelector('[data-auth-button]');
-    if (!button) {
-        return;
-    }
-
-    if (button.dataset.authBound === 'true') {
-        updateAuthButton();
-        return;
-    }
-
-    button.addEventListener('click', () => {
-        if (isAdmin()) {
-            logout();
-        } else {
-            openAuthOverlay(button);
-        }
-    });
-
-    button.dataset.authBound = 'true';
-    updateAuthButton();
-}
-
-function handleAuthOverlayEscape(event) {
-    if (event.key === 'Escape') {
-        closeAuthOverlay();
-    }
-}
-
-function openAuthOverlay(trigger) {
-    const overlay = initAuthOverlay();
-    if (!overlay) {
-        return;
-    }
-
-    authOverlayPreviousFocus = trigger || document.activeElement;
-    resetAuthForm();
-    overlay.classList.add('is-visible');
-    overlay.setAttribute('aria-hidden', 'false');
-    document.body.classList.add('has-auth-overlay');
-    attachLoginFieldListeners();
-    window.setTimeout(() => focusPasswordField(), 0);
-    document.addEventListener('keydown', handleAuthOverlayEscape);
-}
-
-function closeAuthOverlay() {
-    const overlay = document.getElementById('auth-overlay');
-    if (!overlay) {
-        return;
-    }
-
-    overlay.classList.remove('is-visible');
-    overlay.setAttribute('aria-hidden', 'true');
-    document.body.classList.remove('has-auth-overlay');
-    document.removeEventListener('keydown', handleAuthOverlayEscape);
-    resetAuthForm();
-
-    if (authOverlayPreviousFocus && typeof authOverlayPreviousFocus.focus === 'function') {
-        try {
-            authOverlayPreviousFocus.focus();
-        } catch (error) {
-            /* ignore focus errors */
-        }
-    }
-
-    authOverlayPreviousFocus = null;
-}
-
-function login() {
-    const input = document.getElementById('passwort');
-    if (!input) return;
-    const pw = input.value.trim();
-    if (!pw) {
-        setLoginFeedback(LOGIN_TEXT.empty, true);
-        focusPasswordField();
-        return;
-    }
-    if (pw === 'l23a-admin') {
-        sessionStorage.setItem('role', 'admin');
-        setLoginFeedback('');
-        closeAuthOverlay();
-        window.location.reload();
-    } else {
-        setLoginFeedback(LOGIN_TEXT.wrong, true);
-        focusPasswordField();
-    }
-}
-
-function guestLogin() {
-    sessionStorage.setItem('role', 'guest');
-    updateAuthButton();
-    closeAuthOverlay();
-}
-
-function logout() {
-    sessionStorage.setItem('role', 'guest');
-    closeAuthOverlay();
-    window.location.reload();
-}
 
 function menuButton() {
     const links = document.getElementById('navbarlinks');
@@ -604,17 +1057,25 @@ function initSimpleNav() {
 }
 
 function checkLogin() {
-    const isLoginPage = window.location.pathname.toLowerCase().includes('login.html');
-    ensureRole();
+    const pathname = window.location.pathname.toLowerCase();
+    const isLoginPage = pathname.endsWith('login.html');
+
+    bindAuthForms();
+    updateAuthUI();
+    setupAuthButton();
 
     if (isLoginPage) {
-        window.location.replace('index.html');
-        return;
+        if (isAdmin()) {
+            window.location.replace(AUTH_PATHS.admin);
+            return;
+        }
+        if (isAuthenticated()) {
+            window.location.replace(AUTH_PATHS.home);
+            return;
+        }
     }
 
     initAuthOverlay();
-    setupAuthButton();
-    updateAuthButton();
 }
 
   
@@ -969,7 +1430,7 @@ function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES)
 }
 
 function showEntryForm() {
-    if (sessionStorage.getItem('role') !== 'admin') {
+    if (!isAdmin()) {
         showOverlay(CREATE_DISABLED_MESSAGE);
         return;
     }

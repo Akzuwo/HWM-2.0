@@ -11,20 +11,33 @@
   <div class="login-container">
     <img src="../media/logo.png" alt="Logo" class="login-logo">
     <h2 class="login-title">🔒 Login</h2>
-    <form class="login-form" onsubmit="event.preventDefault(); login();">
+    <p class="login-status" data-auth-status>Nicht angemeldet</p>
+    <form class="login-form" data-auth-form novalidate>
+      <div class="login-banner" data-auth-verification hidden>
+        <strong>E-Mail-Bestätigung erforderlich</strong>
+        <p>Bitte bestätige deine E-Mail-Adresse über den Link in deiner Nachricht oder fordere eine neue E-Mail an.</p>
+        <button type="button" class="login-link" data-auth-resend>Bestätigungsmail erneut senden</button>
+      </div>
       <div class="form-group">
-        <label for="passwort">Passwort</label>
+        <label for="login-email">E-Mail-Adresse</label>
+        <input type="email" id="login-email" class="form-control" placeholder="name@example.com" autocomplete="email" data-auth-email required>
+      </div>
+      <div class="form-group">
+        <label for="login-password">Passwort</label>
         <div class="password-field">
-          <input type="password" id="passwort" class="form-control" placeholder="Passwort" autofocus onkeyup="handlePasswordKey(event)">
-          <button type="button" id="toggle-password" class="toggle-password" aria-label="Passwort anzeigen" onclick="togglePasswordVisibility()">
+          <input type="password" id="login-password" class="form-control" placeholder="Passwort" autocomplete="current-password" data-auth-password>
+          <button type="button" class="toggle-password" data-auth-toggle aria-label="Passwort anzeigen">
             <span class="eye-icon" aria-hidden="true"></span>
           </button>
         </div>
-        <div id="login-feedback" class="login-feedback" role="alert" aria-live="polite"></div>
+        <div class="login-feedback" data-auth-feedback role="alert" aria-live="polite" hidden></div>
+      </div>
+      <div class="login-links">
+        <button type="button" class="login-link" data-auth-forgot>Passwort vergessen?</button>
       </div>
       <div class="login-actions">
-        <button type="button" class="login-button" onclick="login()">Anmelden</button>
-        <button type="button" class="guest-button" onclick="guestLogin()">Als Gast fortfahren</button>
+        <button type="submit" class="login-button" data-auth-submit>Anmelden</button>
+        <button type="button" class="guest-button" data-auth-guest>Als Gast fortfahren</button>
         <p class="guest-info">Fortfahren ohne Konto</p>
       </div>
     </form>
