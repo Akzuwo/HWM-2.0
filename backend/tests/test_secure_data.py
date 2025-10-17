@@ -44,6 +44,7 @@ class DummyCursor:
                 'password_hash': user['password_hash'],
                 'is_active': user.get('is_active', 1),
                 'role': user.get('role', 'student'),
+                'class_id': user.get('class_id'),
                 'email_verified_at': user.get('email_verified_at'),
             }
             if self.dictionary:
@@ -53,9 +54,10 @@ class DummyCursor:
                     result['id'],
                     result['email'],
                     result['password_hash'],
+                    result['role'],
+                    result['class_id'],
                     result['is_active'],
                     result['email_verified_at'],
-                    result['role'],
                 )
         elif normalized.startswith("insert into users"):
             email, password_hash, role, class_id, is_active, email_verified_at = params
@@ -76,6 +78,12 @@ class DummyCursor:
             for user in users.values():
                 if user['id'] == user_id:
                     user.setdefault('last_login_updates', []).append(params)
+                    break
+        elif normalized.startswith("update users set class_id"):
+            class_id, user_id = params
+            for user in users.values():
+                if user['id'] == user_id:
+                    user['class_id'] = class_id
                     break
         elif normalized.startswith("update users set email_verified_at"):
             email_verified_at, user_id = params
