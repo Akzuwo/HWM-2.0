@@ -1,3 +1,4 @@
+import json
 import os
 import datetime
 import re
@@ -6,7 +7,7 @@ import smtplib
 from collections import OrderedDict
 from contextlib import closing
 from email.message import EmailMessage
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple, Any, Iterable
 
 from ics import Calendar, Event
 import pytz
@@ -55,6 +56,106 @@ DB_CONFIG = {
 pool = pooling.MySQLConnectionPool(pool_name="mypool", pool_size=5, pool_reset_session=True, **DB_CONFIG)
 def get_connection():
     return pool.get_connection()
+
+
+def _serialize_value(value: Any) -> Any:
+    if isinstance(value, datetime.datetime):
+        if value.tzinfo is not None:
+            value = value.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+        return value.isoformat(timespec='seconds')
+    if isinstance(value, datetime.date):
+        return value.isoformat()
+    return value
+
+
+def _serialize_rows(rows: Iterable[Dict[str, Any]]) -> Iterable[Dict[str, Any]]:
+    serialized = []
+    for row in rows:
+        serialized.append({key: _serialize_value(value) for key, value in row.items()})
+    return serialized
+
+
+def _parse_pagination(default_size: int = 25, max_size: int = 100) -> Tuple[int, int]:
+    try:
+        page = int(request.args.get('page', 1))
+    except (TypeError, ValueError):
+        page = 1
+    if page < 1:
+        page = 1
+
+    try:
+        page_size = int(request.args.get('page_size', default_size))
+    except (TypeError, ValueError):
+        page_size = default_size
+    if page_size < 1:
+        page_size = default_size
+    page_size = min(page_size, max_size)
+    return page, page_size
+
+
+def _log_admin_action(conn, action: str, entity_type: str, entity_id: Optional[int] = None, details: Optional[Dict[str, Any]] = None) -> None:
+    actor_id = session.get('user_id')
+    if not actor_id:
+        return
+
+    payload = None
+    if details is not None:
+        try:
+            payload = json.dumps(details, ensure_ascii=False)
+        except (TypeError, ValueError):
+            payload = None
+
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            """
+            INSERT INTO admin_audit_logs (actor_id, action, entity_type, entity_id, details)
+            VALUES (%s, %s, %s, %s, %s)
+            """,
+            (actor_id, action, entity_type, entity_id, payload),
+        )
+    except mysql.connector.Error:
+        app.logger.exception('Failed to write admin audit log')
+    finally:
+        cursor.close()
+
+
+def _pagination_response(data: Iterable[Dict[str, Any]], total: int, page: int, page_size: int):
+    return jsonify(
+        {
+            'status': 'ok',
+            'data': list(_serialize_rows(data)),
+            'pagination': {
+                'page': page,
+                'page_size': page_size,
+                'total': total,
+            },
+        }
+    )
+
+
+def _parse_bool(value: Any, default: bool = True) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    if isinstance(value, str):
+        value = value.strip().lower()
+        if value in {'1', 'true', 'yes', 'on'}:
+            return True
+        if value in {'0', 'false', 'no', 'off'}:
+            return False
+    return default
+
+
+def _ensure_int(value: Any, allow_none: bool = True) -> Optional[int]:
+    if value is None:
+        return None if allow_none else None
+    try:
+        ivalue = int(value)
+    except (TypeError, ValueError):
+        return None
+    return ivalue
 
 
 DEFAULT_CLASS_SLUG = (os.getenv('DEFAULT_CLASS_SLUG', 'default') or 'default').strip().lower() or 'default'
@@ -976,11 +1077,606 @@ def resend_admin_verification():
     return jsonify(status='ok')
 
 
+@app.route('/api/admin/users', methods=['GET', 'POST', 'OPTIONS'])
+@require_role('admin')
+def admin_users_collection():
+    if request.method == 'OPTIONS':
+        return _cors_preflight()
+
+    try:
+        conn = get_connection()
+    except Exception:
+        return jsonify(status='error', message='database_unavailable'), 503
+
+    with closing(conn):
+        if request.method == 'GET':
+            page, page_size = _parse_pagination()
+            offset = (page - 1) * page_size
+            cursor = conn.cursor(dictionary=True)
+            try:
+                cursor.execute("SELECT COUNT(*) AS total FROM users")
+                total_row = cursor.fetchone() or {'total': 0}
+                total = int(total_row.get('total') or 0)
+                cursor.execute(
+                    """
+                    SELECT id, email, role, class_id, is_active, created_at, updated_at
+                    FROM users
+                    ORDER BY id DESC
+                    LIMIT %s OFFSET %s
+                    """,
+                    (page_size, offset),
+                )
+                data = cursor.fetchall() or []
+            except mysql.connector.Error:
+                return jsonify(status='error', message='database_unavailable'), 503
+            finally:
+                cursor.close()
+            return _pagination_response(data, total, page, page_size)
+
+        data = request.json or {}
+        email = (data.get('email') or '').strip().lower()
+        password = data.get('password')
+        role = (data.get('role') or 'student').strip().lower() or 'student'
+        class_id = _ensure_int(data.get('class_id'))
+        is_active = _parse_bool(data.get('is_active'), True)
+
+        if not email or '@' not in email:
+            return jsonify(status='error', message='invalid_email'), 400
+        if role not in {'student', 'teacher', 'admin'}:
+            return jsonify(status='error', message='invalid_role'), 400
+        if not password:
+            return jsonify(status='error', message='password_required'), 400
+
+        password_hash = hash_password(password)
+        now = datetime.datetime.utcnow()
+
+        cursor = conn.cursor()
+        try:
+            if class_id:
+                cursor.execute("SELECT id FROM classes WHERE id=%s", (class_id,))
+                if cursor.fetchone() is None:
+                    return jsonify(status='error', message='class_not_found'), 404
+                cursor.close()
+                cursor = conn.cursor()
+
+            cursor.execute(
+                """
+                INSERT INTO users (email, password_hash, role, class_id, is_active, created_at, updated_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """,
+                (email, password_hash, role, class_id, int(is_active), now, now),
+            )
+            user_id = cursor.lastrowid
+            _log_admin_action(
+                conn,
+                'create',
+                'user',
+                user_id,
+                {'email': email, 'role': role, 'class_id': class_id, 'is_active': bool(is_active)},
+            )
+            conn.commit()
+        except mysql.connector.Error as exc:
+            conn.rollback()
+            if getattr(exc, 'errno', None) == mysql.connector.errorcode.ER_DUP_ENTRY:
+                return jsonify(status='error', message='duplicate_email'), 409
+            return jsonify(status='error', message='database_unavailable'), 503
+        finally:
+            cursor.close()
+
+    return jsonify(status='ok', id=user_id)
+
+
+@app.route('/api/admin/users/<int:user_id>', methods=['GET', 'PUT', 'DELETE', 'OPTIONS'])
+@require_role('admin')
+def admin_users_resource(user_id: int):
+    if request.method == 'OPTIONS':
+        return _cors_preflight()
+
+    try:
+        conn = get_connection()
+    except Exception:
+        return jsonify(status='error', message='database_unavailable'), 503
+
+    with closing(conn):
+        cursor = conn.cursor(dictionary=True)
+        try:
+            if request.method == 'GET':
+                cursor.execute(
+                    """
+                    SELECT id, email, role, class_id, is_active, created_at, updated_at
+                    FROM users
+                    WHERE id=%s
+                    LIMIT 1
+                    """,
+                    (user_id,),
+                )
+                row = cursor.fetchone()
+                if not row:
+                    return jsonify(status='error', message='user_not_found'), 404
+                return jsonify(status='ok', data=list(_serialize_rows([row]))[0])
+
+            if request.method == 'DELETE':
+                cursor.close()
+                cursor = conn.cursor()
+                cursor.execute("DELETE FROM users WHERE id=%s", (user_id,))
+                if cursor.rowcount == 0:
+                    return jsonify(status='error', message='user_not_found'), 404
+                _log_admin_action(conn, 'delete', 'user', user_id, {})
+                conn.commit()
+                return jsonify(status='ok')
+
+            data = request.json or {}
+            updates = []
+            values = []
+
+            if 'email' in data:
+                email = (data.get('email') or '').strip().lower()
+                if not email or '@' not in email:
+                    return jsonify(status='error', message='invalid_email'), 400
+                updates.append('email=%s')
+                values.append(email)
+
+            role_value = None
+            if 'role' in data:
+                role_value = (data.get('role') or '').strip().lower()
+                if role_value not in {'student', 'teacher', 'admin'}:
+                    return jsonify(status='error', message='invalid_role'), 400
+                updates.append('role=%s')
+                values.append(role_value)
+
+            class_value = None
+            if 'class_id' in data:
+                class_value = _ensure_int(data.get('class_id'))
+                if class_value is not None and class_value <= 0:
+                    return jsonify(status='error', message='invalid_class_id'), 400
+                if class_value:
+                    cursor.execute("SELECT id FROM classes WHERE id=%s", (class_value,))
+                    if cursor.fetchone() is None:
+                        return jsonify(status='error', message='class_not_found'), 404
+                    cursor.close()
+                    cursor = conn.cursor(dictionary=True)
+                updates.append('class_id=%s')
+                values.append(class_value)
+
+            active_value = None
+            if 'is_active' in data:
+                active_value = _parse_bool(data.get('is_active'), True)
+                updates.append('is_active=%s')
+                values.append(int(active_value))
+
+            if 'password' in data:
+                password = data.get('password')
+                if not password:
+                    return jsonify(status='error', message='password_required'), 400
+                updates.append('password_hash=%s')
+                values.append(hash_password(password))
+
+            if not updates:
+                return jsonify(status='error', message='no_changes'), 400
+
+            cursor.close()
+            cursor = conn.cursor()
+            query = f"UPDATE users SET {', '.join(updates)} WHERE id=%s"
+            values.append(user_id)
+            cursor.execute(query, tuple(values))
+            if cursor.rowcount == 0:
+                return jsonify(status='error', message='user_not_found'), 404
+            _log_admin_action(
+                conn,
+                'update',
+                'user',
+                user_id,
+                {
+                    key: value
+                    for key, value in [
+                        ('email', data.get('email') if 'email' in data else None),
+                        ('role', role_value),
+                        ('class_id', class_value),
+                        ('is_active', active_value),
+                    ]
+                    if value is not None
+                },
+            )
+            conn.commit()
+            return jsonify(status='ok')
+        except mysql.connector.Error as exc:
+            conn.rollback()
+            if getattr(exc, 'errno', None) == mysql.connector.errorcode.ER_DUP_ENTRY:
+                return jsonify(status='error', message='duplicate_email'), 409
+            return jsonify(status='error', message='database_unavailable'), 503
+        finally:
+            cursor.close()
+
+
 @app.route('/api/secure-data')
 @require_admin
 def secure_data():
     return jsonify(status='ok', data='Hier sind geheime Daten!')
 
+
+@app.route('/api/admin/classes', methods=['GET', 'POST', 'OPTIONS'])
+@require_role('admin')
+def admin_classes_collection():
+    if request.method == 'OPTIONS':
+        return _cors_preflight()
+
+    try:
+        conn = get_connection()
+    except Exception:
+        return jsonify(status='error', message='database_unavailable'), 503
+
+    with closing(conn):
+        if request.method == 'GET':
+            page, page_size = _parse_pagination()
+            offset = (page - 1) * page_size
+            cursor = conn.cursor(dictionary=True)
+            try:
+                cursor.execute("SELECT COUNT(*) AS total FROM classes")
+                total = int((cursor.fetchone() or {'total': 0}).get('total') or 0)
+                cursor.execute(
+                    """
+                    SELECT id, slug, title, description, is_active, created_at, updated_at
+                    FROM classes
+                    ORDER BY title ASC
+                    LIMIT %s OFFSET %s
+                    """,
+                    (page_size, offset),
+                )
+                rows = cursor.fetchall() or []
+            except mysql.connector.Error:
+                return jsonify(status='error', message='database_unavailable'), 503
+            finally:
+                cursor.close()
+            return _pagination_response(rows, total, page, page_size)
+
+        data = request.json or {}
+        slug = (data.get('slug') or '').strip().lower()
+        title = (data.get('title') or '').strip()
+        description = (data.get('description') or '').strip() or None
+        is_active = _parse_bool(data.get('is_active'), True)
+
+        if not slug or not re.match(r'^[a-z0-9\-]+$', slug):
+            return jsonify(status='error', message='invalid_slug'), 400
+        if not title:
+            return jsonify(status='error', message='title_required'), 400
+
+        now = datetime.datetime.utcnow()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """
+                INSERT INTO classes (slug, title, description, is_active, created_at, updated_at)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                """,
+                (slug, title, description, int(is_active), now, now),
+            )
+            class_id = cursor.lastrowid
+            _log_admin_action(
+                conn,
+                'create',
+                'class',
+                class_id,
+                {'slug': slug, 'title': title, 'is_active': bool(is_active)},
+            )
+            conn.commit()
+        except mysql.connector.Error as exc:
+            conn.rollback()
+            if getattr(exc, 'errno', None) == mysql.connector.errorcode.ER_DUP_ENTRY:
+                return jsonify(status='error', message='duplicate_class'), 409
+            return jsonify(status='error', message='database_unavailable'), 503
+        finally:
+            cursor.close()
+
+    return jsonify(status='ok', id=class_id)
+
+
+@app.route('/api/admin/classes/<int:class_id>', methods=['GET', 'PUT', 'DELETE', 'OPTIONS'])
+@require_role('admin')
+def admin_classes_resource(class_id: int):
+    if request.method == 'OPTIONS':
+        return _cors_preflight()
+
+    try:
+        conn = get_connection()
+    except Exception:
+        return jsonify(status='error', message='database_unavailable'), 503
+
+    with closing(conn):
+        cursor = conn.cursor(dictionary=True)
+        try:
+            if request.method == 'GET':
+                cursor.execute(
+                    """
+                    SELECT id, slug, title, description, is_active, created_at, updated_at
+                    FROM classes
+                    WHERE id=%s
+                    LIMIT 1
+                    """,
+                    (class_id,),
+                )
+                row = cursor.fetchone()
+                if not row:
+                    return jsonify(status='error', message='class_not_found'), 404
+                return jsonify(status='ok', data=list(_serialize_rows([row]))[0])
+
+            if request.method == 'DELETE':
+                cursor.close()
+                cursor = conn.cursor()
+                cursor.execute("DELETE FROM classes WHERE id=%s", (class_id,))
+                if cursor.rowcount == 0:
+                    return jsonify(status='error', message='class_not_found'), 404
+                _log_admin_action(conn, 'delete', 'class', class_id, {})
+                conn.commit()
+                return jsonify(status='ok')
+
+            data = request.json or {}
+            updates = []
+            values = []
+
+            if 'slug' in data:
+                slug = (data.get('slug') or '').strip().lower()
+                if not slug or not re.match(r'^[a-z0-9\-]+$', slug):
+                    return jsonify(status='error', message='invalid_slug'), 400
+                updates.append('slug=%s')
+                values.append(slug)
+
+            title_value = None
+            if 'title' in data:
+                title_value = (data.get('title') or '').strip()
+                if not title_value:
+                    return jsonify(status='error', message='title_required'), 400
+                updates.append('title=%s')
+                values.append(title_value)
+
+            if 'description' in data:
+                description_value = (data.get('description') or '').strip() or None
+                updates.append('description=%s')
+                values.append(description_value)
+
+            active_value = None
+            if 'is_active' in data:
+                active_value = _parse_bool(data.get('is_active'), True)
+                updates.append('is_active=%s')
+                values.append(int(active_value))
+
+            if not updates:
+                return jsonify(status='error', message='no_changes'), 400
+
+            cursor.close()
+            cursor = conn.cursor()
+            query = f"UPDATE classes SET {', '.join(updates)} WHERE id=%s"
+            values.append(class_id)
+            cursor.execute(query, tuple(values))
+            if cursor.rowcount == 0:
+                return jsonify(status='error', message='class_not_found'), 404
+            _log_admin_action(
+                conn,
+                'update',
+                'class',
+                class_id,
+                {
+                    key: value
+                    for key, value in [
+                        ('slug', data.get('slug') if 'slug' in data else None),
+                        ('title', title_value),
+                        ('description', data.get('description') if 'description' in data else None),
+                        ('is_active', active_value),
+                    ]
+                    if value is not None
+                },
+            )
+            conn.commit()
+            return jsonify(status='ok')
+        except mysql.connector.Error as exc:
+            conn.rollback()
+            if getattr(exc, 'errno', None) == mysql.connector.errorcode.ER_DUP_ENTRY:
+                return jsonify(status='error', message='duplicate_class'), 409
+            return jsonify(status='error', message='database_unavailable'), 503
+        finally:
+            cursor.close()
+
+
+@app.route('/api/admin/schedules', methods=['GET', 'POST', 'OPTIONS'])
+@require_role('admin')
+def admin_schedules_collection():
+    if request.method == 'OPTIONS':
+        return _cors_preflight()
+
+    try:
+        conn = get_connection()
+    except Exception:
+        return jsonify(status='error', message='database_unavailable'), 503
+
+    with closing(conn):
+        if request.method == 'GET':
+            page, page_size = _parse_pagination()
+            offset = (page - 1) * page_size
+            cursor = conn.cursor(dictionary=True)
+            try:
+                cursor.execute("SELECT COUNT(*) AS total FROM class_schedules")
+                total = int((cursor.fetchone() or {'total': 0}).get('total') or 0)
+                cursor.execute(
+                    """
+                    SELECT cs.id, cs.class_id, cs.source, cs.import_hash, cs.imported_at,
+                           cs.created_at, cs.updated_at, c.slug AS class_slug, c.title AS class_title
+                    FROM class_schedules cs
+                    LEFT JOIN classes c ON c.id = cs.class_id
+                    ORDER BY cs.id DESC
+                    LIMIT %s OFFSET %s
+                    """,
+                    (page_size, offset),
+                )
+                rows = cursor.fetchall() or []
+            except mysql.connector.Error:
+                return jsonify(status='error', message='database_unavailable'), 503
+            finally:
+                cursor.close()
+            return _pagination_response(rows, total, page, page_size)
+
+        data = request.json or {}
+        class_id = _ensure_int(data.get('class_id'), allow_none=False)
+        if not class_id or class_id <= 0:
+            return jsonify(status='error', message='invalid_class_id'), 400
+
+        source = (data.get('source') or '').strip() or None
+        import_hash = (data.get('import_hash') or '').strip() or None
+        imported_at_raw = data.get('imported_at')
+        imported_at = None
+        if imported_at_raw:
+            try:
+                imported_at = datetime.datetime.fromisoformat(imported_at_raw)
+            except (TypeError, ValueError):
+                return jsonify(status='error', message='invalid_imported_at'), 400
+
+        cursor = conn.cursor()
+        try:
+            cursor.execute("SELECT id FROM classes WHERE id=%s", (class_id,))
+            if cursor.fetchone() is None:
+                return jsonify(status='error', message='class_not_found'), 404
+            cursor.close()
+            cursor = conn.cursor()
+            now = datetime.datetime.utcnow()
+            cursor.execute(
+                """
+                INSERT INTO class_schedules (class_id, source, import_hash, imported_at, created_at, updated_at)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                """,
+                (class_id, source, import_hash, imported_at, now, now),
+            )
+            schedule_id = cursor.lastrowid
+            _log_admin_action(
+                conn,
+                'create',
+                'schedule',
+                schedule_id,
+                {'class_id': class_id, 'source': source, 'import_hash': import_hash},
+            )
+            conn.commit()
+        except mysql.connector.Error as exc:
+            conn.rollback()
+            if getattr(exc, 'errno', None) == mysql.connector.errorcode.ER_DUP_ENTRY:
+                return jsonify(status='error', message='schedule_exists'), 409
+            return jsonify(status='error', message='database_unavailable'), 503
+        finally:
+            cursor.close()
+
+    return jsonify(status='ok', id=schedule_id)
+
+
+@app.route('/api/admin/schedules/<int:schedule_id>', methods=['GET', 'PUT', 'DELETE', 'OPTIONS'])
+@require_role('admin')
+def admin_schedules_resource(schedule_id: int):
+    if request.method == 'OPTIONS':
+        return _cors_preflight()
+
+    try:
+        conn = get_connection()
+    except Exception:
+        return jsonify(status='error', message='database_unavailable'), 503
+
+    with closing(conn):
+        cursor = conn.cursor(dictionary=True)
+        try:
+            if request.method == 'GET':
+                cursor.execute(
+                    """
+                    SELECT cs.id, cs.class_id, cs.source, cs.import_hash, cs.imported_at,
+                           cs.created_at, cs.updated_at, c.slug AS class_slug, c.title AS class_title
+                    FROM class_schedules cs
+                    LEFT JOIN classes c ON c.id = cs.class_id
+                    WHERE cs.id=%s
+                    LIMIT 1
+                    """,
+                    (schedule_id,),
+                )
+                row = cursor.fetchone()
+                if not row:
+                    return jsonify(status='error', message='schedule_not_found'), 404
+                return jsonify(status='ok', data=list(_serialize_rows([row]))[0])
+
+            if request.method == 'DELETE':
+                cursor.close()
+                cursor = conn.cursor()
+                cursor.execute("DELETE FROM class_schedules WHERE id=%s", (schedule_id,))
+                if cursor.rowcount == 0:
+                    return jsonify(status='error', message='schedule_not_found'), 404
+                _log_admin_action(conn, 'delete', 'schedule', schedule_id, {})
+                conn.commit()
+                return jsonify(status='ok')
+
+            data = request.json or {}
+            updates = []
+            values = []
+
+            class_value = None
+            if 'class_id' in data:
+                class_value = _ensure_int(data.get('class_id'), allow_none=False)
+                if not class_value or class_value <= 0:
+                    return jsonify(status='error', message='invalid_class_id'), 400
+                cursor.execute("SELECT id FROM classes WHERE id=%s", (class_value,))
+                if cursor.fetchone() is None:
+                    return jsonify(status='error', message='class_not_found'), 404
+                updates.append('class_id=%s')
+                values.append(class_value)
+
+            source_value = None
+            if 'source' in data:
+                source_value = (data.get('source') or '').strip() or None
+                updates.append('source=%s')
+                values.append(source_value)
+
+            import_hash_value = None
+            if 'import_hash' in data:
+                import_hash_value = (data.get('import_hash') or '').strip() or None
+                updates.append('import_hash=%s')
+                values.append(import_hash_value)
+
+            imported_at_value = None
+            if 'imported_at' in data:
+                imported_raw = data.get('imported_at')
+                if imported_raw:
+                    try:
+                        imported_at_value = datetime.datetime.fromisoformat(imported_raw)
+                    except (TypeError, ValueError):
+                        return jsonify(status='error', message='invalid_imported_at'), 400
+                updates.append('imported_at=%s')
+                values.append(imported_at_value)
+
+            if not updates:
+                return jsonify(status='error', message='no_changes'), 400
+
+            cursor.close()
+            cursor = conn.cursor()
+            query = f"UPDATE class_schedules SET {', '.join(updates)} WHERE id=%s"
+            values.append(schedule_id)
+            cursor.execute(query, tuple(values))
+            if cursor.rowcount == 0:
+                return jsonify(status='error', message='schedule_not_found'), 404
+            _log_admin_action(
+                conn,
+                'update',
+                'schedule',
+                schedule_id,
+                {
+                    key: value
+                    for key, value in [
+                        ('class_id', class_value),
+                        ('source', source_value),
+                        ('import_hash', import_hash_value),
+                        ('imported_at', imported_at_value),
+                    ]
+                    if value is not None
+                },
+            )
+            conn.commit()
+            return jsonify(status='ok')
+        except mysql.connector.Error as exc:
+            conn.rollback()
+            if getattr(exc, 'errno', None) == mysql.connector.errorcode.ER_DUP_ENTRY:
+                return jsonify(status='error', message='schedule_exists'), 409
+            return jsonify(status='error', message='database_unavailable'), 503
+        finally:
+            cursor.close()
 
 @app.route('/api/classes', methods=['GET'])
 @require_class_admin
