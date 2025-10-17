@@ -1,4 +1,5 @@
 import builtins
+import datetime
 import importlib
 import io
 import os
@@ -19,20 +20,31 @@ class DummyCursor:
         self.storage = storage
         self.dictionary = dictionary
         self._result = None
+        self.lastrowid = None
 
     def execute(self, query: str, params=None) -> None:  # pragma: no cover - simple shim
         normalized = " ".join(query.split()).lower()
         self._result = None
-        if normalized.startswith("select") and "from users" in normalized and "role='admin'" in normalized:
-            admin = self.storage.get('admin')
-            if not admin:
+        users = self.storage.setdefault('users', {})
+
+        if normalized.startswith("select") and "from users" in normalized:
+            if "role='admin'" in normalized:
+                user = next((u for u in users.values() if u.get('role') == 'admin'), None)
+            elif "where email=%s" in normalized:
+                email = params[0] if params else None
+                user = users.get(email)
+            else:
+                user = None
+            if not user:
                 self._result = None
                 return
             result = {
-                'id': admin['id'],
-                'email': admin['email'],
-                'password_hash': admin['password_hash'],
-                'is_active': admin.get('is_active', 1),
+                'id': user['id'],
+                'email': user['email'],
+                'password_hash': user['password_hash'],
+                'is_active': user.get('is_active', 1),
+                'role': user.get('role', 'student'),
+                'email_verified_at': user.get('email_verified_at'),
             }
             if self.dictionary:
                 self._result = result
@@ -42,17 +54,57 @@ class DummyCursor:
                     result['email'],
                     result['password_hash'],
                     result['is_active'],
+                    result['email_verified_at'],
+                    result['role'],
                 )
+        elif normalized.startswith("insert into users"):
+            email, password_hash, role, class_id, is_active, email_verified_at = params
+            new_id = max((u['id'] for u in users.values()), default=0) + 1
+            users[email] = {
+                'id': new_id,
+                'email': email,
+                'password_hash': password_hash,
+                'role': role,
+                'class_id': class_id,
+                'is_active': is_active,
+                'email_verified_at': email_verified_at,
+                'last_login_updates': [],
+            }
+            self.lastrowid = new_id
         elif normalized.startswith("update users set last_login_at"):
-            admin = self.storage.get('admin')
-            admin.setdefault('last_login_updates', []).append(params)
+            user_id = params[1]
+            for user in users.values():
+                if user['id'] == user_id:
+                    user.setdefault('last_login_updates', []).append(params)
+                    break
+        elif normalized.startswith("update users set email_verified_at"):
+            email_verified_at, user_id = params
+            for user in users.values():
+                if user['id'] == user_id:
+                    user['email_verified_at'] = email_verified_at
+                    break
         elif normalized.startswith("delete from email_verifications"):
             self.storage.setdefault('verifications', []).clear()
         elif normalized.startswith("insert into email_verifications"):
             user_id, email, token, expires_at = params
-            self.storage.setdefault('verifications', []).append(
-                {'user_id': user_id, 'email': email, 'token': token, 'expires_at': expires_at}
+            entries = self.storage.setdefault('verifications', [])
+            verification_id = len(entries) + 1
+            entries.append(
+                {
+                    'id': verification_id,
+                    'user_id': user_id,
+                    'email': email,
+                    'token': token,
+                    'expires_at': expires_at,
+                }
             )
+        elif normalized.startswith("update email_verifications set verified_at"):
+            verified_at, verification_id = params
+            entries = self.storage.setdefault('verifications', [])
+            for entry in entries:
+                if entry['id'] == verification_id:
+                    entry['verified_at'] = verified_at
+                    break
         else:
             self._result = None
 
@@ -92,12 +144,16 @@ def app_client(monkeypatch):
     monkeypatch.setattr(builtins, 'open', mock_open)
 
     storage: Dict[str, object] = {
-        'admin': {
-            'id': 1,
-            'email': 'admin@example.com',
-            'password_hash': auth_utils.hash_password('adminpw'),
-            'is_active': 1,
-            'last_login_updates': [],
+        'users': {
+            'admin@example.com': {
+                'id': 1,
+                'email': 'admin@example.com',
+                'password_hash': auth_utils.hash_password('adminpw'),
+                'role': 'admin',
+                'is_active': 1,
+                'email_verified_at': datetime.datetime.now(datetime.timezone.utc),
+                'last_login_updates': [],
+            }
         },
         'verifications': [],
     }
@@ -130,12 +186,13 @@ def test_secure_data_requires_login(app_client):
 
 def test_secure_data_after_login(app_client):
     client, storage, _ = app_client
-    resp = client.post('/api/login', json={'password': 'adminpw'})
+    resp = client.post('/api/auth/login', json={'email': 'admin@example.com', 'password': 'adminpw'})
     assert resp.status_code == 200
     resp = client.get('/api/secure-data')
     assert resp.status_code == 200
     assert resp.get_json().get('status') == 'ok'
-    assert storage['admin']['last_login_updates'], 'last_login should be updated'
+    admin = storage['users']['admin@example.com']
+    assert admin['last_login_updates'], 'last_login should be updated'
 
 
 def test_contact_requires_valid_data(app_client):
@@ -189,10 +246,9 @@ def test_resend_verification_sends_mail(app_client, monkeypatch):
 
     monkeypatch.setattr(app_module, '_send_verification_email', fake_send_verification)
 
-    login_resp = client.post('/api/login', json={'password': 'adminpw'})
-    assert login_resp.status_code == 200
+    storage['users']['admin@example.com']['email_verified_at'] = None
 
-    resp = client.post('/api/admin/resend-verification')
+    resp = client.post('/api/auth/resend', json={'email': 'admin@example.com'})
     assert resp.status_code == 200
-    assert sent.get('email') == storage['admin']['email']
+    assert sent.get('email') == 'admin@example.com'
     assert storage['verifications'], 'verification entry should be stored'

@@ -11,11 +11,12 @@ from typing import Dict, Optional, Tuple
 from ics import Calendar, Event
 import pytz
 from flask import Flask, jsonify, request, session, make_response, send_from_directory, Response
+from functools import wraps
 from flask_cors import CORS
 import mysql.connector
 from mysql.connector import pooling
 
-from auth.utils import calculate_token_expiry, generate_token, verify_password
+from auth.utils import calculate_token_expiry, generate_token, verify_password, hash_password
 
 # ---------- APP INITIALISIEREN ----------
 app = Flask(__name__, static_url_path="/")
@@ -41,7 +42,7 @@ CORS(
         "https://hwm-beta.akzuwo.ch"
     ]}},
     methods=["GET","HEAD","POST","OPTIONS","PUT","DELETE"],
-    allow_headers=["Content-Type","X-Role"]
+    allow_headers=["Content-Type"]
 )
 # ---------- DATABASE POOL ----------
 DB_CONFIG = {
@@ -85,6 +86,30 @@ EMAIL_VERIFICATION_TOKEN_LIFETIME_SECONDS = int(os.getenv('EMAIL_VERIFICATION_TO
 EMAIL_VERIFICATION_FROM_ADDRESS = os.getenv('EMAIL_VERIFICATION_FROM_ADDRESS', CONTACT_FROM_ADDRESS or CONTACT_SMTP_USER or CONTACT_RECIPIENT)
 EMAIL_VERIFICATION_SUBJECT = os.getenv('EMAIL_VERIFICATION_SUBJECT', 'Bitte E-Mail-Adresse bestätigen')
 EMAIL_VERIFICATION_LINK_BASE = os.getenv('EMAIL_VERIFICATION_LINK_BASE', 'https://homework-manager.akzuwo.ch/verify-email')
+
+REGISTRATION_ALLOWED_DOMAIN = os.getenv('REGISTRATION_ALLOWED_DOMAIN', '@sluz.ch').lower()
+
+
+def require_role(*roles):
+    """Decorator to guard endpoints behind role-based access control."""
+
+    def decorator(fn):
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            if request.method == 'OPTIONS':
+                return fn(*args, **kwargs)
+            current_role = session.get('role')
+            if roles:
+                allowed = current_role in roles
+            else:
+                allowed = current_role is not None
+            if not allowed:
+                return jsonify(status='error', message='Forbidden'), 403
+            return fn(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
 
 
 def _check_contact_rate_limit(ip_address: str) -> bool:
@@ -194,7 +219,7 @@ def _load_admin_user(conn) -> Optional[Dict[str, object]]:
     cursor = conn.cursor(dictionary=True)
     try:
         cursor.execute(
-            "SELECT id, email, password_hash, is_active FROM users WHERE role='admin' ORDER BY id ASC LIMIT 1"
+            "SELECT id, email, password_hash, is_active, email_verified_at, role FROM users WHERE role='admin' ORDER BY id ASC LIMIT 1"
         )
         row = cursor.fetchone()
     finally:
@@ -211,6 +236,18 @@ def _load_admin_user(conn) -> Optional[Dict[str, object]]:
         pass
 
     return row
+
+
+def _load_user_by_email(conn, email: str) -> Optional[Dict[str, object]]:
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute(
+            "SELECT id, email, password_hash, role, is_active, email_verified_at FROM users WHERE email=%s LIMIT 1",
+            (email,),
+        )
+        return cursor.fetchone()
+    finally:
+        cursor.close()
 
 
 def _mark_user_login(conn, user_id: int) -> None:
@@ -592,13 +629,22 @@ def submit_contact():
 
     return jsonify({'status': 'ok'}), 200
 
-# --- LOGIN / LOGOUT ---
-@app.route('/api/login', methods=['POST'])
-def api_login():
+# --- AUTHENTICATION ---
+@app.route('/api/auth/register', methods=['POST'])
+def auth_register():
     data = request.json or {}
+    email = (data.get('email') or '').strip().lower()
     password = (data.get('password') or '').strip()
-    if not password:
-        return jsonify(status='error', message='Ungültiges Passwort'), 401
+    class_identifier = data.get('class')
+
+    errors = {}
+    if not email or '@' not in email or not email.endswith(REGISTRATION_ALLOWED_DOMAIN):
+        errors['email'] = 'invalid_email'
+    if not password or len(password) < 8:
+        errors['password'] = 'weak_password'
+
+    if errors:
+        return jsonify(status='error', errors=errors), 400
 
     try:
         conn = get_connection()
@@ -607,36 +653,227 @@ def api_login():
 
     with closing(conn):
         try:
-            admin_user = _load_admin_user(conn)
+            existing = _load_user_by_email(conn, email)
         except mysql.connector.Error:
-            app.logger.exception('Failed to load admin user for login')
+            app.logger.exception('Failed to check existing user for registration')
             return jsonify(status='error', message='database_unavailable'), 503
 
-        if not admin_user:
-            return jsonify(status='error', message='admin_not_configured'), 503
+        if existing:
+            return jsonify(status='error', message='email_exists'), 409
 
-        if not verify_password(admin_user.get('password_hash'), password):
-            return jsonify(status='error', message='Ungültiges Passwort'), 401
+        class_id = None
+        if class_identifier is not None:
+            try:
+                class_id = _resolve_class_id(class_identifier, conn=conn)
+            except ValueError:
+                return jsonify(status='error', message='class_not_found'), 404
+        else:
+            try:
+                class_id = _resolve_class_id(DEFAULT_CLASS_SLUG, conn=conn)
+            except Exception:
+                class_id = None
 
-        session['role'] = 'admin'
+        password_hash_value = hash_password(password)
+
+        cursor = conn.cursor()
         try:
-            _mark_user_login(conn, int(admin_user['id']))
-        except (mysql.connector.Error, KeyError, ValueError):
-            app.logger.exception('Failed to update last login for admin %s', admin_user)
+            cursor.execute(
+                "INSERT INTO users (email, password_hash, role, class_id, is_active, email_verified_at) VALUES (%s, %s, %s, %s, %s, %s)",
+                (email, password_hash_value, 'student', class_id, 1, None),
+            )
+            user_id = cursor.lastrowid
+            conn.commit()
+        except mysql.connector.Error:
+            conn.rollback()
+            app.logger.exception('Failed to create user during registration')
+            return jsonify(status='error', message='registration_failed'), 500
+        finally:
+            cursor.close()
+
+        user = {'id': user_id, 'email': email, 'role': 'student'}
+        try:
+            _create_email_verification(conn, user)
+        except mysql.connector.Error:
+            app.logger.exception('Failed to create verification token for user %s', user)
+            return jsonify(status='error', message='verification_failed'), 500
+        except RuntimeError:
+            return jsonify(status='error', message='mail_failed'), 502
 
     return jsonify(status='ok')
 
+
+@app.route('/api/auth/login', methods=['POST'])
+@app.route('/api/login', methods=['POST'])
+def auth_login():
+    data = request.json or {}
+    email = (data.get('email') or '').strip().lower()
+    password = (data.get('password') or '').strip()
+
+    if not email or not password:
+        return jsonify(status='error', message='invalid_credentials'), 401
+
+    try:
+        conn = get_connection()
+    except Exception:
+        return jsonify(status='error', message='database_unavailable'), 503
+
+    with closing(conn):
+        try:
+            user = _load_user_by_email(conn, email)
+        except mysql.connector.Error:
+            app.logger.exception('Failed to load user for login')
+            return jsonify(status='error', message='database_unavailable'), 503
+
+        if not user:
+            return jsonify(status='error', message='invalid_credentials'), 401
+
+        if not verify_password(user.get('password_hash'), password):
+            return jsonify(status='error', message='invalid_credentials'), 401
+
+        try:
+            if user.get('is_active') is not None and int(user['is_active']) == 0:
+                return jsonify(status='error', message='inactive'), 403
+        except (TypeError, ValueError):
+            pass
+
+        if not user.get('email_verified_at'):
+            return jsonify(status='error', message='email_not_verified'), 403
+
+        session['user_id'] = int(user['id'])
+        session['role'] = user.get('role') or 'student'
+
+        try:
+            _mark_user_login(conn, int(user['id']))
+        except (mysql.connector.Error, KeyError, ValueError):
+            app.logger.exception('Failed to update last login for user %s', user)
+
+    return jsonify(status='ok', role=session.get('role'))
+
+
+@app.route('/api/auth/logout', methods=['POST'])
 @app.route('/api/logout', methods=['POST'])
-def api_logout():
+def auth_logout():
     session.clear()
     return jsonify(status='ok')
 
 
-@app.route('/api/admin/resend-verification', methods=['POST'])
-def resend_admin_verification():
-    if session.get('role') != 'admin':
-        return jsonify(status='error', message='Forbidden'), 403
+@app.route('/api/auth/verify', methods=['POST'])
+def auth_verify():
+    data = request.json or {}
+    token = (data.get('token') or request.args.get('token') or '').strip()
 
+    if not token:
+        return jsonify(status='error', message='token_required'), 400
+
+    try:
+        conn = get_connection()
+    except Exception:
+        return jsonify(status='error', message='database_unavailable'), 503
+
+    now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+
+    with closing(conn):
+        cursor = conn.cursor(dictionary=True)
+        try:
+            cursor.execute(
+                """
+                SELECT ev.id, ev.user_id, ev.token, ev.expires_at, ev.verified_at, u.email_verified_at
+                FROM email_verifications ev
+                JOIN users u ON u.id = ev.user_id
+                WHERE ev.token=%s
+                LIMIT 1
+                """,
+                (token,),
+            )
+            verification = cursor.fetchone()
+        except mysql.connector.Error:
+            cursor.close()
+            return jsonify(status='error', message='database_unavailable'), 503
+
+        if not verification:
+            cursor.close()
+            return jsonify(status='error', message='invalid_token'), 404
+
+        expires_at = verification.get('expires_at')
+        verified_at = verification.get('verified_at')
+        user_verified_at = verification.get('email_verified_at')
+
+        if verified_at or user_verified_at:
+            cursor.close()
+            return jsonify(status='error', message='already_verified'), 409
+
+        if expires_at and expires_at < now:
+            cursor.close()
+            return jsonify(status='error', message='token_expired'), 410
+
+        cursor.close()
+
+        update_cursor = conn.cursor()
+        try:
+            update_cursor.execute(
+                "UPDATE users SET email_verified_at=%s WHERE id=%s",
+                (now, int(verification['user_id'])),
+            )
+            update_cursor.execute(
+                "UPDATE email_verifications SET verified_at=%s WHERE id=%s",
+                (now, int(verification['id'])),
+            )
+            conn.commit()
+        except mysql.connector.Error:
+            conn.rollback()
+            update_cursor.close()
+            return jsonify(status='error', message='verification_failed'), 500
+        finally:
+            update_cursor.close()
+
+    return jsonify(status='ok')
+
+
+@app.route('/api/auth/resend', methods=['POST'])
+def auth_resend():
+    data = request.json or {}
+    email = (data.get('email') or '').strip().lower()
+
+    if not email:
+        return jsonify(status='error', message='email_required'), 400
+
+    try:
+        conn = get_connection()
+    except Exception:
+        return jsonify(status='error', message='database_unavailable'), 503
+
+    with closing(conn):
+        try:
+            user = _load_user_by_email(conn, email)
+        except mysql.connector.Error:
+            app.logger.exception('Failed to load user for resend %s', email)
+            return jsonify(status='error', message='database_unavailable'), 503
+
+        if not user:
+            return jsonify(status='error', message='user_not_found'), 404
+
+        if user.get('email_verified_at'):
+            return jsonify(status='error', message='already_verified'), 409
+
+        try:
+            _create_email_verification(conn, user)
+        except mysql.connector.Error:
+            app.logger.exception('Failed to create verification token for user %s', user)
+            return jsonify(status='error', message='verification_failed'), 500
+        except RuntimeError:
+            return jsonify(status='error', message='mail_failed'), 502
+
+    return jsonify(status='ok')
+
+
+@app.route('/api/auth/password-reset', methods=['POST'])
+def auth_password_reset():
+    return jsonify(status='error', message='not_implemented'), 501
+
+
+@app.route('/api/admin/resend-verification', methods=['POST'])
+@require_role('admin')
+def resend_admin_verification():
     try:
         conn = get_connection()
     except Exception:
@@ -652,6 +889,9 @@ def resend_admin_verification():
         if not admin_user:
             return jsonify(status='error', message='admin_not_found'), 404
 
+        if admin_user.get('email_verified_at'):
+            return jsonify(status='error', message='already_verified'), 409
+
         try:
             _create_email_verification(conn, admin_user)
         except mysql.connector.Error:
@@ -662,19 +902,18 @@ def resend_admin_verification():
 
     return jsonify(status='ok')
 
+
 @app.route('/api/secure-data')
+@require_role('admin')
 def secure_data():
-    if session.get('role') != 'admin':
-        return jsonify(status='error', message='Unauthorized'), 403
     return jsonify(status='ok', data='Hier sind geheime Daten!')
 
 # --- UPDATE ENTRY ---
 @app.route('/update_entry', methods=['OPTIONS', 'PUT'])
+@require_role('admin')
 def update_entry():
     if request.method == 'OPTIONS':
         return _cors_preflight()
-    if request.headers.get('X-Role') != 'admin':
-        return jsonify(status='error', message='Forbidden'), 403
 
     data = request.json or {}
     id = data.get('id')
@@ -726,12 +965,11 @@ def update_entry():
 
 # --- DELETE ENTRY ---
 @app.route('/delete_entry/<int:id>', methods=['DELETE', 'OPTIONS'])
+@require_role('admin')
 def delete_entry(id):
-    # Auth per Header statt Session-Cookie
+    # Auth via Session-Cookie (handled by decorator)
     if request.method == 'OPTIONS':
         return _cors_preflight()
-    if request.headers.get('X-Role') != 'admin':
-        return jsonify(status='error', message='Forbidden'), 403
 
     conn = get_connection()
     cur = conn.cursor()
@@ -928,7 +1166,7 @@ def add_entry():
 def add_cors_headers(response):
     response.headers['Access-Control-Allow-Origin']  = '*'
     response.headers['Access-Control-Allow-Methods'] = 'GET,POST,PUT,DELETE,OPTIONS'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type,X-Role'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
     response.headers['Access-Control-Allow-Credentials'] = 'true'
     return response
 
