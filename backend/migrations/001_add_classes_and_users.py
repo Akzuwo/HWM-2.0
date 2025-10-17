@@ -74,6 +74,7 @@ def _ensure_users_table(cursor: mysql.connector.cursor.MySQLCursor) -> None:
             class_id INT NULL,
             is_active TINYINT(1) NOT NULL DEFAULT 1,
             last_login_at DATETIME NULL,
+            email_verified_at DATETIME NULL,
             created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             UNIQUE KEY uq_users_email (email),
@@ -83,6 +84,11 @@ def _ensure_users_table(cursor: mysql.connector.cursor.MySQLCursor) -> None:
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         """
     )
+
+    if not _column_exists(cursor, "users", "email_verified_at"):
+        cursor.execute(
+            "ALTER TABLE users ADD COLUMN email_verified_at DATETIME NULL AFTER last_login_at"
+        )
 
 
 def _ensure_email_verifications_table(cursor: mysql.connector.cursor.MySQLCursor) -> None:
