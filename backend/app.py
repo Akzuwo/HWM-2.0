@@ -183,10 +183,21 @@ CONTACT_RECIPIENT = os.getenv('CONTACT_RECIPIENT') or CONTACT_SMTP_USER
 CONTACT_FROM_ADDRESS = os.getenv('CONTACT_FROM_ADDRESS', CONTACT_SMTP_USER or CONTACT_RECIPIENT)
 CONTACT_EMAIL_REGEX = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
 
+PRIMARY_TEST_BASE_URL = os.getenv('PRIMARY_TEST_BASE_URL', 'https://hwm-beta.akzuwo.ch')
+LOGIN_RATE_LIMIT = {}
+LOGIN_RATE_LIMIT_WINDOW = int(os.getenv('LOGIN_RATE_LIMIT_WINDOW', 300))
+LOGIN_RATE_LIMIT_MAX = int(os.getenv('LOGIN_RATE_LIMIT_MAX', 10))
+VERIFY_RATE_LIMIT = {}
+VERIFY_RATE_LIMIT_WINDOW = int(os.getenv('VERIFY_RATE_LIMIT_WINDOW', 3600))
+VERIFY_RATE_LIMIT_MAX = int(os.getenv('VERIFY_RATE_LIMIT_MAX', 5))
+
 EMAIL_VERIFICATION_TOKEN_LIFETIME_SECONDS = int(os.getenv('EMAIL_VERIFICATION_TOKEN_LIFETIME_SECONDS', 3600))
 EMAIL_VERIFICATION_FROM_ADDRESS = os.getenv('EMAIL_VERIFICATION_FROM_ADDRESS', CONTACT_FROM_ADDRESS or CONTACT_SMTP_USER or CONTACT_RECIPIENT)
 EMAIL_VERIFICATION_SUBJECT = os.getenv('EMAIL_VERIFICATION_SUBJECT', 'Bitte E-Mail-Adresse bestätigen')
-EMAIL_VERIFICATION_LINK_BASE = os.getenv('EMAIL_VERIFICATION_LINK_BASE', 'https://homework-manager.akzuwo.ch/verify-email')
+EMAIL_VERIFICATION_LINK_BASE = os.getenv(
+    'EMAIL_VERIFICATION_LINK_BASE',
+    f"{PRIMARY_TEST_BASE_URL.rstrip('/')}/verify-email",
+)
 
 REGISTRATION_ALLOWED_DOMAIN = os.getenv('REGISTRATION_ALLOWED_DOMAIN', '@sluz.ch').lower()
 
@@ -259,15 +270,33 @@ def require_class_context(fn):
     return wrapper
 
 
-def _check_contact_rate_limit(ip_address: str) -> bool:
+def _get_request_ip() -> str:
+    forwarded_for = request.headers.get('X-Forwarded-For', '')
+    if forwarded_for:
+        candidate = forwarded_for.split(',')[0].strip()
+        if candidate:
+            return candidate
+    return request.remote_addr or 'unknown'
+
+
+def _check_rate_limit(bucket, identifier: str, window: int, maximum: int) -> bool:
     now = time.time()
-    entry = CONTACT_RATE_LIMIT.get(ip_address)
+    entry = bucket.get(identifier)
     if entry and now < entry['reset']:
         entry['count'] += 1
     else:
-        entry = {'count': 1, 'reset': now + CONTACT_RATE_LIMIT_WINDOW}
-        CONTACT_RATE_LIMIT[ip_address] = entry
-    return entry['count'] <= CONTACT_RATE_LIMIT_MAX
+        entry = {'count': 1, 'reset': now + window}
+        bucket[identifier] = entry
+    return entry['count'] <= maximum
+
+
+def _check_contact_rate_limit(ip_address: str) -> bool:
+    return _check_rate_limit(
+        CONTACT_RATE_LIMIT,
+        ip_address,
+        CONTACT_RATE_LIMIT_WINDOW,
+        CONTACT_RATE_LIMIT_MAX,
+    )
 
 
 def _deliver_email(
@@ -766,8 +795,7 @@ def submit_contact():
     if not (CONTACT_SMTP_HOST and CONTACT_RECIPIENT):
         return jsonify({'message': 'unavailable'}), 503
 
-    forwarded_for = request.headers.get('X-Forwarded-For', '')
-    ip_address = (forwarded_for.split(',')[0].strip() if forwarded_for else request.remote_addr) or 'unknown'
+    ip_address = _get_request_ip()
 
     if not _check_contact_rate_limit(ip_address):
         return jsonify({'message': 'rate_limited'}), 429
@@ -874,6 +902,15 @@ def auth_login():
     if not email or not password:
         return jsonify(status='error', message='invalid_credentials'), 401
 
+    ip_address = _get_request_ip()
+    if not _check_rate_limit(
+        LOGIN_RATE_LIMIT,
+        ip_address,
+        LOGIN_RATE_LIMIT_WINDOW,
+        LOGIN_RATE_LIMIT_MAX,
+    ):
+        return jsonify(status='error', message='rate_limited'), 429
+
     try:
         conn = get_connection()
     except Exception:
@@ -921,6 +958,7 @@ def auth_login():
         except (mysql.connector.Error, KeyError, ValueError):
             app.logger.exception('Failed to update last login for user %s', user)
 
+    LOGIN_RATE_LIMIT.pop(ip_address, None)
     return jsonify(status='ok', role=session.get('role'))
 
 
@@ -938,6 +976,15 @@ def auth_verify():
 
     if not token:
         return jsonify(status='error', message='token_required'), 400
+
+    ip_address = _get_request_ip()
+    if not _check_rate_limit(
+        VERIFY_RATE_LIMIT,
+        ip_address,
+        VERIFY_RATE_LIMIT_WINDOW,
+        VERIFY_RATE_LIMIT_MAX,
+    ):
+        return jsonify(status='error', message='rate_limited'), 429
 
     try:
         conn = get_connection()
@@ -1000,6 +1047,7 @@ def auth_verify():
         finally:
             update_cursor.close()
 
+    VERIFY_RATE_LIMIT.pop(ip_address, None)
     return jsonify(status='ok')
 
 
