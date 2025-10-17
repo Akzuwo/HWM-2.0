@@ -10,7 +10,7 @@ from typing import Dict, Optional, Tuple
 
 from ics import Calendar, Event
 import pytz
-from flask import Flask, jsonify, request, session, make_response, send_from_directory, Response
+from flask import Flask, jsonify, request, session, make_response, send_from_directory, Response, g
 from functools import wraps
 from flask_cors import CORS
 import mysql.connector
@@ -110,6 +110,52 @@ def require_role(*roles):
         return wrapper
 
     return decorator
+
+
+def _get_session_class_id() -> Optional[int]:
+    class_id = session.get('class_id')
+    try:
+        return int(class_id) if class_id is not None else None
+    except (TypeError, ValueError):
+        return None
+
+
+def require_admin(fn):
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        if request.method == 'OPTIONS':
+            return fn(*args, **kwargs)
+        if not session.get('is_admin'):
+            return jsonify(status='error', message='Forbidden'), 403
+        return fn(*args, **kwargs)
+
+    return wrapper
+
+
+def require_class_admin(fn):
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        if request.method == 'OPTIONS':
+            return fn(*args, **kwargs)
+        if not (session.get('is_admin') or session.get('is_class_admin')):
+            return jsonify(status='error', message='Forbidden'), 403
+        return fn(*args, **kwargs)
+
+    return wrapper
+
+
+def require_class_context(fn):
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        if request.method == 'OPTIONS':
+            return fn(*args, **kwargs)
+        class_id = _get_session_class_id()
+        if class_id is None:
+            return jsonify(status='error', message='class_required'), 403
+        g.active_class_id = class_id
+        return fn(*args, **kwargs)
+
+    return wrapper
 
 
 def _check_contact_rate_limit(ip_address: str) -> bool:
@@ -242,7 +288,10 @@ def _load_user_by_email(conn, email: str) -> Optional[Dict[str, object]]:
     cursor = conn.cursor(dictionary=True)
     try:
         cursor.execute(
-            "SELECT id, email, password_hash, role, is_active, email_verified_at FROM users WHERE email=%s LIMIT 1",
+            """
+            SELECT id, email, password_hash, role, class_id, is_active, email_verified_at
+            FROM users WHERE email=%s LIMIT 1
+            """,
             (email,),
         )
         return cursor.fetchone()
@@ -357,6 +406,7 @@ def ensure_entries_table():
             columns,
             {
                 "id": ("int",),
+                "class_id": ("int",),
                 "beschreibung": ("text",),
                 "datum": ("date",),
                 "startzeit": ("time",),
@@ -487,17 +537,20 @@ def root():
     return send_from_directory(app.static_folder, "login.html")
 
 @app.route('/calendar.ics')
+@require_class_context
 def export_ics():
     """Erzeugt eine iCalendar-Datei mit allen zukünftigen Einträgen."""
+    class_id = g.get('active_class_id') or _get_session_class_id()
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
     cursor.execute(
         """
         SELECT id, typ, beschreibung, datum, fach
         FROM eintraege
-        WHERE datum >= CURDATE()
+        WHERE class_id=%s AND datum >= CURDATE()
         ORDER BY datum ASC
-        """
+        """,
+        (class_id,),
     )
     entries = cursor.fetchall()
     cursor.close()
@@ -527,12 +580,20 @@ def export_ics():
     )
 
 @app.route('/entries')
+@require_class_context
 def entries():
     """Gibt alle Einträge zurück."""
+    class_id = g.get('active_class_id') or _get_session_class_id()
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
     cursor.execute(
-        "SELECT id, beschreibung, datum, startzeit, endzeit, typ, fach FROM eintraege"
+        """
+        SELECT id, beschreibung, datum, startzeit, endzeit, typ, fach
+        FROM eintraege
+        WHERE class_id=%s
+        ORDER BY datum ASC, startzeit ASC
+        """,
+        (class_id,),
     )
     rows = cursor.fetchall()
     for r in rows:
@@ -740,7 +801,19 @@ def auth_login():
             return jsonify(status='error', message='email_not_verified'), 403
 
         session['user_id'] = int(user['id'])
-        session['role'] = user.get('role') or 'student'
+        role = (user.get('role') or 'student').strip() or 'student'
+        session['role'] = role
+        class_id_value = user.get('class_id')
+        if class_id_value is None:
+            session.pop('class_id', None)
+        else:
+            try:
+                session['class_id'] = int(class_id_value)
+            except (TypeError, ValueError):
+                session.pop('class_id', None)
+        is_admin = role == 'admin'
+        session['is_admin'] = is_admin
+        session['is_class_admin'] = bool(is_admin or role == 'teacher')
 
         try:
             _mark_user_login(conn, int(user['id']))
@@ -904,13 +977,100 @@ def resend_admin_verification():
 
 
 @app.route('/api/secure-data')
-@require_role('admin')
+@require_admin
 def secure_data():
     return jsonify(status='ok', data='Hier sind geheime Daten!')
 
+
+@app.route('/api/classes', methods=['GET'])
+@require_class_admin
+def list_classes():
+    is_admin = bool(session.get('is_admin'))
+    class_id = _get_session_class_id()
+    if not is_admin and class_id is None:
+        return jsonify({'status': 'error', 'message': 'class_required'}), 403
+
+    try:
+        conn = get_connection()
+    except Exception:
+        return jsonify({'status': 'error', 'message': 'database_unavailable'}), 503
+
+    with closing(conn):
+        cursor = conn.cursor(dictionary=True)
+        try:
+            if is_admin:
+                cursor.execute(
+                    "SELECT id, slug, title, description, is_active FROM classes ORDER BY title ASC"
+                )
+            else:
+                cursor.execute(
+                    "SELECT id, slug, title, description, is_active FROM classes WHERE id=%s",
+                    (class_id,),
+                )
+            rows = cursor.fetchall() or []
+        except mysql.connector.Error:
+            return jsonify({'status': 'error', 'message': 'database_unavailable'}), 503
+        finally:
+            cursor.close()
+
+    return jsonify(rows)
+
+
+@app.route('/api/users/<int:user_id>/class', methods=['PUT', 'OPTIONS'])
+@require_class_admin
+def assign_user_to_class(user_id: int):
+    if request.method == 'OPTIONS':
+        return _cors_preflight()
+
+    data = request.json or {}
+    target_class_id = data.get('class_id')
+    try:
+        target_class_id = int(target_class_id)
+    except (TypeError, ValueError):
+        return jsonify({'status': 'error', 'message': 'invalid_class_id'}), 400
+
+    if target_class_id <= 0:
+        return jsonify({'status': 'error', 'message': 'invalid_class_id'}), 400
+
+    is_admin = bool(session.get('is_admin'))
+    acting_class_id = _get_session_class_id()
+    if not is_admin and acting_class_id != target_class_id:
+        return jsonify({'status': 'error', 'message': 'forbidden'}), 403
+
+    try:
+        conn = get_connection()
+    except Exception:
+        return jsonify({'status': 'error', 'message': 'database_unavailable'}), 503
+
+    with closing(conn):
+        cursor = conn.cursor()
+        try:
+            cursor.execute("SELECT id FROM classes WHERE id=%s", (target_class_id,))
+            if cursor.fetchone() is None:
+                return jsonify({'status': 'error', 'message': 'class_not_found'}), 404
+
+            cursor.execute("SELECT id FROM users WHERE id=%s", (user_id,))
+            if cursor.fetchone() is None:
+                return jsonify({'status': 'error', 'message': 'user_not_found'}), 404
+
+            cursor.execute(
+                "UPDATE users SET class_id=%s WHERE id=%s",
+                (target_class_id, user_id),
+            )
+            conn.commit()
+        except mysql.connector.Error:
+            conn.rollback()
+            return jsonify({'status': 'error', 'message': 'database_unavailable'}), 503
+        finally:
+            cursor.close()
+
+    return jsonify({'status': 'ok'})
+
+
 # --- UPDATE ENTRY ---
 @app.route('/update_entry', methods=['OPTIONS', 'PUT'])
-@require_role('admin')
+@require_class_admin
+@require_class_context
 def update_entry():
     if request.method == 'OPTIONS':
         return _cors_preflight()
@@ -935,10 +1095,14 @@ def update_entry():
             end = f"{end}:00"
         end = end[:8]
 
+    class_id = g.get('active_class_id') or _get_session_class_id()
     conn = get_connection()
     cur = conn.cursor()
     try:
-        cur.execute("SELECT fach FROM eintraege WHERE id=%s", (id,))
+        cur.execute(
+            "SELECT fach FROM eintraege WHERE id=%s AND class_id=%s",
+            (id, class_id),
+        )
         row = cur.fetchone()
         if not row:
             return jsonify(status='error', message='Eintrag nicht gefunden'), 404
@@ -951,8 +1115,12 @@ def update_entry():
             fach = ''
 
         cur.execute(
-            "UPDATE eintraege SET beschreibung=%s, datum=%s, startzeit=%s, endzeit=%s, typ=%s, fach=%s WHERE id=%s",
-            (desc, date, start, end, typ, fach, id)
+            """
+            UPDATE eintraege
+            SET beschreibung=%s, datum=%s, startzeit=%s, endzeit=%s, typ=%s, fach=%s
+            WHERE id=%s AND class_id=%s
+            """,
+            (desc, date, start, end, typ, fach, id, class_id)
         )
         conn.commit()
         return jsonify(status='ok')
@@ -965,16 +1133,21 @@ def update_entry():
 
 # --- DELETE ENTRY ---
 @app.route('/delete_entry/<int:id>', methods=['DELETE', 'OPTIONS'])
-@require_role('admin')
+@require_class_admin
+@require_class_context
 def delete_entry(id):
     # Auth via Session-Cookie (handled by decorator)
     if request.method == 'OPTIONS':
         return _cors_preflight()
 
+    class_id = g.get('active_class_id') or _get_session_class_id()
     conn = get_connection()
     cur = conn.cursor()
     try:
-        cur.execute("DELETE FROM eintraege WHERE id=%s", (id,))
+        cur.execute(
+            "DELETE FROM eintraege WHERE id=%s AND class_id=%s",
+            (id, class_id),
+        )
         conn.commit()
         return jsonify(status='ok')
     except Exception as e:
@@ -996,17 +1169,14 @@ def _cors_preflight():
 
 # --- STUNDENPLAN / AKTUELLES_FACH ---
 @app.route('/stundenplan')
+@require_class_context
 def stundenplan():
-    class_param = request.args.get('class') or request.args.get('class_id')
+    class_id = g.get('active_class_id') or _get_session_class_id()
     try:
         conn = get_connection()
     except Exception:
         return jsonify({'status': 'error', 'message': 'database_unavailable'}), 503
     with closing(conn):
-        try:
-            class_id = _resolve_class_id(class_param, conn=conn)
-        except ValueError:
-            return jsonify({'status': 'error', 'message': 'class_not_found'}), 404
         try:
             schedule = _load_schedule_for_class(conn, class_id)
         except mysql.connector.Error:
@@ -1014,20 +1184,17 @@ def stundenplan():
         return jsonify(schedule)
 
 @app.route('/aktuelles_fach')
+@require_class_context
 def aktuelles_fach():
     tz = pytz.timezone('Europe/Berlin')
     now = datetime.datetime.now(tz)
     tag = now.strftime('%A')
-    class_param = request.args.get('class') or request.args.get('class_id')
+    class_id = g.get('active_class_id') or _get_session_class_id()
     try:
         conn = get_connection()
     except Exception:
         return jsonify({'status': 'error', 'message': 'database_unavailable'}), 503
     with closing(conn):
-        try:
-            class_id = _resolve_class_id(class_param, conn=conn)
-        except ValueError:
-            return jsonify({'status': 'error', 'message': 'class_not_found'}), 404
         try:
             plan = _load_schedule_for_day(conn, class_id, tag)
         except mysql.connector.Error:
@@ -1087,21 +1254,18 @@ def aktuelles_fach():
 
 
 @app.route('/tagesuebersicht')
+@require_class_context
 def tagesuebersicht():
     tz = pytz.timezone('Europe/Berlin')
     now = datetime.datetime.now(tz)
     heute = now.strftime('%A')
     morgen = (now + datetime.timedelta(days=1)).strftime('%A')
-    class_param = request.args.get('class') or request.args.get('class_id')
+    class_id = g.get('active_class_id') or _get_session_class_id()
     try:
         conn = get_connection()
     except Exception:
         return jsonify({'status': 'error', 'message': 'database_unavailable'}), 503
     with closing(conn):
-        try:
-            class_id = _resolve_class_id(class_param, conn=conn)
-        except ValueError:
-            return jsonify({'status': 'error', 'message': 'class_not_found'}), 404
         try:
             heute_rows = _load_schedule_for_day(conn, class_id, heute)
             morgen_rows = _load_schedule_for_day(conn, class_id, morgen)
@@ -1110,8 +1274,13 @@ def tagesuebersicht():
         return jsonify({heute: heute_rows, morgen: morgen_rows})
 
 # --- EINTRAG HINZUFÜGEN ---
-@app.route('/add_entry', methods=['POST'])
+@app.route('/add_entry', methods=['POST', 'OPTIONS'])
+@require_class_admin
+@require_class_context
 def add_entry():
+    if request.method == 'OPTIONS':
+        return _cors_preflight()
+
     data = request.json or {}
     beschreibung = (data.get("beschreibung") or '').strip()
     datum = data.get("datum")
@@ -1149,11 +1318,16 @@ def add_entry():
     if typ == 'event' and not fach:
         fach = ''
 
+    class_id = g.get('active_class_id') or _get_session_class_id()
+
     conn = get_connection(); cur = conn.cursor()
     try:
         cur.execute(
-            "INSERT INTO eintraege (beschreibung, datum, startzeit, endzeit, typ, fach) VALUES (%s,%s,%s,%s,%s,%s)",
-            (beschreibung, datum, startzeit, endzeit, typ, fach)
+            """
+            INSERT INTO eintraege (class_id, beschreibung, datum, startzeit, endzeit, typ, fach)
+            VALUES (%s,%s,%s,%s,%s,%s,%s)
+            """,
+            (class_id, beschreibung, datum, startzeit, endzeit, typ, fach)
         )
         conn.commit()
         return jsonify(status="ok")
