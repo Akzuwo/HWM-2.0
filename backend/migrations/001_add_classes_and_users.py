@@ -3,11 +3,19 @@
 from __future__ import annotations
 
 import datetime
+import os
+import pathlib
 import sys
 from typing import Optional
 
 import mysql.connector
 from mysql.connector import errorcode
+
+BASE_DIR = pathlib.Path(__file__).resolve().parents[1]
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
+
+from auth.utils import hash_password
 
 DB_CONFIG = {
     "host": "mc-mysql01.mc-host24.de",
@@ -18,6 +26,9 @@ DB_CONFIG = {
 }
 
 DEFAULT_CLASS_SLUG = "default"
+
+SEED_ADMIN_EMAIL = os.getenv("SEED_ADMIN_EMAIL", "admin@localhost")
+SEED_ADMIN_PASSWORD = os.getenv("SEED_ADMIN_PASSWORD", "ChangeMe123!")
 
 
 def _connect() -> mysql.connector.MySQLConnection:
@@ -205,6 +216,28 @@ def _ensure_stundenplan_entries(
             raise
 
 
+def _ensure_seed_admin_user(cursor: mysql.connector.cursor.MySQLCursor) -> None:
+    cursor.execute("SELECT id FROM users WHERE role='admin' LIMIT 1")
+    if cursor.fetchone():
+        return
+
+    password_hash = hash_password(SEED_ADMIN_PASSWORD)
+    now = datetime.datetime.utcnow()
+    cursor.execute(
+        """
+        INSERT INTO users (email, password_hash, role, is_active, created_at, updated_at)
+        VALUES (%s, %s, 'admin', 1, %s, %s)
+        """,
+        (SEED_ADMIN_EMAIL, password_hash, now, now),
+    )
+    print(
+        "Seed admin user created with email '",
+        SEED_ADMIN_EMAIL,
+        "'. Please change the password after the first login.",
+        sep="",
+    )
+
+
 def _run_migration() -> None:
     conn = _connect()
     cursor: Optional[mysql.connector.cursor.MySQLCursor] = None
@@ -214,6 +247,7 @@ def _run_migration() -> None:
         _ensure_users_table(cursor)
         _ensure_email_verifications_table(cursor)
         _ensure_class_schedules_table(cursor)
+        _ensure_seed_admin_user(cursor)
         default_class_id = _get_default_class_id(cursor)
         _ensure_stundenplan_entries(cursor, default_class_id)
         conn.commit()
