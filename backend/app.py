@@ -1,15 +1,17 @@
 import os
-import json
 import datetime
 import re
 import time
 import smtplib
+from collections import OrderedDict
+from contextlib import closing
 from email.message import EmailMessage
 
 from ics import Calendar, Event
 import pytz
 from flask import Flask, jsonify, request, session, make_response, send_from_directory, Response
 from flask_cors import CORS
+import mysql.connector
 from mysql.connector import pooling
 
 # ---------- APP INITIALISIEREN ----------
@@ -52,6 +54,17 @@ pool = pooling.MySQLConnectionPool(pool_name="mypool", pool_size=5, pool_reset_s
 def get_connection():
     return pool.get_connection()
 
+
+DEFAULT_CLASS_SLUG = (os.getenv('DEFAULT_CLASS_SLUG', 'default') or 'default').strip().lower() or 'default'
+WEEKDAY_ORDER = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+]
 
 CONTACT_MAX_FILE_SIZE = int(os.getenv('CONTACT_MAX_FILE_SIZE', 2 * 1024 * 1024))
 CONTACT_RATE_LIMIT = {}
@@ -114,6 +127,20 @@ def _send_contact_email(name: str, email_address: str, subject: str, body: str, 
     server.quit()
 
 
+def _validate_columns(table_name, columns, requirements):
+    missing = [col for col in requirements if col not in columns]
+    if missing:
+        missing_str = ", ".join(sorted(missing))
+        raise RuntimeError(f"Table '{table_name}' is missing columns: {missing_str}. Run database migrations.")
+    for column, expected_prefixes in requirements.items():
+        definition = (columns.get(column) or "").lower()
+        if not any(definition.startswith(prefix) for prefix in expected_prefixes):
+            prefixes = ", ".join(expected_prefixes)
+            raise RuntimeError(
+                f"Column '{column}' in table '{table_name}' has type '{columns.get(column)}', expected prefix one of: {prefixes}."
+            )
+
+
 # Tabelle für den Stundenplan sicherstellen
 def ensure_stundenplan_table():
     try:
@@ -121,33 +148,28 @@ def ensure_stundenplan_table():
     except Exception:
         return
     cur = conn.cursor()
-    cur.execute(
-        """
-        CREATE TABLE IF NOT EXISTS stundenplan_entries (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            tag VARCHAR(10) NOT NULL,
-            start VARCHAR(5) NOT NULL,
-            end VARCHAR(5) NOT NULL,
-            fach VARCHAR(100) NOT NULL,
-            raum VARCHAR(50) NOT NULL
+    try:
+        cur.execute("SHOW TABLES LIKE 'stundenplan_entries'")
+        if cur.fetchone() is None:
+            raise RuntimeError("Table 'stundenplan_entries' is missing. Run database migrations.")
+        cur.execute("SHOW COLUMNS FROM stundenplan_entries")
+        columns = {row[0]: row[1] for row in cur.fetchall()}
+        _validate_columns(
+            "stundenplan_entries",
+            columns,
+            {
+                "id": ("int",),
+                "class_id": ("int",),
+                "tag": ("varchar",),
+                "start": ("varchar",),
+                "end": ("varchar",),
+                "fach": ("varchar",),
+                "raum": ("varchar",),
+            },
         )
-        """
-    )
-    conn.commit()
-    cur.execute("SELECT COUNT(*) FROM stundenplan_entries")
-    if cur.fetchone()[0] == 0:
-        path = os.path.join(os.path.dirname(__file__), "stundenplan.json")
-        with open(path, encoding='utf-8') as f:
-            plan = json.load(f)
-        for tag, eintraege in plan.items():
-            for e in eintraege:
-                cur.execute(
-                    "INSERT INTO stundenplan_entries (tag,start,end,fach,raum) VALUES (%s,%s,%s,%s,%s)",
-                    (tag, e["start"], e["end"], e["fach"], e.get("raum", "-"))
-                )
-        conn.commit()
-    cur.close()
-    conn.close()
+    finally:
+        cur.close()
+        conn.close()
 
 
 # Tabelle für allgemeine Einträge sicherstellen
@@ -157,32 +179,122 @@ def ensure_entries_table():
     except Exception:
         return
     cur = conn.cursor()
-    cur.execute(
-        """
-        CREATE TABLE IF NOT EXISTS eintraege (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            beschreibung TEXT NOT NULL,
-            datum DATE NOT NULL,
-            startzeit TIME NULL,
-            endzeit TIME NULL,
-            typ ENUM('hausaufgabe','pruefung','event') NOT NULL,
-            fach VARCHAR(100) NOT NULL DEFAULT ''
+    try:
+        cur.execute("SHOW TABLES LIKE 'eintraege'")
+        if cur.fetchone() is None:
+            raise RuntimeError("Table 'eintraege' is missing. Run database migrations.")
+        cur.execute("SHOW COLUMNS FROM eintraege")
+        columns = {row[0]: row[1] for row in cur.fetchall()}
+        _validate_columns(
+            "eintraege",
+            columns,
+            {
+                "id": ("int",),
+                "beschreibung": ("text",),
+                "datum": ("date",),
+                "startzeit": ("time",),
+                "endzeit": ("time",),
+                "typ": ("enum",),
+                "fach": ("varchar",),
+            },
         )
-        """
-    )
-    conn.commit()
-    cur.execute("SHOW COLUMNS FROM eintraege LIKE 'fach'")
-    if cur.fetchone() is None:
-        cur.execute(
-            "ALTER TABLE eintraege ADD COLUMN fach VARCHAR(100) NOT NULL DEFAULT '' AFTER typ"
-        )
-        conn.commit()
-    cur.close()
-    conn.close()
+    finally:
+        cur.close()
+        conn.close()
 
 
 ensure_stundenplan_table()
 ensure_entries_table()
+
+# ---- Klassen- und Stundenplanhilfen ----
+
+def _resolve_class_id(raw_identifier, conn=None):
+    owns_connection = conn is None
+    if owns_connection:
+        conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        identifier = (raw_identifier or "").strip()
+        if not identifier:
+            cursor.execute("SELECT id FROM classes WHERE slug=%s", (DEFAULT_CLASS_SLUG,))
+        elif identifier.isdigit():
+            cursor.execute("SELECT id FROM classes WHERE id=%s", (int(identifier),))
+        else:
+            cursor.execute("SELECT id FROM classes WHERE slug=%s", (identifier.lower(),))
+        row = cursor.fetchone()
+    finally:
+        cursor.close()
+        if owns_connection and conn is not None:
+            conn.close()
+    if not row:
+        raise ValueError("class_not_found")
+    return int(row[0])
+
+
+def _normalize_schedule_rows(rows):
+    normalized = []
+    for row in rows:
+        normalized.append(
+            {
+                "start": row.get("start"),
+                "end": row.get("end"),
+                "fach": row.get("fach"),
+                "raum": row.get("raum") or "-",
+            }
+        )
+    return normalized
+
+
+def _load_schedule_for_class(conn, class_id):
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute(
+            "SELECT tag, start, `end`, fach, raum FROM stundenplan_entries WHERE class_id=%s ORDER BY tag, start",
+            (class_id,),
+        )
+        rows = cursor.fetchall()
+    finally:
+        cursor.close()
+
+    schedule_map = {day: [] for day in WEEKDAY_ORDER}
+    extra_days = {}
+    for row in rows:
+        entry = {
+            "start": row.get("start"),
+            "end": row.get("end"),
+            "fach": row.get("fach"),
+            "raum": row.get("raum") or "-",
+        }
+        day = row.get("tag")
+        if day in schedule_map:
+            schedule_map[day].append(entry)
+        else:
+            extra_days.setdefault(day, []).append(entry)
+
+    ordered = OrderedDict()
+    for day in WEEKDAY_ORDER:
+        entries = schedule_map[day]
+        entries.sort(key=lambda item: item.get("start") or "")
+        ordered[day] = entries
+    for day in sorted(extra_days):
+        entries = extra_days[day]
+        entries.sort(key=lambda item: item.get("start") or "")
+        ordered[day] = entries
+    return ordered
+
+
+def _load_schedule_for_day(conn, class_id, weekday):
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute(
+            "SELECT start, `end`, fach, raum FROM stundenplan_entries WHERE class_id=%s AND tag=%s ORDER BY start",
+            (class_id, weekday),
+        )
+        rows = cursor.fetchall()
+    finally:
+        cursor.close()
+    return _normalize_schedule_rows(rows)
+
 
 # Hilfsfunktion für die Formatierung von Zeitwerten aus MySQL
 def _format_time_value(value):
@@ -461,18 +573,41 @@ def _cors_preflight():
 # --- STUNDENPLAN / AKTUELLES_FACH ---
 @app.route('/stundenplan')
 def stundenplan():
-    path = os.path.join(os.path.dirname(__file__), "stundenplan.json")
-    with open(path, encoding='utf-8') as f:
-        return jsonify(json.load(f))
+    class_param = request.args.get('class') or request.args.get('class_id')
+    try:
+        conn = get_connection()
+    except Exception:
+        return jsonify({'status': 'error', 'message': 'database_unavailable'}), 503
+    with closing(conn):
+        try:
+            class_id = _resolve_class_id(class_param, conn=conn)
+        except ValueError:
+            return jsonify({'status': 'error', 'message': 'class_not_found'}), 404
+        try:
+            schedule = _load_schedule_for_class(conn, class_id)
+        except mysql.connector.Error:
+            return jsonify({'status': 'error', 'message': 'database_unavailable'}), 503
+        return jsonify(schedule)
 
 @app.route('/aktuelles_fach')
 def aktuelles_fach():
     tz = pytz.timezone('Europe/Berlin')
     now = datetime.datetime.now(tz)
     tag = now.strftime('%A')
-    path = os.path.join(os.path.dirname(__file__), "stundenplan.json")
-    with open(path, encoding='utf-8') as f:
-        plan = json.load(f).get(tag, [])
+    class_param = request.args.get('class') or request.args.get('class_id')
+    try:
+        conn = get_connection()
+    except Exception:
+        return jsonify({'status': 'error', 'message': 'database_unavailable'}), 503
+    with closing(conn):
+        try:
+            class_id = _resolve_class_id(class_param, conn=conn)
+        except ValueError:
+            return jsonify({'status': 'error', 'message': 'class_not_found'}), 404
+        try:
+            plan = _load_schedule_for_day(conn, class_id, tag)
+        except mysql.connector.Error:
+            return jsonify({'status': 'error', 'message': 'database_unavailable'}), 503
 
     current  = {
         "fach": "Frei",
@@ -484,29 +619,36 @@ def aktuelles_fach():
         "gesamt_sekunden": 0,
     }
     next_cls = {"start":None,"fach":"-","raum":"-"}
-    def parse_time(t):
-        h,m = map(int,t.split(':'))
-        return now.replace(hour=h,minute=m,second=0,microsecond=0)
+    def parse_time(value):
+        try:
+            parts = (value or '').split(':')
+            hour = int(parts[0])
+            minute = int(parts[1]) if len(parts) > 1 else 0
+        except (ValueError, IndexError):
+            return None
+        return now.replace(hour=hour, minute=minute, second=0, microsecond=0)
 
     for slot in plan:
-        start = parse_time(slot["start"])
-        ende  = parse_time(slot["end"])
+        start = parse_time(slot.get("start"))
+        ende  = parse_time(slot.get("end"))
+        if not start or not ende:
+            continue
         if start <= now <= ende:
             gesamt = int((ende - start).total_seconds())
             verbleibend = max(int((ende - now).total_seconds()), 0)
             m, s = divmod(verbleibend, 60)
             current = {
-                "fach": slot["fach"],
+                "fach": slot.get("fach"),
                 "verbleibend": f"{m:02d}:{s:02d}",
-                "raum": slot.get("raum", "-"),
+                "raum": slot.get("raum") or "-",
                 "start": start.strftime("%H:%M"),
                 "ende": ende.strftime("%H:%M"),
                 "verbleibende_sekunden": verbleibend,
                 "gesamt_sekunden": gesamt,
             }
-        elif start>now and slot.get("raum","-")!="-":
+        elif start > now and (slot.get("raum") or "-") != "-":
             if next_cls["start"] is None or start<next_cls["start"]:
-                next_cls={"start":start,"fach":slot["fach"],"raum":slot["raum"]}
+                next_cls={"start":start,"fach":slot.get("fach"),"raum":slot.get("raum") or "-"}
 
     next_start = f"{next_cls['start'].hour:02d}:{next_cls['start'].minute:02d}" if next_cls["start"] else "-"
     response = {
@@ -526,20 +668,22 @@ def tagesuebersicht():
     now = datetime.datetime.now(tz)
     heute = now.strftime('%A')
     morgen = (now + datetime.timedelta(days=1)).strftime('%A')
-    conn = get_connection()
-    cur = conn.cursor(dictionary=True)
-    cur.execute(
-        "SELECT start, end, fach, raum FROM stundenplan_entries WHERE tag=%s ORDER BY start",
-        (heute,)
-    )
-    heute_rows = cur.fetchall()
-    cur.execute(
-        "SELECT start, end, fach, raum FROM stundenplan_entries WHERE tag=%s ORDER BY start",
-        (morgen,)
-    )
-    morgen_rows = cur.fetchall()
-    cur.close(); conn.close()
-    return jsonify({heute: heute_rows, morgen: morgen_rows})
+    class_param = request.args.get('class') or request.args.get('class_id')
+    try:
+        conn = get_connection()
+    except Exception:
+        return jsonify({'status': 'error', 'message': 'database_unavailable'}), 503
+    with closing(conn):
+        try:
+            class_id = _resolve_class_id(class_param, conn=conn)
+        except ValueError:
+            return jsonify({'status': 'error', 'message': 'class_not_found'}), 404
+        try:
+            heute_rows = _load_schedule_for_day(conn, class_id, heute)
+            morgen_rows = _load_schedule_for_day(conn, class_id, morgen)
+        except mysql.connector.Error:
+            return jsonify({'status': 'error', 'message': 'database_unavailable'}), 503
+        return jsonify({heute: heute_rows, morgen: morgen_rows})
 
 # --- EINTRAG HINZUFÜGEN ---
 @app.route('/add_entry', methods=['POST'])
