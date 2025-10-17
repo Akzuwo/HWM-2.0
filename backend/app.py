@@ -18,6 +18,7 @@ import mysql.connector
 from mysql.connector import pooling
 
 from auth.utils import calculate_token_expiry, generate_token, verify_password, hash_password
+from class_ids import DEFAULT_ENTRY_CLASS_ID, ENTRY_CLASS_ID_SET
 
 # ---------- APP INITIALISIEREN ----------
 app = Flask(__name__, static_url_path="/")
@@ -230,6 +231,18 @@ def _get_session_class_id() -> Optional[int]:
         return int(class_id) if class_id is not None else None
     except (TypeError, ValueError):
         return None
+
+
+def _normalize_entry_class_id(raw_value: Optional[object]) -> str:
+    value = (str(raw_value).strip() if raw_value is not None else '').replace(' ', '')
+    if not value or value.isdigit() or len(value) < 2:
+        return DEFAULT_ENTRY_CLASS_ID
+
+    prefix, suffix = value[:-1], value[-1]
+    normalized = f"{prefix.upper()}{suffix.lower()}"
+    if normalized not in ENTRY_CLASS_ID_SET:
+        raise ValueError('invalid_class_id')
+    return normalized
 
 
 def require_admin(fn):
@@ -1820,6 +1833,11 @@ def update_entry():
         return _cors_preflight()
 
     data = request.json or {}
+    try:
+        class_id = _normalize_entry_class_id(data.get('class_id'))
+    except ValueError:
+        return jsonify(status='error', message='invalid_class_id'), 400
+
     id = data.get('id')
     desc = (data.get('description') or '').strip()
     date = data.get('date')
@@ -1839,7 +1857,6 @@ def update_entry():
             end = f"{end}:00"
         end = end[:8]
 
-    class_id = g.get('active_class_id') or _get_session_class_id()
     conn = get_connection()
     cur = conn.cursor()
     try:
@@ -1884,7 +1901,13 @@ def delete_entry(id):
     if request.method == 'OPTIONS':
         return _cors_preflight()
 
-    class_id = g.get('active_class_id') or _get_session_class_id()
+    raw_class_id = request.args.get('class_id')
+    if raw_class_id is None:
+        raw_class_id = g.get('active_class_id') or _get_session_class_id()
+    try:
+        class_id = _normalize_entry_class_id(raw_class_id)
+    except ValueError:
+        return jsonify(status='error', message='invalid_class_id'), 400
     conn = get_connection()
     cur = conn.cursor()
     try:
@@ -2026,6 +2049,10 @@ def add_entry():
         return _cors_preflight()
 
     data = request.json or {}
+    try:
+        class_id = _normalize_entry_class_id(data.get('class_id'))
+    except ValueError:
+        return jsonify(status='error', message='invalid_class_id'), 400
     beschreibung = (data.get("beschreibung") or '').strip()
     datum = data.get("datum")
     startzeit = data.get("startzeit")
@@ -2061,8 +2088,6 @@ def add_entry():
         return jsonify(status="error", message="fach ist für diesen Typ erforderlich"), 400
     if typ == 'event' and not fach:
         fach = ''
-
-    class_id = g.get('active_class_id') or _get_session_class_id()
 
     conn = get_connection(); cur = conn.cursor()
     try:
