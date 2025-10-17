@@ -39,6 +39,7 @@ class FakeCursor:
         classes: Dict[int, Dict[str, object]] = self.storage.setdefault('classes', {})
         schedules: Dict[int, Dict[str, object]] = self.storage.setdefault('class_schedules', {})
         schedule_entries: List[Dict[str, object]] = self.storage.setdefault('stundenplan_entries', [])
+        entries: List[Dict[str, object]] = self.storage.setdefault('eintraege', [])
 
         if normalized.startswith("select count(*) as total from users"):
             self._prepare_rows([
@@ -530,6 +531,61 @@ class FakeCursor:
             self.rowcount = 1
             return
 
+        if normalized.startswith("select fach from eintraege where id=%s and class_id=%s"):
+            entry_id, class_id = params
+            for entry in entries:
+                if entry['id'] == entry_id and entry['class_id'] == class_id:
+                    self._prepare_rows([(entry.get('fach'),)], ['fach'])
+                    return
+            self._rows = []
+            return
+
+        if normalized.startswith("update eintraege set beschreibung=%s, datum=%s, startzeit=%s, endzeit=%s, typ=%s, fach=%s where id=%s and class_id=%s"):
+            desc, date, start, end, typ, fach, entry_id, class_id = params
+            for entry in entries:
+                if entry['id'] == entry_id and entry['class_id'] == class_id:
+                    entry.update(
+                        {
+                            'beschreibung': desc,
+                            'datum': date,
+                            'startzeit': start,
+                            'endzeit': end,
+                            'typ': typ,
+                            'fach': fach,
+                        }
+                    )
+                    self.rowcount = 1
+                    break
+            return
+
+        if normalized.startswith("delete from eintraege where id=%s and class_id=%s"):
+            entry_id, class_id = params
+            before = len(entries)
+            remaining = [entry for entry in entries if not (entry['id'] == entry_id and entry['class_id'] == class_id)]
+            self.storage['eintraege'] = remaining
+            self.rowcount = before - len(remaining)
+            return
+
+        if normalized.startswith("insert into eintraege (class_id, beschreibung, datum, startzeit, endzeit, typ, fach)"):
+            class_id, desc, date, start, end, typ, fach = params
+            next_ids = self.storage.setdefault('next_ids', {})
+            new_id = next_ids.setdefault('eintraege', 1)
+            next_ids['eintraege'] = new_id + 1
+            entry = {
+                'id': new_id,
+                'class_id': class_id,
+                'beschreibung': desc,
+                'datum': date,
+                'startzeit': start,
+                'endzeit': end,
+                'typ': typ,
+                'fach': fach,
+            }
+            entries.append(entry)
+            self.lastrowid = new_id
+            self.rowcount = 1
+            return
+
         self._rows = []
 
     def fetchone(self):  # pragma: no cover - shim
@@ -604,9 +660,17 @@ def app_client(monkeypatch):
         },
         'class_schedules': {},
         'stundenplan_entries': [],
+        'eintraege': [],
         'audit_logs': [],
         'verifications': [],
-        'next_ids': {'users': 2, 'classes': 2, 'class_schedules': 1, 'audit_logs': 1, 'stundenplan_entries': 1},
+        'next_ids': {
+            'users': 2,
+            'classes': 2,
+            'class_schedules': 1,
+            'audit_logs': 1,
+            'stundenplan_entries': 1,
+            'eintraege': 1,
+        },
     }
 
     class DummyPool:
