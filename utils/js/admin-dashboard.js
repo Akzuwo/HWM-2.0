@@ -1,5 +1,7 @@
 import { createTable, createDialog, createForm } from './admin-shared.js';
 
+const API_BASE = 'https://homework-manager-2-0-backend.onrender.com';
+
 const TRANSLATIONS = {
   de: {
     title: 'Admin-Dashboard',
@@ -320,8 +322,16 @@ function formatDate(value, locale) {
   });
 }
 
+function resolveUrl(url) {
+  if (/^https?:\/\//i.test(url)) {
+    return url;
+  }
+  const suffix = url.startsWith('/') ? url : `/${url}`;
+  return `${API_BASE}${suffix}`;
+}
+
 async function fetchJson(url, options = {}) {
-  const response = await fetch(url, {
+  const response = await fetch(resolveUrl(url), {
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
