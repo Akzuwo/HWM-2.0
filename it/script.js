@@ -56,12 +56,29 @@ const LOGIN_TEXT = {
     close: 'Chiudi'
 };
 
+const API_BASE = (() => {
+    if (typeof window === 'undefined' || !window.location) {
+        return '';
+    }
+
+    const { hostname } = window.location;
+    if (!hostname) {
+        return '';
+    }
+
+    if (hostname.endsWith('akzuwo.ch')) {
+        return 'https://homework-manager-2-0-backend.onrender.com';
+    }
+
+    return '';
+})();
+
 const AUTH_API = {
-    login: '/api/auth/login',
-    register: '/api/auth/register',
-    logout: '/api/auth/logout',
-    resend: '/api/auth/resend',
-    passwordReset: '/api/auth/password-reset'
+    login: `${API_BASE}/api/auth/login`,
+    register: `${API_BASE}/api/auth/register`,
+    logout: `${API_BASE}/api/auth/logout`,
+    resend: `${API_BASE}/api/auth/resend`,
+    passwordReset: `${API_BASE}/api/auth/password-reset`
 };
 
 const AUTH_PATHS = {
