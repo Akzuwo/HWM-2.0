@@ -51,3 +51,23 @@ Die Standard-URL für E-Mail-Verifikationen orientiert sich jetzt am Beta-System
 `EMAIL_VERIFICATION_LINK_BASE`, sofern letzteres nicht explizit gesetzt wird.
 
 Bei Deployments sollte die Beta-Instanz als primärer Testlauf genutzt werden; ein Fallback ist nicht mehr nötig.
+
+## Produktivbetrieb: SMTP-Konfiguration und Neustart
+
+Für den Versand von Nachrichten aus dem Kontaktformular benötigt `backend/app.py` gültige SMTP-Zugangsdaten.
+In der produktiven `.env`-Datei (oder dem entsprechenden Secret des Deployments) müssen daher folgende Variablen
+gesetzt sein:
+
+```
+CONTACT_SMTP_HOST
+CONTACT_SMTP_PORT
+CONTACT_SMTP_USER
+CONTACT_SMTP_PASSWORD
+CONTACT_RECIPIENT
+CONTACT_FROM_ADDRESS (optional)
+```
+
+Die Datei `backend/.env.production` enthält eine Referenzkonfiguration, die Host, Port, Absender- und
+Empfängeradressen sowie das verwendete Konto für den Gmail-Versand vorgibt. Nach Änderungen an diesen Werten muss
+der Backend-Dienst neu gestartet werden, damit der Prozess die aktualisierten Variablen übernimmt, z. B. via
+`systemctl restart homework-manager-backend.service`.
