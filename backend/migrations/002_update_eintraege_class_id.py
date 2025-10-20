@@ -33,6 +33,11 @@ def _table_exists(cursor: mysql.connector.cursor.MySQLCursor, table_name: str) -
     return cursor.fetchone() is not None
 
 
+def _column_exists(cursor: mysql.connector.cursor.MySQLCursor, table_name: str, column_name: str) -> bool:
+    cursor.execute(f"SHOW COLUMNS FROM `{table_name}` LIKE %s", (column_name,))
+    return cursor.fetchone() is not None
+
+
 def _drop_existing_checks(cursor: mysql.connector.cursor.MySQLCursor, table_name: str) -> None:
     cursor.execute(
         """
@@ -52,9 +57,15 @@ def _update_class_id_column(cursor: mysql.connector.cursor.MySQLCursor) -> None:
     if not _table_exists(cursor, "eintraege"):
         return
 
-    cursor.execute(
-        f"ALTER TABLE eintraege MODIFY COLUMN class_id VARCHAR(4) NOT NULL DEFAULT '{DEFAULT_ENTRY_CLASS_ID}'"
-    )
+    if not _column_exists(cursor, "eintraege", "class_id"):
+        cursor.execute(
+            f"ALTER TABLE eintraege ADD COLUMN class_id VARCHAR(4) NOT NULL DEFAULT '{DEFAULT_ENTRY_CLASS_ID}' AFTER id"
+        )
+    else:
+        cursor.execute(
+            f"ALTER TABLE eintraege MODIFY COLUMN class_id VARCHAR(4) NOT NULL DEFAULT '{DEFAULT_ENTRY_CLASS_ID}'"
+        )
+
     cursor.execute(
         f"""
         UPDATE eintraege
