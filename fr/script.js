@@ -57,20 +57,32 @@ const LOGIN_TEXT = {
 };
 
 const API_BASE = (() => {
-    if (typeof window === 'undefined' || !window.location) {
-        return '';
+    const DEFAULT_API_BASE = 'https://homework-manager-2-0-backend.onrender.com';
+    const sanitizeBase = (value) => {
+        if (!value) {
+            return '';
+        }
+        return String(value).trim().replace(/\/$/, '');
+    };
+
+    if (typeof window === 'undefined') {
+        return DEFAULT_API_BASE;
     }
 
-    const { hostname } = window.location;
-    if (!hostname) {
-        return '';
+    const globalOverride = sanitizeBase(window.__HM_API_BASE__);
+    if (globalOverride) {
+        return globalOverride;
     }
 
-    if (hostname.endsWith('akzuwo.ch')) {
-        return 'https://homework-manager-2-0-backend.onrender.com';
+    if (typeof document !== 'undefined') {
+        const metaOverride = document.querySelector('meta[name="hm-api-base"]');
+        const metaBase = sanitizeBase(metaOverride && metaOverride.content);
+        if (metaBase) {
+            return metaBase;
+        }
     }
 
-    return '';
+    return DEFAULT_API_BASE;
 })();
 
 const AUTH_API = {
