@@ -71,7 +71,7 @@ def main():
     cur = conn.cursor()
 
     cur.execute(
-        f"""
+        """
         CREATE TABLE IF NOT EXISTS eintraege (
             id INT AUTO_INCREMENT PRIMARY KEY,
             class_id VARCHAR(4) NOT NULL DEFAULT '{DEFAULT_ENTRY_CLASS_ID}',
