@@ -1,5 +1,7 @@
 import mysql.connector
 
+from class_ids import DEFAULT_ENTRY_CLASS_ID, ENTRY_CLASS_IDS
+
 DB_CONFIG = {
     "host":     "mc-mysql01.mc-host24.de",
     "user":     "u4203_Mtc42FNhxN",
@@ -8,9 +10,60 @@ DB_CONFIG = {
     "port":     3306
 }
 
-def column_exists(cursor, table, column):
-    cursor.execute(f"SHOW COLUMNS FROM {table} LIKE %s", (column,))
+ALLOWED_CLASS_IDS_SQL = ", ".join(f"'{value}'" for value in ENTRY_CLASS_IDS)
+
+def table_exists(cursor, table):
+    cursor.execute("SHOW TABLES LIKE %s", (table,))
     return cursor.fetchone() is not None
+
+
+def column_exists(cursor, table, column):
+    cursor.execute(f"SHOW COLUMNS FROM `{table}` LIKE %s", (column,))
+    return cursor.fetchone() is not None
+
+
+def drop_existing_checks(cursor, table):
+    cursor.execute(
+        """
+        SELECT CONSTRAINT_NAME
+        FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = %s
+          AND CONSTRAINT_TYPE = 'CHECK'
+        """,
+        (table,),
+    )
+    for (constraint_name,) in cursor.fetchall():
+        cursor.execute(f"ALTER TABLE `{table}` DROP CHECK `{constraint_name}`")
+
+
+def ensure_class_id_column(cursor):
+    if not table_exists(cursor, 'eintraege'):
+        return
+
+    if not column_exists(cursor, 'eintraege', 'class_id'):
+        cursor.execute(
+            f"ALTER TABLE eintraege ADD COLUMN class_id VARCHAR(4) NOT NULL DEFAULT '{DEFAULT_ENTRY_CLASS_ID}' AFTER id"
+        )
+    else:
+        cursor.execute(
+            f"ALTER TABLE eintraege MODIFY COLUMN class_id VARCHAR(4) NOT NULL DEFAULT '{DEFAULT_ENTRY_CLASS_ID}'"
+        )
+
+    cursor.execute(
+        f"""
+        UPDATE eintraege
+        SET class_id = '{DEFAULT_ENTRY_CLASS_ID}'
+        WHERE class_id IS NULL
+           OR TRIM(class_id) = ''
+           OR class_id NOT IN ({ALLOWED_CLASS_IDS_SQL})
+        """
+    )
+
+    drop_existing_checks(cursor, 'eintraege')
+    cursor.execute(
+        f"ALTER TABLE eintraege ADD CONSTRAINT chk_eintraege_class_id CHECK (class_id IN ({ALLOWED_CLASS_IDS_SQL}))"
+    )
 
 
 def main():
@@ -21,15 +74,20 @@ def main():
         """
         CREATE TABLE IF NOT EXISTS eintraege (
             id INT AUTO_INCREMENT PRIMARY KEY,
+            class_id VARCHAR(4) NOT NULL DEFAULT '{DEFAULT_ENTRY_CLASS_ID}',
             beschreibung TEXT NOT NULL,
             datum DATE NOT NULL,
             startzeit TIME NULL,
             endzeit TIME NULL,
             typ ENUM('hausaufgabe','pruefung','event') NOT NULL,
-            fach VARCHAR(100) NOT NULL DEFAULT ''
+            fach VARCHAR(100) NOT NULL DEFAULT '',
+            CONSTRAINT chk_eintraege_class_id CHECK (class_id IN ({ALLOWED_CLASS_IDS_SQL}))
         )
         """
     )
+    conn.commit()
+
+    ensure_class_id_column(cur)
     conn.commit()
 
     cur.execute("SHOW COLUMNS FROM eintraege LIKE 'fach'")
