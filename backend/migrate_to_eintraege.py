@@ -34,7 +34,7 @@ def drop_existing_checks(cursor, table):
         (table,),
     )
     for (constraint_name,) in cursor.fetchall():
-        cursor.execute(f"ALTER TABLE `{table}` DROP CHECK `{constraint_name}`")
+        cursor.execute(f"ALTER TABLE `{table}` DROP CONSTRAINT `{constraint_name}`")
 
 
 def ensure_class_id_column(cursor):
@@ -71,7 +71,7 @@ def main():
     cur = conn.cursor()
 
     cur.execute(
-        """
+        f"""
         CREATE TABLE IF NOT EXISTS eintraege (
             id INT AUTO_INCREMENT PRIMARY KEY,
             class_id VARCHAR(4) NOT NULL DEFAULT '{DEFAULT_ENTRY_CLASS_ID}',
