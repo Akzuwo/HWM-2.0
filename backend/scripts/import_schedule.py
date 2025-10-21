@@ -7,21 +7,20 @@ import argparse
 import datetime as _dt
 import hashlib
 import json
-import os
 import pathlib
 import sys
 from typing import Dict, Iterable, List, Tuple
 
 import mysql.connector
 
+BASE_DIR = pathlib.Path(__file__).resolve().parents[1]
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
 
-DEFAULT_DB_CONFIG = {
-    "host": os.getenv("DB_HOST", "mc-mysql01.mc-host24.de"),
-    "user": os.getenv("DB_USER", "u4203_Mtc42FNhxN"),
-    "password": os.getenv("DB_PASSWORD", "nA6U=8ecQBe@vli@SKXN9rK9"),
-    "database": os.getenv("DB_NAME", "s4203_reports"),
-    "port": int(os.getenv("DB_PORT", "3306")),
-}
+from config import get_db_config
+
+
+DEFAULT_DB_CONFIG = get_db_config()
 
 WEEKDAY_ORDER = [
     "Monday",

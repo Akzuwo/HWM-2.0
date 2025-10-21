@@ -20,6 +20,7 @@ from mysql.connector import pooling
 
 from auth.utils import calculate_token_expiry, generate_token, verify_password, hash_password
 from class_ids import DEFAULT_ENTRY_CLASS_ID, ENTRY_CLASS_ID_SET
+from config import get_contact_smtp_settings, get_db_config
 
 # ---------- APP INITIALISIEREN ----------
 app = Flask(__name__, static_url_path="/")
@@ -45,13 +46,14 @@ ALLOWED_CORS_ORIGIN_PATTERNS = [
 ]
 
 # Environment configuration for the production deployment of the Homework Manager backend.
-# These values provide the SMTP credentials used by backend/app.py to deliver contact form e-mails.
-CONTACT_SMTP_HOST="smtp.gmail.com"
-CONTACT_SMTP_PORT=587
-CONTACT_SMTP_USER="timowigger8@gmail.com"
-CONTACT_SMTP_PASSWORD="phyj pqcq cajw eidj"
-CONTACT_RECIPIENT="timowigger8@gmail.com"
-CONTACT_FROM_ADDRESS="Homework Manager <noreply@homeworkmanager.ch>"
+# SMTP credentials are centralised in config.py to avoid duplication across modules.
+_contact_settings = get_contact_smtp_settings()
+CONTACT_SMTP_HOST = _contact_settings["host"]
+CONTACT_SMTP_PORT = _contact_settings["port"]
+CONTACT_SMTP_USER = _contact_settings["user"]
+CONTACT_SMTP_PASSWORD = _contact_settings["password"]
+CONTACT_RECIPIENT = _contact_settings["recipient"]
+CONTACT_FROM_ADDRESS = _contact_settings["from_address"]
 
 def _resolve_cors_origin() -> Optional[str]:
     origin = request.headers.get("Origin")
@@ -76,13 +78,7 @@ CORS(
     allow_headers=["Content-Type"]
 )
 # ---------- DATABASE POOL ----------
-DB_CONFIG = {
-    "host":     "mc-mysql01.mc-host24.de",
-    "user":     "u4203_Mtc42FNhxN",
-    "password": "nA6U=8ecQBe@vli@SKXN9rK9",
-    "database": "s4203_reports",
-    "port":     3306
-}
+DB_CONFIG = get_db_config()
 pool = pooling.MySQLConnectionPool(pool_name="mypool", pool_size=5, pool_reset_session=True, **DB_CONFIG)
 def get_connection():
     return pool.get_connection()
@@ -205,20 +201,6 @@ CONTACT_RATE_LIMIT_WINDOW = int(os.getenv('CONTACT_RATE_LIMIT_WINDOW', 3600))
 CONTACT_RATE_LIMIT_MAX = int(os.getenv('CONTACT_RATE_LIMIT_MAX', 5))
 CONTACT_MIN_DURATION_MS = int(os.getenv('CONTACT_MIN_DURATION_MS', 3000))
 CONTACT_MIN_MESSAGE_LENGTH = int(os.getenv('CONTACT_MIN_MESSAGE_LENGTH', 20))
-CONTACT_SMTP_HOST = os.getenv('CONTACT_SMTP_HOST') or CONTACT_SMTP_HOST
-_default_contact_smtp_port = CONTACT_SMTP_PORT
-_env_smtp_port = os.getenv('CONTACT_SMTP_PORT')
-if _env_smtp_port:
-    try:
-        CONTACT_SMTP_PORT = int(_env_smtp_port)
-    except (TypeError, ValueError):
-        CONTACT_SMTP_PORT = _default_contact_smtp_port
-else:
-    CONTACT_SMTP_PORT = _default_contact_smtp_port
-CONTACT_SMTP_USER = os.getenv('CONTACT_SMTP_USER') or CONTACT_SMTP_USER
-CONTACT_SMTP_PASSWORD = os.getenv('CONTACT_SMTP_PASSWORD') or CONTACT_SMTP_PASSWORD
-CONTACT_RECIPIENT = os.getenv('CONTACT_RECIPIENT') or CONTACT_RECIPIENT or CONTACT_SMTP_USER
-CONTACT_FROM_ADDRESS = os.getenv('CONTACT_FROM_ADDRESS') or CONTACT_FROM_ADDRESS or CONTACT_SMTP_USER or CONTACT_RECIPIENT
 CONTACT_EMAIL_REGEX = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
 
 PRIMARY_TEST_BASE_URL = os.getenv('PRIMARY_TEST_BASE_URL', 'https://hwm-beta.akzuwo.ch')
