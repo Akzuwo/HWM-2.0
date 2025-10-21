@@ -621,6 +621,19 @@ class FakeConnection:
 
 @pytest.fixture
 def app_client(monkeypatch):
+    monkeypatch.setenv('DB_HOST', 'localhost')
+    monkeypatch.setenv('DB_USER', 'tester')
+    monkeypatch.setenv('DB_PASSWORD', 'secret')
+    monkeypatch.setenv('DB_NAME', 'homework_manager')
+    monkeypatch.setenv('DB_PORT', '3306')
+
+    monkeypatch.setenv('CONTACT_SMTP_HOST', 'smtp.example.com')
+    monkeypatch.setenv('CONTACT_SMTP_PORT', '587')
+    monkeypatch.setenv('CONTACT_SMTP_USER', 'noreply@example.com')
+    monkeypatch.setenv('CONTACT_SMTP_PASSWORD', 'not-used')
+    monkeypatch.setenv('CONTACT_RECIPIENT', 'contact@example.com')
+    monkeypatch.setenv('CONTACT_FROM_ADDRESS', 'Homework Manager <noreply@example.com>')
+
     real_open = builtins.open
 
     def mock_open(path, *args, **kwargs):

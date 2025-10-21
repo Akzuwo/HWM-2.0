@@ -3,65 +3,57 @@
 from __future__ import annotations
 
 import os
-from typing import Any, Dict, TypeVar
-
-DEFAULT_DB_CONFIG: Dict[str, Any] = {
-    "host": "mc-mysql01.mc-host24.de",
-    "user": "u4203_Mtc42FNhxN",
-    "password": "nA6U=8ecQBe@vli@SKXN9rK9",
-    "database": "s4203_reports",
-    "port": 3306,
-}
-
-T = TypeVar("T")
-
-DEFAULT_CONTACT_SMTP_CONFIG: Dict[str, Any] = {
-    "host": "smtp-relay.brevo.com",
-    "port": 587,
-    "user": "99c21d001@smtp-brevo.com",
-    "password": "xsmtpsib-8b7d89b4925bfcc23bb49fe8aa78c888b89b23682830a0fabf6e5c14f4025750-3zY8GduPd5OqDIdc",
-    "recipient": "no-reply@akzuwo.ch",
-    "from_address": "Homework Manager <no-reply@akzuwo.ch>",
-}
+from typing import Any, Dict
 
 
-def _getenv_or_default(key: str, default: T) -> T:
-    value = os.getenv(key)
-    return value if value else default
+def _require_env(key: str) -> str:
+    value = os.environ.get(key)
+    if value is None or value == "":
+        raise RuntimeError(f"Environment variable {key} must be set")
+    return value
+
+
+def _optional_env(key: str) -> str | None:
+    value = os.environ.get(key)
+    if value is None or value == "":
+        return None
+    return value
 
 
 def _coerce_int(value: str | None, default: int) -> int:
     try:
-        return int(value) if value is not None else default
+        return int(value) if value not in {None, ""} else default
     except (TypeError, ValueError):
         return default
 
 
 def get_db_config() -> Dict[str, Any]:
-    """Return the database configuration including environment overrides."""
+    """Return the database configuration from environment variables."""
 
-    config = DEFAULT_DB_CONFIG.copy()
-    config["host"] = _getenv_or_default("DB_HOST", config["host"])
-    config["user"] = _getenv_or_default("DB_USER", config["user"])
-    config["password"] = _getenv_or_default("DB_PASSWORD", config["password"])
-    config["database"] = _getenv_or_default("DB_NAME", config["database"])
-    config["port"] = _coerce_int(os.getenv("DB_PORT"), config["port"])
-    return config
+    return {
+        "host": _require_env("DB_HOST"),
+        "user": _require_env("DB_USER"),
+        "password": _require_env("DB_PASSWORD"),
+        "database": _require_env("DB_NAME"),
+        "port": _coerce_int(os.environ.get("DB_PORT"), 3306),
+    }
 
 
 def get_contact_smtp_settings() -> Dict[str, Any]:
-    """Return SMTP settings used for the contact form including overrides."""
+    """Return SMTP settings for the contact form from environment variables."""
 
-    config = DEFAULT_CONTACT_SMTP_CONFIG.copy()
-    config["host"] = _getenv_or_default("CONTACT_SMTP_HOST", config["host"])
-    config["port"] = _coerce_int(os.getenv("CONTACT_SMTP_PORT"), config["port"])
-    config["user"] = _getenv_or_default("CONTACT_SMTP_USER", config["user"])
-    config["password"] = _getenv_or_default("CONTACT_SMTP_PASSWORD", config["password"])
+    host = _require_env("CONTACT_SMTP_HOST")
+    port = _coerce_int(os.environ.get("CONTACT_SMTP_PORT"), 587)
+    user = _optional_env("CONTACT_SMTP_USER")
+    password = _optional_env("CONTACT_SMTP_PASSWORD")
+    recipient = _optional_env("CONTACT_RECIPIENT") or user
+    from_address = _optional_env("CONTACT_FROM_ADDRESS") or user or recipient
 
-    recipient_default = config["recipient"] or config["user"]
-    config["recipient"] = _getenv_or_default("CONTACT_RECIPIENT", recipient_default)
-
-    from_default = config["from_address"] or config["user"] or config["recipient"]
-    config["from_address"] = _getenv_or_default("CONTACT_FROM_ADDRESS", from_default)
-
-    return config
+    return {
+        "host": host,
+        "port": port,
+        "user": user,
+        "password": password,
+        "recipient": recipient,
+        "from_address": from_address,
+    }
