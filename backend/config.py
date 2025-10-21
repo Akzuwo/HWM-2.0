@@ -16,12 +16,12 @@ DEFAULT_DB_CONFIG: Dict[str, Any] = {
 T = TypeVar("T")
 
 DEFAULT_CONTACT_SMTP_CONFIG: Dict[str, Any] = {
-    "host": "smtp.gmail.com",
+    "host": "smtp-relay.brevo.com",
     "port": 587,
-    "user": "timowigger8@gmail.com",
-    "password": "phyj pqcq cajw eidj",
-    "recipient": "timowigger8@gmail.com",
-    "from_address": "Homework Manager <noreply@homeworkmanager.ch>",
+    "user": "99c21d001@smtp-brevo.com",
+    "password": "xsmtpsib-8b7d89b4925bfcc23bb49fe8aa78c888b89b23682830a0fabf6e5c14f4025750-3zY8GduPd5OqDIdc",
+    "recipient": "no-reply@akzuwo.ch",
+    "from_address": "Homework Manager <no-reply@akzuwo.ch>",
 }
 
 
