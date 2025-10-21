@@ -16,14 +16,9 @@ if str(BASE_DIR) not in sys.path:
     sys.path.insert(0, str(BASE_DIR))
 
 from auth.utils import hash_password
+from config import get_db_config
 
-DB_CONFIG = {
-    "host": "mc-mysql01.mc-host24.de",
-    "user": "u4203_Mtc42FNhxN",
-    "password": "nA6U=8ecQBe@vli@SKXN9rK9",
-    "database": "s4203_reports",
-    "port": 3306,
-}
+DB_CONFIG = get_db_config()
 
 DEFAULT_CLASS_SLUG = "default"
 

@@ -12,14 +12,9 @@ if str(BASE_DIR) not in sys.path:
     sys.path.insert(0, str(BASE_DIR))
 
 from class_ids import DEFAULT_ENTRY_CLASS_ID, ENTRY_CLASS_IDS
+from config import get_db_config
 
-DB_CONFIG = {
-    "host": "mc-mysql01.mc-host24.de",
-    "user": "u4203_Mtc42FNhxN",
-    "password": "nA6U=8ecQBe@vli@SKXN9rK9",
-    "database": "s4203_reports",
-    "port": 3306,
-}
+DB_CONFIG = get_db_config()
 
 ALLOWED_VALUES_SQL = ", ".join(f"'{value}'" for value in ENTRY_CLASS_IDS)
 
