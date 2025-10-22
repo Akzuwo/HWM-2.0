@@ -42,11 +42,11 @@ with open('/etc/secrets/hwm-session-secret', encoding='utf-8') as f:
 ALLOWED_CORS_ORIGINS = [
     "https://homework-manager.akzuwo.ch",
     "https://hw-manager.akzuwo.ch",
-    "https://hwm-beta.akzuwo.ch/*",
+    "https://hwm-beta.akzuwo.ch",
 ]
 ALLOWED_CORS_ORIGIN_PATTERNS = [
     "https://*.homework-manager.pages.dev",
-    "https://*.hwm-2-preview.pages.dev/*"
+    "https://*.hwm-2-preview.pages.dev"
 ]
 
 # Environment configuration for the production deployment of the Homework Manager backend.
@@ -2321,6 +2321,7 @@ def add_cors_headers(response):
 # ---------- SERVER START ----------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=False)
+
 
 
 
