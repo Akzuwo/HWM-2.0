@@ -1,108 +1,13 @@
 import { createTable, createDialog, createForm } from './admin-shared.js';
 
-const FALLBACK_API_BASES = [
-  'https://homework-manager.akzuwo.ch',
-  'https://hw-manager.akzuwo.ch',
-  'https://hwm-beta.akzuwo.ch',
-  'https://homework-manager-2-0-backend.onrender.com',
-];
-
-const sanitizeApiBase = (value) => {
-  if (!value) {
-    return '';
-  }
-  return String(value).trim().replace(/\/$/, '');
-};
-
-const pickApiBase = (values) => {
-  for (const candidate of values) {
-    const sanitized = sanitizeApiBase(candidate);
-    if (sanitized) {
-      return sanitized;
-    }
-  }
-  return '';
-};
-
-const resolveApiBaseFromLocation = () => {
-  if (typeof window === 'undefined') {
-    return '';
-  }
-
-  const { location } = window;
-  if (!location) {
-    return '';
-  }
-
-  const protocol = (location.protocol || '').toLowerCase();
-  if (!protocol.startsWith('http')) {
-    return '';
-  }
-
-  const host = location.host || '';
-  const hostname = (location.hostname || '').toLowerCase();
-  if (!host || !hostname) {
-    return '';
-  }
-
-  const isAkzuwoDomain = hostname.endsWith('.akzuwo.ch');
-  const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
-  if (!isAkzuwoDomain && !isLocalhost) {
-    return '';
-  }
-
-  return sanitizeApiBase(`${location.protocol}//${host}`);
-};
-
-const resolveApiBase = () => {
+const API_BASE = (() => {
+  const base = 'https://homework-manager-2-0-backend.onrender.com';
   if (typeof window !== 'undefined') {
-    if (typeof window.hmResolveApiBase === 'function') {
-      const resolved = sanitizeApiBase(window.hmResolveApiBase());
-      if (resolved) {
-        window.__HM_RESOLVED_API_BASE__ = resolved;
-        return resolved;
-      }
-    }
-
-    const cached = sanitizeApiBase(window.__HM_RESOLVED_API_BASE__);
-    if (cached) {
-      return cached;
-    }
-
-    const globalOverride = sanitizeApiBase(window.__HM_API_BASE__);
-    if (globalOverride) {
-      window.__HM_RESOLVED_API_BASE__ = globalOverride;
-      window.hmResolveApiBase = () => globalOverride;
-      return globalOverride;
-    }
-
-    if (typeof document !== 'undefined') {
-      const metaOverride = document.querySelector('meta[name="hm-api-base"]');
-      const metaBase = sanitizeApiBase(metaOverride && metaOverride.content);
-      if (metaBase) {
-        window.__HM_RESOLVED_API_BASE__ = metaBase;
-        window.hmResolveApiBase = () => metaBase;
-        return metaBase;
-      }
-    }
-
-    const locationBase = resolveApiBaseFromLocation();
-    if (locationBase) {
-      window.__HM_RESOLVED_API_BASE__ = locationBase;
-      window.hmResolveApiBase = () => locationBase;
-      return locationBase;
-    }
+    window.__HM_RESOLVED_API_BASE__ = base;
+    window.hmResolveApiBase = () => base;
   }
-
-  const fallbackBase = pickApiBase(FALLBACK_API_BASES);
-  if (typeof window !== 'undefined' && fallbackBase) {
-    window.__HM_RESOLVED_API_BASE__ = fallbackBase;
-    window.hmResolveApiBase = () => fallbackBase;
-  }
-  return fallbackBase;
-};
-
-const API_BASE = resolveApiBase();
+  return base;
+})();
 
 const TRANSLATIONS = {
   de: {
