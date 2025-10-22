@@ -57,108 +57,12 @@ const LOGIN_TEXT = {
 };
 
 const API_BASE = (() => {
-    const FALLBACK_BASES = [
-        'https://homework-manager.akzuwo.ch',
-        'https://hw-manager.akzuwo.ch',
-        'https://hwm-beta.akzuwo.ch',
-        'https://homework-manager-2-0-backend.onrender.com',
-    ];
-
-    const sanitizeBase = (value) => {
-        if (!value) {
-            return '';
-        }
-        return String(value).trim().replace(/\/$/, '');
-    };
-
-    const pickFirst = (values) => {
-        for (const candidate of values) {
-            const sanitized = sanitizeBase(candidate);
-            if (sanitized) {
-                return sanitized;
-            }
-        }
-        return '';
-    };
-
-    const resolveFromLocation = () => {
-        if (typeof window === 'undefined') {
-            return '';
-        }
-
-        const { location } = window;
-        if (!location) {
-            return '';
-        }
-
-        const protocol = (location.protocol || '').toLowerCase();
-        if (!protocol.startsWith('http')) {
-            return '';
-        }
-
-        const host = location.host || '';
-        const hostname = (location.hostname || '').toLowerCase();
-        if (!host || !hostname) {
-            return '';
-        }
-
-        const isAkzuwoDomain = hostname.endsWith('.akzuwo.ch');
-        const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
-        if (!isAkzuwoDomain && !isLocalhost) {
-            return '';
-        }
-
-        return sanitizeBase(`${location.protocol}//${host}`);
-    };
-
-    const defineResolver = () => {
-        return () => {
-            if (typeof window !== 'undefined') {
-                const cached = sanitizeBase(window.__HM_RESOLVED_API_BASE__);
-                if (cached) {
-                    return cached;
-                }
-
-                const globalOverride = sanitizeBase(window.__HM_API_BASE__);
-                if (globalOverride) {
-                    window.__HM_RESOLVED_API_BASE__ = globalOverride;
-                    return globalOverride;
-                }
-
-                if (typeof document !== 'undefined') {
-                    const metaOverride = document.querySelector('meta[name="hm-api-base"]');
-                    const metaBase = sanitizeBase(metaOverride && metaOverride.content);
-                    if (metaBase) {
-                        window.__HM_RESOLVED_API_BASE__ = metaBase;
-                        return metaBase;
-                    }
-                }
-
-                const locationBase = resolveFromLocation();
-                if (locationBase) {
-                    window.__HM_RESOLVED_API_BASE__ = locationBase;
-                    return locationBase;
-                }
-            }
-
-            const fallbackBase = pickFirst(FALLBACK_BASES);
-            if (typeof window !== 'undefined' && fallbackBase) {
-                window.__HM_RESOLVED_API_BASE__ = fallbackBase;
-            }
-            return fallbackBase;
-        };
-    };
-
-    const resolver =
-        (typeof window !== 'undefined' && typeof window.hmResolveApiBase === 'function')
-            ? window.hmResolveApiBase
-            : defineResolver();
-
+    const base = 'https://homework-manager-2-0-backend.onrender.com';
     if (typeof window !== 'undefined') {
-        window.hmResolveApiBase = resolver;
+        window.__HM_RESOLVED_API_BASE__ = base;
+        window.hmResolveApiBase = () => base;
     }
-
-    return resolver();
+    return base;
 })();
 
 const AUTH_API = {
