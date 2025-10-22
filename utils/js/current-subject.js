@@ -1,5 +1,9 @@
 (function () {
-  const DEFAULT_ENDPOINT = 'https://homework-manager-2-0-backend.onrender.com/aktuelles_fach';
+  const API_BASE =
+    (typeof window !== 'undefined' && typeof window.hmResolveApiBase === 'function')
+      ? window.hmResolveApiBase()
+      : 'https://homework-manager-2-0-backend.onrender.com';
+  const DEFAULT_ENDPOINT = `${API_BASE}/aktuelles_fach`;
   const FREE_TOKENS = ['frei', 'free', 'libero', 'libre', '-'];
   const DEFAULT_REFRESH = 30000;
   const DEFAULT_COUNTDOWN_UPDATE = 1000;

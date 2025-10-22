@@ -1,6 +1,9 @@
 // kalender.js
 
-const API_BASE = 'https://homework-manager-2-0-backend.onrender.com';
+const API_BASE =
+  (typeof window !== 'undefined' && typeof window.hmResolveApiBase === 'function')
+    ? window.hmResolveApiBase()
+    : 'https://homework-manager-2-0-backend.onrender.com';
 const role = sessionStorage.getItem('role') || 'guest';
 const userIsAdmin = role === 'admin';
 

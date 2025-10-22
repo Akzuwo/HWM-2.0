@@ -57,7 +57,13 @@ const LOGIN_TEXT = {
 };
 
 const API_BASE = (() => {
-    const DEFAULT_API_BASE = 'https://homework-manager-2-0-backend.onrender.com';
+    const FALLBACK_BASES = [
+        'https://homework-manager.akzuwo.ch',
+        'https://hw-manager.akzuwo.ch',
+        'https://hwm-beta.akzuwo.ch',
+        'https://homework-manager-2-0-backend.onrender.com',
+    ];
+
     const sanitizeBase = (value) => {
         if (!value) {
             return '';
@@ -65,24 +71,94 @@ const API_BASE = (() => {
         return String(value).trim().replace(/\/$/, '');
     };
 
-    if (typeof window === 'undefined') {
-        return DEFAULT_API_BASE;
-    }
-
-    const globalOverride = sanitizeBase(window.__HM_API_BASE__);
-    if (globalOverride) {
-        return globalOverride;
-    }
-
-    if (typeof document !== 'undefined') {
-        const metaOverride = document.querySelector('meta[name="hm-api-base"]');
-        const metaBase = sanitizeBase(metaOverride && metaOverride.content);
-        if (metaBase) {
-            return metaBase;
+    const pickFirst = (values) => {
+        for (const candidate of values) {
+            const sanitized = sanitizeBase(candidate);
+            if (sanitized) {
+                return sanitized;
+            }
         }
+        return '';
+    };
+
+    const resolveFromLocation = () => {
+        if (typeof window === 'undefined') {
+            return '';
+        }
+
+        const { location } = window;
+        if (!location) {
+            return '';
+        }
+
+        const protocol = (location.protocol || '').toLowerCase();
+        if (!protocol.startsWith('http')) {
+            return '';
+        }
+
+        const host = location.host || '';
+        const hostname = (location.hostname || '').toLowerCase();
+        if (!host || !hostname) {
+            return '';
+        }
+
+        const isAkzuwoDomain = hostname.endsWith('.akzuwo.ch');
+        const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+        if (!isAkzuwoDomain && !isLocalhost) {
+            return '';
+        }
+
+        return sanitizeBase(`${location.protocol}//${host}`);
+    };
+
+    const defineResolver = () => {
+        return () => {
+            if (typeof window !== 'undefined') {
+                const cached = sanitizeBase(window.__HM_RESOLVED_API_BASE__);
+                if (cached) {
+                    return cached;
+                }
+
+                const globalOverride = sanitizeBase(window.__HM_API_BASE__);
+                if (globalOverride) {
+                    window.__HM_RESOLVED_API_BASE__ = globalOverride;
+                    return globalOverride;
+                }
+
+                if (typeof document !== 'undefined') {
+                    const metaOverride = document.querySelector('meta[name="hm-api-base"]');
+                    const metaBase = sanitizeBase(metaOverride && metaOverride.content);
+                    if (metaBase) {
+                        window.__HM_RESOLVED_API_BASE__ = metaBase;
+                        return metaBase;
+                    }
+                }
+
+                const locationBase = resolveFromLocation();
+                if (locationBase) {
+                    window.__HM_RESOLVED_API_BASE__ = locationBase;
+                    return locationBase;
+                }
+            }
+
+            const fallbackBase = pickFirst(FALLBACK_BASES);
+            if (typeof window !== 'undefined' && fallbackBase) {
+                window.__HM_RESOLVED_API_BASE__ = fallbackBase;
+            }
+            return fallbackBase;
+        };
+    };
+
+    const resolver =
+        (typeof window !== 'undefined' && typeof window.hmResolveApiBase === 'function')
+            ? window.hmResolveApiBase
+            : defineResolver();
+
+    if (typeof window !== 'undefined') {
+        window.hmResolveApiBase = resolver;
     }
 
-    return DEFAULT_API_BASE;
+    return resolver();
 })();
 
 const AUTH_API = {
@@ -1408,7 +1484,7 @@ async function openCalendar() {
     try {
         clearContent();
 
-        const res = await fetch('https://homework-manager-2-0-backend.onrender.com/entries');
+        const res = await fetch(`${API_BASE}/entries`);
         if (!res.ok) {
             throw new Error(`Errore API (${res.status})`);
         }
@@ -1456,7 +1532,7 @@ let fachInterval;
 async function loadCurrentSubject() {
   clearContent();
   async function update() {
-    const res = await fetch('https://homework-manager-2-0-backend.onrender.com/aktuelles_fach');
+    const res = await fetch(`${API_BASE}/aktuelles_fach`);
     const data = await res.json();
     document.getElementById('content').innerHTML = `
       <h2>Materia attuale: ${data.fach}</h2>
@@ -1471,7 +1547,7 @@ async function loadCurrentSubject() {
 
 /** EINMALIGE ABFRAGE (ohne Intervall) **/
 async function aktuellesFachLaden() {
-  const res = await fetch('https://homework-manager-2-0-backend.onrender.com/aktuelles_fach');
+  const res = await fetch(`${API_BASE}/aktuelles_fach`);
   const data = await res.json();
   document.getElementById('fachInfo').innerHTML = `
     <p><strong>Materia:</strong> ${data.fach}</p>
@@ -1860,7 +1936,7 @@ async function saveEntry(event) {
 
     while (!success && attempt < maxAttempts) {
         try {
-            const response = await fetch('https://homework-manager-2-0-backend.onrender.com/add_entry', {
+            const response = await fetch(`${API_BASE}/add_entry`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ typ, fach: payloadSubject, beschreibung: payloadBeschreibung, datum: isoDate, startzeit, endzeit })
