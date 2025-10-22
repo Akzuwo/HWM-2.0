@@ -1,5 +1,8 @@
+import smtplib
 import time
 from typing import Dict
+
+import pytest
 
 
 def test_secure_data_requires_login(app_client):
@@ -19,6 +22,34 @@ def test_secure_data_after_login(app_client):
 def _login_admin(client):
     resp = client.post('/api/auth/login', json={'email': 'admin@example.com', 'password': 'adminpw'})
     assert resp.status_code == 200
+
+
+def test_admin_logs_requires_admin(app_client):
+    client, _, _ = app_client
+    resp = client.get('/api/admin/logs')
+    assert resp.status_code == 403
+
+
+def test_admin_logs_returns_recent_lines(app_client, tmp_path, monkeypatch):
+    client, _, app_module = app_client
+    _login_admin(client)
+
+    log_file = tmp_path / 'backend.log'
+    log_file.write_text('line1\nline2\nline3\n', encoding='utf-8')
+
+    monkeypatch.setattr(app_module, 'LOG_FILE_HANDLER', None, raising=False)
+    monkeypatch.setattr(app_module, 'LOG_FILE_PATH', str(log_file))
+
+    resp = client.get('/api/admin/logs?lines=2')
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data['status'] == 'ok'
+    assert data['source'] == str(log_file)
+    assert data['lines'] == 2
+    assert data['missing'] is False
+    assert data['truncated'] is True
+    assert 'line3' in data['logs']
+    assert 'line1' not in data['logs']
 
 
 def test_admin_users_crud_and_pagination(app_client):
@@ -157,6 +188,76 @@ def test_contact_success(app_client, monkeypatch):
     assert resp.status_code == 200
     assert sent.get('subject') == 'Feedback'
     assert 'Tester' in sent.get('body', '')
+
+
+def test_deliver_email_falls_back_to_ssl(monkeypatch, app_client):
+    _, _, app_module = app_client
+
+    monkeypatch.setattr(app_module, 'CONTACT_SMTP_HOST', 'smtp.example.com')
+    monkeypatch.setattr(app_module, 'CONTACT_SMTP_PORT', 587)
+    monkeypatch.setattr(app_module, 'CONTACT_SMTP_USER', 'noreply@example.com')
+    monkeypatch.setattr(app_module, 'CONTACT_SMTP_PASSWORD', 'super-secret')
+    monkeypatch.setattr(app_module, 'CONTACT_FROM_ADDRESS', 'noreply@example.com')
+
+    failing_instances = []
+
+    class FailingSMTP:
+        def __init__(self, *args, **kwargs):
+            failing_instances.append(self)
+            self.quit_called = False
+
+        def starttls(self):
+            raise smtplib.SMTPException('starttls failed')
+
+        def login(self, *args, **kwargs):  # pragma: no cover - should not be called
+            pytest.fail('login should not be called on failing SMTP instance')
+
+        def send_message(self, *args, **kwargs):  # pragma: no cover - should not be called
+            pytest.fail('send_message should not be called on failing SMTP instance')
+
+        def quit(self):
+            self.quit_called = True
+
+    class SuccessfulSMTP:
+        def __init__(self, *args, **kwargs):
+            self.login_called = False
+            self.sent_messages = []
+            self.quit_called = False
+
+        def login(self, user, password):
+            self.login_called = True
+            self.credentials = (user, password)
+
+        def send_message(self, message):
+            self.sent_messages.append(message)
+
+        def quit(self):
+            self.quit_called = True
+
+    success_state = {}
+
+    monkeypatch.setattr(app_module.smtplib, 'SMTP', FailingSMTP)
+
+    def fake_smtp_ssl(host, port, timeout=10, **kwargs):
+        assert port == 465
+        instance = SuccessfulSMTP(host, port, timeout=timeout, **kwargs)
+        success_state['instance'] = instance
+        success_state['params'] = {'host': host, 'port': port, 'timeout': timeout}
+        return instance
+
+    monkeypatch.setattr(app_module.smtplib, 'SMTP_SSL', fake_smtp_ssl)
+
+    app_module._deliver_email('dest@example.com', 'Subject', 'Body text')
+
+    assert failing_instances, 'Fallback should attempt TLS first'
+    assert failing_instances[0].quit_called is True
+
+    success = success_state.get('instance')
+    assert success is not None
+    assert success.login_called is True
+    assert success.sent_messages, 'Email should be sent via SSL fallback'
+    assert success.quit_called is True
+    assert success_state['params']['timeout'] == 10
 
 
 def test_resend_verification_sends_mail(app_client, monkeypatch):

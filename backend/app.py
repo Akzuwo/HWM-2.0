@@ -3,11 +3,14 @@ import os
 import datetime
 import re
 import time
+import logging
 import smtplib
-from collections import OrderedDict
+from collections import OrderedDict, deque
 from contextlib import closing
 from email.message import EmailMessage
 from typing import Dict, Optional, Tuple, Any, Iterable
+
+from logging.handlers import RotatingFileHandler
 
 from ics import Calendar, Event
 import pytz
@@ -54,6 +57,90 @@ CONTACT_SMTP_USER = _contact_settings["user"]
 CONTACT_SMTP_PASSWORD = _contact_settings["password"]
 CONTACT_RECIPIENT = _contact_settings["recipient"]
 CONTACT_FROM_ADDRESS = _contact_settings["from_address"]
+
+LOG_FILE_PATH = os.getenv('HWM_LOG_FILE', '/tmp/hwm-backend.log')
+LOG_MAX_BYTES = int(os.getenv('HWM_LOG_MAX_BYTES', 2 * 1024 * 1024))
+LOG_BACKUP_COUNT = int(os.getenv('HWM_LOG_BACKUP_COUNT', 5))
+LOG_DEFAULT_LINE_LIMIT = max(int(os.getenv('HWM_LOG_DEFAULT_LINES', 500)), 1)
+LOG_MAX_LINE_LIMIT = max(int(os.getenv('HWM_LOG_MAX_LINES', 5000)), LOG_DEFAULT_LINE_LIMIT)
+LOG_FILE_HANDLER = None
+_LOG_HANDLER_LOGGERS = (app.logger, logging.getLogger())
+
+
+def _remove_existing_log_handler() -> None:
+    global LOG_FILE_HANDLER
+    handler = LOG_FILE_HANDLER
+    if handler is None:
+        return
+    for logger in _LOG_HANDLER_LOGGERS:
+        if handler in getattr(logger, 'handlers', []):
+            logger.removeHandler(handler)
+    try:
+        handler.close()
+    except Exception:
+        pass
+    LOG_FILE_HANDLER = None
+
+
+def _setup_file_logging() -> None:
+    global LOG_FILE_HANDLER
+    _remove_existing_log_handler()
+
+    if not LOG_FILE_PATH:
+        return
+
+    directory = os.path.dirname(LOG_FILE_PATH)
+    if directory:
+        try:
+            os.makedirs(directory, exist_ok=True)
+        except OSError as exc:
+            app.logger.warning('Failed to create log directory %s: %s', directory, exc)
+            return
+
+    try:
+        handler = RotatingFileHandler(
+            LOG_FILE_PATH,
+            maxBytes=LOG_MAX_BYTES,
+            backupCount=LOG_BACKUP_COUNT,
+            encoding='utf-8',
+        )
+    except OSError as exc:
+        app.logger.warning('Failed to initialise log handler for %s: %s', LOG_FILE_PATH, exc)
+        return
+
+    formatter = logging.Formatter('%(asctime)s %(levelname)s [%(name)s] %(message)s')
+    handler.setFormatter(formatter)
+    handler.setLevel(logging.INFO)
+
+    for logger in _LOG_HANDLER_LOGGERS:
+        logger.addHandler(handler)
+        if logger.level == logging.NOTSET or logger.level > logging.INFO:
+            logger.setLevel(logging.INFO)
+
+    LOG_FILE_HANDLER = handler
+
+
+def _resolve_active_log_path() -> Optional[str]:
+    handler = LOG_FILE_HANDLER
+    if handler is not None:
+        handler_path = getattr(handler, 'baseFilename', None)
+        if handler_path:
+            return handler_path
+    return LOG_FILE_PATH or None
+
+
+def _tail_log_file(path: str, max_lines: int) -> Tuple[str, bool]:
+    truncated = False
+    buffer = deque(maxlen=max_lines)
+    with open(path, 'r', encoding='utf-8', errors='replace') as fh:
+        for line in fh:
+            if len(buffer) == buffer.maxlen:
+                truncated = True
+            buffer.append(line)
+    return ''.join(buffer), truncated
+
+
+_setup_file_logging()
 
 def _resolve_cors_origin() -> Optional[str]:
     origin = request.headers.get("Origin")
@@ -361,21 +448,47 @@ def _deliver_email(
             maintype, subtype = (content_type or 'application/octet-stream').split('/', 1)
             message.add_attachment(file_data, maintype=maintype, subtype=subtype, filename=filename)
 
-    server = None
-    try:
-        if CONTACT_SMTP_PORT == 465:
-            server = smtplib.SMTP_SSL(CONTACT_SMTP_HOST, CONTACT_SMTP_PORT, timeout=10)
-        else:
-            server = smtplib.SMTP(CONTACT_SMTP_HOST, CONTACT_SMTP_PORT, timeout=10)
-            server.starttls()
+    ports_to_try = []
+    if CONTACT_SMTP_PORT:
+        ports_to_try.append(CONTACT_SMTP_PORT)
+    if 465 not in ports_to_try:
+        ports_to_try.append(465)
 
-        if CONTACT_SMTP_USER and CONTACT_SMTP_PASSWORD:
-            server.login(CONTACT_SMTP_USER, CONTACT_SMTP_PASSWORD)
+    last_error: Optional[Exception] = None
 
-        server.send_message(message)
-    finally:
-        if server is not None:
-            server.quit()
+    for port in ports_to_try:
+        server = None
+        try:
+            if port == 465:
+                server = smtplib.SMTP_SSL(CONTACT_SMTP_HOST, port, timeout=10)
+            else:
+                server = smtplib.SMTP(CONTACT_SMTP_HOST, port, timeout=10)
+                server.starttls()
+
+            if CONTACT_SMTP_USER and CONTACT_SMTP_PASSWORD:
+                server.login(CONTACT_SMTP_USER, CONTACT_SMTP_PASSWORD)
+
+            server.send_message(message)
+
+            if port != CONTACT_SMTP_PORT:
+                app.logger.info('Email sent via fallback SMTP port %s', port)
+
+            return
+        except (OSError, smtplib.SMTPException) as exc:
+            last_error = exc
+            app.logger.warning('Failed to send email via SMTP port %s: %s', port, exc)
+        finally:
+            if server is not None:
+                try:
+                    server.quit()
+                except Exception:
+                    pass
+
+    if last_error is not None:
+        app.logger.error('Unable to send email after trying ports: %s', ports_to_try)
+        raise last_error
+
+    raise RuntimeError('mail_failed')
 
 
 def _send_contact_email(name: str, email_address: str, subject: str, body: str, attachment=None) -> None:
@@ -420,6 +533,60 @@ def _send_verification_email(email_address: str, token: str, expires_at: datetim
         EMAIL_VERIFICATION_SUBJECT,
         body,
         sender=EMAIL_VERIFICATION_FROM_ADDRESS,
+    )
+
+
+@app.route('/api/admin/logs', methods=['GET', 'OPTIONS'])
+@require_role('admin')
+def admin_logs() -> Response:
+    if request.method == 'OPTIONS':
+        return _cors_preflight()
+
+    active_path = _resolve_active_log_path()
+    if not active_path:
+        return jsonify(status='error', message='log_unavailable'), 503
+
+    lines_requested = request.args.get('lines', type=int) or LOG_DEFAULT_LINE_LIMIT
+    lines_requested = max(1, min(lines_requested, LOG_MAX_LINE_LIMIT))
+
+    try:
+        exists = os.path.exists(active_path)
+    except OSError:
+        app.logger.exception('Failed to check existence of log file %s', active_path)
+        return jsonify(status='error', message='log_unavailable'), 503
+
+    if not exists:
+        return jsonify(
+            status='ok',
+            logs='',
+            source=active_path,
+            missing=True,
+            truncated=False,
+            lines=lines_requested,
+        )
+
+    try:
+        content, truncated = _tail_log_file(active_path, lines_requested)
+    except FileNotFoundError:
+        return jsonify(
+            status='ok',
+            logs='',
+            source=active_path,
+            missing=True,
+            truncated=False,
+            lines=lines_requested,
+        )
+    except OSError:
+        app.logger.exception('Failed to read log file %s', active_path)
+        return jsonify(status='error', message='log_unavailable'), 503
+
+    return jsonify(
+        status='ok',
+        logs=content,
+        source=active_path,
+        missing=False,
+        truncated=truncated,
+        lines=lines_requested,
     )
 
 
