@@ -194,7 +194,7 @@ def test_deliver_email_falls_back_to_ssl(monkeypatch, app_client):
     _, _, app_module = app_client
 
     monkeypatch.setattr(app_module, 'CONTACT_SMTP_HOST', 'smtp.example.com')
-    monkeypatch.setattr(app_module, 'CONTACT_SMTP_PORT', 587)
+    monkeypatch.setattr(app_module, 'CONTACT_SMTP_PORTS', (587, 465))
     monkeypatch.setattr(app_module, 'CONTACT_SMTP_USER', 'noreply@example.com')
     monkeypatch.setattr(app_module, 'CONTACT_SMTP_PASSWORD', 'super-secret')
     monkeypatch.setattr(app_module, 'CONTACT_FROM_ADDRESS', 'noreply@example.com')
@@ -202,7 +202,8 @@ def test_deliver_email_falls_back_to_ssl(monkeypatch, app_client):
     failing_instances = []
 
     class FailingSMTP:
-        def __init__(self, *args, **kwargs):
+        def __init__(self, host, port, timeout=10, **kwargs):
+            assert port == 587
             failing_instances.append(self)
             self.quit_called = False
 

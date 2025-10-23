@@ -53,11 +53,11 @@ ALLOWED_CORS_ORIGIN_PATTERNS = [
 # SMTP credentials are centralised in config.py to avoid duplication across modules.
 _contact_settings = get_contact_smtp_settings()
 CONTACT_SMTP_HOST = _contact_settings["host"]
-CONTACT_SMTP_PORT = _contact_settings["port"]
 CONTACT_SMTP_USER = _contact_settings["user"]
 CONTACT_SMTP_PASSWORD = _contact_settings["password"]
 CONTACT_RECIPIENT = _contact_settings["recipient"]
 CONTACT_FROM_ADDRESS = _contact_settings["from_address"]
+CONTACT_SMTP_PORTS = (587, 465)
 
 LOG_FILE_PATH = os.getenv('HWM_LOG_FILE', '/tmp/hwm-backend.log')
 LOG_MAX_BYTES = int(os.getenv('HWM_LOG_MAX_BYTES', 2 * 1024 * 1024))
@@ -450,12 +450,15 @@ def _deliver_email(
             message.add_attachment(file_data, maintype=maintype, subtype=subtype, filename=filename)
 
     ports_to_try = []
-    if CONTACT_SMTP_PORT:
-        ports_to_try.append(CONTACT_SMTP_PORT)
-    if 465 not in ports_to_try:
-        ports_to_try.append(465)
+    for port in CONTACT_SMTP_PORTS:
+        if port and port not in ports_to_try:
+            ports_to_try.append(port)
+
+    if not ports_to_try:
+        raise RuntimeError('No SMTP ports configured')
 
     last_error: Optional[Exception] = None
+    primary_port = ports_to_try[0]
 
     for port in ports_to_try:
         server = None
@@ -471,7 +474,7 @@ def _deliver_email(
 
             server.send_message(message)
 
-            if port != CONTACT_SMTP_PORT:
+            if port != primary_port:
                 app.logger.info('Email sent via fallback SMTP port %s', port)
 
             return

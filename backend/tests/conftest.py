@@ -628,7 +628,6 @@ def app_client(monkeypatch):
     monkeypatch.setenv('DB_PORT', '3306')
 
     monkeypatch.setenv('CONTACT_SMTP_HOST', 'smtp.example.com')
-    monkeypatch.setenv('CONTACT_SMTP_PORT', '587')
     monkeypatch.setenv('CONTACT_SMTP_USER', 'noreply@example.com')
     monkeypatch.setenv('CONTACT_SMTP_PASSWORD', 'not-used')
     monkeypatch.setenv('CONTACT_RECIPIENT', 'contact@example.com')

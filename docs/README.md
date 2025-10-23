@@ -60,14 +60,14 @@ gesetzt sein:
 
 ```
 CONTACT_SMTP_HOST
-CONTACT_SMTP_PORT
 CONTACT_SMTP_USER
 CONTACT_SMTP_PASSWORD
 CONTACT_RECIPIENT
 CONTACT_FROM_ADDRESS (optional)
 ```
 
-Die Datei `backend/.env.production` enthält eine Referenzkonfiguration, die Host, Port, Absender- und
-Empfängeradressen sowie das verwendete Konto für den Gmail-Versand vorgibt. Nach Änderungen an diesen Werten muss
+Der Backend-Dienst versucht automatisch die SMTP-Ports 587 (STARTTLS) und 465 (SMTPS); eine separate Port-Variable
+ist daher nicht mehr erforderlich. Die Datei `backend/.env.production` enthält eine Referenzkonfiguration, die Host,
+Absender- und Empfängeradressen sowie das verwendete Konto für den Gmail-Versand vorgibt. Nach Änderungen an diesen Werten muss
 der Backend-Dienst neu gestartet werden, damit der Prozess die aktualisierten Variablen übernimmt, z. B. via
 `systemctl restart homework-manager-backend.service`.

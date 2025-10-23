@@ -43,7 +43,6 @@ def get_contact_smtp_settings() -> Dict[str, Any]:
     """Return SMTP settings for the contact form from environment variables."""
 
     host = _require_env("CONTACT_SMTP_HOST")
-    port = _coerce_int(os.environ.get("CONTACT_SMTP_PORT"), 587)
     user = _optional_env("CONTACT_SMTP_USER")
     password = _optional_env("CONTACT_SMTP_PASSWORD")
     recipient = _optional_env("CONTACT_RECIPIENT") or user
@@ -51,7 +50,6 @@ def get_contact_smtp_settings() -> Dict[str, Any]:
 
     return {
         "host": host,
-        "port": port,
         "user": user,
         "password": password,
         "recipient": recipient,
