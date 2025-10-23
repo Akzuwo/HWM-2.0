@@ -1,9 +1,9 @@
 // kalender.js
 
-const API_BASE =
+const API_BASE_URL =
   (typeof window !== 'undefined' && typeof window.hmResolveApiBase === 'function')
     ? window.hmResolveApiBase()
-    : 'https://homework-manager-2-0-backend.onrender.com';
+    : 'https://homework-manager-2-5-backend.onrender.com';
 const role = sessionStorage.getItem('role') || 'guest';
 const userIsAdmin = role === 'admin';
 
@@ -314,7 +314,7 @@ async function saveEdit(evt) {
   }
 
   try {
-    const res = await fetch(`${API_BASE}/update_entry`, {
+    const res = await fetch(`${API_BASE_URL}/update_entry`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -359,7 +359,7 @@ async function deleteEntry() {
   }
 
   try {
-    const res = await fetch(`${API_BASE}/delete_entry/${id}`, {
+    const res = await fetch(`${API_BASE_URL}/delete_entry/${id}`, {
       method: 'DELETE',
       headers: { 'X-Role': role }
     });
@@ -421,7 +421,7 @@ async function handleExportClick(event) {
   if (label) label.textContent = actionText.exportLoading;
 
   try {
-    const response = await fetch(`${API_BASE}/calendar.ics`);
+    const response = await fetch(`${API_BASE_URL}/calendar.ics`);
     if (!response.ok) {
       throw new Error(`${response.status}`);
     }
@@ -757,7 +757,7 @@ async function loadCalendar() {
   showCalendarLoading(calendarEl, t('status.loading', 'Caricamento del calendario …'));
 
   try {
-    const res = await fetch(`${API_BASE}/entries`);
+    const res = await fetch(`${API_BASE_URL}/entries`);
     if (!res.ok) {
       throw new Error(`Errore API (${res.status})`);
     }

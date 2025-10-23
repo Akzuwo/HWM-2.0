@@ -1,7 +1,7 @@
-const API_BASE =
+const API_BASE_URL =
   (typeof window !== 'undefined' && typeof window.hmResolveApiBase === 'function')
     ? window.hmResolveApiBase()
-    : 'https://homework-manager-2-0-backend.onrender.com';
+    : 'https://homework-manager-2-5-backend.onrender.com';
 
 document.addEventListener('DOMContentLoaded', async () => {
   const listEl = document.getElementById('upcoming-list');
@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   };
 
   try {
-    const res = await fetch(`${API_BASE}/entries`);
+    const res = await fetch(`${API_BASE_URL}/entries`);
     if (!res.ok) {
       throw new Error(`Errore API (${res.status})`);
     }

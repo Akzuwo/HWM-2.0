@@ -1,7 +1,7 @@
-const API_BASE =
+const API_BASE_URL =
   (typeof window !== 'undefined' && typeof window.hmResolveApiBase === 'function')
     ? window.hmResolveApiBase()
-    : 'https://homework-manager-2-0-backend.onrender.com';
+    : 'https://homework-manager-2-5-backend.onrender.com';
 
 function setPageDate() {
   const dateTarget = document.getElementById('pageDate');
@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setPageDate();
 
   try {
-    const res = await fetch(`${API_BASE}/tagesuebersicht`);
+    const res = await fetch(`${API_BASE_URL}/tagesuebersicht`);
     if (!res.ok) {
       throw new Error(`API error: ${res.status}`);
     }
