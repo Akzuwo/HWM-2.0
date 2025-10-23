@@ -9,6 +9,8 @@ const API_BASE = (() => {
   return base;
 })();
 
+const SESSION_STORAGE_KEY = 'hm.session';
+
 const TRANSLATIONS = {
   de: {
     title: 'Admin-Dashboard',
@@ -28,12 +30,14 @@ const TRANSLATIONS = {
       delete: 'Löschen',
       cancel: 'Abbrechen',
       save: 'Speichern',
+      downloadLogs: 'API-Logs herunterladen',
     },
     confirmDelete: 'Soll dieser Eintrag wirklich gelöscht werden?',
     table: {
       email: 'E-Mail',
       role: 'Rolle',
       classId: 'Klasse',
+      classSlug: 'Klassen-Kurzname',
       status: 'Status',
       updatedAt: 'Aktualisiert',
       createdAt: 'Erstellt',
@@ -75,6 +79,8 @@ const TRANSLATIONS = {
       loadFailed: 'Daten konnten nicht geladen werden.',
       unauthorized: 'Bitte erneut anmelden.',
       unknownError: 'Es ist ein unbekannter Fehler aufgetreten.',
+      logsDownloaded: 'Protokolle heruntergeladen.',
+      logsFailed: 'Protokolle konnten nicht heruntergeladen werden.',
     },
     empty: 'Keine Daten vorhanden.',
     pagination: {
@@ -99,12 +105,14 @@ const TRANSLATIONS = {
       delete: 'Delete',
       cancel: 'Cancel',
       save: 'Save',
+      downloadLogs: 'Download API logs',
     },
     confirmDelete: 'Are you sure you want to delete this item?',
     table: {
       email: 'Email',
       role: 'Role',
       classId: 'Class',
+      classSlug: 'Class slug',
       status: 'Status',
       updatedAt: 'Updated',
       createdAt: 'Created',
@@ -146,6 +154,8 @@ const TRANSLATIONS = {
       loadFailed: 'Failed to load data.',
       unauthorized: 'Please sign in again.',
       unknownError: 'An unknown error occurred.',
+      logsDownloaded: 'Logs downloaded.',
+      logsFailed: 'Unable to download logs.',
     },
     empty: 'No data available.',
     pagination: {
@@ -170,12 +180,14 @@ const TRANSLATIONS = {
       delete: 'Supprimer',
       cancel: 'Annuler',
       save: 'Enregistrer',
+      downloadLogs: 'Télécharger les journaux API',
     },
     confirmDelete: 'Voulez-vous vraiment supprimer cet élément ?',
     table: {
       email: 'E-mail',
       role: 'Rôle',
       classId: 'Classe',
+      classSlug: 'Slug de classe',
       status: 'Statut',
       updatedAt: 'Mis à jour',
       createdAt: 'Créé',
@@ -217,6 +229,8 @@ const TRANSLATIONS = {
       loadFailed: 'Impossible de charger les données.',
       unauthorized: 'Veuillez vous reconnecter.',
       unknownError: 'Une erreur inconnue est survenue.',
+      logsDownloaded: 'Journaux téléchargés.',
+      logsFailed: 'Impossible de télécharger les journaux.',
     },
     empty: 'Aucune donnée disponible.',
     pagination: {
@@ -241,12 +255,14 @@ const TRANSLATIONS = {
       delete: 'Elimina',
       cancel: 'Annulla',
       save: 'Salva',
+      downloadLogs: 'Scarica i log API',
     },
     confirmDelete: 'Eliminare veramente questo elemento?',
     table: {
       email: 'Email',
       role: 'Ruolo',
       classId: 'Classe',
+      classSlug: 'Slug classe',
       status: 'Stato',
       updatedAt: 'Aggiornato',
       createdAt: 'Creato',
@@ -288,6 +304,8 @@ const TRANSLATIONS = {
       loadFailed: 'Impossibile caricare i dati.',
       unauthorized: 'Effettua di nuovo l’accesso.',
       unknownError: 'Si è verificato un errore sconosciuto.',
+      logsDownloaded: 'Log scaricati.',
+      logsFailed: 'Impossibile scaricare i log.',
     },
     empty: 'Nessun dato disponibile.',
     pagination: {
@@ -369,6 +387,32 @@ async function fetchJson(url, options = {}) {
   }
 
   return payload;
+}
+
+function loadStoredSession() {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  try {
+    const raw = window.sessionStorage?.getItem(SESSION_STORAGE_KEY);
+    if (!raw) {
+      return null;
+    }
+    return JSON.parse(raw);
+  } catch (error) {
+    return null;
+  }
+}
+
+function isSessionAdmin(session) {
+  if (!session) {
+    return false;
+  }
+  if (typeof session.isAdmin === 'boolean') {
+    return session.isAdmin;
+  }
+  const role = String(session.role || '').toLowerCase();
+  return role === 'admin';
 }
 
 function createMessageArea() {
@@ -478,8 +522,9 @@ function buildDashboard(root) {
   const actionsBar = document.createElement('div');
   actionsBar.className = 'admin-dashboard__actions';
 
+  const downloadLogsButton = createActionButton(t.buttons.downloadLogs);
   const createButton = createActionButton(t.create.users);
-  actionsBar.appendChild(createButton);
+  actionsBar.append(downloadLogsButton, createButton);
 
   const tableWrapper = document.createElement('div');
   tableWrapper.className = 'admin-dashboard__table';
@@ -495,7 +540,11 @@ function buildDashboard(root) {
       columns: [
         { key: 'email', label: t.table.email },
         { key: 'role', label: t.table.role, render: (row) => t.roles[row.role] || row.role },
-        { key: 'class_id', label: t.table.classId },
+        {
+          key: 'class_slug',
+          label: t.table.classSlug,
+          render: (row) => row.class_slug || (row.class_id ? `#${row.class_id}` : '–'),
+        },
         { key: 'is_active', label: t.table.status, render: (row) => (row.is_active ? t.status.active : t.status.inactive) },
         { key: 'updated_at', label: t.table.updatedAt, render: (row) => formatDate(row.updated_at, locale) },
       ],
@@ -604,7 +653,43 @@ function buildDashboard(root) {
     pageSize: 10,
     total: 0,
     data: [],
+    authorized: true,
   };
+
+  function setAuthorizationState(isAuthorized) {
+    const allowed = Boolean(isAuthorized);
+    state.authorized = allowed;
+    createButton.disabled = !allowed;
+    createButton.setAttribute('aria-disabled', String(!allowed));
+    downloadLogsButton.disabled = !allowed;
+    downloadLogsButton.setAttribute('aria-disabled', String(!allowed));
+    nav.querySelectorAll('button').forEach((button) => {
+      button.disabled = !allowed;
+      button.setAttribute('aria-disabled', String(!allowed));
+    });
+    if (!allowed) {
+      state.total = 0;
+      state.data = [];
+      table.setRows([]);
+      pagination.update({ page: state.page, pageSize: state.pageSize, total: state.total });
+      pagination.prev.disabled = true;
+      pagination.next.disabled = true;
+    }
+  }
+
+  function handleUnauthorized() {
+    if (!state.authorized) {
+      return;
+    }
+    setAuthorizationState(false);
+    showMessage('error', t.messages.unauthorized);
+  }
+
+  const initialAuthorized = isSessionAdmin(loadStoredSession());
+  setAuthorizationState(initialAuthorized);
+  if (!initialAuthorized) {
+    showMessage('error', t.messages.unauthorized);
+  }
 
   function buildActionCell(resourceKey, row) {
     const actions = document.createElement('div');
@@ -635,8 +720,14 @@ function buildDashboard(root) {
       button.classList.toggle('is-active', resource.key === state.active);
       button.setAttribute('role', 'tab');
       button.setAttribute('aria-selected', resource.key === state.active ? 'true' : 'false');
+      button.disabled = !state.authorized;
+      button.setAttribute('aria-disabled', String(!state.authorized));
       button.addEventListener('click', () => {
         if (state.active === resource.key) {
+          return;
+        }
+        if (!state.authorized) {
+          showMessage('error', t.messages.unauthorized);
           return;
         }
         state.active = resource.key;
@@ -661,6 +752,11 @@ function buildDashboard(root) {
     const resource = resources[state.active];
     table.setLoading(true);
     showMessage();
+    if (!state.authorized) {
+      table.setRows([]);
+      table.setLoading(false);
+      return;
+    }
     try {
       const response = await fetchJson(`/api/admin/${resource.key}?page=${state.page}&page_size=${state.pageSize}`);
       const rows = response.data || [];
@@ -669,8 +765,8 @@ function buildDashboard(root) {
       table.setRows(rows);
       pagination.update({ page: state.page, pageSize: state.pageSize, total: state.total });
     } catch (error) {
-      if (error.status === 403) {
-        showMessage('error', t.messages.unauthorized);
+      if (error.status === 401 || error.status === 403) {
+        handleUnauthorized();
       } else {
         showMessage('error', error.message || t.messages.loadFailed);
       }
@@ -684,6 +780,10 @@ function buildDashboard(root) {
     const resource = resources[state.active];
     createButton.textContent = t.create[state.active];
     configureTableColumns(resource.key);
+    if (!state.authorized) {
+      table.setRows([]);
+      return;
+    }
     loadData();
   }
 
@@ -720,25 +820,78 @@ function buildDashboard(root) {
   }
 
   createButton.addEventListener('click', () => {
+    if (!state.authorized) {
+      showMessage('error', t.messages.unauthorized);
+      return;
+    }
     const { dialog, form, resource } = openFormDialog(state.active, 'create');
     dialog.onConfirm(async () => {
       const values = resource.sanitize(form.getValues());
-      await fetchJson(`/api/admin/${resource.key}`, {
-        method: 'POST',
-        body: JSON.stringify(values),
-      });
+      try {
+        await fetchJson(`/api/admin/${resource.key}`, {
+          method: 'POST',
+          body: JSON.stringify(values),
+        });
+      } catch (error) {
+        if (error.status === 401 || error.status === 403) {
+          handleUnauthorized();
+          throw new Error(t.messages.unauthorized);
+        }
+        throw error;
+      }
       refreshAfter('create');
     });
+  });
+
+  downloadLogsButton.addEventListener('click', async () => {
+    if (!state.authorized) {
+      showMessage('error', t.messages.unauthorized);
+      return;
+    }
+    downloadLogsButton.disabled = true;
+    try {
+      const response = await fetchJson('/api/admin/logs');
+      const logs = response.logs || '';
+      const source = response.source || '';
+      const fileName = source.split(/[/\\]/).filter(Boolean).pop()
+        || `api-logs-${new Date().toISOString().replace(/[:.]/g, '-')}.log`;
+      const blob = new Blob([logs], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      showMessage('success', t.messages.logsDownloaded);
+    } catch (error) {
+      if (error.status === 401 || error.status === 403) {
+        handleUnauthorized();
+      } else {
+        showMessage('error', error.message || t.messages.logsFailed);
+      }
+    } finally {
+      downloadLogsButton.disabled = !state.authorized;
+    }
   });
 
   async function openEditDialog(resourceKey, row) {
     const { dialog, form, resource } = openFormDialog(resourceKey, 'edit', row);
     dialog.onConfirm(async () => {
       const values = resource.sanitize(form.getValues());
-      await fetchJson(`/api/admin/${resource.key}/${row.id}`, {
-        method: 'PUT',
-        body: JSON.stringify(values),
-      });
+      try {
+        await fetchJson(`/api/admin/${resource.key}/${row.id}`, {
+          method: 'PUT',
+          body: JSON.stringify(values),
+        });
+      } catch (error) {
+        if (error.status === 401 || error.status === 403) {
+          handleUnauthorized();
+          throw new Error(t.messages.unauthorized);
+        }
+        throw error;
+      }
       refreshAfter('update');
     });
   }
@@ -751,8 +904,8 @@ function buildDashboard(root) {
       await fetchJson(`/api/admin/${resourceKey}/${row.id}`, { method: 'DELETE' });
       refreshAfter('delete');
     } catch (error) {
-      if (error.status === 403) {
-        showMessage('error', t.messages.unauthorized);
+      if (error.status === 401 || error.status === 403) {
+        handleUnauthorized();
       } else {
         showMessage('error', error.message || t.messages.unknownError);
       }
