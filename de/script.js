@@ -15,11 +15,18 @@ const LOGIN_TEXT = {
     inactive: 'Dein Konto wurde deaktiviert. Bitte kontaktiere eine Lehrkraft oder den Administrator.',
     emailNotVerified: 'Bitte bestätige zuerst deine E-Mail-Adresse.',
     verificationTitle: 'E-Mail-Bestätigung erforderlich',
-    verificationDescription: 'Wir haben dir einen Link zur Bestätigung gesendet. Du kannst hier eine neue E-Mail anfordern.',
+    verificationDescription: 'Wir haben dir einen Link zur Bestätigung gesendet. Der Versand kann ein paar Minuten dauern. Du kannst hier eine neue E-Mail anfordern.',
     verificationResend: 'Bestätigungsmail erneut senden',
     verificationResendLoading: 'Sende …',
-    resendSuccess: 'Falls ein Konto existiert, wurde der Link erneut verschickt.',
+    verificationPending: 'Wir prüfen gerade deinen Bestätigungslink …',
+    verificationSuccess: 'Geschafft! Deine E-Mail-Adresse wurde bestätigt. Du kannst dich jetzt anmelden.',
+    verificationAlready: 'Deine E-Mail-Adresse wurde bereits bestätigt. Du kannst dich anmelden.',
+    verificationExpired: 'Der Bestätigungslink ist abgelaufen. Fordere bitte einen neuen Link an.',
+    verificationInvalid: 'Der Bestätigungslink ist ungültig. Fordere bitte einen neuen Link an.',
+    verificationGenericError: 'Die Bestätigung ist derzeit nicht möglich. Bitte versuche es später erneut.',
+    resendSuccess: 'Falls ein Konto existiert, wurde der Link erneut verschickt. Der Versand kann ein paar Minuten dauern.',
     resendError: 'Die E-Mail konnte nicht gesendet werden. Bitte versuche es später erneut.',
+    cooldownWarning: 'Bitte warte einen Moment, bevor du es erneut versuchst.',
     forgotPassword: 'Passwort vergessen?',
     forgotPasswordMissingEmail: 'Bitte gib zuerst deine E-Mail-Adresse ein.',
     passwordResetSent: 'Falls ein Konto existiert, wurde ein Reset-Link gesendet.',
@@ -50,7 +57,7 @@ const LOGIN_TEXT = {
     registerClassPlaceholder: 'z. B. 3a',
     registerClassNotFound: 'Diese Klasse wurde nicht gefunden.',
     registerGenericError: 'Registrierung derzeit nicht möglich. Bitte versuche es später erneut.',
-    registerSuccess: 'Fast geschafft! Wir haben dir eine Bestätigungsmail gesendet.',
+    registerSuccess: 'Fast geschafft! Wir haben dir eine Bestätigungsmail gesendet. Der Versand kann ein paar Minuten dauern.',
     switchToRegister: 'Neu hier? Konto erstellen',
     switchToLogin: 'Schon registriert? Anmelden',
     close: 'Schließen'
@@ -70,6 +77,7 @@ const AUTH_API = {
     register: `${API_BASE}/api/auth/register`,
     logout: `${API_BASE}/api/auth/logout`,
     resend: `${API_BASE}/api/auth/resend`,
+    verify: `${API_BASE}/api/auth/verify`,
     passwordReset: `${API_BASE}/api/auth/password-reset`
 };
 
@@ -78,6 +86,44 @@ const AUTH_PATHS = {
     admin: 'admin/dashboard.html',
     login: 'login.html'
 };
+
+const VERIFICATION_ACTION_COOLDOWN_MS = 30000;
+const actionCooldowns = {
+    register: 0,
+    resend: 0
+};
+
+function getNow() {
+    return Date.now();
+}
+
+function setActionCooldown(action, duration = VERIFICATION_ACTION_COOLDOWN_MS) {
+    actionCooldowns[action] = getNow() + Math.max(duration, 0);
+}
+
+function getActionCooldownRemaining(action) {
+    const until = actionCooldowns[action] || 0;
+    return Math.max(until - getNow(), 0);
+}
+
+function isActionOnCooldown(action) {
+    return getActionCooldownRemaining(action) > 0;
+}
+
+function scheduleCooldownReset(action) {
+    const remaining = getActionCooldownRemaining(action);
+    if (remaining <= 0) {
+        applyActionCooldown(action);
+        return;
+    }
+    window.setTimeout(() => {
+        if (isActionOnCooldown(action)) {
+            scheduleCooldownReset(action);
+        } else {
+            applyActionCooldown(action);
+        }
+    }, remaining + 50);
+}
 
 const SESSION_STORAGE_KEY = 'hm.session';
 
@@ -279,6 +325,14 @@ function queryAuthForms() {
     return Array.from(document.querySelectorAll('[data-auth-form]'));
 }
 
+function applyActionCooldown(action) {
+    if (action === 'register') {
+        queryAuthForms().forEach(applyRegisterCooldown);
+    } else if (action === 'resend') {
+        queryAuthForms().forEach(applyResendCooldown);
+    }
+}
+
 function getEmailInput(form) {
     return form ? form.querySelector('[data-auth-email]') : null;
 }
@@ -300,6 +354,32 @@ function getAuthMode(form) {
         return 'login';
     }
     return form.dataset.authMode === 'register' ? 'register' : 'login';
+}
+
+function applyRegisterCooldown(form) {
+    if (!form) {
+        return;
+    }
+    const submit = form.querySelector('[data-auth-submit]');
+    if (!submit) {
+        return;
+    }
+    if (submit.dataset.loading === 'true') {
+        return;
+    }
+    const shouldDisable = getAuthMode(form) === 'register' && isActionOnCooldown('register');
+    submit.disabled = shouldDisable;
+}
+
+function applyResendCooldown(form) {
+    if (!form) {
+        return;
+    }
+    const button = form.querySelector('[data-auth-resend]');
+    if (!button || button.dataset.locked === 'true') {
+        return;
+    }
+    button.disabled = isActionOnCooldown('resend');
 }
 
 function getSubmitLabel(form, isLoading) {
@@ -374,12 +454,26 @@ function setFormLoading(form, isLoading) {
     }
     const submit = form.querySelector('[data-auth-submit]');
     if (submit) {
-        submit.disabled = Boolean(isLoading);
-        submit.textContent = getSubmitLabel(form, Boolean(isLoading));
+        if (isLoading) {
+            submit.disabled = true;
+            submit.dataset.loading = 'true';
+            submit.textContent = getSubmitLabel(form, true);
+        } else {
+            submit.textContent = getSubmitLabel(form, false);
+            delete submit.dataset.loading;
+            applyRegisterCooldown(form);
+            if (submit.disabled && getAuthMode(form) !== 'register') {
+                submit.disabled = false;
+            }
+        }
     }
     const resend = form.querySelector('[data-auth-resend]');
-    if (resend && resend.dataset.locked === 'true') {
-        resend.disabled = Boolean(isLoading);
+    if (resend) {
+        if (isLoading && resend.dataset.locked === 'true') {
+            resend.disabled = true;
+        } else if (resend.dataset.locked !== 'true') {
+            applyResendCooldown(form);
+        }
     }
 }
 
@@ -473,6 +567,9 @@ function setAuthMode(form, mode, options = {}) {
     if (!preserveVerification) {
         hideVerificationBanner(form);
     }
+
+    applyRegisterCooldown(form);
+    applyResendCooldown(form);
 }
 
 function bindAuthForms() {
@@ -480,10 +577,14 @@ function bindAuthForms() {
         if (form.dataset.authBound === 'true') {
             setAuthMode(form, getAuthMode(form), { preserveFeedback: true, preserveVerification: true });
             applyEmailPrefill(form);
+            applyRegisterCooldown(form);
+            applyResendCooldown(form);
             return;
         }
 
         setAuthMode(form, form.dataset.authMode || 'login');
+        applyRegisterCooldown(form);
+        applyResendCooldown(form);
 
         form.addEventListener('submit', (event) => {
             event.preventDefault();
@@ -782,8 +883,16 @@ async function register(form) {
         return;
     }
 
+    if (isActionOnCooldown('register')) {
+        setLoginFeedback(LOGIN_TEXT.cooldownWarning, 'error', targetForm);
+        return;
+    }
+
     setLoginFeedback('', 'neutral', targetForm);
     hideVerificationBanner(targetForm);
+    setActionCooldown('register');
+    applyActionCooldown('register');
+    scheduleCooldownReset('register');
     setFormLoading(targetForm, true);
 
     try {
@@ -854,6 +963,7 @@ async function register(form) {
         setLoginFeedback(LOGIN_TEXT.registerGenericError, 'error', targetForm);
     } finally {
         setFormLoading(targetForm, false);
+        applyActionCooldown('register');
     }
 }
 
@@ -944,6 +1054,14 @@ async function resendVerification(form) {
         emailInput?.focus();
         return;
     }
+    if (isActionOnCooldown('resend')) {
+        setLoginFeedback(LOGIN_TEXT.cooldownWarning, 'error', targetForm);
+        applyResendCooldown(targetForm);
+        return;
+    }
+    setActionCooldown('resend');
+    applyActionCooldown('resend');
+    scheduleCooldownReset('resend');
     const button = targetForm.querySelector('[data-auth-resend]');
     if (button) {
         button.disabled = true;
@@ -967,10 +1085,112 @@ async function resendVerification(form) {
         setLoginFeedback(LOGIN_TEXT.resendError, 'error', targetForm);
     } finally {
         if (button) {
-            button.disabled = false;
             button.dataset.locked = 'false';
             button.textContent = LOGIN_TEXT.verificationResend;
+            applyResendCooldown(targetForm);
         }
+    }
+}
+
+function getVerificationTokenFromUrl() {
+    try {
+        const currentUrl = new URL(window.location.href);
+        const tokenParam = currentUrl.searchParams.get('token');
+        if (tokenParam) {
+            return tokenParam.trim();
+        }
+        const rawHash = currentUrl.hash ? currentUrl.hash.replace(/^#/, '') : '';
+        if (!rawHash) {
+            return '';
+        }
+        if (rawHash.startsWith('token=')) {
+            return rawHash.slice(6).trim();
+        }
+        const hashParams = new URLSearchParams(rawHash);
+        const hashToken = hashParams.get('token');
+        return hashToken ? hashToken.trim() : '';
+    } catch (error) {
+        return '';
+    }
+}
+
+function clearVerificationTokenFromUrl() {
+    try {
+        const currentUrl = new URL(window.location.href);
+        const searchParams = currentUrl.searchParams;
+        if (searchParams.has('token')) {
+            searchParams.delete('token');
+        }
+
+        let hash = currentUrl.hash || '';
+        if (hash.includes('token=')) {
+            const rawHash = hash.replace(/^#/, '');
+            if (rawHash.startsWith('token=')) {
+                hash = '';
+            } else if (rawHash.includes('=') || rawHash.includes('&')) {
+                const hashParams = new URLSearchParams(rawHash);
+                if (hashParams.has('token')) {
+                    hashParams.delete('token');
+                    const serialized = hashParams.toString();
+                    hash = serialized ? `#${serialized}` : '';
+                }
+            }
+        }
+
+        const search = searchParams.toString();
+        const nextUrl = `${currentUrl.pathname}${search ? `?${search}` : ''}${hash}`;
+        window.history.replaceState({}, document.title, nextUrl);
+    } catch (error) {
+        /* ignore */
+    }
+}
+
+async function handleVerificationToken(isLoginPage) {
+    const token = getVerificationTokenFromUrl();
+    if (!token) {
+        return;
+    }
+
+    clearVerificationTokenFromUrl();
+
+    if (!isLoginPage) {
+        openAuthOverlay();
+    }
+
+    queryAuthForms().forEach((form) => {
+        setAuthMode(form, 'login', { preserveFeedback: false, preserveVerification: false });
+        hideVerificationBanner(form);
+    });
+
+    setLoginFeedback(LOGIN_TEXT.verificationPending, 'neutral');
+
+    try {
+        const response = await fetch(AUTH_API.verify, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token })
+        });
+        const data = await response.json().catch(() => ({}));
+        if (response.ok) {
+            setLoginFeedback(LOGIN_TEXT.verificationSuccess, 'success');
+            return;
+        }
+        if (data && data.message === 'already_verified') {
+            setLoginFeedback(LOGIN_TEXT.verificationAlready, 'success');
+            return;
+        }
+        if (data && data.message === 'token_expired') {
+            setLoginFeedback(LOGIN_TEXT.verificationExpired, 'error');
+            return;
+        }
+        if (data && data.message === 'invalid_token') {
+            setLoginFeedback(LOGIN_TEXT.verificationInvalid, 'error');
+            return;
+        }
+        setLoginFeedback(LOGIN_TEXT.verificationGenericError, 'error');
+    } catch (error) {
+        console.error('E-Mail-Bestätigung fehlgeschlagen', error);
+        setLoginFeedback(LOGIN_TEXT.verificationGenericError, 'error');
     }
 }
 
@@ -1357,9 +1577,11 @@ function checkLogin() {
     const pathname = window.location.pathname.toLowerCase();
     const isLoginPage = pathname.endsWith('login.html');
 
+    initAuthOverlay();
     bindAuthForms();
     updateAuthUI();
     setupAuthButton();
+    handleVerificationToken(isLoginPage);
 
     if (isLoginPage) {
         if (isAdmin()) {
@@ -1371,8 +1593,6 @@ function checkLogin() {
             return;
         }
     }
-
-    initAuthOverlay();
 }
 
   

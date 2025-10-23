@@ -5,6 +5,7 @@ import re
 import time
 import logging
 import smtplib
+import html
 from collections import OrderedDict, deque
 from contextlib import closing
 from email.message import EmailMessage
@@ -427,6 +428,7 @@ def _deliver_email(
     sender: Optional[str] = None,
     reply_to: Optional[str] = None,
     attachment: Optional[Tuple[bytes, str, Optional[str]]] = None,
+    html_body: Optional[str] = None,
 ) -> None:
     if not CONTACT_SMTP_HOST:
         raise RuntimeError('Email delivery is not configured')
@@ -442,6 +444,9 @@ def _deliver_email(
         message['Reply-To'] = reply_to
 
     message.set_content(body)
+
+    if html_body:
+        message.add_alternative(html_body, subtype='html')
 
     if attachment:
         file_data, filename, content_type = attachment
@@ -532,11 +537,29 @@ def _send_verification_email(email_address: str, token: str, expires_at: datetim
         "Falls du diese Anfrage nicht gestellt hast, ignoriere diese E-Mail.\n"
     )
 
+    html_link_target = verification_link if verification_link.startswith(('http://', 'https://')) else None
+    if html_link_target:
+        escaped_target = html.escape(html_link_target, quote=True)
+        link_markup = f'<a href="{escaped_target}">{html.escape(verification_link)}</a>'
+    else:
+        link_markup = html.escape(verification_link)
+
+    html_body = (
+        '<html><body>'
+        '<p>Hallo,</p>'
+        '<p>bitte bestätige deine E-Mail-Adresse für den Homework Manager über den folgenden Link:</p>'
+        f'<p>{link_markup}</p>'
+        f'<p>Der Link ist bis {html.escape(expiration_text)} gültig.</p>'
+        '<p>Falls du diese Anfrage nicht gestellt hast, ignoriere diese E-Mail.</p>'
+        '</body></html>'
+    )
+
     _deliver_email(
         email_address,
         EMAIL_VERIFICATION_SUBJECT,
         body,
         sender=EMAIL_VERIFICATION_FROM_ADDRESS,
+        html_body=html_body,
     )
 
 
