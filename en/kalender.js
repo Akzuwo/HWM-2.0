@@ -22,9 +22,19 @@ const actionText = {
   exportError: t('actions.export.error', 'Failed to export the calendar.'),
   exportSuccess: t('actions.export.success', 'Calendar exported successfully.'),
   exportFileName: t('actions.export.fileName', 'homework-calendar.ics'),
+  exportUnauthorized: t(
+    'actions.export.unauthorized',
+    'Please sign in and make sure you are assigned to a class to export the calendar.'
+  ),
   backTooltip: t('actions.back.tooltip', 'Go back to the dashboard'),
   createTooltip: t('actions.create.tooltip', 'Create a new calendar entry')
 };
+
+const unauthorizedMessage = t(
+  'status.unauthorized',
+  'Please sign in and make sure you are assigned to a class to view the calendar.'
+);
+const exportUnauthorizedMessage = actionText.exportUnauthorized || unauthorizedMessage;
 
 const modalText = {
   noDescription: modalT('noDescription', '<em>No description provided.</em>'),
@@ -61,6 +71,30 @@ function formatSwissDateFromISO(dateStr) {
 function parseTimeLabel(value) {
   if (!value) return '';
   return value.slice(0, 5);
+}
+
+async function responseRequiresClassContext(response) {
+  if (!response) return false;
+  if (response.status === 401) {
+    return true;
+  }
+  if (response.status !== 403) {
+    return false;
+  }
+  try {
+    const text = await response.clone().text();
+    if (!text) {
+      return false;
+    }
+    try {
+      const data = JSON.parse(text);
+      return Boolean(data && (data.message === 'class_required' || data.error === 'class_required'));
+    } catch (error) {
+      return text.includes('class_required');
+    }
+  } catch (error) {
+    return false;
+  }
 }
 
 function splitEventDescription(type, text) {
@@ -330,6 +364,10 @@ async function saveEdit(evt) {
         fach: subject
       })
     });
+    if (await responseRequiresClassContext(res)) {
+      showOverlay(unauthorizedMessage);
+      return;
+    }
     if (!res.ok) {
       const err = await res.text().catch(() => '');
       throw new Error(err || `Status ${res.status}`);
@@ -363,6 +401,10 @@ async function deleteEntry() {
       method: 'DELETE',
       headers: { 'X-Role': role }
     });
+    if (await responseRequiresClassContext(res)) {
+      showOverlay(unauthorizedMessage);
+      return;
+    }
     if (!res.ok) {
       const err = await res.text().catch(() => '');
       throw new Error(err || `Status ${res.status}`);
@@ -422,6 +464,10 @@ async function handleExportClick(event) {
 
   try {
     const response = await fetch(`${API_BASE_URL}/calendar.ics`);
+    if (await responseRequiresClassContext(response)) {
+      showOverlay(exportUnauthorizedMessage);
+      return;
+    }
     if (!response.ok) {
       throw new Error(`${response.status}`);
     }
@@ -758,6 +804,10 @@ async function loadCalendar() {
 
   try {
     const res = await fetch(`${API_BASE_URL}/entries`);
+    if (await responseRequiresClassContext(res)) {
+      showCalendarError(calendarEl, unauthorizedMessage);
+      return;
+    }
     if (!res.ok) {
       throw new Error(`API error (${res.status})`);
     }

@@ -22,9 +22,19 @@ const actionText = {
   exportError: t('actions.export.error', 'Errore durante l\'esportazione del calendario.'),
   exportSuccess: t('actions.export.success', 'Calendario esportato con successo.'),
   exportFileName: t('actions.export.fileName', 'homework-calendar.ics'),
+  exportUnauthorized: t(
+    'actions.export.unauthorized',
+    'Accedi e assicurati di essere assegnato a una classe per esportare il calendario.'
+  ),
   backTooltip: t('actions.back.tooltip', 'Torna alla pagina iniziale'),
   createTooltip: t('actions.create.tooltip', 'Crea una nuova voce di calendario')
 };
+
+const unauthorizedMessage = t(
+  'status.unauthorized',
+  'Accedi e assicurati di essere assegnato a una classe per visualizzare il calendario.'
+);
+const exportUnauthorizedMessage = actionText.exportUnauthorized || unauthorizedMessage;
 
 const modalText = {
   noDescription: modalT('noDescription', '<em>Nessuna descrizione disponibile.</em>'),
@@ -61,6 +71,30 @@ function formatSwissDateFromISO(dateStr) {
 function parseTimeLabel(value) {
   if (!value) return '';
   return value.slice(0, 5);
+}
+
+async function responseRequiresClassContext(response) {
+  if (!response) return false;
+  if (response.status === 401) {
+    return true;
+  }
+  if (response.status !== 403) {
+    return false;
+  }
+  try {
+    const text = await response.clone().text();
+    if (!text) {
+      return false;
+    }
+    try {
+      const data = JSON.parse(text);
+      return Boolean(data && (data.message === 'class_required' || data.error === 'class_required'));
+    } catch (error) {
+      return text.includes('class_required');
+    }
+  } catch (error) {
+    return false;
+  }
 }
 
 function splitEventDescription(type, text) {
@@ -330,6 +364,10 @@ async function saveEdit(evt) {
         fach: subject
       })
     });
+    if (await responseRequiresClassContext(res)) {
+      showOverlay(unauthorizedMessage);
+      return;
+    }
     if (!res.ok) {
       const err = await res.text().catch(() => '');
       throw new Error(err || `Status ${res.status}`);
@@ -363,6 +401,10 @@ async function deleteEntry() {
       method: 'DELETE',
       headers: { 'X-Role': role }
     });
+    if (await responseRequiresClassContext(res)) {
+      showOverlay(unauthorizedMessage);
+      return;
+    }
     if (!res.ok) {
       const err = await res.text().catch(() => '');
       throw new Error(err || `Status ${res.status}`);
@@ -422,6 +464,10 @@ async function handleExportClick(event) {
 
   try {
     const response = await fetch(`${API_BASE_URL}/calendar.ics`);
+    if (await responseRequiresClassContext(response)) {
+      showOverlay(exportUnauthorizedMessage);
+      return;
+    }
     if (!response.ok) {
       throw new Error(`${response.status}`);
     }
@@ -758,6 +804,10 @@ async function loadCalendar() {
 
   try {
     const res = await fetch(`${API_BASE_URL}/entries`);
+    if (await responseRequiresClassContext(res)) {
+      showCalendarError(calendarEl, unauthorizedMessage);
+      return;
+    }
     if (!res.ok) {
       throw new Error(`Errore API (${res.status})`);
     }

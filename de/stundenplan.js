@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
       noLesson: 'Aktuell findet keine Stunde statt.',
       noNextLesson: 'Keine weiteren Stunden heute.',
       error: 'Fehler beim Laden der Daten.',
+      unauthorized: 'Bitte melde dich an und stelle sicher, dass du einer Klasse zugeordnet bist, um das aktuelle Fach zu sehen.',
     },
   });
 });

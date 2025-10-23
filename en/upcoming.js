@@ -3,6 +3,33 @@ const API_BASE_URL =
     ? window.hmResolveApiBase()
     : 'https://homework-manager-2-5-backend.onrender.com';
 
+const unauthorizedMessage =
+  'Please sign in and make sure you are assigned to a class to view upcoming events.';
+
+async function responseRequiresClassContext(response) {
+  if (!response) return false;
+  if (response.status === 401) {
+    return true;
+  }
+  if (response.status !== 403) {
+    return false;
+  }
+  try {
+    const text = await response.clone().text();
+    if (!text) {
+      return false;
+    }
+    try {
+      const data = JSON.parse(text);
+      return Boolean(data && (data.message === 'class_required' || data.error === 'class_required'));
+    } catch (error) {
+      return text.includes('class_required');
+    }
+  } catch (error) {
+    return false;
+  }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   const listEl = document.getElementById('upcoming-list');
   const backButton = document.getElementById('back-button');
@@ -49,6 +76,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   try {
     const res = await fetch(`${API_BASE_URL}/entries`);
+    if (await responseRequiresClassContext(res)) {
+      setStatus(unauthorizedMessage);
+      listEl.setAttribute('aria-busy', 'false');
+      return;
+    }
     if (!res.ok) {
       throw new Error(`API error (${res.status})`);
     }

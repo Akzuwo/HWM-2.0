@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
       noLesson: 'Nessuna lezione in corso.',
       noNextLesson: "Nessun'altra lezione oggi.",
       error: 'Impossibile caricare i dati.',
+      unauthorized: 'Accedi e assicurati di essere assegnato a una classe per vedere la materia attuale.',
     },
   });
 });
