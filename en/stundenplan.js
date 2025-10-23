@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
       noLesson: 'No lesson in progress.',
       noNextLesson: 'No further lessons today.',
       error: 'Unable to load data.',
+      unauthorized: 'Please sign in and make sure you are assigned to a class to view the current subject.',
     },
   });
 });

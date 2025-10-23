@@ -102,6 +102,7 @@
         status: {
           loading: 'Kalender wird geladen …',
           error: 'Fehler beim Laden der Kalendereinträge!',
+          unauthorized: 'Bitte melde dich an und stelle sicher, dass du einer Klasse zugeordnet bist, um den Kalender zu sehen.',
         },
         views: {
           month: 'Monat',
@@ -127,6 +128,7 @@
             success: 'Kalender erfolgreich exportiert.',
             error: 'Fehler beim Exportieren des Kalenders.',
             fileName: 'homework-calendar.ics',
+            unauthorized: 'Melde dich an und lass dich einer Klasse zuordnen, um den Kalender zu exportieren.',
           },
           back: {
             label: 'Zur Übersicht',
@@ -320,6 +322,7 @@
         status: {
           loading: 'Loading calendar …',
           error: 'Unable to load calendar entries!',
+          unauthorized: 'Please sign in and make sure you are assigned to a class to view the calendar.',
         },
         views: {
           month: 'Month',
@@ -345,6 +348,7 @@
             success: 'Calendar exported successfully.',
             error: 'Failed to export the calendar.',
             fileName: 'homework-calendar.ics',
+            unauthorized: 'Please sign in and make sure you are assigned to a class to export the calendar.',
           },
           back: {
             label: 'Back to overview',
@@ -540,6 +544,7 @@
         status: {
           loading: 'Caricamento del calendario …',
           error: 'Impossibile caricare le voci del calendario!',
+          unauthorized: 'Accedi e assicurati di essere assegnato a una classe per visualizzare il calendario.',
         },
         views: {
           month: 'Mese',
@@ -565,6 +570,7 @@
             success: 'Calendario esportato con successo.',
             error: 'Errore durante l\'esportazione del calendario.',
             fileName: 'homework-calendar.ics',
+            unauthorized: 'Accedi e assicurati di essere assegnato a una classe per esportare il calendario.',
           },
           back: {
             label: 'Panoramica',
@@ -759,6 +765,7 @@
         status: {
           loading: 'Chargement du calendrier …',
           error: 'Impossible de charger les entrées du calendrier !',
+          unauthorized: 'Connecte-toi et assure-toi d’être affecté·e à une classe pour afficher le calendrier.',
         },
         views: {
           month: 'Mois',
@@ -784,6 +791,7 @@
             success: 'Calendrier exporté avec succès.',
             error: 'Échec de l’export du calendrier.',
             fileName: 'homework-calendar.ics',
+            unauthorized: 'Connecte-toi et assure-toi d’être affecté·e à une classe pour exporter le calendrier.',
           },
           back: {
             label: 'Retour à l’aperçu',

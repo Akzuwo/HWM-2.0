@@ -3,6 +3,33 @@ const API_BASE_URL =
     ? window.hmResolveApiBase()
     : 'https://homework-manager-2-5-backend.onrender.com';
 
+const unauthorizedMessage =
+  'Connecte-toi et assure-toi d’être affecté·e à une classe pour voir l’aperçu quotidien.';
+
+async function responseRequiresClassContext(response) {
+  if (!response) return false;
+  if (response.status === 401) {
+    return true;
+  }
+  if (response.status !== 403) {
+    return false;
+  }
+  try {
+    const text = await response.clone().text();
+    if (!text) {
+      return false;
+    }
+    try {
+      const data = JSON.parse(text);
+      return Boolean(data && (data.message === 'class_required' || data.error === 'class_required'));
+    } catch (error) {
+      return text.includes('class_required');
+    }
+  } catch (error) {
+    return false;
+  }
+}
+
 function setPageDate() {
   const dateTarget = document.getElementById('pageDate');
   if (dateTarget) {
@@ -21,6 +48,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   try {
     const res = await fetch(`${API_BASE_URL}/tagesuebersicht`);
+    if (await responseRequiresClassContext(res)) {
+      container.textContent = unauthorizedMessage;
+      return;
+    }
     if (!res.ok) {
       throw new Error(`API error: ${res.status}`);
     }

@@ -16,7 +16,32 @@
     noLesson: 'No lesson in progress',
     noNextLesson: 'No further lessons today',
     error: 'Unable to load data.',
+    unauthorized: 'Please sign in and make sure you are assigned to a class to view this page.',
   };
+
+  async function responseRequiresClassContext(response) {
+    if (!response) return false;
+    if (response.status === 401) {
+      return true;
+    }
+    if (response.status !== 403) {
+      return false;
+    }
+    try {
+      const text = await response.clone().text();
+      if (!text) {
+        return false;
+      }
+      try {
+        const data = JSON.parse(text);
+        return Boolean(data && (data.message === 'class_required' || data.error === 'class_required'));
+      } catch (error) {
+        return text.includes('class_required');
+      }
+    } catch (error) {
+      return false;
+    }
+  }
 
   function bySelector(target) {
     if (!target) {
@@ -129,6 +154,7 @@
       lastDisplay: null,
       fetchTimer: null,
       lastPayload: null,
+      unauthorized: false,
     };
 
     function setSubjectLabel(value, isLessonActive) {
@@ -297,7 +323,7 @@
       }
     }
 
-    function handleError() {
+    function handleError(message = text.error) {
       setSubjectLabel(null, false);
       if (subjectSuffix) {
         subjectSuffix.textContent = '· —';
@@ -311,7 +337,7 @@
       }
       if (currentEmpty) {
         currentEmpty.hidden = false;
-        currentEmpty.textContent = text.error;
+        currentEmpty.textContent = message;
       }
       if (currentDetails) {
         currentDetails.hidden = true;
@@ -326,8 +352,20 @@
     }
 
     async function fetchData() {
+      if (state.unauthorized) {
+        return;
+      }
       try {
         const response = await fetch(config.endpoint, { cache: 'no-store' });
+        if (await responseRequiresClassContext(response)) {
+          state.unauthorized = true;
+          handleError(text.unauthorized || text.error);
+          if (state.fetchTimer) {
+            clearInterval(state.fetchTimer);
+            state.fetchTimer = null;
+          }
+          return;
+        }
         if (!response.ok) {
           throw new Error(`Request failed with status ${response.status}`);
         }
