@@ -39,6 +39,7 @@ const LOGIN_TEXT = {
     guestInfo: 'Continuer sans compte',
     loginButton: '🔐 Se connecter',
     logoutButton: '🚪 Se déconnecter',
+    adminNavButton: '🛠️ Administration',
     authStatusGuest: 'Non connecté',
     authStatusSignedIn: (roleLabel) => `Connecté en tant que ${roleLabel}`,
     roleLabels: {
@@ -258,6 +259,47 @@ function ensureRoleHintElement(button) {
     return hint;
 }
 
+function getAdminNavButton() {
+    const links = document.querySelector('.nav-links');
+    if (!links) {
+        return null;
+    }
+    let button = links.querySelector('[data-admin-link]');
+    if (!button) {
+        button = document.createElement('a');
+        button.className = 'nav-button';
+        button.href = AUTH_PATHS.admin;
+        button.setAttribute('data-admin-link', 'true');
+        button.textContent = LOGIN_TEXT.adminNavButton || '🛠️ Admin';
+        button.hidden = true;
+        const authButton = links.querySelector('[data-auth-button]');
+        if (authButton && authButton.parentElement === links) {
+            links.insertBefore(button, authButton);
+        } else {
+            links.appendChild(button);
+        }
+    }
+    return button;
+}
+
+function updateAdminNavButton() {
+    const button = getAdminNavButton();
+    if (!button) {
+        return;
+    }
+    button.textContent = LOGIN_TEXT.adminNavButton || '🛠️ Admin';
+    const visible = isAdmin();
+    button.hidden = !visible;
+    button.classList.toggle('is-hidden', !visible);
+    if (visible) {
+        button.removeAttribute('tabindex');
+        button.setAttribute('aria-hidden', 'false');
+    } else {
+        button.setAttribute('tabindex', '-1');
+        button.setAttribute('aria-hidden', 'true');
+    }
+}
+
 function updateRoleHint() {
     const button = document.querySelector('[data-auth-button]');
     const hint = ensureRoleHintElement(button);
@@ -316,6 +358,7 @@ function updateFeatureVisibility() {
 
 function updateAuthUI() {
     updateAuthButton();
+    updateAdminNavButton();
     updateRoleHint();
     updateAuthStatus();
     updateFeatureVisibility();
@@ -1024,11 +1067,6 @@ async function login(form) {
         setAuthenticatedSession(role, email);
         closeAuthOverlay();
 
-        if (isAdmin()) {
-            window.location.href = AUTH_PATHS.admin;
-            return;
-        }
-
         if (window.location.pathname.toLowerCase().endsWith('login.html')) {
             window.location.href = AUTH_PATHS.home;
         } else {
@@ -1583,15 +1621,9 @@ function checkLogin() {
     setupAuthButton();
     handleVerificationToken(isLoginPage);
 
-    if (isLoginPage) {
-        if (isAdmin()) {
-            window.location.replace(AUTH_PATHS.admin);
-            return;
-        }
-        if (isAuthenticated()) {
-            window.location.replace(AUTH_PATHS.home);
-            return;
-        }
+    if (isLoginPage && isAuthenticated()) {
+        window.location.replace(AUTH_PATHS.home);
+        return;
     }
 }
 

@@ -1373,9 +1373,11 @@ def admin_users_collection():
                 total = int(total_row.get('total') or 0)
                 cursor.execute(
                     """
-                    SELECT id, email, role, class_id, is_active, created_at, updated_at
-                    FROM users
-                    ORDER BY id DESC
+                    SELECT u.id, u.email, u.role, u.class_id, c.slug AS class_slug,
+                           u.is_active, u.created_at, u.updated_at
+                    FROM users u
+                    LEFT JOIN classes c ON c.id = u.class_id
+                    ORDER BY u.id DESC
                     LIMIT %s OFFSET %s
                     """,
                     (page_size, offset),
@@ -1457,9 +1459,11 @@ def admin_users_resource(user_id: int):
             if request.method == 'GET':
                 cursor.execute(
                     """
-                    SELECT id, email, role, class_id, is_active, created_at, updated_at
-                    FROM users
-                    WHERE id=%s
+                    SELECT u.id, u.email, u.role, u.class_id, c.slug AS class_slug,
+                           u.is_active, u.created_at, u.updated_at
+                    FROM users u
+                    LEFT JOIN classes c ON c.id = u.class_id
+                    WHERE u.id=%s
                     LIMIT 1
                     """,
                     (user_id,),
@@ -1767,18 +1771,24 @@ def admin_schedules_collection():
             offset = (page - 1) * page_size
             cursor = conn.cursor(dictionary=True)
             try:
-                cursor.execute("SELECT COUNT(*) AS total FROM class_schedules")
+                filter_sql = "COALESCE(cs.import_hash, '') <> '' OR LOWER(COALESCE(cs.source, '')) LIKE %s"
+                filter_params = ('%.json%',)
+                cursor.execute(
+                    f"SELECT COUNT(*) AS total FROM class_schedules cs WHERE {filter_sql}",
+                    filter_params,
+                )
                 total = int((cursor.fetchone() or {'total': 0}).get('total') or 0)
                 cursor.execute(
-                    """
+                    f"""
                     SELECT cs.id, cs.class_id, cs.source, cs.import_hash, cs.imported_at,
                            cs.created_at, cs.updated_at, c.slug AS class_slug, c.title AS class_title
                     FROM class_schedules cs
                     LEFT JOIN classes c ON c.id = cs.class_id
+                    WHERE {filter_sql}
                     ORDER BY cs.id DESC
                     LIMIT %s OFFSET %s
                     """,
-                    (page_size, offset),
+                    filter_params + (page_size, offset),
                 )
                 rows = cursor.fetchall() or []
             except mysql.connector.Error:

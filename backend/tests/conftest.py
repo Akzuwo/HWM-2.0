@@ -23,6 +23,12 @@ class FakeCursor:
         self.rowcount = 0
         self.lastrowid: Optional[int] = None
 
+    @staticmethod
+    def _schedule_matches_filter(entry: Dict[str, object]) -> bool:
+        import_hash = str(entry.get('import_hash') or '').strip()
+        source = str(entry.get('source') or '').strip().lower()
+        return bool(import_hash) or '.json' in source
+
     def _prepare_rows(self, rows: List[Dict[str, object]], columns: List[str]) -> None:
         if self.dictionary:
             self._rows = [{col: row.get(col) for col in columns} for row in rows]
@@ -87,42 +93,59 @@ class FakeCursor:
             ], ['id', 'email', 'password_hash', 'role', 'class_id', 'is_active', 'email_verified_at'])
             return
 
-        if normalized.startswith("select id, email, role, class_id, is_active, created_at, updated_at from users order by id desc"):
+        if (
+            normalized.startswith("select u.id, u.email, u.role, u.class_id")
+            and "from users u" in normalized
+            and "left join classes" in normalized
+            and "order by u.id desc" in normalized
+        ):
             limit, offset = params
             ordered = sorted(users.values(), key=lambda row: row['id'], reverse=True)
             subset = ordered[offset:offset + limit]
-            rows = [
-                {
-                    'id': row['id'],
-                    'email': row['email'],
-                    'role': row.get('role', 'student'),
-                    'class_id': row.get('class_id'),
-                    'is_active': row.get('is_active', 1),
-                    'created_at': row['created_at'],
-                    'updated_at': row['updated_at'],
-                }
-                for row in subset
-            ]
-            self._prepare_rows(rows, ['id', 'email', 'role', 'class_id', 'is_active', 'created_at', 'updated_at'])
+            rows = []
+            for row in subset:
+                class_info = classes.get(row.get('class_id'), {})
+                rows.append(
+                    {
+                        'id': row['id'],
+                        'email': row['email'],
+                        'role': row.get('role', 'student'),
+                        'class_id': row.get('class_id'),
+                        'class_slug': class_info.get('slug'),
+                        'is_active': row.get('is_active', 1),
+                        'created_at': row['created_at'],
+                        'updated_at': row['updated_at'],
+                    }
+                )
+            self._prepare_rows(
+                rows,
+                ['id', 'email', 'role', 'class_id', 'class_slug', 'is_active', 'created_at', 'updated_at'],
+            )
             return
 
-        if normalized.startswith("select id, email, role, class_id, is_active, created_at, updated_at from users where id=%s"):
+        if (
+            normalized.startswith("select u.id, u.email, u.role, u.class_id")
+            and "from users u" in normalized
+            and "where u.id=%s" in normalized
+        ):
             user_id = params[0]
             user = users.get(user_id)
             if not user:
                 self._rows = []
                 return
+            class_info = classes.get(user.get('class_id'), {})
             self._prepare_rows([
                 {
                     'id': user['id'],
                     'email': user['email'],
                     'role': user.get('role', 'student'),
                     'class_id': user.get('class_id'),
+                    'class_slug': class_info.get('slug'),
                     'is_active': user.get('is_active', 1),
                     'created_at': user['created_at'],
                     'updated_at': user['updated_at'],
                 }
-            ], ['id', 'email', 'role', 'class_id', 'is_active', 'created_at', 'updated_at'])
+            ], ['id', 'email', 'role', 'class_id', 'class_slug', 'is_active', 'created_at', 'updated_at'])
             return
 
         if normalized.startswith("insert into users"):
@@ -299,14 +322,22 @@ class FakeCursor:
             return
 
         if normalized.startswith("select count(*) as total from class_schedules"):
+            matching = [entry for entry in schedules.values() if self._schedule_matches_filter(entry)]
             self._prepare_rows([
-                {'total': len(schedules)}
+                {'total': len(matching)}
             ], ['total'])
             return
 
         if normalized.startswith("select cs.id, cs.class_id, cs.source, cs.import_hash, cs.imported_at") and "from class_schedules" in normalized:
-            limit, offset = params
-            ordered = sorted(schedules.values(), key=lambda row: row['id'], reverse=True)
+            if params and len(params) == 3:
+                _, limit, offset = params
+            else:
+                limit, offset = params
+            ordered = sorted(
+                [entry for entry in schedules.values() if self._schedule_matches_filter(entry)],
+                key=lambda row: row['id'],
+                reverse=True,
+            )
             subset = ordered[offset:offset + limit]
             rows = []
             for entry in subset:
