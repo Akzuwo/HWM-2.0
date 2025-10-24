@@ -29,6 +29,17 @@ body.changelog-page {
   text-align: initial;
 }
 
+body.home-page {
+  opacity: 0;
+  transform: translateY(1.5rem);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+body.home-page.home-loaded {
+  opacity: 1;
+  transform: none;
+}
+
 body.changelog-page {
   opacity: 0;
   transform: translateY(1.5rem);
@@ -193,6 +204,16 @@ main.changelog-main {
     rgba(12, 24, 48, 0.85);
   border: 1px solid rgba(59, 130, 246, 0.35);
   box-shadow: 0 18px 40px rgba(15, 23, 42, 0.55);
+  opacity: 0;
+  transform: translateY(2.5rem);
+  transition: opacity 0.75s ease, transform 0.75s ease;
+  transition-delay: var(--home-section-delay, 0ms);
+  will-change: opacity, transform;
+}
+
+.home-callout.is-visible {
+  opacity: 1;
+  transform: none;
 }
 
 .home-callout__icon {
@@ -249,6 +270,16 @@ main.changelog-main {
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
+  opacity: 0;
+  transform: translateY(2.5rem);
+  transition: opacity 0.75s ease, transform 0.75s ease;
+  transition-delay: var(--home-section-delay, 0ms);
+  will-change: opacity, transform;
+}
+
+.home-card.is-visible {
+  opacity: 1;
+  transform: none;
 }
 
 .home-card--release {
@@ -587,12 +618,17 @@ main.changelog-main {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  body.home-page,
   body.changelog-page {
     opacity: 1 !important;
     transform: none !important;
     transition: none !important;
   }
 
+  .home-callout,
+  .home-card,
+  .home-callout.is-visible,
+  .home-card.is-visible,
   .changelog-header,
   .changelog-entry,
   .changelog-header::after,
