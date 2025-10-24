@@ -14,17 +14,18 @@ const LOGIN_TEXT = {
     invalidCredentials: 'E-mail o password non corretti.',
     inactive: 'Il tuo account è stato disattivato. Contatta un amministratore.',
     emailNotVerified: 'Verifica prima il tuo indirizzo e-mail.',
-    verificationTitle: 'Verifica e-mail necessaria',
-    verificationDescription: "Ti abbiamo inviato un link di conferma. L'invio dell'e-mail può richiedere alcuni minuti. Puoi richiederne un'altra qui.",
-    verificationResend: "Invia di nuovo l'email di verifica",
-    verificationResendLoading: 'Invio…',
-    verificationPending: 'Stiamo verificando il tuo link di conferma…',
-    verificationSuccess: 'Fatto! Il tuo indirizzo e-mail è stato confermato. Ora puoi accedere.',
-    verificationAlready: "Il tuo indirizzo e-mail è già confermato. Ora puoi accedere.",
-    verificationExpired: 'Il link di conferma è scaduto. Richiedi una nuova e-mail.',
-    verificationInvalid: 'Questo link di conferma non è valido. Richiedi una nuova e-mail.',
-    verificationGenericError: "Non siamo riusciti a confermare l'e-mail. Riprova più tardi.",
-    resendSuccess: "Se esiste un account, abbiamo inviato nuovamente l'email. La consegna può richiedere alcuni minuti.",
+    verificationStepTitle: 'Ci sei quasi!',
+    verificationStepSubtitle: 'Conferma il tuo indirizzo e-mail per iniziare.',
+    verificationCodeLabel: 'Codice di verifica',
+    verificationCodePlaceholder: 'Codice a 8 cifre',
+    verificationCodeHint: "⚠️ L'invio dell'e-mail può richiedere fino a 2 minuti.",
+    verificationCodeSubmit: 'Conferma codice',
+    verificationCodeSubmitLoading: 'Verifica in corso…',
+    verificationCodeResend: 'Invia di nuovo il codice',
+    verificationCodeResendLoading: 'Invio…',
+    verificationCodeInvalid: 'Il codice non è valido o è scaduto.',
+    verificationCodeSuccess: 'Fatto! Il tuo indirizzo e-mail è stato confermato. Ora puoi accedere.',
+    resendSuccess: "Se esiste un account, abbiamo inviato nuovamente il codice. La consegna può richiedere alcuni minuti.",
     resendError: 'Impossibile inviare l’e-mail. Riprova più tardi.',
     cooldownWarning: 'Attendi un momento prima di riprovare.',
     forgotPassword: 'Password dimenticata?',
@@ -59,7 +60,7 @@ const LOGIN_TEXT = {
     registerClassPlaceholder: 'es. 3a',
     registerClassNotFound: 'Questa classe non è stata trovata.',
     registerGenericError: 'Registrazione momentaneamente non disponibile. Riprova più tardi.',
-    registerSuccess: "Ci siamo quasi! Ti abbiamo inviato un'e-mail di conferma. La consegna può richiedere alcuni minuti.",
+    registerSuccess: "Quasi fatto! Inserisci il codice di verifica che ti abbiamo inviato via e-mail.",
     switchToRegister: 'Nuovo qui? Crea un account',
     switchToLogin: 'Hai già un account? Accedi',
     close: 'Chiudi'
@@ -139,6 +140,7 @@ const DEFAULT_SESSION = {
 
 let sessionState = normalizeSession(loadStoredSession());
 let lastAuthEmail = sessionState.email || '';
+let currentVerificationEmail = '';
 let authOverlayInitialized = false;
 let authOverlayPreviousFocus = null;
 
@@ -431,6 +433,9 @@ function getSubmitLabel(form, isLoading) {
     if (mode === 'register') {
         return isLoading ? LOGIN_TEXT.registerSubmitLoading : LOGIN_TEXT.registerSubmit;
     }
+    if (mode === 'verification') {
+        return isLoading ? LOGIN_TEXT.verificationCodeSubmitLoading : LOGIN_TEXT.verificationCodeSubmit;
+    }
     return isLoading ? LOGIN_TEXT.submitLoading : LOGIN_TEXT.submit;
 }
 
@@ -473,25 +478,6 @@ function focusPasswordField(form) {
     }
 }
 
-function getVerificationBanner(form) {
-    return form ? form.querySelector('[data-auth-verification]') : null;
-}
-
-function hideVerificationBanner(form) {
-    const banner = getVerificationBanner(form);
-    if (banner) {
-        banner.hidden = true;
-    }
-}
-
-function showVerificationBanner(form) {
-    const banner = getVerificationBanner(form);
-    if (!banner) {
-        return;
-    }
-    banner.hidden = false;
-}
-
 function setFormLoading(form, isLoading) {
     if (!form) {
         return;
@@ -508,6 +494,22 @@ function setFormLoading(form, isLoading) {
             applyRegisterCooldown(form);
             if (submit.disabled && getAuthMode(form) !== 'register') {
                 submit.disabled = false;
+            }
+        }
+    }
+    const codeButton = form.querySelector('[data-auth-code-submit]');
+    if (codeButton) {
+        if (isLoading && getAuthMode(form) === 'verification') {
+            codeButton.disabled = true;
+            codeButton.dataset.loading = 'true';
+            codeButton.textContent = LOGIN_TEXT.verificationCodeSubmitLoading;
+        } else {
+            codeButton.textContent = LOGIN_TEXT.verificationCodeSubmit;
+            if (codeButton.dataset.loading === 'true') {
+                delete codeButton.dataset.loading;
+            }
+            if (getAuthMode(form) === 'verification') {
+                codeButton.disabled = false;
             }
         }
     }
@@ -538,26 +540,64 @@ function applyEmailPrefill(form) {
     }
 }
 
+function setVerificationEmail(form, email) {
+    const normalized = (email || '').trim().toLowerCase();
+    if (form) {
+        if (normalized) {
+            form.dataset.authVerificationEmail = normalized;
+        } else {
+            delete form.dataset.authVerificationEmail;
+        }
+    }
+    if (normalized) {
+        currentVerificationEmail = normalized;
+    }
+}
+
+function getVerificationEmail(form) {
+    if (form && form.dataset.authVerificationEmail) {
+        return form.dataset.authVerificationEmail;
+    }
+    return currentVerificationEmail || '';
+}
+
+function clearVerificationEmail(form) {
+    if (form) {
+        delete form.dataset.authVerificationEmail;
+    }
+    currentVerificationEmail = '';
+}
+
 function setAuthMode(form, mode, options = {}) {
     if (!form) {
         return;
     }
 
-    const { preserveFeedback = false, preserveVerification = false } = options;
-    const normalizedMode = mode === 'register' ? 'register' : 'login';
+    const { preserveFeedback = false } = options;
+    const normalizedMode = mode === 'register' ? 'register' : mode === 'verification' ? 'verification' : 'login';
     form.dataset.authMode = normalizedMode;
     form.classList.toggle('is-register-mode', normalizedMode === 'register');
+    form.classList.toggle('is-verification-mode', normalizedMode === 'verification');
 
     const container = form.closest('.login-container');
     if (container) {
         const title = container.querySelector('[data-auth-title]');
         if (title) {
-            title.textContent = normalizedMode === 'register' ? LOGIN_TEXT.registerTitle : LOGIN_TEXT.title;
+            if (normalizedMode === 'register') {
+                title.textContent = LOGIN_TEXT.registerTitle;
+            } else if (normalizedMode === 'verification') {
+                title.textContent = LOGIN_TEXT.verificationStepTitle;
+            } else {
+                title.textContent = LOGIN_TEXT.title;
+            }
         }
         const description = container.querySelector('[data-auth-description]');
         if (description) {
             if (normalizedMode === 'register' && LOGIN_TEXT.registerSubtitle) {
                 description.textContent = LOGIN_TEXT.registerSubtitle;
+                description.hidden = false;
+            } else if (normalizedMode === 'verification') {
+                description.textContent = LOGIN_TEXT.verificationStepSubtitle;
                 description.hidden = false;
             } else {
                 description.hidden = true;
@@ -583,12 +623,23 @@ function setAuthMode(form, mode, options = {}) {
 
     const forgotButton = form.querySelector('[data-auth-forgot]');
     if (forgotButton) {
-        forgotButton.hidden = normalizedMode === 'register';
+        forgotButton.hidden = normalizedMode !== 'login';
     }
 
     const submit = form.querySelector('[data-auth-submit]');
     if (submit) {
+        submit.hidden = normalizedMode === 'verification';
         submit.textContent = getSubmitLabel(form, false);
+    }
+
+    const credentials = form.querySelector('[data-auth-credentials]');
+    if (credentials) {
+        credentials.hidden = normalizedMode === 'verification';
+    }
+
+    const verificationStep = form.querySelector('[data-auth-code-step]');
+    if (verificationStep) {
+        verificationStep.hidden = normalizedMode !== 'verification';
     }
 
     const passwordInput = getPasswordInput(form);
@@ -608,10 +659,6 @@ function setAuthMode(form, mode, options = {}) {
         setLoginFeedback('', 'neutral', form);
     }
 
-    if (!preserveVerification) {
-        hideVerificationBanner(form);
-    }
-
     applyRegisterCooldown(form);
     applyResendCooldown(form);
 }
@@ -619,7 +666,7 @@ function setAuthMode(form, mode, options = {}) {
 function bindAuthForms() {
     queryAuthForms().forEach((form) => {
         if (form.dataset.authBound === 'true') {
-            setAuthMode(form, getAuthMode(form), { preserveFeedback: true, preserveVerification: true });
+            setAuthMode(form, getAuthMode(form), { preserveFeedback: true });
             applyEmailPrefill(form);
             applyRegisterCooldown(form);
             applyResendCooldown(form);
@@ -706,6 +753,25 @@ function bindAuthForms() {
             resendButton.addEventListener('click', () => resendVerification(form));
         }
 
+        const codeInput = form.querySelector('[data-auth-code-input]');
+        if (codeInput) {
+            codeInput.addEventListener('input', () => {
+                codeInput.value = codeInput.value.replace(/[^0-9]/g, '').slice(0, 8);
+                setLoginFeedback('', 'neutral', form);
+            });
+            codeInput.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    verifyCode(form);
+                }
+            });
+        }
+
+        const codeButton = form.querySelector('[data-auth-code-submit]');
+        if (codeButton) {
+            codeButton.addEventListener('click', () => verifyCode(form));
+        }
+
         const forgotButton = form.querySelector('[data-auth-forgot]');
         if (forgotButton) {
             forgotButton.addEventListener('click', () => handlePasswordReset(form));
@@ -757,42 +823,50 @@ function createAuthOverlay() {
             <p class="login-description" data-auth-description hidden>${LOGIN_TEXT.registerSubtitle}</p>
             <p class="login-status" data-auth-status>${getAuthStatusText()}</p>
             <form class="login-form" data-auth-form novalidate>
-                <div class="login-banner" data-auth-verification hidden>
-                    <strong>${LOGIN_TEXT.verificationTitle}</strong>
-                    <p>${LOGIN_TEXT.verificationDescription}</p>
-                    <button type="button" class="login-link" data-auth-resend>${LOGIN_TEXT.verificationResend}</button>
-                </div>
-                <div class="form-group">
-                    <label for="overlay-email">${LOGIN_TEXT.emailLabel}</label>
-                    <input type="email" id="overlay-email" class="form-control" placeholder="${LOGIN_TEXT.emailPlaceholder}" autocomplete="email" data-auth-email>
-                </div>
-                <div class="form-group">
-                    <label for="overlay-password">${LOGIN_TEXT.passwordLabel}</label>
-                    <div class="password-field">
-                        <input type="password" id="overlay-password" class="form-control" placeholder="${LOGIN_TEXT.passwordPlaceholder}" autocomplete="current-password" data-auth-password>
-                        <button type="button" class="toggle-password" data-auth-toggle aria-label="${LOGIN_TEXT.show}">
-                            <span class="eye-icon" aria-hidden="true"></span>
-                        </button>
+                <div class="login-feedback" data-auth-feedback role="alert" aria-live="polite" hidden></div>
+                <div data-auth-credentials>
+                    <div class="form-group">
+                        <label for="overlay-email">${LOGIN_TEXT.emailLabel}</label>
+                        <input type="email" id="overlay-email" class="form-control" placeholder="${LOGIN_TEXT.emailPlaceholder}" autocomplete="email" data-auth-email>
                     </div>
-                    <div class="login-feedback" data-auth-feedback role="alert" aria-live="polite" hidden></div>
+                    <div class="form-group">
+                        <label for="overlay-password">${LOGIN_TEXT.passwordLabel}</label>
+                        <div class="password-field">
+                            <input type="password" id="overlay-password" class="form-control" placeholder="${LOGIN_TEXT.passwordPlaceholder}" autocomplete="current-password" data-auth-password>
+                            <button type="button" class="toggle-password" data-auth-toggle aria-label="${LOGIN_TEXT.show}">
+                                <span class="eye-icon" aria-hidden="true"></span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-group" data-auth-register-only hidden>
+                        <label for="overlay-password-confirm">${LOGIN_TEXT.registerPasswordConfirmLabel}</label>
+                        <input type="password" id="overlay-password-confirm" class="form-control" placeholder="${LOGIN_TEXT.passwordPlaceholder}" autocomplete="new-password" data-auth-password-confirm>
+                    </div>
+                    <div class="form-group" data-auth-register-only hidden>
+                        <label for="overlay-class">${LOGIN_TEXT.registerClassLabel}</label>
+                        <input type="text" id="overlay-class" class="form-control" placeholder="${LOGIN_TEXT.registerClassPlaceholder}" autocomplete="organization" data-auth-class>
+                    </div>
+                    <div class="login-links">
+                        <button type="button" class="login-link" data-auth-forgot data-auth-login-only>${LOGIN_TEXT.forgotPassword}</button>
+                        <button type="button" class="login-link" data-auth-switch="register">${LOGIN_TEXT.switchToRegister}</button>
+                        <button type="button" class="login-link" data-auth-switch="login" hidden>${LOGIN_TEXT.switchToLogin}</button>
+                    </div>
+                    <div class="login-actions">
+                        <button type="submit" class="login-button" data-auth-submit>${LOGIN_TEXT.submit}</button>
+                        <button type="button" class="guest-button" data-auth-guest>${LOGIN_TEXT.guestButton}</button>
+                        <p class="guest-info">${LOGIN_TEXT.guestInfo}</p>
+                    </div>
                 </div>
-                <div class="form-group" data-auth-register-only hidden>
-                    <label for="overlay-password-confirm">${LOGIN_TEXT.registerPasswordConfirmLabel}</label>
-                    <input type="password" id="overlay-password-confirm" class="form-control" placeholder="${LOGIN_TEXT.passwordPlaceholder}" autocomplete="new-password" data-auth-password-confirm>
-                </div>
-                <div class="form-group" data-auth-register-only hidden>
-                    <label for="overlay-class">${LOGIN_TEXT.registerClassLabel}</label>
-                    <input type="text" id="overlay-class" class="form-control" placeholder="${LOGIN_TEXT.registerClassPlaceholder}" autocomplete="organization" data-auth-class>
-                </div>
-                <div class="login-links">
-                    <button type="button" class="login-link" data-auth-forgot data-auth-login-only>${LOGIN_TEXT.forgotPassword}</button>
-                    <button type="button" class="login-link" data-auth-switch="register">${LOGIN_TEXT.switchToRegister}</button>
-                    <button type="button" class="login-link" data-auth-switch="login" hidden>${LOGIN_TEXT.switchToLogin}</button>
-                </div>
-                <div class="login-actions">
-                    <button type="submit" class="login-button" data-auth-submit>${LOGIN_TEXT.submit}</button>
-                    <button type="button" class="guest-button" data-auth-guest>${LOGIN_TEXT.guestButton}</button>
-                    <p class="guest-info">${LOGIN_TEXT.guestInfo}</p>
+                <div class="verification-step" data-auth-code-step hidden>
+                    <div class="form-group">
+                        <label for="overlay-code">${LOGIN_TEXT.verificationCodeLabel}</label>
+                        <input type="text" id="overlay-code" class="form-control" placeholder="${LOGIN_TEXT.verificationCodePlaceholder}" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{8}" maxlength="8" data-auth-code-input>
+                        <p class="login-hint" data-auth-code-hint>${LOGIN_TEXT.verificationCodeHint}</p>
+                    </div>
+                    <div class="login-actions">
+                        <button type="button" class="login-button" data-auth-code-submit>${LOGIN_TEXT.verificationCodeSubmit}</button>
+                        <button type="button" class="login-link" data-auth-resend>${LOGIN_TEXT.verificationCodeResend}</button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -834,10 +908,13 @@ function openAuthOverlay(trigger) {
     authOverlayPreviousFocus = trigger || document.activeElement;
 
     const form = overlay.querySelector('[data-auth-form]');
-    hideVerificationBanner(form);
-    setLoginFeedback('', 'neutral', form);
-    setAuthMode(form, 'login');
-    applyEmailPrefill(form);
+    if (form) {
+        setVerificationEmail(form, '');
+        setAuthMode(form, 'login');
+        setLoginFeedback('', 'neutral', form);
+        applyEmailPrefill(form);
+        window.setTimeout(() => focusPasswordField(form), 0);
+    }
 
     overlay.classList.add('is-visible');
     overlay.setAttribute('aria-hidden', 'false');
@@ -845,7 +922,6 @@ function openAuthOverlay(trigger) {
     bindAuthForms();
     updateAuthStatus();
 
-    window.setTimeout(() => focusPasswordField(form), 0);
     document.addEventListener('keydown', handleAuthOverlayEscape);
 }
 
@@ -861,8 +937,11 @@ function closeAuthOverlay() {
     document.removeEventListener('keydown', handleAuthOverlayEscape);
 
     const form = overlay.querySelector('[data-auth-form]');
-    hideVerificationBanner(form);
-    setLoginFeedback('', 'neutral', form);
+    if (form) {
+        setAuthMode(form, 'login');
+        setVerificationEmail(form, '');
+        setLoginFeedback('', 'neutral', form);
+    }
 
     if (authOverlayPreviousFocus && typeof authOverlayPreviousFocus.focus === 'function') {
         try {
@@ -876,8 +955,11 @@ function closeAuthOverlay() {
 }
 
 function handleAuthSubmit(form) {
-    if (getAuthMode(form) === 'register') {
+    const mode = getAuthMode(form);
+    if (mode === 'register') {
         register(form);
+    } else if (mode === 'verification') {
+        verifyCode(form);
     } else {
         login(form);
     }
@@ -933,7 +1015,6 @@ async function register(form) {
     }
 
     setLoginFeedback('', 'neutral', targetForm);
-    hideVerificationBanner(targetForm);
     setActionCooldown('register');
     applyActionCooldown('register');
     scheduleCooldownReset('register');
@@ -988,6 +1069,7 @@ async function register(form) {
 
         setLoginFeedback(LOGIN_TEXT.registerSuccess, 'success', targetForm);
         rememberEmail(email);
+        setVerificationEmail(targetForm, email);
 
         if (passwordInput) {
             passwordInput.value = '';
@@ -999,9 +1081,19 @@ async function register(form) {
             classInput.value = '';
         }
 
-        setAuthMode(targetForm, 'login', { preserveFeedback: true, preserveVerification: true });
-        showVerificationBanner(targetForm);
-        focusPasswordField(targetForm);
+        setAuthMode(targetForm, 'verification', { preserveFeedback: true });
+        const codeInput = targetForm.querySelector('[data-auth-code-input]');
+        if (codeInput) {
+            codeInput.value = '';
+            codeInput.focus();
+        }
+        const resendButton = targetForm.querySelector('[data-auth-resend]');
+        if (resendButton) {
+            resendButton.textContent = LOGIN_TEXT.verificationCodeResend;
+            resendButton.disabled = false;
+            delete resendButton.dataset.locked;
+            applyResendCooldown(targetForm);
+        }
     } catch (error) {
         console.error('Registrazione non riuscita', error);
         setLoginFeedback(LOGIN_TEXT.registerGenericError, 'error', targetForm);
@@ -1035,7 +1127,6 @@ async function login(form) {
     }
 
     setLoginFeedback('', 'neutral', targetForm);
-    hideVerificationBanner(targetForm);
     setFormLoading(targetForm, true);
 
     try {
@@ -1050,9 +1141,22 @@ async function login(form) {
 
         if (!response.ok) {
             if (data && data.message === 'email_not_verified') {
-                setLoginFeedback(LOGIN_TEXT.emailNotVerified, 'error', targetForm);
-                showVerificationBanner(targetForm);
+                setVerificationEmail(targetForm, email);
                 rememberEmail(email);
+                setAuthMode(targetForm, 'verification', { preserveFeedback: true });
+                setLoginFeedback(LOGIN_TEXT.emailNotVerified, 'error', targetForm);
+                const codeInput = targetForm.querySelector('[data-auth-code-input]');
+                if (codeInput) {
+                    codeInput.value = '';
+                    codeInput.focus();
+                }
+                const resendButton = targetForm.querySelector('[data-auth-resend]');
+                if (resendButton) {
+                    resendButton.textContent = LOGIN_TEXT.verificationCodeResend;
+                    resendButton.disabled = false;
+                    delete resendButton.dataset.locked;
+                    applyResendCooldown(targetForm);
+                }
             } else if (data && data.message === 'invalid_credentials') {
                 setLoginFeedback(LOGIN_TEXT.invalidCredentials, 'error', targetForm);
                 focusPasswordField(targetForm);
@@ -1081,13 +1185,101 @@ async function login(form) {
     }
 }
 
+async function verifyCode(form) {
+    const targetForm = form || getActiveAuthForm();
+    if (!targetForm) {
+        return;
+    }
+
+    const codeInput = targetForm.querySelector('[data-auth-code-input]');
+    const rawCode = codeInput ? codeInput.value.trim() : '';
+    const normalizedCode = rawCode.replace(/[^0-9]/g, '').slice(0, 8);
+    if (codeInput && rawCode !== normalizedCode) {
+        codeInput.value = normalizedCode;
+    }
+
+    if (!normalizedCode || normalizedCode.length !== 8) {
+        setLoginFeedback(LOGIN_TEXT.verificationCodeInvalid, 'error', targetForm);
+        codeInput?.focus();
+        return;
+    }
+
+    const storedEmail = getVerificationEmail(targetForm);
+    let email = storedEmail;
+    if (!email) {
+        const emailInput = getEmailInput(targetForm);
+        if (emailInput && emailInput.value) {
+            email = emailInput.value.trim().toLowerCase();
+        }
+    }
+
+    if (!email) {
+        setLoginFeedback(LOGIN_TEXT.emailRequired, 'error', targetForm);
+        const emailInput = getEmailInput(targetForm);
+        emailInput?.focus();
+        setAuthMode(targetForm, 'login', { preserveFeedback: true });
+        return;
+    }
+
+    setVerificationEmail(targetForm, email);
+    setFormLoading(targetForm, true);
+
+    try {
+        const response = await fetch(AUTH_API.verify, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, code: normalizedCode })
+        });
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+            if (data && (data.message === 'invalid_code' || data.message === 'verification_not_found')) {
+                setLoginFeedback(LOGIN_TEXT.verificationCodeInvalid, 'error', targetForm);
+                codeInput?.focus();
+                return;
+            }
+            if (data && data.message === 'code_expired') {
+                setLoginFeedback(LOGIN_TEXT.verificationCodeInvalid, 'error', targetForm);
+                codeInput?.focus();
+                return;
+            }
+            if (data && data.message === 'rate_limited') {
+                setLoginFeedback(LOGIN_TEXT.cooldownWarning, 'error', targetForm);
+                return;
+            }
+            if (data && data.message === 'already_verified') {
+                setLoginFeedback(LOGIN_TEXT.verificationCodeSuccess, 'success', targetForm);
+                setAuthMode(targetForm, 'login', { preserveFeedback: true });
+                focusPasswordField(targetForm);
+                return;
+            }
+            setLoginFeedback(LOGIN_TEXT.verificationCodeInvalid, 'error', targetForm);
+            codeInput?.focus();
+            return;
+        }
+
+        setLoginFeedback(LOGIN_TEXT.verificationCodeSuccess, 'success', targetForm);
+        setAuthMode(targetForm, 'login', { preserveFeedback: true });
+        if (codeInput) {
+            codeInput.value = '';
+        }
+        focusPasswordField(targetForm);
+    } catch (error) {
+        console.error('Verifica del codice fallita', error);
+        setLoginFeedback(LOGIN_TEXT.verificationCodeInvalid, 'error', targetForm);
+    } finally {
+        setFormLoading(targetForm, false);
+    }
+}
+
 async function resendVerification(form) {
     const targetForm = form || getActiveAuthForm();
     if (!targetForm) {
         return;
     }
     const emailInput = getEmailInput(targetForm);
-    const email = emailInput && emailInput.value ? emailInput.value.trim().toLowerCase() : lastAuthEmail;
+    const storedEmail = getVerificationEmail(targetForm);
+    const email = storedEmail || (emailInput && emailInput.value ? emailInput.value.trim().toLowerCase() : lastAuthEmail);
     if (!email) {
         setLoginFeedback(LOGIN_TEXT.emailRequired, 'error', targetForm);
         emailInput?.focus();
@@ -1105,7 +1297,7 @@ async function resendVerification(form) {
     if (button) {
         button.disabled = true;
         button.dataset.locked = 'true';
-        button.textContent = LOGIN_TEXT.verificationResendLoading;
+        button.textContent = LOGIN_TEXT.verificationCodeResendLoading;
     }
     try {
         const response = await fetch(AUTH_API.resend, {
@@ -1116,120 +1308,19 @@ async function resendVerification(form) {
         if (response.ok) {
             setLoginFeedback(LOGIN_TEXT.resendSuccess, 'success', targetForm);
             rememberEmail(email);
+            setVerificationEmail(targetForm, email);
         } else {
             setLoginFeedback(LOGIN_TEXT.resendError, 'error', targetForm);
         }
     } catch (error) {
-        console.error('Invio verifica fallito', error);
+        console.error('Invio del codice fallito', error);
         setLoginFeedback(LOGIN_TEXT.resendError, 'error', targetForm);
     } finally {
         if (button) {
             button.dataset.locked = 'false';
-            button.textContent = LOGIN_TEXT.verificationResend;
+            button.textContent = LOGIN_TEXT.verificationCodeResend;
             applyResendCooldown(targetForm);
         }
-    }
-}
-
-function getVerificationTokenFromUrl() {
-    try {
-        const currentUrl = new URL(window.location.href);
-        const tokenParam = currentUrl.searchParams.get('token');
-        if (tokenParam) {
-            return tokenParam.trim();
-        }
-        const rawHash = currentUrl.hash ? currentUrl.hash.replace(/^#/, '') : '';
-        if (!rawHash) {
-            return '';
-        }
-        if (rawHash.startsWith('token=')) {
-            return rawHash.slice(6).trim();
-        }
-        const hashParams = new URLSearchParams(rawHash);
-        const hashToken = hashParams.get('token');
-        return hashToken ? hashToken.trim() : '';
-    } catch (error) {
-        return '';
-    }
-}
-
-function clearVerificationTokenFromUrl() {
-    try {
-        const currentUrl = new URL(window.location.href);
-        const searchParams = currentUrl.searchParams;
-        if (searchParams.has('token')) {
-            searchParams.delete('token');
-        }
-
-        let hash = currentUrl.hash || '';
-        if (hash.includes('token=')) {
-            const rawHash = hash.replace(/^#/, '');
-            if (rawHash.startsWith('token=')) {
-                hash = '';
-            } else if (rawHash.includes('=') || rawHash.includes('&')) {
-                const hashParams = new URLSearchParams(rawHash);
-                if (hashParams.has('token')) {
-                    hashParams.delete('token');
-                    const serialized = hashParams.toString();
-                    hash = serialized ? `#${serialized}` : '';
-                }
-            }
-        }
-
-        const search = searchParams.toString();
-        const nextUrl = `${currentUrl.pathname}${search ? `?${search}` : ''}${hash}`;
-        window.history.replaceState({}, document.title, nextUrl);
-    } catch (error) {
-        /* ignore */
-    }
-}
-
-async function handleVerificationToken(isLoginPage) {
-    const token = getVerificationTokenFromUrl();
-    if (!token) {
-        return;
-    }
-
-    clearVerificationTokenFromUrl();
-
-    if (!isLoginPage) {
-        openAuthOverlay();
-    }
-
-    queryAuthForms().forEach((form) => {
-        setAuthMode(form, 'login', { preserveFeedback: false, preserveVerification: false });
-        hideVerificationBanner(form);
-    });
-
-    setLoginFeedback(LOGIN_TEXT.verificationPending, 'neutral');
-
-    try {
-        const response = await fetch(AUTH_API.verify, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token })
-        });
-        const data = await response.json().catch(() => ({}));
-        if (response.ok) {
-            setLoginFeedback(LOGIN_TEXT.verificationSuccess, 'success');
-            return;
-        }
-        if (data && data.message === 'already_verified') {
-            setLoginFeedback(LOGIN_TEXT.verificationAlready, 'success');
-            return;
-        }
-        if (data && data.message === 'token_expired') {
-            setLoginFeedback(LOGIN_TEXT.verificationExpired, 'error');
-            return;
-        }
-        if (data && data.message === 'invalid_token') {
-            setLoginFeedback(LOGIN_TEXT.verificationInvalid, 'error');
-            return;
-        }
-        setLoginFeedback(LOGIN_TEXT.verificationGenericError, 'error');
-    } catch (error) {
-        console.error("Verifica dell'e-mail non riuscita", error);
-        setLoginFeedback(LOGIN_TEXT.verificationGenericError, 'error');
     }
 }
 
@@ -1568,7 +1659,6 @@ function checkLogin() {
     bindAuthForms();
     updateAuthUI();
     setupAuthButton();
-    handleVerificationToken(isLoginPage);
 
     if (isLoginPage && isAuthenticated()) {
         window.location.replace(AUTH_PATHS.home);

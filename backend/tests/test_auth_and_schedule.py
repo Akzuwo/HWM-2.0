@@ -9,9 +9,9 @@ def test_registration_flow_requires_verification(app_client, monkeypatch):
 
     captured: Dict[str, str] = {}
 
-    def fake_send(email, token, expires_at):
+    def fake_send(email, code, expires_at):
         captured['email'] = email
-        captured['token'] = token
+        captured['code'] = code
         captured['expires_at'] = expires_at.isoformat() if hasattr(expires_at, 'isoformat') else str(expires_at)
 
     monkeypatch.setattr(app_module, '_send_verification_email', fake_send)
@@ -27,13 +27,13 @@ def test_registration_flow_requires_verification(app_client, monkeypatch):
     user = storage['users'][new_user_id]
     assert user['role'] == 'student'
     assert storage['verifications'], 'verification entry should exist'
-    token = storage['verifications'][-1]['token']
+    code = storage['verifications'][-1]['code']
 
     resp = client.post('/api/auth/login', json={'email': 'student@sluz.ch', 'password': 'Secret123!'})
     assert resp.status_code == 403
     assert resp.get_json()['message'] == 'email_not_verified'
 
-    resp = client.post('/api/auth/verify', json={'token': token})
+    resp = client.post('/api/auth/verify', json={'email': 'student@sluz.ch', 'code': code})
     assert resp.status_code == 200
 
     resp = client.post('/api/auth/login', json={'email': 'student@sluz.ch', 'password': 'Secret123!'})
@@ -139,9 +139,9 @@ def test_verification_rate_limit_blocks_after_threshold(app_client, monkeypatch)
     monkeypatch.setattr(app_module, 'VERIFY_RATE_LIMIT_MAX', 1)
     monkeypatch.setattr(app_module, 'VERIFY_RATE_LIMIT_WINDOW', 600)
 
-    resp = client.post('/api/auth/verify', json={'token': 'missing'})
+    resp = client.post('/api/auth/verify', json={'email': 'missing@example.com', 'code': '12345678'})
     assert resp.status_code == 404
 
-    resp = client.post('/api/auth/verify', json={'token': 'missing'})
+    resp = client.post('/api/auth/verify', json={'email': 'missing@example.com', 'code': '12345678'})
     assert resp.status_code == 429
     assert resp.get_json()['message'] == 'rate_limited'

@@ -266,9 +266,9 @@ def test_resend_verification_sends_mail(app_client, monkeypatch):
 
     sent: Dict[str, object] = {}
 
-    def fake_send_verification(email, token, expires_at):
+    def fake_send_verification(email, code, expires_at):
         sent['email'] = email
-        sent['token'] = token
+        sent['code'] = code
         sent['expires_at'] = expires_at
 
     monkeypatch.setattr(app_module, '_send_verification_email', fake_send_verification)

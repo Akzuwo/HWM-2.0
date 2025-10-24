@@ -7,6 +7,7 @@ import datetime as _dt
 import hashlib
 import hmac
 import secrets
+import string
 from typing import Optional
 
 try:  # pragma: no cover - optional dependency
@@ -85,6 +86,14 @@ def generate_token(length: int = 32) -> str:
     return secrets.token_urlsafe(length)
 
 
+def generate_numeric_code(length: int = 8) -> str:
+    """Return a random numeric string with *length* digits."""
+    if length <= 0:
+        raise ValueError("length must be positive")
+    digits = string.digits
+    return "".join(secrets.choice(digits) for _ in range(length))
+
+
 def calculate_token_expiry(seconds: int, *, now: Optional[_dt.datetime] = None) -> _dt.datetime:
     """Return an absolute expiry timestamp seconds from *now*."""
     if seconds <= 0:
@@ -99,5 +108,6 @@ __all__ = [
     "hash_password",
     "verify_password",
     "generate_token",
+    "generate_numeric_code",
     "calculate_token_expiry",
 ]

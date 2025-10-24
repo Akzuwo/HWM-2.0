@@ -4,7 +4,14 @@ __all__ = [
     "hash_password",
     "verify_password",
     "generate_token",
+    "generate_numeric_code",
     "calculate_token_expiry",
 ]
 
-from .utils import calculate_token_expiry, generate_token, hash_password, verify_password  # noqa: E402,F401
+from .utils import (  # noqa: E402,F401
+    calculate_token_expiry,
+    generate_numeric_code,
+    generate_token,
+    hash_password,
+    verify_password,
+)

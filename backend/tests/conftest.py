@@ -454,7 +454,13 @@ class FakeCursor:
             return
 
         if normalized.startswith("insert into email_verifications"):
-            user_id, email, token, expires_at = params
+            if params is None:
+                return
+            if len(params) == 4:
+                user_id, email, code, expires_at = params
+                failed_attempts = 0
+            else:
+                user_id, email, code, expires_at, failed_attempts = params
             entries = self.storage.setdefault('verifications', [])
             verification_id = len(entries) + 1
             entries.append(
@@ -462,26 +468,37 @@ class FakeCursor:
                     'id': verification_id,
                     'user_id': user_id,
                     'email': email,
-                    'token': token,
+                    'code': code,
                     'expires_at': expires_at,
-                    'verified_at': None,
+                    'failed_attempts': failed_attempts,
                 }
             )
             self.lastrowid = verification_id
             self.rowcount = 1
             return
 
-        if normalized.startswith("delete from email_verifications"):
-            self.storage.setdefault('verifications', []).clear()
-            self.rowcount = 0
+        if normalized.startswith("delete from email_verifications where user_id=%s"):
+            user_id = params[0]
+            entries = self.storage.setdefault('verifications', [])
+            remaining = [entry for entry in entries if entry['user_id'] != user_id]
+            self.storage['verifications'] = remaining
+            self.rowcount = len(entries) - len(remaining)
             return
 
-        if normalized.startswith("update email_verifications set verified_at"):
-            verified_at, verification_id = params
+        if normalized.startswith("delete from email_verifications where id=%s"):
+            verification_id = params[0]
+            entries = self.storage.setdefault('verifications', [])
+            remaining = [entry for entry in entries if entry['id'] != verification_id]
+            self.storage['verifications'] = remaining
+            self.rowcount = len(entries) - len(remaining)
+            return
+
+        if normalized.startswith("update email_verifications set failed_attempts"):
+            failed_attempts, verification_id = params
             entries = self.storage.setdefault('verifications', [])
             for entry in entries:
                 if entry['id'] == verification_id:
-                    entry['verified_at'] = verified_at
+                    entry['failed_attempts'] = failed_attempts
                     break
             self.rowcount = 1
             return
@@ -494,21 +511,22 @@ class FakeCursor:
                 self._rows = []
             return
 
-        if normalized.startswith("select ev.id, ev.user_id, ev.token, ev.expires_at, ev.verified_at, u.email_verified_at"):
-            token_value = params[0]
+        if normalized.startswith("select id, user_id, code, expires_at, failed_attempts from email_verifications"):
+            user_id = params[0]
             entries = self.storage.setdefault('verifications', [])
             for entry in entries:
-                if entry['token'] == token_value:
-                    user = users.get(entry['user_id'])
+                if entry['user_id'] == user_id:
                     result = {
                         'id': entry['id'],
                         'user_id': entry['user_id'],
-                        'token': entry['token'],
+                        'code': entry['code'],
                         'expires_at': entry['expires_at'],
-                        'verified_at': entry.get('verified_at'),
-                        'email_verified_at': (user or {}).get('email_verified_at'),
+                        'failed_attempts': entry.get('failed_attempts', 0),
                     }
-                    self._prepare_rows([result], ['id', 'user_id', 'token', 'expires_at', 'verified_at', 'email_verified_at'])
+                    self._prepare_rows(
+                        [result],
+                        ['id', 'user_id', 'code', 'expires_at', 'failed_attempts'],
+                    )
                     return
             self._rows = []
             return
