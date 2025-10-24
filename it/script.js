@@ -38,9 +38,9 @@ const LOGIN_TEXT = {
     registerSubmitLoading: 'Registrazione…',
     guestButton: 'Continua come ospite',
     guestInfo: 'Continua senza account',
-    loginButton: '🔐 Accedi',
-    logoutButton: '🚪 Esci',
-    adminNavButton: '🛠️ Amministrazione',
+    loginButton: 'Accedi',
+    logoutButton: 'Esci',
+    adminNavButton: 'Amministrazione',
     authStatusGuest: 'Non connesso',
     authStatusSignedIn: (roleLabel) => `Connesso come ${roleLabel}`,
     roleLabels: {
@@ -273,7 +273,7 @@ function getAdminNavButton() {
         button.className = 'nav-link nav-link--admin';
         button.href = AUTH_PATHS.admin;
         button.setAttribute('data-admin-link', 'true');
-        button.textContent = LOGIN_TEXT.adminNavButton || '🛠️ Admin';
+        button.textContent = LOGIN_TEXT.adminNavButton || 'Admin';
         button.hidden = true;
         const authButton = links.querySelector('[data-auth-button]');
         if (authButton && authButton.parentElement === links) {
@@ -290,7 +290,7 @@ function updateAdminNavButton() {
     if (!button) {
         return;
     }
-    button.textContent = LOGIN_TEXT.adminNavButton || '🛠️ Admin';
+    button.textContent = LOGIN_TEXT.adminNavButton || 'Admin';
     const visible = isAdmin();
     button.hidden = !visible;
     button.classList.toggle('is-hidden', !visible);

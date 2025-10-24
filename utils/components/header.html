@@ -8,15 +8,14 @@
     </div>
 
     <nav class="nav-links" aria-label="Main navigation">
-      <a class="nav-link" data-route="index.html" data-i18n="common.nav.home">🏠 Home</a>
-      <a class="nav-link" data-route="kalender.html" data-i18n="common.nav.calendar">📅 Calendar</a>
-      <a class="nav-link" data-route="upcoming.html" data-i18n="common.nav.upcoming">🔔 Upcoming</a>
-      <a class="nav-link" data-route="stundenplan.html" data-i18n="common.nav.currentSubject">🕒 Current Subject</a>
-      <a class="nav-link" data-route="notenrechner.html" data-i18n="common.nav.grades">📊 Grade Calculator</a>
+      <a class="nav-link" data-route="index.html" data-i18n="common.nav.home">Home</a>
+      <a class="nav-link" data-route="kalender.html" data-i18n="common.nav.calendar">Calendar</a>
+      <a class="nav-link" data-route="upcoming.html" data-i18n="common.nav.upcoming">Upcoming</a>
+      <a class="nav-link" data-route="stundenplan.html" data-i18n="common.nav.currentSubject">Current Subject</a>
+      <a class="nav-link" data-route="notenrechner.html" data-i18n="common.nav.grades">Grade Calculator</a>
     </nav>
 
     <div class="nav-right">
-      <span class="auth-status" data-auth-status aria-live="polite"></span>
       <div class="language-switcher" data-language>
         <button class="lang-switch" type="button" data-language-toggle aria-haspopup="true" aria-expanded="false" data-i18n-attr="aria-label:common.nav.language">
           <span class="lang-switch__icon" aria-hidden="true">🌐</span>
@@ -68,7 +67,8 @@
           </li>
         </ul>
       </div>
-      <button class="btn-login" type="button" data-auth-button aria-label="Login">🔐</button>
+      <span class="auth-status" data-auth-status aria-live="polite"></span>
+      <button class="btn-login" type="button" data-auth-button aria-label="Login">Log in</button>
     </div>
   </div>
 </header>
