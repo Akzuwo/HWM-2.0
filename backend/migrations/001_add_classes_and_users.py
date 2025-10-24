@@ -93,12 +93,13 @@ def _ensure_email_verifications_table(cursor: mysql.connector.cursor.MySQLCursor
             id INT AUTO_INCREMENT PRIMARY KEY,
             user_id INT NOT NULL,
             email VARCHAR(255) NOT NULL,
-            token VARCHAR(255) NOT NULL,
+            code VARCHAR(8) NOT NULL,
             expires_at DATETIME NOT NULL,
-            verified_at DATETIME NULL,
+            failed_attempts INT NOT NULL DEFAULT 0,
             created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE KEY uq_email_verifications_token (token),
+            UNIQUE KEY uq_email_verifications_user (user_id),
             INDEX idx_email_verifications_user (user_id),
+            INDEX idx_email_verifications_code (code),
             CONSTRAINT fk_email_verifications_user FOREIGN KEY (user_id)
                 REFERENCES users(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci

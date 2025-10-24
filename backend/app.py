@@ -22,7 +22,7 @@ from flask_cors import CORS
 import mysql.connector
 from mysql.connector import pooling
 
-from auth.utils import calculate_token_expiry, generate_token, verify_password, hash_password
+from auth.utils import calculate_token_expiry, generate_numeric_code, verify_password, hash_password
 from class_ids import DEFAULT_ENTRY_CLASS_ID, ENTRY_CLASS_ID_SET
 from config import get_contact_smtp_settings, get_db_config
 
@@ -303,13 +303,9 @@ VERIFY_RATE_LIMIT = {}
 VERIFY_RATE_LIMIT_WINDOW = int(os.getenv('VERIFY_RATE_LIMIT_WINDOW', 3600))
 VERIFY_RATE_LIMIT_MAX = int(os.getenv('VERIFY_RATE_LIMIT_MAX', 5))
 
-EMAIL_VERIFICATION_TOKEN_LIFETIME_SECONDS = int(os.getenv('EMAIL_VERIFICATION_TOKEN_LIFETIME_SECONDS', 3600))
+EMAIL_VERIFICATION_CODE_LIFETIME_SECONDS = int(os.getenv('EMAIL_VERIFICATION_CODE_LIFETIME_SECONDS', 8 * 60))
 EMAIL_VERIFICATION_FROM_ADDRESS = os.getenv('EMAIL_VERIFICATION_FROM_ADDRESS', CONTACT_FROM_ADDRESS or CONTACT_SMTP_USER or CONTACT_RECIPIENT)
 EMAIL_VERIFICATION_SUBJECT = os.getenv('EMAIL_VERIFICATION_SUBJECT', 'Bitte E-Mail-Adresse bestätigen')
-EMAIL_VERIFICATION_LINK_BASE = os.getenv(
-    'EMAIL_VERIFICATION_LINK_BASE',
-    f"{PRIMARY_TEST_BASE_URL.rstrip('/')}/verify-email",
-)
 
 REGISTRATION_ALLOWED_DOMAIN = os.getenv('REGISTRATION_ALLOWED_DOMAIN', '@sluz.ch').lower()
 
@@ -535,38 +531,25 @@ def _send_contact_email(name: str, email_address: str, subject: str, body: str, 
     )
 
 
-def _send_verification_email(email_address: str, token: str, expires_at: datetime.datetime) -> None:
+def _send_verification_email(email_address: str, code: str, expires_at: datetime.datetime) -> None:
     if not email_address:
         raise ValueError('email_address is required')
-
-    if EMAIL_VERIFICATION_LINK_BASE:
-        separator = '&' if '?' in EMAIL_VERIFICATION_LINK_BASE else '?'
-        verification_link = f"{EMAIL_VERIFICATION_LINK_BASE}{separator}token={token}"
-    else:
-        verification_link = token
 
     expiration_text = expires_at.strftime('%d.%m.%Y %H:%M UTC')
     body = (
         "Hallo,\n\n"
-        "bitte bestätige deine E-Mail-Adresse für den Homework Manager über den folgenden Link:\n"
-        f"{verification_link}\n\n"
-        f"Der Link ist bis {expiration_text} gültig.\n\n"
+        "bitte bestätige deine E-Mail-Adresse für den Homework Manager mit dem folgenden Code:\n"
+        f"{code}\n\n"
+        f"Der Code ist bis {expiration_text} gültig.\n\n"
         "Falls du diese Anfrage nicht gestellt hast, ignoriere diese E-Mail.\n"
     )
-
-    html_link_target = verification_link if verification_link.startswith(('http://', 'https://')) else None
-    if html_link_target:
-        escaped_target = html.escape(html_link_target, quote=True)
-        link_markup = f'<a href="{escaped_target}">{html.escape(verification_link)}</a>'
-    else:
-        link_markup = html.escape(verification_link)
 
     html_body = (
         '<html><body>'
         '<p>Hallo,</p>'
-        '<p>bitte bestätige deine E-Mail-Adresse für den Homework Manager über den folgenden Link:</p>'
-        f'<p>{link_markup}</p>'
-        f'<p>Der Link ist bis {html.escape(expiration_text)} gültig.</p>'
+        '<p>bitte bestätige deine E-Mail-Adresse für den Homework Manager mit dem folgenden Code:</p>'
+        f'<p><strong>{html.escape(code)}</strong></p>'
+        f'<p>Der Code ist bis {html.escape(expiration_text)} gültig.</p>'
         '<p>Falls du diese Anfrage nicht gestellt hast, ignoriere diese E-Mail.</p>'
         '</body></html>'
     )
@@ -709,14 +692,17 @@ def _create_email_verification(conn, user: Dict[str, object]) -> Tuple[str, date
     cursor = conn.cursor()
     try:
         cursor.execute(
-            "DELETE FROM email_verifications WHERE user_id=%s AND verified_at IS NULL",
+            "DELETE FROM email_verifications WHERE user_id=%s",
             (user['id'],),
         )
-        token = generate_token()
-        expires_at = calculate_token_expiry(EMAIL_VERIFICATION_TOKEN_LIFETIME_SECONDS)
+        code = generate_numeric_code(8)
+        expires_at = calculate_token_expiry(EMAIL_VERIFICATION_CODE_LIFETIME_SECONDS)
         cursor.execute(
-            "INSERT INTO email_verifications (user_id, email, token, expires_at) VALUES (%s, %s, %s, %s)",
-            (user['id'], user['email'], token, expires_at),
+            """
+            INSERT INTO email_verifications (user_id, email, code, expires_at, failed_attempts)
+            VALUES (%s, %s, %s, %s, 0)
+            """,
+            (user['id'], user['email'], code, expires_at),
         )
         conn.commit()
     except mysql.connector.Error:
@@ -726,11 +712,11 @@ def _create_email_verification(conn, user: Dict[str, object]) -> Tuple[str, date
         cursor.close()
 
     try:
-        _send_verification_email(user['email'], token, expires_at)
+        _send_verification_email(user['email'], code, expires_at)
     except Exception as exc:
         raise RuntimeError('verification_email_failed') from exc
 
-    return token, expires_at
+    return code, expires_at
 
 
 def _validate_columns(table_name, columns, requirements):
@@ -1144,7 +1130,7 @@ def auth_register():
         try:
             _create_email_verification(conn, user)
         except mysql.connector.Error:
-            app.logger.exception('Failed to create verification token for user %s', user)
+            app.logger.exception('Failed to create verification code for user %s', user)
             return jsonify(status='error', message='verification_failed'), 500
         except RuntimeError:
             return jsonify(status='error', message='mail_failed'), 502
@@ -1248,10 +1234,13 @@ def auth_logout():
 @app.route('/api/auth/verify', methods=['POST'])
 def auth_verify():
     data = request.json or {}
-    token = (data.get('token') or request.args.get('token') or '').strip()
+    email = (data.get('email') or '').strip().lower()
+    code = (data.get('code') or '').strip()
 
-    if not token:
-        return jsonify(status='error', message='token_required'), 400
+    if not email:
+        return jsonify(status='error', message='email_required'), 400
+    if not code:
+        return jsonify(status='error', message='code_required'), 400
 
     ip_address = _get_request_ip()
     if not _check_rate_limit(
@@ -1270,50 +1259,94 @@ def auth_verify():
     now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
 
     with closing(conn):
-        cursor = conn.cursor(dictionary=True)
         try:
-            cursor.execute(
+            user = _load_user_by_email(conn, email)
+        except mysql.connector.Error:
+            return jsonify(status='error', message='database_unavailable'), 503
+
+        if not user:
+            return jsonify(status='error', message='verification_not_found'), 404
+
+        if user.get('email_verified_at'):
+            return jsonify(status='error', message='already_verified'), 409
+
+        verification_cursor = conn.cursor(dictionary=True)
+        try:
+            verification_cursor.execute(
                 """
-                SELECT ev.id, ev.user_id, ev.token, ev.expires_at, ev.verified_at, u.email_verified_at
-                FROM email_verifications ev
-                JOIN users u ON u.id = ev.user_id
-                WHERE ev.token=%s
+                SELECT id, user_id, code, expires_at, failed_attempts
+                FROM email_verifications
+                WHERE user_id=%s
+                ORDER BY created_at DESC
                 LIMIT 1
                 """,
-                (token,),
+                (int(user['id']),),
             )
-            verification = cursor.fetchone()
+            verification = verification_cursor.fetchone()
         except mysql.connector.Error:
-            cursor.close()
+            verification_cursor.close()
             return jsonify(status='error', message='database_unavailable'), 503
 
         if not verification:
-            cursor.close()
-            return jsonify(status='error', message='invalid_token'), 404
+            verification_cursor.close()
+            return jsonify(status='error', message='verification_not_found'), 404
 
         expires_at = verification.get('expires_at')
-        verified_at = verification.get('verified_at')
-        user_verified_at = verification.get('email_verified_at')
-
-        if verified_at or user_verified_at:
-            cursor.close()
-            return jsonify(status='error', message='already_verified'), 409
+        failed_attempts = int(verification.get('failed_attempts') or 0)
+        verification_id = int(verification['id'])
+        verification_cursor.close()
 
         if expires_at and expires_at < now:
-            cursor.close()
-            return jsonify(status='error', message='token_expired'), 410
+            cleanup_cursor = conn.cursor()
+            try:
+                cleanup_cursor.execute(
+                    "DELETE FROM email_verifications WHERE id=%s",
+                    (verification_id,),
+                )
+                conn.commit()
+            except mysql.connector.Error:
+                conn.rollback()
+                cleanup_cursor.close()
+                return jsonify(status='error', message='verification_failed'), 500
+            finally:
+                cleanup_cursor.close()
+            return jsonify(status='error', message='code_expired'), 410
 
-        cursor.close()
+        if code != (verification.get('code') or '').strip():
+            new_attempts = failed_attempts + 1
+            update_cursor = conn.cursor()
+            try:
+                if new_attempts >= 5:
+                    update_cursor.execute(
+                        "DELETE FROM email_verifications WHERE id=%s",
+                        (verification_id,),
+                    )
+                else:
+                    update_cursor.execute(
+                        "UPDATE email_verifications SET failed_attempts=%s WHERE id=%s",
+                        (new_attempts, verification_id),
+                    )
+                conn.commit()
+            except mysql.connector.Error:
+                conn.rollback()
+                update_cursor.close()
+                return jsonify(status='error', message='verification_failed'), 500
+            finally:
+                update_cursor.close()
+
+            if new_attempts >= 5:
+                return jsonify(status='error', message='code_expired'), 410
+            return jsonify(status='error', message='invalid_code'), 400
 
         update_cursor = conn.cursor()
         try:
             update_cursor.execute(
                 "UPDATE users SET email_verified_at=%s WHERE id=%s",
-                (now, int(verification['user_id'])),
+                (now, int(user['id'])),
             )
             update_cursor.execute(
-                "UPDATE email_verifications SET verified_at=%s WHERE id=%s",
-                (now, int(verification['id'])),
+                "DELETE FROM email_verifications WHERE id=%s",
+                (verification_id,),
             )
             conn.commit()
         except mysql.connector.Error:
@@ -1356,7 +1389,7 @@ def auth_resend():
         try:
             _create_email_verification(conn, user)
         except mysql.connector.Error:
-            app.logger.exception('Failed to create verification token for user %s', user)
+            app.logger.exception('Failed to create verification code for user %s', user)
             return jsonify(status='error', message='verification_failed'), 500
         except RuntimeError:
             return jsonify(status='error', message='mail_failed'), 502
@@ -1393,7 +1426,7 @@ def resend_admin_verification():
         try:
             _create_email_verification(conn, admin_user)
         except mysql.connector.Error:
-            app.logger.exception('Failed to create verification token for admin %s', admin_user)
+            app.logger.exception('Failed to create verification code for admin %s', admin_user)
             return jsonify(status='error', message='verification_failed'), 500
         except RuntimeError:
             return jsonify(status='error', message='mail_failed'), 502
