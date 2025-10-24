@@ -13,73 +13,7 @@
   <link rel="stylesheet" href="../utils/css/kalender.css" />
 </head>
 <body class="calendar-theme">
-  <nav class="simple-nav" data-nav data-i18n-attr="aria-label:common.nav.primary" aria-label="Main navigation">
-    <a class="nav-title" href="index.html">
-      <img src="../media/logo.png" alt="" width="32" height="32" />
-      <span data-i18n="common.appName">Homework Manager</span>
-    </a>
-    <div class="nav-links" id="calendar-nav-links">
-      <a class="nav-button" href="index.html" data-i18n="common.nav.home">🏠 Start</a>
-      <a class="nav-button" href="kalender.html" data-i18n="common.nav.calendar" aria-current="page">📅 Kalender</a>
-      <a class="nav-button" href="upcoming.html" data-i18n="common.nav.upcoming">🔔 Upcoming Events</a>
-      <a class="nav-button" href="stundenplan.html" data-i18n="common.nav.currentSubject">🕒 Aktuelles Fach</a>
-      <a class="nav-button" href="notenrechner.html" data-i18n="common.nav.grades">📊 Notenrechner</a>
-      <button type="button" class="nav-button" data-auth-button>🔐 Anmelden</button>
-      <div class="language-dropdown" data-language>
-        <button type="button" class="language-button" data-language-toggle aria-haspopup="true" aria-expanded="false" data-i18n-attr="aria-label:common.nav.language">
-          <span class="language-button__icon" aria-hidden="true">🌐</span>
-          <span class="language-button__code">DE</span>
-          <svg class="language-button__caret" viewBox="0 0 12 12" focusable="false" aria-hidden="true">
-            <path d="M2.47 4.47a.75.75 0 0 1 1.06 0L6 6.94l2.47-2.47a.75.75 0 1 1 1.06 1.06L6.53 9.47a.75.75 0 0 1-1.06 0L2.47 5.53a.75.75 0 0 1 0-1.06z" />
-          </svg>
-        </button>
-        <ul class="language-menu" role="menu" data-language-menu data-i18n-attr="aria-label:common.language.menuLabel">
-          <li role="none">
-            <button type="button" class="language-option" data-lang="de" role="menuitem">
-              <span class="language-option__flag" aria-hidden="true">🇩🇪</span>
-              <span class="language-option__text">
-                <span class="language-option__code">DE</span>
-                <span aria-hidden="true">–</span>
-                <span class="language-option__name">Deutsch</span>
-              </span>
-            </button>
-          </li>
-          <li role="none">
-            <button type="button" class="language-option" data-lang="en" role="menuitem">
-              <span class="language-option__flag" aria-hidden="true">🇬🇧</span>
-              <span class="language-option__text">
-                <span class="language-option__code">EN</span>
-                <span aria-hidden="true">–</span>
-                <span class="language-option__name">English</span>
-              </span>
-            </button>
-          </li>
-          <li role="none">
-            <button type="button" class="language-option" data-lang="it" role="menuitem">
-              <span class="language-option__flag" aria-hidden="true">🇮🇹</span>
-              <span class="language-option__text">
-                <span class="language-option__code">IT</span>
-                <span aria-hidden="true">–</span>
-                <span class="language-option__name">Italiano</span>
-              </span>
-            </button>
-          </li>
-          <li role="none">
-            <button type="button" class="language-option" data-lang="fr" role="menuitem">
-              <span class="language-option__flag" aria-hidden="true">🇫🇷</span>
-              <span class="language-option__text">
-                <span class="language-option__code">FR</span>
-                <span aria-hidden="true">–</span>
-                <span class="language-option__name">Français</span>
-              </span>
-            </button>
-          </li>
-        </ul>
-      </div>
-    </div>
-  </nav>
-
-  <main class="calendar-page" id="main">
+<main class="calendar-page" id="main">
     <section class="calendar-intro">
       <div class="calendar-intro__heading">
         <div class="calendar-intro__title-row">
@@ -532,8 +466,9 @@
 
   <div id="calendar-toast-container" class="calendar-toast-container" aria-live="polite" aria-atomic="true"></div>
 
-  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js" defer></script>
-  <script src="../utils/js/i18n.js" defer></script>
+  <script type="module" src="../utils/js/header.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js" defer></script>
+<script src="../utils/js/i18n.js" defer></script>
   <script src="../utils/js/modal.js" defer></script>
   <script src="../utils/js/overlay.js" defer></script>
   <script src="../utils/js/toast.js" defer></script>

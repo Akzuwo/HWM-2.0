@@ -10,73 +10,7 @@
   <link rel="stylesheet" href="../utils/css/privacy.css" />
 </head>
 <body class="legal-page">
-  <nav class="simple-nav" data-nav data-i18n-attr="aria-label:common.nav.primary" aria-label="Navigation principale">
-    <a class="nav-title" href="index.html">
-      <img src="../media/logo.png" alt="" width="32" height="32" />
-      <span>Homework Manager</span>
-    </a>
-    <div class="nav-links">
-      <a class="nav-button" href="index.html">🏠 Accueil</a>
-      <a class="nav-button" href="kalender.html">📅 Calendrier</a>
-      <a class="nav-button" href="upcoming.html">🔔 Événements à venir</a>
-      <a class="nav-button" href="stundenplan.html">🕒 Matière actuelle</a>
-      <a class="nav-button" href="notenrechner.html">📊 Calculateur de notes</a>
-      <button type="button" class="nav-button" data-auth-button>🔐 Se connecter</button>
-      <div class="language-dropdown" data-language>
-        <button type="button" class="language-button" data-language-toggle aria-haspopup="true" aria-expanded="false" aria-label="Choisir la langue">
-          <span class="language-button__icon" aria-hidden="true">🌐</span>
-          <span class="language-button__code">FR</span>
-          <svg class="language-button__caret" viewBox="0 0 12 12" focusable="false" aria-hidden="true">
-            <path d="M2.47 4.47a.75.75 0 0 1 1.06 0L6 6.94l2.47-2.47a.75.75 0 1 1 1.06 1.06L6.53 9.47a.75.75 0 0 1-1.06 0L2.47 5.53a.75.75 0 0 1 0-1.06z" />
-          </svg>
-        </button>
-        <ul class="language-menu" role="menu" data-language-menu aria-label="Sélection de la langue">
-          <li role="none">
-            <button type="button" class="language-option" data-lang="de" role="menuitem">
-              <span class="language-option__flag" aria-hidden="true">🇩🇪</span>
-              <span class="language-option__text">
-                <span class="language-option__code">DE</span>
-                <span aria-hidden="true">–</span>
-                <span class="language-option__name">Deutsch</span>
-              </span>
-            </button>
-          </li>
-          <li role="none">
-            <button type="button" class="language-option" data-lang="en" role="menuitem">
-              <span class="language-option__flag" aria-hidden="true">🇬🇧</span>
-              <span class="language-option__text">
-                <span class="language-option__code">EN</span>
-                <span aria-hidden="true">–</span>
-                <span class="language-option__name">English</span>
-              </span>
-            </button>
-          </li>
-          <li role="none">
-            <button type="button" class="language-option" data-lang="it" role="menuitem">
-              <span class="language-option__flag" aria-hidden="true">🇮🇹</span>
-              <span class="language-option__text">
-                <span class="language-option__code">IT</span>
-                <span aria-hidden="true">–</span>
-                <span class="language-option__name">Italiano</span>
-              </span>
-            </button>
-          </li>
-          <li role="none">
-            <button type="button" class="language-option" data-lang="fr" role="menuitem">
-              <span class="language-option__flag" aria-hidden="true">🇫🇷</span>
-              <span class="language-option__text">
-                <span class="language-option__code">FR</span>
-                <span aria-hidden="true">–</span>
-                <span class="language-option__name">Français</span>
-              </span>
-            </button>
-          </li>
-        </ul>
-      </div>
-    </div>
-  </nav>
-
-  <main class="legal-main" id="main">
+<main class="legal-main" id="main">
     <header class="legal-header">
       <h1 class="legal-title">Politique de confidentialité</h1>
       <p class="legal-subtitle">Comment nous traitons les données personnelles dans Homework Manager.</p>
@@ -152,8 +86,8 @@
       </article>
     </section>
   </main>
-
-  <script src="../utils/js/i18n.js" defer></script>
+<script type="module" src="../utils/js/header.js"></script>
+<script src="../utils/js/i18n.js" defer></script>
   <script src="../utils/js/overlay.js" defer></script>
   <script src="../utils/js/toast.js" defer></script>
   <script src="../utils/js/footer.js" defer></script>
