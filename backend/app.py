@@ -796,8 +796,43 @@ def ensure_entries_table():
         conn.close()
 
 
+def ensure_email_verifications_table():
+    try:
+        conn = get_connection()
+    except Exception:
+        return
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS email_verifications (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                email VARCHAR(255) NOT NULL,
+                code VARCHAR(8) NOT NULL,
+                expires_at DATETIME NOT NULL,
+                failed_attempts INT NOT NULL DEFAULT 0,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE KEY uq_email_verifications_user (user_id),
+                INDEX idx_email_verifications_user (user_id),
+                INDEX idx_email_verifications_code (code),
+                CONSTRAINT fk_email_verifications_user FOREIGN KEY (user_id)
+                    REFERENCES users(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            """
+        )
+        conn.commit()
+    except mysql.connector.Error:
+        conn.rollback()
+        raise
+    finally:
+        cur.close()
+        conn.close()
+
+
 ensure_stundenplan_table()
 ensure_entries_table()
+ensure_email_verifications_table()
 
 # ---- Klassen- und Stundenplanhilfen ----
 
