@@ -68,6 +68,9 @@ LOG_MAX_LINE_LIMIT = max(int(os.getenv('HWM_LOG_MAX_LINES', 5000)), LOG_DEFAULT_
 LOG_FILE_HANDLER = None
 _LOG_HANDLER_LOGGERS = (app.logger, logging.getLogger())
 
+CLASS_ADMIN_ROLES = {'admin', 'class_admin'}
+ENTRY_MANAGER_ROLES = {'admin', 'teacher', 'class_admin'}
+
 
 def _remove_existing_log_handler() -> None:
     global LOG_FILE_HANDLER
@@ -370,7 +373,21 @@ def require_class_admin(fn):
     def wrapper(*args, **kwargs):
         if request.method == 'OPTIONS':
             return fn(*args, **kwargs)
-        if not (session.get('is_admin') or session.get('is_class_admin')):
+        role = session.get('role')
+        if role not in CLASS_ADMIN_ROLES:
+            return jsonify(status='error', message='Forbidden'), 403
+        return fn(*args, **kwargs)
+
+    return wrapper
+
+
+def require_entry_manager(fn):
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        if request.method == 'OPTIONS':
+            return fn(*args, **kwargs)
+        role = session.get('role')
+        if role not in ENTRY_MANAGER_ROLES:
             return jsonify(status='error', message='Forbidden'), 403
         return fn(*args, **kwargs)
 
@@ -651,6 +668,23 @@ def _load_user_by_email(conn, email: str) -> Optional[Dict[str, object]]:
             (email,),
         )
         return cursor.fetchone()
+    finally:
+        cursor.close()
+
+
+def _load_class_slug(conn, class_id: Optional[int]) -> Optional[str]:
+    if class_id is None:
+        return None
+
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT slug FROM classes WHERE id=%s", (class_id,))
+        row = cursor.fetchone()
+        if not row:
+            return None
+        if isinstance(row, dict):
+            return (row.get('slug') or '').strip() or None
+        return (row[0] or '').strip() if row[0] else None
     finally:
         cursor.close()
 
@@ -1168,16 +1202,32 @@ def auth_login():
         role = (user.get('role') or 'student').strip() or 'student'
         session['role'] = role
         class_id_value = user.get('class_id')
+        class_slug = None
         if class_id_value is None:
             session.pop('class_id', None)
         else:
             try:
-                session['class_id'] = int(class_id_value)
+                class_id_int = int(class_id_value)
             except (TypeError, ValueError):
                 session.pop('class_id', None)
+            else:
+                session['class_id'] = class_id_int
+                try:
+                    class_slug = _load_class_slug(conn, class_id_int)
+                except mysql.connector.Error:
+                    class_slug = None
+        if class_slug:
+            session['class_slug'] = class_slug
+            try:
+                session['entry_class_id'] = _normalize_entry_class_id(class_slug)
+            except ValueError:
+                session.pop('entry_class_id', None)
+        else:
+            session.pop('class_slug', None)
+            session.pop('entry_class_id', None)
         is_admin = role == 'admin'
         session['is_admin'] = is_admin
-        session['is_class_admin'] = bool(is_admin or role == 'teacher')
+        session['is_class_admin'] = role in CLASS_ADMIN_ROLES
 
         try:
             _mark_user_login(conn, int(user['id']))
@@ -1398,7 +1448,7 @@ def admin_users_collection():
 
         if not email or '@' not in email:
             return jsonify(status='error', message='invalid_email'), 400
-        if role not in {'student', 'teacher', 'admin'}:
+        if role not in {'student', 'teacher', 'class_admin', 'admin'}:
             return jsonify(status='error', message='invalid_role'), 400
         if not password:
             return jsonify(status='error', message='password_required'), 400
@@ -1497,7 +1547,7 @@ def admin_users_resource(user_id: int):
             role_value = None
             if 'role' in data:
                 role_value = (data.get('role') or '').strip().lower()
-                if role_value not in {'student', 'teacher', 'admin'}:
+                if role_value not in {'student', 'teacher', 'class_admin', 'admin'}:
                     return jsonify(status='error', message='invalid_role'), 400
                 updates.append('role=%s')
                 values.append(role_value)
@@ -1963,11 +2013,12 @@ def admin_schedules_resource(schedule_id: int):
             cursor.close()
 
 @app.route('/api/classes', methods=['GET'])
-@require_class_admin
+@require_role('admin', 'class_admin', 'teacher')
 def list_classes():
-    is_admin = bool(session.get('is_admin'))
+    role = session.get('role')
+    is_admin = role == 'admin'
     class_id = _get_session_class_id()
-    if not is_admin and class_id is None:
+    if role == 'class_admin' and class_id is None:
         return jsonify({'status': 'error', 'message': 'class_required'}), 403
 
     try:
@@ -1979,6 +2030,10 @@ def list_classes():
         cursor = conn.cursor(dictionary=True)
         try:
             if is_admin:
+                cursor.execute(
+                    "SELECT id, slug, title, description, is_active FROM classes ORDER BY title ASC"
+                )
+            elif role == 'teacher':
                 cursor.execute(
                     "SELECT id, slug, title, description, is_active FROM classes ORDER BY title ASC"
                 )
@@ -1997,7 +2052,7 @@ def list_classes():
 
 
 @app.route('/api/users/<int:user_id>/class', methods=['PUT', 'OPTIONS'])
-@require_class_admin
+@require_role('admin')
 def assign_user_to_class(user_id: int):
     if request.method == 'OPTIONS':
         return _cors_preflight()
@@ -2011,11 +2066,6 @@ def assign_user_to_class(user_id: int):
 
     if target_class_id <= 0:
         return jsonify({'status': 'error', 'message': 'invalid_class_id'}), 400
-
-    is_admin = bool(session.get('is_admin'))
-    acting_class_id = _get_session_class_id()
-    if not is_admin and acting_class_id != target_class_id:
-        return jsonify({'status': 'error', 'message': 'forbidden'}), 403
 
     try:
         conn = get_connection()
@@ -2049,8 +2099,7 @@ def assign_user_to_class(user_id: int):
 
 # --- UPDATE ENTRY ---
 @app.route('/update_entry', methods=['OPTIONS', 'PUT'])
-@require_class_admin
-@require_class_context
+@require_entry_manager
 def update_entry():
     if request.method == 'OPTIONS':
         return _cors_preflight()
@@ -2079,6 +2128,14 @@ def update_entry():
         if len(end) == 5:
             end = f"{end}:00"
         end = end[:8]
+
+    role = session.get('role')
+    if role == 'class_admin':
+        allowed_class = (session.get('entry_class_id') or '').strip()
+        if not allowed_class:
+            return jsonify(status='error', message='class_required'), 403
+        if class_id != allowed_class:
+            return jsonify(status='error', message='forbidden'), 403
 
     conn = get_connection()
     cur = conn.cursor()
@@ -2117,8 +2174,7 @@ def update_entry():
 
 # --- DELETE ENTRY ---
 @app.route('/delete_entry/<int:id>', methods=['DELETE', 'OPTIONS'])
-@require_class_admin
-@require_class_context
+@require_entry_manager
 def delete_entry(id):
     # Auth via Session-Cookie (handled by decorator)
     if request.method == 'OPTIONS':
@@ -2126,11 +2182,19 @@ def delete_entry(id):
 
     raw_class_id = request.args.get('class_id')
     if raw_class_id is None:
-        raw_class_id = g.get('active_class_id') or _get_session_class_id()
+        raw_class_id = session.get('entry_class_id') or g.get('active_class_id') or _get_session_class_id()
     try:
         class_id = _normalize_entry_class_id(raw_class_id)
     except ValueError:
         return jsonify(status='error', message='invalid_class_id'), 400
+
+    role = session.get('role')
+    if role == 'class_admin':
+        allowed_class = (session.get('entry_class_id') or '').strip()
+        if not allowed_class:
+            return jsonify(status='error', message='class_required'), 403
+        if class_id != allowed_class:
+            return jsonify(status='error', message='forbidden'), 403
     conn = get_connection()
     cur = conn.cursor()
     try:
@@ -2270,8 +2334,7 @@ def tagesuebersicht():
 
 # --- EINTRAG HINZUFÜGEN ---
 @app.route('/add_entry', methods=['POST', 'OPTIONS'])
-@require_class_admin
-@require_class_context
+@require_entry_manager
 def add_entry():
     if request.method == 'OPTIONS':
         return _cors_preflight()
@@ -2316,6 +2379,14 @@ def add_entry():
         return jsonify(status="error", message="fach ist für diesen Typ erforderlich"), 400
     if typ == 'event' and not fach:
         fach = ''
+
+    role = session.get('role')
+    if role == 'class_admin':
+        allowed_class = (session.get('entry_class_id') or '').strip()
+        if not allowed_class:
+            return jsonify(status='error', message='class_required'), 403
+        if class_id != allowed_class:
+            return jsonify(status='error', message='forbidden'), 403
 
     conn = get_connection(); cur = conn.cursor()
     try:

@@ -275,6 +275,17 @@ class FakeCursor:
             ], ['id', 'slug', 'title', 'description', 'is_active', 'created_at', 'updated_at'])
             return
 
+        if normalized.startswith("select slug from classes where id=%s"):
+            class_id = params[0]
+            cls = classes.get(class_id)
+            if not cls:
+                self._rows = []
+                return
+            self._prepare_rows([
+                {'slug': cls['slug']}
+            ], ['slug'])
+            return
+
         if normalized.startswith("select id from classes where id=%s"):
             class_id = params[0]
             if class_id in classes:

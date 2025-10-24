@@ -70,6 +70,7 @@ const TRANSLATIONS = {
     roles: {
       admin: 'Administrator',
       teacher: 'Lehrkraft',
+      class_admin: 'Klassen-Admin',
       student: 'Schüler',
     },
     messages: {
@@ -145,6 +146,7 @@ const TRANSLATIONS = {
     roles: {
       admin: 'Administrator',
       teacher: 'Teacher',
+      class_admin: 'Class admin',
       student: 'Student',
     },
     messages: {
@@ -220,6 +222,7 @@ const TRANSLATIONS = {
     roles: {
       admin: 'Administrateur',
       teacher: 'Enseignant',
+      class_admin: 'Admin de classe',
       student: 'Élève',
     },
     messages: {
@@ -295,6 +298,7 @@ const TRANSLATIONS = {
     roles: {
       admin: 'Amministratore',
       teacher: 'Docente',
+      class_admin: 'Admin di classe',
       student: 'Studente',
     },
     messages: {
@@ -560,6 +564,7 @@ function buildDashboard(root) {
             options: [
               { value: 'student', label: t.roles.student },
               { value: 'teacher', label: t.roles.teacher },
+              { value: 'class_admin', label: t.roles.class_admin },
               { value: 'admin', label: t.roles.admin },
             ],
             defaultValue: 'student',
@@ -578,6 +583,7 @@ function buildDashboard(root) {
             options: [
               { value: 'student', label: t.roles.student },
               { value: 'teacher', label: t.roles.teacher },
+              { value: 'class_admin', label: t.roles.class_admin },
               { value: 'admin', label: t.roles.admin },
             ],
           },

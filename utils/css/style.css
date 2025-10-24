@@ -110,6 +110,10 @@ button {
     color: #c084fc;
 }
 
+.auth-role-hint[data-role="class_admin"] {
+    color: #60a5fa;
+}
+
 .auth-role-hint[data-role="student"] {
     color: #a7f3d0;
 }
