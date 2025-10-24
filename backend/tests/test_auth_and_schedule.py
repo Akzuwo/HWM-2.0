@@ -81,6 +81,21 @@ def test_student_role_cannot_access_admin(app_client):
     assert resp.status_code == 403
 
 
+def test_non_admin_cannot_assign_user_to_class(app_client):
+    client, _, _ = app_client
+    with client.session_transaction() as sess:
+        sess['role'] = 'teacher'
+
+    resp = client.put('/api/users/1/class', json={'class_id': 1})
+    assert resp.status_code == 403
+
+    with client.session_transaction() as sess:
+        sess['role'] = 'class_admin'
+
+    resp = client.put('/api/users/1/class', json={'class_id': 1})
+    assert resp.status_code == 403
+
+
 def test_schedule_endpoint_filters_by_class(app_client):
     client, storage, _ = app_client
     storage['stundenplan_entries'].extend(

@@ -44,7 +44,8 @@ const LOGIN_TEXT = {
     authStatusSignedIn: (roleLabel) => `Signed in as ${roleLabel}`,
     roleLabels: {
         admin: 'Administrator',
-        teacher: 'Class admin',
+        teacher: 'Teacher',
+        class_admin: 'Class admin',
         student: 'Student',
         guest: 'Guest'
     },
@@ -146,7 +147,7 @@ function normalizeRole(value) {
         return 'guest';
     }
     const normalized = String(value).trim().toLowerCase();
-    if (normalized === 'admin' || normalized === 'teacher' || normalized === 'student') {
+    if (normalized === 'admin' || normalized === 'teacher' || normalized === 'class_admin' || normalized === 'student') {
         return normalized;
     }
     if (normalized === 'guest') {
@@ -162,7 +163,7 @@ function normalizeSession(data = {}) {
         email: data.email || '',
         emailVerified: Boolean(data.emailVerified),
         isAdmin: role === 'admin',
-        isClassAdmin: role === 'admin' || role === 'teacher'
+        isClassAdmin: role === 'admin' || role === 'class_admin'
     };
 }
 
