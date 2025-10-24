@@ -309,11 +309,18 @@ function updateRoleHint() {
     if (!hint) {
         return;
     }
+    if (!isAuthenticated()) {
+        hint.textContent = '';
+        hint.classList.add('is-hidden');
+        hint.classList.remove('is-authenticated');
+        hint.removeAttribute('data-role');
+        return;
+    }
     const text = getAuthStatusText();
     hint.textContent = text;
     hint.dataset.role = sessionState.role;
     hint.classList.toggle('is-hidden', !text);
-    hint.classList.toggle('is-authenticated', isAuthenticated());
+    hint.classList.add('is-authenticated');
 }
 
 function updateAuthButton() {
