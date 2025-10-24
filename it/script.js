@@ -268,7 +268,7 @@ function getAdminNavButton() {
     let button = links.querySelector('[data-admin-link]');
     if (!button) {
         button = document.createElement('a');
-        button.className = 'nav-button';
+        button.className = 'nav-link nav-link--admin';
         button.href = AUTH_PATHS.admin;
         button.setAttribute('data-admin-link', 'true');
         button.textContent = LOGIN_TEXT.adminNavButton || '🛠️ Admin';
@@ -1349,7 +1349,7 @@ function initLanguageSelector() {
 
     const updateButtonLabel = (button, langCode) => {
         const data = langMap[langCode] || langMap.en;
-        const code = button.querySelector('.language-button__code');
+        const code = button.querySelector('.lang-switch__code');
         if (code) {
             code.textContent = data.short;
         }
@@ -1558,58 +1558,6 @@ function initLanguageSelector() {
             }
         }
     });
-}
-
-
-function initSimpleNav() {
-    const nav = document.querySelector('.simple-nav');
-    if (!nav || nav.dataset.enhanced === 'true') {
-        return;
-    }
-
-    const toggle = nav.querySelector('.nav-toggle');
-    const links = nav.querySelector('.nav-links');
-
-    if (links && !links.id) {
-        links.id = `nav-links-${Math.random().toString(36).slice(2, 9)}`;
-    }
-
-    if (toggle && links) {
-        toggle.setAttribute('aria-controls', links.id);
-        toggle.addEventListener('click', () => {
-            const open = nav.classList.toggle('simple-nav--open');
-            toggle.setAttribute('aria-expanded', String(open));
-        });
-    }
-
-    const closeMenu = () => {
-        if (toggle) {
-            toggle.setAttribute('aria-expanded', 'false');
-        }
-        nav.classList.remove('simple-nav--open');
-    };
-
-    if (links) {
-        links.addEventListener('click', (event) => {
-            if (event.target.closest('a')) {
-                closeMenu();
-            }
-        });
-    }
-
-    document.addEventListener('click', (event) => {
-        if (!nav.contains(event.target)) {
-            closeMenu();
-        }
-    });
-
-    document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape') {
-            closeMenu();
-        }
-    });
-
-    nav.dataset.enhanced = 'true';
 }
 
 function checkLogin() {
@@ -2143,9 +2091,13 @@ async function saveEntry(event) {
 
 // Initialcheck beim Laden der Seite
 window.addEventListener('DOMContentLoaded', checkLogin);
-window.addEventListener('DOMContentLoaded', initLanguageSelector);
 window.addEventListener('DOMContentLoaded', () => {
     setupModalFormInteractions(document.getElementById('entry-form'));
     setupModalFormInteractions(document.getElementById('fc-edit-form'));
 });
-window.addEventListener('DOMContentLoaded', initSimpleNav);
+
+window.addEventListener('hm:header-ready', () => {
+    initLanguageSelector();
+    setupAuthButton();
+    updateAuthUI();
+});
