@@ -35,6 +35,11 @@
           body:
             'Statt verstreuter Chats und vergessener Notizen bündelt die Plattform Termine, Erinnerungen und praktische Werkzeuge in einer klaren Oberfläche – jederzeit verfügbar und gemeinsam nutzbar.',
         },
+        status: {
+          title: 'Hinweis: Work in Progress',
+          body:
+            'Homework Manager 2.0 wird noch aktiv entwickelt. Manche Bereiche funktionieren daher noch nicht immer wie erwartet.',
+        },
         release: {
           title: 'Release 2.0',
           date: 'Oktober 2025',
@@ -255,6 +260,11 @@
           body:
             'Instead of scattered chats and forgotten notes, the platform unifies schedules, reminders and handy utilities in one clear interface – available at any time and designed for teamwork.',
         },
+        status: {
+          title: 'Heads-up: Work in Progress',
+          body:
+            'Homework Manager 2.0 is still under active development, so a few areas may not work perfectly just yet.',
+        },
         release: {
           title: 'Release 2.0',
           date: 'October 2025',
@@ -473,6 +483,11 @@
             'Homework Manager è nato per condividere compiti, verifiche e progetti in modo trasparente con tutta la classe.',
           body:
             'Al posto di chat disperse e appunti dimenticati, la piattaforma riunisce scadenze, promemoria e strumenti utili in un\'unica interfaccia chiara – sempre disponibile e pensata per il lavoro di squadra.',
+        },
+        status: {
+          title: 'Avviso: Work in Progress',
+          body:
+            'Homework Manager 2.0 è ancora in fase di sviluppo attivo, quindi alcune sezioni potrebbero non funzionare sempre perfettamente.',
         },
         release: {
           title: 'Release 2.0',
@@ -695,6 +710,11 @@
             'Homework Manager a été créé pour partager les devoirs, évaluations et projets en toute transparence avec toute la classe.',
           body:
             'Plutôt que des discussions dispersées et des notes oubliées, la plateforme rassemble horaires, rappels et outils pratiques dans une interface claire – disponible à tout moment et pensée pour le travail en équipe.',
+        },
+        status: {
+          title: 'Info : Work in Progress',
+          body:
+            'Homework Manager 2.0 est toujours en cours de développement, il se peut donc que certaines sections ne fonctionnent pas encore parfaitement.',
         },
         release: {
           title: 'Version 2.0',
