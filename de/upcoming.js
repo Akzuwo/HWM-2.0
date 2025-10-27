@@ -3,6 +3,18 @@ const API_BASE_URL =
     ? window.hmResolveApiBase()
     : 'https://homework-manager-2-5-backend.onrender.com';
 
+function fetchWithSession(url, options = {}) {
+  const { headers, ...rest } = options || {};
+  const init = {
+    ...rest,
+    credentials: 'include'
+  };
+  if (headers) {
+    init.headers = headers;
+  }
+  return fetch(url, init);
+}
+
 const unauthorizedMessage =
   'Bitte melde dich an und stelle sicher, dass du einer Klasse zugeordnet bist, um die anstehenden Events zu sehen.';
 
@@ -75,7 +87,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   };
 
   try {
-    const res = await fetch(`${API_BASE_URL}/entries`);
+    const res = await fetchWithSession(`${API_BASE_URL}/entries`);
     if (await responseRequiresClassContext(res)) {
       setStatus(unauthorizedMessage);
       listEl.setAttribute('aria-busy', 'false');

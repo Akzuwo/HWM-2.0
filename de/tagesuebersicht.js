@@ -3,6 +3,18 @@ const API_BASE_URL =
     ? window.hmResolveApiBase()
     : 'https://homework-manager-2-5-backend.onrender.com';
 
+function fetchWithSession(url, options = {}) {
+  const { headers, ...rest } = options || {};
+  const init = {
+    ...rest,
+    credentials: 'include'
+  };
+  if (headers) {
+    init.headers = headers;
+  }
+  return fetch(url, init);
+}
+
 const unauthorizedMessage =
   'Bitte melde dich an und stelle sicher, dass du einer Klasse zugeordnet bist, um die Tagesübersicht zu sehen.';
 
@@ -47,7 +59,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setPageDate();
 
   try {
-    const res = await fetch(`${API_BASE_URL}/tagesuebersicht`);
+    const res = await fetchWithSession(`${API_BASE_URL}/tagesuebersicht`);
     if (await responseRequiresClassContext(res)) {
       container.textContent = unauthorizedMessage;
       return;
