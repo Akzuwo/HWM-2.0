@@ -25,6 +25,13 @@ from mysql.connector import pooling
 from auth.utils import calculate_token_expiry, generate_numeric_code, verify_password, hash_password
 from class_ids import DEFAULT_ENTRY_CLASS_ID, ENTRY_CLASS_ID_SET
 from config import get_contact_smtp_settings, get_db_config
+from schedule_importer import (
+    ScheduleImportError,
+    import_schedule as perform_schedule_import,
+    load_schedule_from_json_bytes,
+    load_schedule_from_json_text,
+    load_schedule_from_payload,
+)
 
 # ---------- APP INITIALISIEREN ----------
 app = Flask(__name__, static_url_path="/")
@@ -679,6 +686,84 @@ def admin_logs() -> Response:
         truncated=truncated,
         lines=lines_requested,
     )
+
+
+@app.route('/api/admin/schedule-import', methods=['POST', 'OPTIONS'])
+@require_role('admin')
+def admin_schedule_import():
+    if request.method == 'OPTIONS':
+        return _cors_preflight()
+
+    json_payload = request.get_json(silent=True)
+    class_identifier = (
+        request.args.get('class')
+        or request.args.get('class_identifier')
+        or request.form.get('class')
+        or request.form.get('class_identifier')
+    )
+    source = (
+        request.args.get('source')
+        or request.form.get('source')
+        or 'admin_api'
+    )
+
+    schedule = None
+    try:
+        if 'file' in request.files and request.files['file'] and request.files['file'].filename:
+            file_storage = request.files['file']
+            schedule = load_schedule_from_json_bytes(file_storage.read())
+        else:
+            schedule_payload = None
+            if json_payload is not None:
+                if isinstance(json_payload, dict):
+                    schedule_payload = json_payload.get('schedule', json_payload)
+                    class_identifier = (
+                        class_identifier
+                        or json_payload.get('class_identifier')
+                        or json_payload.get('class')
+                    )
+                    payload_source = json_payload.get('source')
+                    if payload_source:
+                        source = payload_source
+                else:
+                    schedule_payload = json_payload
+            else:
+                schedule_text = request.form.get('schedule')
+                if schedule_text:
+                    schedule = load_schedule_from_json_text(schedule_text)
+
+            if schedule is None and schedule_payload is not None:
+                schedule = load_schedule_from_payload(schedule_payload)
+
+        if schedule is None:
+            raise ScheduleImportError('No schedule payload provided')
+
+        if not class_identifier:
+            raise ScheduleImportError('Class identifier is required')
+
+        source = source or 'admin_api'
+
+        conn = get_connection()
+        try:
+            inserted, import_hash, _ = perform_schedule_import(
+                conn,
+                class_identifier,
+                schedule,
+                source,
+            )
+            conn.commit()
+        except ScheduleImportError as exc:
+            conn.rollback()
+            return jsonify(status='error', message=str(exc)), 400
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+    except ScheduleImportError as exc:
+        return jsonify(status='error', message=str(exc)), 400
+
+    return jsonify(status='ok', inserted=inserted, import_hash=import_hash)
 
 
 def _load_admin_user(conn) -> Optional[Dict[str, object]]:
