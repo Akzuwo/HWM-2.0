@@ -531,6 +531,51 @@ class FakeCursor:
             self._rows = []
             return
 
+        if normalized.startswith("select id, class_id, tag, start, `end`, fach, raum from stundenplan_entries where class_id=%s"):
+            class_id = params[0]
+            rows = [
+                {
+                    'id': entry['id'],
+                    'class_id': entry['class_id'],
+                    'tag': entry['tag'],
+                    'start': entry['start'],
+                    '`end`': entry['end'],
+                    'end': entry['end'],
+                    'fach': entry['fach'],
+                    'raum': entry.get('raum'),
+                }
+                for entry in schedule_entries
+                if entry.get('class_id') == class_id
+            ]
+            rows.sort(key=lambda row: (row.get('tag') or '', row.get('start') or ''))
+            self._prepare_rows(
+                rows,
+                ['id', 'class_id', 'tag', 'start', '`end`', 'fach', 'raum'],
+            )
+            return
+
+        if normalized.startswith("select id, class_id, tag, start, `end`, fach, raum from stundenplan_entries where id=%s"):
+            entry_id = params[0]
+            for entry in schedule_entries:
+                if entry.get('id') == entry_id:
+                    result = {
+                        'id': entry['id'],
+                        'class_id': entry['class_id'],
+                        'tag': entry['tag'],
+                        'start': entry['start'],
+                        '`end`': entry['end'],
+                        'end': entry['end'],
+                        'fach': entry['fach'],
+                        'raum': entry.get('raum'),
+                    }
+                    self._prepare_rows(
+                        [result],
+                        ['id', 'class_id', 'tag', 'start', '`end`', 'fach', 'raum'],
+                    )
+                    return
+            self._rows = []
+            return
+
         if normalized.startswith("select tag, start, `end`, fach, raum from stundenplan_entries"):
             class_id = params[0]
             rows = [
@@ -572,6 +617,15 @@ class FakeCursor:
             self.rowcount = before - len(remaining)
             return
 
+        if normalized.startswith("delete from stundenplan_entries where id=%s"):
+            entry_id = params[0]
+            before = len(schedule_entries)
+            self.storage['stundenplan_entries'] = [
+                entry for entry in schedule_entries if entry.get('id') != entry_id
+            ]
+            self.rowcount = before - len(self.storage['stundenplan_entries'])
+            return
+
         if normalized.startswith("insert into stundenplan_entries"):
             class_id, tag, start, end, fach, raum = params
             new_id = self.storage.setdefault('next_ids', {}).setdefault('stundenplan_entries', 1)
@@ -589,6 +643,43 @@ class FakeCursor:
             )
             self.lastrowid = new_id
             self.rowcount = 1
+            return
+
+        if normalized.startswith("update stundenplan_entries set"):
+            set_part = query.split('SET', 1)[1].rsplit('WHERE', 1)[0]
+            assignments = [segment.strip() for segment in set_part.split(',')]
+            entry_id = params[-1]
+            entry = next((item for item in schedule_entries if item.get('id') == entry_id), None)
+            if not entry:
+                self.rowcount = 0
+                return
+            for assignment, value in zip(assignments, params[:-1]):
+                column = assignment.split('=')[0].strip().strip('`')
+                if column == 'class_id':
+                    entry['class_id'] = value
+                elif column == 'tag':
+                    entry['tag'] = value
+                elif column == 'start':
+                    entry['start'] = value
+                elif column == 'end':
+                    entry['end'] = value
+                elif column == '`end`':
+                    entry['end'] = value
+                elif column == 'fach':
+                    entry['fach'] = value
+                elif column == 'raum':
+                    entry['raum'] = value
+            self.rowcount = 1
+            return
+
+        if normalized.startswith("update class_schedules set updated_at=%s where class_id=%s"):
+            updated_at, class_id = params
+            updated = 0
+            for schedule in schedules.values():
+                if schedule.get('class_id') == class_id:
+                    schedule['updated_at'] = updated_at
+                    updated += 1
+            self.rowcount = updated
             return
 
         if (

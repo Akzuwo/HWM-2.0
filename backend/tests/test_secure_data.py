@@ -2,6 +2,7 @@ import smtplib
 import time
 from typing import Dict
 
+import datetime
 import pytest
 
 
@@ -149,6 +150,134 @@ def test_admin_classes_and_schedules_crud(app_client):
     admin_id = storage['users_by_email']['admin@example.com']
     admin = storage['users'][admin_id]
     assert admin['last_login_updates'], 'last_login should be updated'
+
+
+def test_admin_schedule_entries_crud_flow(app_client):
+    client, storage, _ = app_client
+    _login_admin(client)
+
+    baseline = datetime.datetime(2020, 1, 1, 8, 0, 0)
+    storage['class_schedules'][1] = {
+        'id': 1,
+        'class_id': 1,
+        'source': 'manual',
+        'import_hash': None,
+        'imported_at': None,
+        'created_at': baseline,
+        'updated_at': baseline,
+    }
+
+    resp = client.post(
+        '/api/admin/schedule-entries',
+        json={
+            'class_id': 1,
+            'tag': 'tuesday',
+            'start': '09:00',
+            'end': '09:45',
+            'fach': 'Mathe',
+            'raum': '201',
+        },
+    )
+    assert resp.status_code == 200
+    entry_id = resp.get_json()['id']
+    schedule_entry = next((item for item in storage['stundenplan_entries'] if item['id'] == entry_id), None)
+    assert schedule_entry is not None
+    assert schedule_entry['tag'] == 'Tuesday'
+    assert storage['class_schedules'][1]['updated_at'] != baseline
+
+    resp = client.get(f'/api/admin/schedule-entries/{entry_id}')
+    assert resp.status_code == 200
+    assert resp.get_json()['data']['tag'] == 'Tuesday'
+
+    storage['class_schedules'][1]['updated_at'] = baseline
+
+    resp = client.post(
+        '/api/admin/schedule-entries',
+        json={
+            'class_id': 1,
+            'tag': 'Monday',
+            'start': '08:00',
+            'end': '08:45',
+            'fach': 'Deutsch',
+        },
+    )
+    assert resp.status_code == 200
+    second_id = resp.get_json()['id']
+
+    resp = client.get('/api/admin/schedule-entries?class_id=1')
+    assert resp.status_code == 200
+    ordered = resp.get_json()['data']
+    assert [entry['tag'] for entry in ordered] == ['Monday', 'Tuesday']
+
+    storage['class_schedules'][1]['updated_at'] = baseline
+
+    resp = client.put(
+        f'/api/admin/schedule-entries/{entry_id}',
+        json={
+            'class_id': 1,
+            'tag': 'Monday',
+            'start': '10:00',
+            'end': '10:45',
+            'fach': 'Physik',
+            'raum': '',
+        },
+    )
+    assert resp.status_code == 200
+    updated_entry = next(item for item in storage['stundenplan_entries'] if item['id'] == entry_id)
+    assert updated_entry['tag'] == 'Monday'
+    assert updated_entry['start'] == '10:00'
+    assert updated_entry['end'] == '10:45'
+    assert updated_entry['fach'] == 'Physik'
+    assert updated_entry['raum'] is None
+    assert storage['class_schedules'][1]['updated_at'] != baseline
+
+    storage['class_schedules'][1]['updated_at'] = baseline
+
+    resp = client.delete(f'/api/admin/schedule-entries/{second_id}?class_id=1')
+    assert resp.status_code == 200
+    assert all(item['id'] != second_id for item in storage['stundenplan_entries'])
+    assert storage['class_schedules'][1]['updated_at'] != baseline
+
+
+def test_admin_schedule_entries_validation_and_class_guard(app_client):
+    client, storage, _ = app_client
+    _login_admin(client)
+
+    resp = client.post(
+        '/api/admin/schedule-entries',
+        json={
+            'class_id': 1,
+            'tag': 'Monday',
+            'start': '08:00',
+            'end': '08:45',
+        },
+    )
+    assert resp.status_code == 400
+
+    resp = client.post(
+        '/api/admin/schedule-entries',
+        json={
+            'class_id': 1,
+            'tag': 'Monday',
+            'start': '08:00',
+            'end': '08:45',
+            'fach': 'Sport',
+        },
+    )
+    assert resp.status_code == 200
+    entry_id = resp.get_json()['id']
+
+    resp = client.put(
+        f'/api/admin/schedule-entries/{entry_id}',
+        json={
+            'class_id': 2,
+            'fach': 'Biologie',
+        },
+    )
+    assert resp.status_code == 403
+
+    resp = client.delete(f'/api/admin/schedule-entries/{entry_id}?class_id=2')
+    assert resp.status_code == 403
 
 
 def test_contact_requires_valid_data(app_client):

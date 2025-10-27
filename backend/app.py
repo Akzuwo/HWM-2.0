@@ -238,6 +238,22 @@ def _log_admin_action(conn, action: str, entity_type: str, entity_id: Optional[i
         cursor.close()
 
 
+def _touch_class_schedule(conn, class_id: Optional[int]) -> None:
+    if not class_id:
+        return
+    cursor = conn.cursor()
+    try:
+        timestamp = datetime.datetime.utcnow()
+        cursor.execute(
+            "UPDATE class_schedules SET updated_at=%s WHERE class_id=%s",
+            (timestamp, class_id),
+        )
+    except mysql.connector.Error:
+        app.logger.exception('Failed to update class_schedules timestamp for class %s', class_id)
+    finally:
+        cursor.close()
+
+
 def _pagination_response(data: Iterable[Dict[str, Any]], total: int, page: int, page_size: int):
     return jsonify(
         {
@@ -286,6 +302,30 @@ WEEKDAY_ORDER = [
     "Saturday",
     "Sunday",
 ]
+_WEEKDAY_CANONICAL_MAP = {day.lower(): day for day in WEEKDAY_ORDER}
+_WEEKDAY_INDEX_MAP = {day: index for index, day in enumerate(WEEKDAY_ORDER)}
+
+
+def _canonicalize_weekday(value: Any) -> str:
+    if value is None:
+        raise ValueError('invalid_tag')
+    text = str(value).strip()
+    if not text:
+        raise ValueError('invalid_tag')
+    canonical = _WEEKDAY_CANONICAL_MAP.get(text.lower())
+    return canonical or text
+
+
+def _schedule_entry_sort_key(entry: Dict[str, Any]) -> Tuple[int, str, str]:
+    tag_value = entry.get('tag')
+    start_value = entry.get('start') or ''
+    if tag_value:
+        text = str(tag_value).strip()
+        canonical = _WEEKDAY_CANONICAL_MAP.get(text.lower())
+        if canonical:
+            return _WEEKDAY_INDEX_MAP[canonical], canonical, start_value
+        return len(WEEKDAY_ORDER), text, start_value
+    return len(WEEKDAY_ORDER), '', start_value
 
 CONTACT_MAX_FILE_SIZE = int(os.getenv('CONTACT_MAX_FILE_SIZE', 2 * 1024 * 1024))
 CONTACT_RATE_LIMIT = {}
@@ -2107,6 +2147,251 @@ def admin_schedules_resource(schedule_id: int):
             return jsonify(status='error', message='database_unavailable'), 503
         finally:
             cursor.close()
+
+    return jsonify(status='ok', id=schedule_id)
+
+
+@app.route('/api/admin/schedule-entries', methods=['GET', 'POST', 'OPTIONS'])
+@require_role('admin')
+def admin_schedule_entries_collection():
+    if request.method == 'OPTIONS':
+        return _cors_preflight()
+
+    try:
+        conn = get_connection()
+    except Exception:
+        return jsonify(status='error', message='database_unavailable'), 503
+
+    class_id_value = request.args.get('class_id') if request.method == 'GET' else None
+
+    with closing(conn):
+        if request.method == 'GET':
+            class_id = _ensure_int(class_id_value, allow_none=False)
+            if not class_id or class_id <= 0:
+                return jsonify(status='error', message='invalid_class_id'), 400
+
+            cursor = conn.cursor(dictionary=True)
+            try:
+                cursor.execute("SELECT id FROM classes WHERE id=%s", (class_id,))
+                if cursor.fetchone() is None:
+                    return jsonify(status='error', message='class_not_found'), 404
+                cursor.execute(
+                    "SELECT id, class_id, tag, start, `end`, fach, raum FROM stundenplan_entries WHERE class_id=%s",
+                    (class_id,),
+                )
+                rows = cursor.fetchall() or []
+            except mysql.connector.Error:
+                return jsonify(status='error', message='database_unavailable'), 503
+            finally:
+                cursor.close()
+
+            for row in rows:
+                try:
+                    row['tag'] = _canonicalize_weekday(row.get('tag'))
+                except ValueError:
+                    row['tag'] = (row.get('tag') or '').strip()
+
+            rows.sort(key=_schedule_entry_sort_key)
+            return jsonify(status='ok', data=list(_serialize_rows(rows)))
+
+        data = request.json or {}
+        class_id = _ensure_int(data.get('class_id'), allow_none=False)
+        if not class_id or class_id <= 0:
+            return jsonify(status='error', message='invalid_class_id'), 400
+
+        try:
+            tag_value = _canonicalize_weekday(data.get('tag'))
+        except ValueError:
+            return jsonify(status='error', message='invalid_tag'), 400
+
+        start_raw = data.get('start')
+        start_value = str(start_raw).strip() if start_raw is not None else ''
+        if not start_value:
+            return jsonify(status='error', message='invalid_start'), 400
+
+        end_raw = data.get('end')
+        end_value = str(end_raw).strip() if end_raw is not None else ''
+        if not end_value:
+            return jsonify(status='error', message='invalid_end'), 400
+
+        fach_raw = data.get('fach')
+        fach_value = str(fach_raw).strip() if fach_raw is not None else ''
+        if not fach_value:
+            return jsonify(status='error', message='invalid_subject'), 400
+
+        raum_raw = data.get('raum')
+        raum_value = None
+        if raum_raw is not None:
+            raum_value = str(raum_raw).strip() or None
+
+        cursor = conn.cursor()
+        try:
+            cursor.execute("SELECT id FROM classes WHERE id=%s", (class_id,))
+            if cursor.fetchone() is None:
+                return jsonify(status='error', message='class_not_found'), 404
+
+            cursor.execute(
+                """
+                INSERT INTO stundenplan_entries (class_id, tag, start, `end`, fach, raum)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                """,
+                (class_id, tag_value, start_value, end_value, fach_value, raum_value),
+            )
+            entry_id = cursor.lastrowid
+            _log_admin_action(
+                conn,
+                'create',
+                'schedule_entry',
+                entry_id,
+                {
+                    'class_id': class_id,
+                    'tag': tag_value,
+                    'start': start_value,
+                    'end': end_value,
+                    'fach': fach_value,
+                    'raum': raum_value,
+                },
+            )
+            _touch_class_schedule(conn, class_id)
+            conn.commit()
+        except mysql.connector.Error:
+            conn.rollback()
+            return jsonify(status='error', message='database_unavailable'), 503
+        finally:
+            cursor.close()
+
+    return jsonify(status='ok', id=entry_id)
+
+
+@app.route('/api/admin/schedule-entries/<int:entry_id>', methods=['GET', 'PUT', 'DELETE', 'OPTIONS'])
+@require_role('admin')
+def admin_schedule_entries_resource(entry_id: int):
+    if request.method == 'OPTIONS':
+        return _cors_preflight()
+
+    try:
+        conn = get_connection()
+    except Exception:
+        return jsonify(status='error', message='database_unavailable'), 503
+
+    with closing(conn):
+        cursor = conn.cursor(dictionary=True)
+        try:
+            cursor.execute(
+                "SELECT id, class_id, tag, start, `end`, fach, raum FROM stundenplan_entries WHERE id=%s",
+                (entry_id,),
+            )
+            entry = cursor.fetchone()
+        except mysql.connector.Error:
+            return jsonify(status='error', message='database_unavailable'), 503
+        finally:
+            cursor.close()
+
+        if not entry:
+            return jsonify(status='error', message='schedule_entry_not_found'), 404
+
+        try:
+            entry['tag'] = _canonicalize_weekday(entry.get('tag'))
+        except ValueError:
+            entry['tag'] = (entry.get('tag') or '').strip()
+
+        if request.method == 'GET':
+            return jsonify(status='ok', data=list(_serialize_rows([entry]))[0])
+
+        if request.method == 'DELETE':
+            class_id = _ensure_int(request.args.get('class_id'), allow_none=False)
+            if not class_id or class_id != entry.get('class_id'):
+                return jsonify(status='error', message='class_mismatch'), 403
+
+            cursor = conn.cursor()
+            try:
+                cursor.execute("DELETE FROM stundenplan_entries WHERE id=%s", (entry_id,))
+                if cursor.rowcount == 0:
+                    return jsonify(status='error', message='schedule_entry_not_found'), 404
+                _log_admin_action(conn, 'delete', 'schedule_entry', entry_id, {'class_id': class_id})
+                _touch_class_schedule(conn, class_id)
+                conn.commit()
+            except mysql.connector.Error:
+                conn.rollback()
+                return jsonify(status='error', message='database_unavailable'), 503
+            finally:
+                cursor.close()
+            return jsonify(status='ok')
+
+        data = request.json or {}
+        class_id = _ensure_int(data.get('class_id'), allow_none=False)
+        if not class_id or class_id != entry.get('class_id'):
+            return jsonify(status='error', message='class_mismatch'), 403
+
+        updates = []
+        values = []
+        details = {}
+
+        if 'tag' in data:
+            try:
+                tag_value = _canonicalize_weekday(data.get('tag'))
+            except ValueError:
+                return jsonify(status='error', message='invalid_tag'), 400
+            updates.append('tag=%s')
+            values.append(tag_value)
+            details['tag'] = tag_value
+
+        if 'start' in data:
+            start_raw = data.get('start')
+            start_value = str(start_raw).strip() if start_raw is not None else ''
+            if not start_value:
+                return jsonify(status='error', message='invalid_start'), 400
+            updates.append('start=%s')
+            values.append(start_value)
+            details['start'] = start_value
+
+        if 'end' in data:
+            end_raw = data.get('end')
+            end_value = str(end_raw).strip() if end_raw is not None else ''
+            if not end_value:
+                return jsonify(status='error', message='invalid_end'), 400
+            updates.append('`end`=%s')
+            values.append(end_value)
+            details['end'] = end_value
+
+        if 'fach' in data:
+            fach_raw = data.get('fach')
+            fach_value = str(fach_raw).strip() if fach_raw is not None else ''
+            if not fach_value:
+                return jsonify(status='error', message='invalid_subject'), 400
+            updates.append('fach=%s')
+            values.append(fach_value)
+            details['fach'] = fach_value
+
+        if 'raum' in data:
+            raum_raw = data.get('raum')
+            raum_value = str(raum_raw).strip() if raum_raw is not None else ''
+            normalized_raum = raum_value or None
+            updates.append('raum=%s')
+            values.append(normalized_raum)
+            details['raum'] = normalized_raum
+
+        if not updates:
+            return jsonify(status='error', message='no_changes'), 400
+
+        cursor = conn.cursor()
+        try:
+            query = f"UPDATE stundenplan_entries SET {', '.join(updates)} WHERE id=%s"
+            values.append(entry_id)
+            cursor.execute(query, tuple(values))
+            if cursor.rowcount == 0:
+                return jsonify(status='error', message='schedule_entry_not_found'), 404
+            _log_admin_action(conn, 'update', 'schedule_entry', entry_id, {'class_id': class_id, **details})
+            _touch_class_schedule(conn, class_id)
+            conn.commit()
+        except mysql.connector.Error:
+            conn.rollback()
+            return jsonify(status='error', message='database_unavailable'), 503
+        finally:
+            cursor.close()
+
+        return jsonify(status='ok')
+
 
 @app.route('/api/classes', methods=['GET'])
 @require_role('admin', 'class_admin', 'teacher')
