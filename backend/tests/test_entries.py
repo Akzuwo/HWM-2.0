@@ -1,3 +1,5 @@
+import datetime
+
 from class_ids import DEFAULT_ENTRY_CLASS_ID
 
 
@@ -97,3 +99,79 @@ def test_teacher_can_add_entry_for_any_class(app_client):
     resp = client.post('/add_entry', json=payload)
     assert resp.status_code == 200
     assert any(entry['beschreibung'] == 'Teacher entry' for entry in storage['eintraege'])
+
+
+def test_entries_filters_by_session_class_slug(app_client):
+    client, storage, _ = app_client
+    storage['eintraege'] = [
+        {
+            'id': 1,
+            'class_id': 'L23a',
+            'beschreibung': 'Class A homework',
+            'datum': datetime.date(2024, 5, 6),
+            'startzeit': None,
+            'endzeit': None,
+            'typ': 'homework',
+            'fach': 'Math',
+        },
+        {
+            'id': 2,
+            'class_id': 'U24f',
+            'beschreibung': 'Other class homework',
+            'datum': datetime.date(2024, 5, 7),
+            'startzeit': None,
+            'endzeit': None,
+            'typ': 'homework',
+            'fach': 'Science',
+        },
+    ]
+
+    with client.session_transaction() as sess:
+        sess['role'] = 'student'
+        sess['class_id'] = 1
+        sess['class_slug'] = 'l23a'
+        sess.pop('entry_class_id', None)
+
+    resp = client.get('/entries')
+    assert resp.status_code == 200
+
+    data = resp.get_json()
+    assert [entry['beschreibung'] for entry in data] == ['Class A homework']
+
+
+def test_entries_filters_by_other_class_slug(app_client):
+    client, storage, _ = app_client
+    storage['eintraege'] = [
+        {
+            'id': 1,
+            'class_id': 'L23a',
+            'beschreibung': 'Class A homework',
+            'datum': datetime.date(2024, 5, 6),
+            'startzeit': None,
+            'endzeit': None,
+            'typ': 'homework',
+            'fach': 'Math',
+        },
+        {
+            'id': 2,
+            'class_id': 'U24f',
+            'beschreibung': 'Other class homework',
+            'datum': datetime.date(2024, 5, 7),
+            'startzeit': None,
+            'endzeit': None,
+            'typ': 'homework',
+            'fach': 'Science',
+        },
+    ]
+
+    with client.session_transaction() as sess:
+        sess['role'] = 'student'
+        sess['class_id'] = 2
+        sess['class_slug'] = 'u24f'
+        sess.pop('entry_class_id', None)
+
+    resp = client.get('/entries')
+    assert resp.status_code == 200
+
+    data = resp.get_json()
+    assert [entry['beschreibung'] for entry in data] == ['Other class homework']

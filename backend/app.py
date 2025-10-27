@@ -340,6 +340,30 @@ def _get_session_class_id() -> Optional[int]:
         return None
 
 
+def _get_session_entry_class_id() -> Optional[str]:
+    """Resolve the class identifier used for entry queries."""
+
+    raw_value = session.get('entry_class_id')
+    if raw_value:
+        try:
+            normalized = _normalize_entry_class_id(raw_value)
+        except ValueError:
+            session.pop('entry_class_id', None)
+        else:
+            return normalized
+
+    class_slug = session.get('class_slug')
+    if class_slug:
+        try:
+            normalized = _normalize_entry_class_id(class_slug)
+        except ValueError:
+            return None
+        session['entry_class_id'] = normalized
+        return normalized
+
+    return None
+
+
 def _normalize_entry_class_id(raw_value: Optional[object]) -> str:
     value = (str(raw_value).strip() if raw_value is not None else '').replace(' ', '')
     if not value or value.isdigit() or len(value) < 2:
@@ -951,7 +975,9 @@ def root():
 @require_class_context
 def export_ics():
     """Erzeugt eine iCalendar-Datei mit allen zukünftigen Einträgen."""
-    class_id = g.get('active_class_id') or _get_session_class_id()
+    class_id = _get_session_entry_class_id()
+    if not class_id:
+        return jsonify(status='error', message='class_required'), 403
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
     cursor.execute(
@@ -994,7 +1020,9 @@ def export_ics():
 @require_class_context
 def entries():
     """Gibt alle Einträge zurück."""
-    class_id = g.get('active_class_id') or _get_session_class_id()
+    class_id = _get_session_entry_class_id()
+    if not class_id:
+        return jsonify(status='error', message='class_required'), 403
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
     cursor.execute(
@@ -2199,7 +2227,7 @@ def update_entry():
 
     role = session.get('role')
     if role == 'class_admin':
-        allowed_class = (session.get('entry_class_id') or '').strip()
+        allowed_class = _get_session_entry_class_id() or ''
         if not allowed_class:
             return jsonify(status='error', message='class_required'), 403
         if class_id != allowed_class:
@@ -2250,7 +2278,9 @@ def delete_entry(id):
 
     raw_class_id = request.args.get('class_id')
     if raw_class_id is None:
-        raw_class_id = session.get('entry_class_id') or g.get('active_class_id') or _get_session_class_id()
+        raw_class_id = _get_session_entry_class_id()
+        if raw_class_id is None:
+            return jsonify(status='error', message='class_required'), 403
     try:
         class_id = _normalize_entry_class_id(raw_class_id)
     except ValueError:
@@ -2258,7 +2288,7 @@ def delete_entry(id):
 
     role = session.get('role')
     if role == 'class_admin':
-        allowed_class = (session.get('entry_class_id') or '').strip()
+        allowed_class = _get_session_entry_class_id() or ''
         if not allowed_class:
             return jsonify(status='error', message='class_required'), 403
         if class_id != allowed_class:
@@ -2450,7 +2480,7 @@ def add_entry():
 
     role = session.get('role')
     if role == 'class_admin':
-        allowed_class = (session.get('entry_class_id') or '').strip()
+        allowed_class = _get_session_entry_class_id() or ''
         if not allowed_class:
             return jsonify(status='error', message='class_required'), 403
         if class_id != allowed_class:

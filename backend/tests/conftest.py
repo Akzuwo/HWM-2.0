@@ -591,6 +591,78 @@ class FakeCursor:
             self.rowcount = 1
             return
 
+        if (
+            normalized.startswith(
+                "select id, beschreibung, datum, startzeit, endzeit, typ, fach from eintraege"
+            )
+            and "where class_id=%s" in normalized
+        ):
+            class_id = params[0]
+            filtered = [
+                {
+                    'id': entry['id'],
+                    'beschreibung': entry.get('beschreibung'),
+                    'datum': entry.get('datum'),
+                    'startzeit': entry.get('startzeit'),
+                    'endzeit': entry.get('endzeit'),
+                    'typ': entry.get('typ'),
+                    'fach': entry.get('fach'),
+                }
+                for entry in entries
+                if entry.get('class_id') == class_id
+            ]
+            filtered.sort(
+                key=lambda row: (
+                    row.get('datum') or datetime.date.min,
+                    row.get('startzeit') or '',
+                )
+            )
+            self._prepare_rows(
+                filtered,
+                ['id', 'beschreibung', 'datum', 'startzeit', 'endzeit', 'typ', 'fach'],
+            )
+            return
+
+        if (
+            normalized.startswith(
+                "select id, typ, beschreibung, datum, fach from eintraege"
+            )
+            and "datum >= curdate()" in normalized
+        ):
+            class_id = params[0]
+            today = datetime.date.today()
+            filtered = []
+            for entry in entries:
+                if entry.get('class_id') != class_id:
+                    continue
+                due = entry.get('datum')
+                if isinstance(due, datetime.date):
+                    if due < today:
+                        continue
+                elif isinstance(due, str):
+                    try:
+                        parsed = datetime.date.fromisoformat(due)
+                    except ValueError:
+                        parsed = today
+                    if parsed < today:
+                        continue
+                    due = parsed
+                filtered.append(
+                    {
+                        'id': entry['id'],
+                        'typ': entry.get('typ'),
+                        'beschreibung': entry.get('beschreibung'),
+                        'datum': due,
+                        'fach': entry.get('fach'),
+                    }
+                )
+            filtered.sort(key=lambda row: row.get('datum') or today)
+            self._prepare_rows(
+                filtered,
+                ['id', 'typ', 'beschreibung', 'datum', 'fach'],
+            )
+            return
+
         if normalized.startswith("select fach from eintraege where id=%s and class_id=%s"):
             entry_id, class_id = params
             for entry in entries:
