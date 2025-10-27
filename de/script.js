@@ -90,6 +90,18 @@ const AUTH_PATHS = {
     login: 'login.html'
 };
 
+function fetchWithSession(url, options = {}) {
+    const { headers, ...rest } = options || {};
+    const requestInit = {
+        ...rest,
+        credentials: 'include'
+    };
+    if (headers) {
+        requestInit.headers = headers;
+    }
+    return fetch(url, requestInit);
+}
+
 const VERIFICATION_ACTION_COOLDOWN_MS = 30000;
 const actionCooldowns = {
     register: 0,
@@ -1031,10 +1043,9 @@ async function register(form) {
             payload.class = classIdentifier;
         }
 
-        const response = await fetch(AUTH_API.register, {
+        const response = await fetchWithSession(AUTH_API.register, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
             body: JSON.stringify(payload)
         });
 
@@ -1134,10 +1145,9 @@ async function login(form) {
     setFormLoading(targetForm, true);
 
     try {
-        const response = await fetch(AUTH_API.login, {
+        const response = await fetchWithSession(AUTH_API.login, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
             body: JSON.stringify({ email, password })
         });
 
@@ -1229,7 +1239,7 @@ async function verifyCode(form) {
     setFormLoading(targetForm, true);
 
     try {
-        const response = await fetch(AUTH_API.verify, {
+        const response = await fetchWithSession(AUTH_API.verify, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, code: normalizedCode })
@@ -1304,7 +1314,7 @@ async function resendVerification(form) {
         button.textContent = LOGIN_TEXT.verificationCodeResendLoading;
     }
     try {
-        const response = await fetch(AUTH_API.resend, {
+        const response = await fetchWithSession(AUTH_API.resend, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email })
@@ -1348,7 +1358,7 @@ async function handlePasswordReset(form) {
     }
 
     try {
-        const response = await fetch(AUTH_API.passwordReset, {
+        const response = await fetchWithSession(AUTH_API.passwordReset, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email })
@@ -1377,9 +1387,8 @@ function guestLogin() {
 
 async function logout() {
     try {
-        await fetch(AUTH_API.logout, {
-            method: 'POST',
-            credentials: 'include'
+        await fetchWithSession(AUTH_API.logout, {
+            method: 'POST'
         });
     } catch (error) {
         console.error('Logout fehlgeschlagen', error);
@@ -1683,7 +1692,7 @@ async function openCalendar() {
     try {
         clearContent();
 
-        const res = await fetch(`${API_BASE}/entries`);
+        const res = await fetchWithSession(`${API_BASE}/entries`);
         if (!res.ok) {
             throw new Error(`API-Fehler (${res.status})`);
         }
@@ -1731,7 +1740,7 @@ let fachInterval;
 async function loadCurrentSubject() {
   clearContent();
   async function update() {
-    const res = await fetch(`${API_BASE}/aktuelles_fach`);
+    const res = await fetchWithSession(`${API_BASE}/aktuelles_fach`);
     const data = await res.json();
     document.getElementById('content').innerHTML = `
       <h2>Aktuelles Fach: ${data.fach}</h2>
@@ -1746,7 +1755,7 @@ async function loadCurrentSubject() {
 
 /** EINMALIGE ABFRAGE (ohne Intervall) **/
 async function aktuellesFachLaden() {
-  const res = await fetch(`${API_BASE}/aktuelles_fach`);
+  const res = await fetchWithSession(`${API_BASE}/aktuelles_fach`);
   const data = await res.json();
   document.getElementById('fachInfo').innerHTML = `
     <p><strong>Fach:</strong> ${data.fach}</p>
@@ -2135,7 +2144,7 @@ async function saveEntry(event) {
 
     while (!success && attempt < maxAttempts) {
         try {
-            const response = await fetch(`${API_BASE}/add_entry`, {
+            const response = await fetchWithSession(`${API_BASE}/add_entry`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ typ, fach: payloadSubject, beschreibung: payloadBeschreibung, datum: isoDate, startzeit, endzeit })
