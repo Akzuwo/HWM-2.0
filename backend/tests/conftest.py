@@ -294,6 +294,22 @@ class FakeCursor:
                 self._rows = []
             return
 
+        if normalized.startswith("select id from classes where slug=%s"):
+            slug = (params[0] or '').strip().lower()
+            match = next(
+                (
+                    row
+                    for row in classes.values()
+                    if str(row.get('slug') or '').strip().lower() == slug
+                ),
+                None,
+            )
+            if match:
+                self._prepare_rows([{'id': match['id']}], ['id'])
+            else:
+                self._rows = []
+            return
+
         if normalized.startswith("insert into classes"):
             slug, title, description, is_active, created_at, updated_at = params
             new_id = self.storage.setdefault('next_ids', {}).setdefault('classes', 1)
@@ -398,7 +414,11 @@ class FakeCursor:
             return
 
         if normalized.startswith("insert into class_schedules"):
-            class_id, source, import_hash, imported_at, created_at, updated_at = params
+            if len(params) == 6:
+                class_id, source, import_hash, imported_at, created_at, updated_at = params
+            else:
+                class_id, source, import_hash, imported_at, created_at = params
+                updated_at = created_at
             new_id = self.storage.setdefault('next_ids', {}).setdefault('class_schedules', 1)
             self.storage['next_ids']['class_schedules'] = new_id + 1
             schedules[new_id] = {
