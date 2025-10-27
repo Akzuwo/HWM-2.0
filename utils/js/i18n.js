@@ -4,9 +4,9 @@
       common: {
         appName: 'Homework Manager',
         nav: {
-          home: 'Start',
+          home: 'Home',
           calendar: 'Kalender',
-          upcoming: 'Upcoming Events',
+          upcoming: 'Events',
           grades: 'Notenrechner',
           currentSubject: 'Aktuelles Fach',
           logout: 'Abmelden',
