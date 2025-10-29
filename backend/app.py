@@ -79,6 +79,21 @@ CLASS_ADMIN_ROLES = {'admin', 'class_admin'}
 ENTRY_MANAGER_ROLES = {'admin', 'teacher', 'class_admin'}
 
 
+def _get_runtime_contact_settings() -> Dict[str, Optional[str]]:
+    """Return SMTP settings, reloading from the environment if possible."""
+
+    try:
+        return get_contact_smtp_settings()
+    except RuntimeError:
+        return {
+            "host": CONTACT_SMTP_HOST,
+            "user": CONTACT_SMTP_USER,
+            "password": CONTACT_SMTP_PASSWORD,
+            "recipient": CONTACT_RECIPIENT,
+            "from_address": CONTACT_FROM_ADDRESS,
+        }
+
+
 def _remove_existing_log_handler() -> None:
     global LOG_FILE_HANDLER
     handler = LOG_FILE_HANDLER
@@ -514,14 +529,21 @@ def _deliver_email(
     attachment: Optional[Tuple[bytes, str, Optional[str]]] = None,
     html_body: Optional[str] = None,
 ) -> None:
-    if not CONTACT_SMTP_HOST:
+    contact_settings = _get_runtime_contact_settings()
+    host = contact_settings["host"]
+    user = contact_settings["user"]
+    password = contact_settings["password"]
+    recipient = contact_settings["recipient"]
+    from_address = contact_settings["from_address"]
+
+    if not host:
         raise RuntimeError('Email delivery is not configured')
 
     message = EmailMessage()
     message['Subject'] = subject.strip() or 'Homework Manager'
     message['To'] = to_address
 
-    final_sender = sender or CONTACT_FROM_ADDRESS or CONTACT_SMTP_USER or CONTACT_RECIPIENT
+    final_sender = sender or from_address or user or recipient
     if final_sender:
         message['From'] = final_sender
     if reply_to:
@@ -553,13 +575,13 @@ def _deliver_email(
         server = None
         try:
             if port == 465:
-                server = smtplib.SMTP_SSL(CONTACT_SMTP_HOST, port, timeout=10)
+                server = smtplib.SMTP_SSL(host, port, timeout=10)
             else:
-                server = smtplib.SMTP(CONTACT_SMTP_HOST, port, timeout=10)
+                server = smtplib.SMTP(host, port, timeout=10)
                 server.starttls()
 
-            if CONTACT_SMTP_USER and CONTACT_SMTP_PASSWORD:
-                server.login(CONTACT_SMTP_USER, CONTACT_SMTP_PASSWORD)
+            if user and password:
+                server.login(user, password)
 
             server.send_message(message)
 
@@ -585,15 +607,20 @@ def _deliver_email(
 
 
 def _send_contact_email(name: str, email_address: str, subject: str, body: str, attachment=None) -> None:
-    if not CONTACT_RECIPIENT:
+    contact_settings = _get_runtime_contact_settings()
+    recipient = contact_settings["recipient"]
+    from_address = contact_settings["from_address"]
+    user = contact_settings["user"]
+
+    if not recipient:
         raise RuntimeError('Contact email is not configured')
 
     final_subject = subject.strip() or 'Kontaktanfrage'
     prefixed_subject = f"[Homework Manager] {final_subject}"
-    sender = CONTACT_FROM_ADDRESS or email_address or CONTACT_SMTP_USER or CONTACT_RECIPIENT
+    sender = from_address or email_address or user or recipient
 
     _deliver_email(
-        CONTACT_RECIPIENT,
+        recipient,
         prefixed_subject,
         body,
         sender=sender,
@@ -625,11 +652,19 @@ def _send_verification_email(email_address: str, code: str, expires_at: datetime
         '</body></html>'
     )
 
+    contact_settings = _get_runtime_contact_settings()
+    sender = (
+        EMAIL_VERIFICATION_FROM_ADDRESS
+        or contact_settings["from_address"]
+        or contact_settings["user"]
+        or contact_settings["recipient"]
+    )
+
     _deliver_email(
         email_address,
         EMAIL_VERIFICATION_SUBJECT,
         body,
-        sender=EMAIL_VERIFICATION_FROM_ADDRESS,
+        sender=sender,
         html_body=html_body,
     )
 
@@ -1226,7 +1261,8 @@ def submit_contact():
     if errors:
         return jsonify({'message': 'invalid', 'errors': errors}), 400
 
-    if not (CONTACT_SMTP_HOST and CONTACT_RECIPIENT):
+    contact_settings = _get_runtime_contact_settings()
+    if not (contact_settings["host"] and contact_settings["recipient"]):
         return jsonify({'message': 'unavailable'}), 503
 
     ip_address = _get_request_ip()
