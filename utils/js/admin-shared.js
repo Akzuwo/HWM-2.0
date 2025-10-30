@@ -252,6 +252,33 @@ export function createForm(fields, { initialValues = {} } = {}) {
 
   const controls = [];
 
+  function normalizeOption(option) {
+    if (option && typeof option === 'object') {
+      const value = option.value != null ? option.value : '';
+      const label = option.label != null ? option.label : String(value);
+      return { value: value, label: label };
+    }
+    const primitive = option != null ? option : '';
+    return { value: primitive, label: String(primitive) };
+  }
+
+  function populateSelectOptions(select, field, options = []) {
+    select.innerHTML = '';
+    if (field.allowEmptyOption) {
+      const empty = document.createElement('option');
+      empty.value = '';
+      empty.textContent = field.emptyOptionLabel != null ? field.emptyOptionLabel : '';
+      select.appendChild(empty);
+    }
+    options.forEach((option) => {
+      const { value, label } = normalizeOption(option);
+      const opt = document.createElement('option');
+      opt.value = value != null ? String(value) : '';
+      opt.textContent = label;
+      select.appendChild(opt);
+    });
+  }
+
   fields.forEach((field) => {
     const wrapper = document.createElement('label');
     wrapper.className = 'admin-form__field';
@@ -267,17 +294,7 @@ export function createForm(fields, { initialValues = {} } = {}) {
       input.rows = field.rows || 3;
     } else if (field.type === 'select') {
       input = document.createElement('select');
-      (field.options || []).forEach((option) => {
-        const opt = document.createElement('option');
-        if (typeof option === 'object') {
-          opt.value = option.value;
-          opt.textContent = option.label;
-        } else {
-          opt.value = option;
-          opt.textContent = option;
-        }
-        input.appendChild(opt);
-      });
+      populateSelectOptions(input, field, field.options || []);
     } else if (field.type === 'file') {
       input = document.createElement('input');
       input.type = 'file';
@@ -412,6 +429,47 @@ export function createForm(fields, { initialValues = {} } = {}) {
         result[field.name] = value;
       });
       return result;
+    },
+    updateOptions(fieldName, options = [], { preserveValue = true } = {}) {
+      const control = controls.find((item) => item.field.name === fieldName);
+      if (!control || control.field.type !== 'select') {
+        return;
+      }
+      const currentValue = control.input.value;
+      control.field.options = options;
+      populateSelectOptions(control.input, control.field, options);
+      const candidates = [];
+      if (preserveValue) {
+        candidates.push(currentValue);
+      }
+      if (Object.prototype.hasOwnProperty.call(initialValues, fieldName)) {
+        candidates.push(initialValues[fieldName]);
+      } else if (control.field.defaultValue !== undefined) {
+        candidates.push(control.field.defaultValue);
+      }
+      let applied = false;
+      const optionsList = Array.from(control.input.options || []);
+      for (const candidate of candidates) {
+        if (candidate === undefined || candidate === null) {
+          continue;
+        }
+        const normalized = String(candidate);
+        const hasOption = optionsList.some((opt) => opt.value === normalized);
+        if (hasOption) {
+          control.input.value = normalized;
+          applied = true;
+          break;
+        }
+      }
+      if (!applied) {
+        if (control.field.allowEmptyOption) {
+          control.input.value = '';
+        } else if (optionsList.length > 0) {
+          control.input.value = optionsList[0].value;
+        } else {
+          control.input.value = '';
+        }
+      }
     },
   };
 }

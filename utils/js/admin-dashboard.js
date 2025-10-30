@@ -515,8 +515,15 @@ function createActionButton(label, variant = 'ghost') {
 
 function sanitizeUserPayload(values) {
   const payload = { ...values };
-  if (payload.class_id === null) {
+  if (payload.class_id === null || payload.class_id === undefined || payload.class_id === '') {
     delete payload.class_id;
+  } else {
+    const numericClassId = Number(payload.class_id);
+    if (Number.isNaN(numericClassId)) {
+      delete payload.class_id;
+    } else {
+      payload.class_id = numericClassId;
+    }
   }
   if (!payload.password) {
     delete payload.password;
@@ -614,7 +621,13 @@ function buildDashboard(root) {
             ],
             defaultValue: 'student',
           },
-          { name: 'class_id', type: 'number', label: t.fields.classId, min: 1 },
+          {
+            name: 'class_id',
+            type: 'select',
+            label: t.fields.classId,
+            allowEmptyOption: true,
+            options: [],
+          },
           { name: 'is_active', type: 'checkbox', label: t.fields.isActive, defaultValue: true },
         ],
         edit: [
@@ -632,7 +645,13 @@ function buildDashboard(root) {
               { value: 'admin', label: t.roles.admin },
             ],
           },
-          { name: 'class_id', type: 'number', label: t.fields.classId, min: 1 },
+          {
+            name: 'class_id',
+            type: 'select',
+            label: t.fields.classId,
+            allowEmptyOption: true,
+            options: [],
+          },
           { name: 'is_active', type: 'checkbox', label: t.fields.isActive },
         ],
       },
@@ -701,7 +720,11 @@ function buildDashboard(root) {
     total: 0,
     data: [],
     authorized: true,
+    classes: [],
+    classesLoaded: false,
   };
+
+  let classesPromise = null;
 
   function setAuthorizationState(isAuthorized) {
     const allowed = Boolean(isAuthorized);
@@ -717,6 +740,8 @@ function buildDashboard(root) {
     if (!allowed) {
       state.total = 0;
       state.data = [];
+      state.classes = [];
+      state.classesLoaded = false;
       table.setRows([]);
       pagination.update({ page: state.page, pageSize: state.pageSize, total: state.total });
       pagination.prev.disabled = true;
@@ -732,10 +757,124 @@ function buildDashboard(root) {
     showMessage('error', t.messages.unauthorized);
   }
 
+  function buildClassLabel(klass = {}) {
+    const slug = typeof klass.slug === 'string' ? klass.slug.trim() : '';
+    const title = typeof klass.title === 'string' ? klass.title.trim() : '';
+    if (slug && title) {
+      return `${slug} – ${title}`;
+    }
+    if (slug) {
+      return slug;
+    }
+    if (title) {
+      return title;
+    }
+    if (klass.id != null) {
+      return `#${klass.id}`;
+    }
+    return '';
+  }
+
+  function getClassOptions() {
+    return state.classes.map((klass) => ({
+      value: klass.id,
+      label: buildClassLabel(klass),
+    }));
+  }
+
+  async function loadClasses() {
+    if (!state.authorized) {
+      return;
+    }
+    let response;
+    try {
+      response = await fetchJson('/api/classes');
+    } catch (error) {
+      if (error.status === 401 || error.status === 403) {
+        handleUnauthorized();
+      }
+      throw error;
+    }
+    if (!Array.isArray(response)) {
+      state.classes = [];
+      state.classesLoaded = true;
+      return;
+    }
+    const normalized = response
+      .map((item) => ({
+        id: item.id,
+        slug: item.slug || '',
+        title: item.title || '',
+      }))
+      .sort((a, b) => buildClassLabel(a).localeCompare(buildClassLabel(b), undefined, { sensitivity: 'base' }));
+    state.classes = normalized;
+    state.classesLoaded = true;
+  }
+
+  function ensureClassesLoaded() {
+    if (!state.authorized) {
+      return Promise.resolve();
+    }
+    if (state.classesLoaded) {
+      return Promise.resolve();
+    }
+    if (!classesPromise) {
+      classesPromise = loadClasses()
+        .catch((error) => {
+          throw error;
+        })
+        .finally(() => {
+          classesPromise = null;
+        });
+    }
+    return classesPromise;
+  }
+
+  function prepareResourceForm(form, resource, initialData = {}) {
+    if (!form || !resource || resource.key !== 'users') {
+      return;
+    }
+    const selectedRaw = initialData.class_id;
+    const hasSelected = selectedRaw !== null && selectedRaw !== undefined && selectedRaw !== '';
+    const selectedValue = hasSelected ? String(selectedRaw) : '';
+    const fallbackClass = {
+      id: selectedRaw,
+      slug: initialData.class_slug || '',
+      title: initialData.class_title || '',
+    };
+
+    function applyOptions() {
+      let options = getClassOptions();
+      if (hasSelected) {
+        const exists = options.some((option) => String(option.value) === selectedValue);
+        if (!exists) {
+          options = [...options, { value: selectedRaw, label: buildClassLabel(fallbackClass) }];
+        }
+      }
+      form.updateOptions('class_id', options);
+      if (hasSelected) {
+        form.setValues({ class_id: selectedRaw });
+      }
+    }
+
+    form.updateOptions('class_id', getClassOptions());
+    if (hasSelected) {
+      form.setValues({ class_id: selectedRaw });
+    }
+
+    ensureClassesLoaded().then(() => {
+      applyOptions();
+    }).catch(() => {});
+  }
+
   const initialAuthorized = isSessionAdmin(loadStoredSession());
   setAuthorizationState(initialAuthorized);
   if (!initialAuthorized) {
     showMessage('error', t.messages.unauthorized);
+  }
+
+  if (initialAuthorized) {
+    ensureClassesLoaded().catch(() => {});
   }
 
   function buildActionCell(resourceKey, row) {
@@ -827,6 +966,9 @@ function buildDashboard(root) {
     const resource = resources[state.active];
     createButton.textContent = t.create[state.active];
     configureTableColumns(resource.key);
+    if (resource.key === 'users') {
+      ensureClassesLoaded().catch(() => {});
+    }
     if (!state.authorized) {
       table.setRows([]);
       return;
@@ -911,7 +1053,7 @@ function buildDashboard(root) {
     });
   }
 
-  function refreshAfter(action) {
+  function refreshAfter(action, resourceKey) {
     switch (action) {
       case 'create':
         showMessage('success', t.messages.created);
@@ -926,6 +1068,10 @@ function buildDashboard(root) {
         break;
     }
     loadData();
+    if (resourceKey === 'classes') {
+      state.classesLoaded = false;
+      ensureClassesLoaded().catch(() => {});
+    }
   }
 
   createButton.addEventListener('click', () => {
@@ -938,6 +1084,7 @@ function buildDashboard(root) {
       return;
     }
     const { dialog, form, resource } = openFormDialog(state.active, 'create');
+    prepareResourceForm(form, resource, {});
     dialog.onConfirm(async () => {
       const values = resource.sanitize(form.getValues());
       try {
@@ -952,7 +1099,7 @@ function buildDashboard(root) {
         }
         throw error;
       }
-      refreshAfter('create');
+      refreshAfter('create', resource.key);
     });
   });
 
@@ -991,6 +1138,7 @@ function buildDashboard(root) {
 
   async function openEditDialog(resourceKey, row) {
     const { dialog, form, resource } = openFormDialog(resourceKey, 'edit', row);
+    prepareResourceForm(form, resource, row);
     dialog.onConfirm(async () => {
       const values = resource.sanitize(form.getValues());
       try {
@@ -1005,7 +1153,7 @@ function buildDashboard(root) {
         }
         throw error;
       }
-      refreshAfter('update');
+      refreshAfter('update', resource.key);
     });
   }
 
@@ -1015,7 +1163,7 @@ function buildDashboard(root) {
     }
     try {
       await fetchJson(`/api/admin/${resourceKey}/${row.id}`, { method: 'DELETE' });
-      refreshAfter('delete');
+      refreshAfter('delete', resourceKey);
     } catch (error) {
       if (error.status === 401 || error.status === 403) {
         handleUnauthorized();
