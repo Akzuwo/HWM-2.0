@@ -90,6 +90,62 @@ const AUTH_PATHS = {
     login: 'login.html'
 };
 
+const HM_CLASS_STORAGE_KEYS = {
+    id: 'hm.currentClassId',
+    slug: 'hm.currentClassSlug'
+};
+
+function safeSessionStorageGet(key) {
+    try {
+        if (typeof window === 'undefined' || !window.sessionStorage) {
+            return '';
+        }
+        return window.sessionStorage.getItem(key) || '';
+    } catch (error) {
+        return '';
+    }
+}
+
+function safeSessionStorageSet(key, value) {
+    try {
+        if (typeof window === 'undefined' || !window.sessionStorage) {
+            return;
+        }
+        if (value === null || value === undefined || value === '') {
+            window.sessionStorage.removeItem(key);
+        } else {
+            window.sessionStorage.setItem(key, value);
+        }
+    } catch (error) {
+        /* ignorer les erreurs de stockage */
+    }
+}
+
+const hmClassStorage = {
+    getId() {
+        return safeSessionStorageGet(HM_CLASS_STORAGE_KEYS.id);
+    },
+    getSlug() {
+        return safeSessionStorageGet(HM_CLASS_STORAGE_KEYS.slug);
+    },
+    set(classId, classSlug) {
+        if (classId) {
+            safeSessionStorageSet(HM_CLASS_STORAGE_KEYS.id, classId);
+            safeSessionStorageSet(HM_CLASS_STORAGE_KEYS.slug, classSlug || classId);
+        } else {
+            this.clear();
+        }
+    },
+    clear() {
+        safeSessionStorageSet(HM_CLASS_STORAGE_KEYS.id, '');
+        safeSessionStorageSet(HM_CLASS_STORAGE_KEYS.slug, '');
+    }
+};
+
+if (typeof window !== 'undefined') {
+    window.hmClassStorage = hmClassStorage;
+}
+
 const VERIFICATION_ACTION_COOLDOWN_MS = 30000;
 const actionCooldowns = {
     register: 0,
@@ -202,6 +258,7 @@ function setAuthenticatedSession(role, email) {
         emailVerified: true
     });
     lastAuthEmail = email;
+    hmClassStorage.clear();
     persistSession();
     updateAuthUI();
 }
@@ -210,6 +267,7 @@ function clearSessionState() {
     sessionState = { ...DEFAULT_SESSION };
     lastAuthEmail = '';
     sessionStorage.removeItem(SESSION_STORAGE_KEY);
+    hmClassStorage.clear();
     updateAuthUI();
 }
 
@@ -1789,7 +1847,8 @@ const ENTRY_FORM_MESSAGES = {
     invalidDate: 'Please enter a valid date in the format DD.MM.YYYY.',
     invalidEnd: 'The end time must not be earlier than the start time.',
     missingSubject: 'Please choose a subject.',
-    missingEventTitle: 'Please enter an event title.'
+    missingEventTitle: 'Please enter an event title.',
+    missingClass: 'Veuillez choisir une classe.'
 };
 
 if (window.hmI18n) {
@@ -2133,20 +2192,33 @@ async function saveEntry(event) {
         : beschreibung;
     const payloadSubject = isEvent ? '' : fach;
 
+    const classId = (typeof hmClassStorage.getId === 'function') ? hmClassStorage.getId() : '';
+    if (!classId) {
+        showOverlay(ENTRY_FORM_MESSAGES.missingClass);
+        return;
+    }
+
     saveButton.disabled = true;
     saveButton.innerText = CALENDAR_MODAL_BUTTONS.saveLoading;
 
     let success = false;
     let attempt = 0;
     const maxAttempts = 10;
+    let aborted = false;
 
     while (!success && attempt < maxAttempts) {
         try {
             const response = await fetch(`${API_BASE}/add_entry`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ typ, fach: payloadSubject, beschreibung: payloadBeschreibung, datum: isoDate, startzeit, endzeit })
+                credentials: 'include',
+                body: JSON.stringify({ typ, fach: payloadSubject, beschreibung: payloadBeschreibung, datum: isoDate, startzeit, endzeit, class_id: classId })
             });
+            if (response.status === 403) {
+                showOverlay(ENTRY_FORM_MESSAGES.missingClass);
+                aborted = true;
+                break;
+            }
             const result = await response.json();
 
             if (result.status === "ok") {
@@ -2169,15 +2241,13 @@ async function saveEntry(event) {
         if (!success) {
             attempt++;
             console.warn(`Save attempt ${attempt} failed. Retrying in 2 seconds.`);
-            // Warte 2000ms, bevor erneut versucht wird
             await new Promise(resolve => setTimeout(resolve, 2000));
         }
     }
 
-    if (!success) {
+    if (!success && !aborted) {
         showOverlay(CALENDAR_MODAL_MESSAGES.saveRetry);
-    } else {
-        // Reset input fields
+    } else if (success) {
         if (form) {
             form.reset();
             controller?.setType('event');
