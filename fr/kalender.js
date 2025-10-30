@@ -19,6 +19,27 @@ function fetchWithSession(url, options = {}) {
 const role = sessionStorage.getItem('role') || 'guest';
 const userCanManageEntries = role === 'admin' || role === 'teacher' || role === 'class_admin';
 
+const CLASS_STORAGE = (window.hmClassStorage) ? window.hmClassStorage : {
+  getId: () => '',
+  getSlug: () => '',
+  set: () => {},
+  clear: () => {}
+};
+
+let currentClassId = typeof CLASS_STORAGE.getId === 'function' ? (CLASS_STORAGE.getId() || '') : '';
+let currentClassSlug = typeof CLASS_STORAGE.getSlug === 'function' ? (CLASS_STORAGE.getSlug() || '') : '';
+
+const classSelectorEnabled = role === 'admin' || role === 'teacher';
+
+const classSelectorText = {
+  label: t('classSelector.label', 'Classe'),
+  placeholder: t('classSelector.placeholder', 'Choisir une classe'),
+  loading: t('classSelector.loading', 'Chargement des classes…'),
+  error: t('classSelector.error', 'Impossible de charger les classes.'),
+  changeError: t('classSelector.changeError', 'Impossible de changer de classe.'),
+  required: t('classSelector.required', 'Veuillez choisir une classe pour afficher le calendrier.')
+};
+
 const t = window.hmI18n ? window.hmI18n.scope('calendar') : (key, fallback) => fallback;
 const modalT = window.hmI18n ? window.hmI18n.scope('calendar.modal') : (key, fallback) => fallback;
 
@@ -147,6 +168,180 @@ function debounce(fn, wait = 160) {
     window.clearTimeout(timeout);
     timeout = window.setTimeout(() => fn(...args), wait);
   };
+}
+
+function setCurrentClassContext(classId, classSlug) {
+  currentClassId = classId || '';
+  currentClassSlug = classSlug || '';
+  if (currentClassId) {
+    const slugToStore = currentClassSlug || currentClassId;
+    if (typeof CLASS_STORAGE.set === 'function') {
+      CLASS_STORAGE.set(currentClassId, slugToStore);
+    }
+  } else if (typeof CLASS_STORAGE.clear === 'function') {
+    CLASS_STORAGE.clear();
+  }
+}
+
+async function fetchSessionClassContext() {
+  try {
+    const res = await fetchWithSession(`${API_BASE_URL}/api/session/class`);
+    if (!res.ok) {
+      return null;
+    }
+    const data = await res.json();
+    const classId = data?.class_id || '';
+    const classSlug = data?.class_slug || '';
+    if (classId) {
+      setCurrentClassContext(classId, classSlug || classId);
+      return { classId: currentClassId, classSlug: currentClassSlug };
+    }
+    setCurrentClassContext('', '');
+    return { classId: '', classSlug: '' };
+  } catch (error) {
+    console.error('Impossible de charger le contexte de classe :', error);
+    return null;
+  }
+}
+
+async function ensureSessionClassContext() {
+  if (currentClassId) {
+    return { classId: currentClassId, classSlug: currentClassSlug };
+  }
+  return fetchSessionClassContext();
+}
+
+async function fetchAvailableClasses() {
+  try {
+    const res = await fetchWithSession(`${API_BASE_URL}/api/classes`);
+    if (!res.ok) {
+      throw new Error(`Status ${res.status}`);
+    }
+    const rows = await res.json();
+    return (rows || []).filter((row) => row && row.slug);
+  } catch (error) {
+    console.error('Impossible de charger la liste des classes :', error);
+    throw error;
+  }
+}
+
+async function updateSessionClassSelection(slug, { silent = false } = {}) {
+  if (!slug) {
+    setCurrentClassContext('', '');
+    return { classId: '', classSlug: '' };
+  }
+
+  try {
+    const res = await fetchWithSession(`${API_BASE_URL}/api/session/class`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ class_id: slug })
+    });
+    if (!res.ok) {
+      const message = await res.text().catch(() => '');
+      throw new Error(message || `Status ${res.status}`);
+    }
+    const data = await res.json();
+    const classId = data?.class_id || '';
+    const classSlug = data?.class_slug || slug;
+    setCurrentClassContext(classId, classSlug || classId);
+    return { classId: currentClassId, classSlug: currentClassSlug };
+  } catch (error) {
+    console.error('Impossible de mettre à jour la classe :', error);
+    if (!silent) {
+      showOverlay(classSelectorText.changeError);
+    }
+    throw error;
+  }
+}
+
+async function initialiseClassSelector() {
+  await fetchSessionClassContext();
+
+  if (!classSelectorEnabled) {
+    return;
+  }
+
+  const container = document.querySelector('[data-class-selector]');
+  const select = container ? container.querySelector('[data-class-select]') : null;
+  if (!container || !select) {
+    return;
+  }
+
+  const label = container.querySelector('label');
+  if (label) {
+    label.textContent = classSelectorText.label;
+  }
+
+  select.innerHTML = '';
+  const placeholderOption = document.createElement('option');
+  placeholderOption.value = '';
+  placeholderOption.disabled = true;
+  placeholderOption.textContent = classSelectorText.placeholder;
+  select.appendChild(placeholderOption);
+
+  container.hidden = false;
+  container.classList.add('is-visible');
+
+  let classes = [];
+  try {
+    classes = await fetchAvailableClasses();
+  } catch (error) {
+    select.disabled = true;
+    showOverlay(classSelectorText.error);
+    return;
+  }
+
+  classes.forEach((cls) => {
+    const option = document.createElement('option');
+    option.value = cls.slug;
+    option.textContent = cls.title ? `${cls.title} (${cls.slug})` : cls.slug;
+    select.appendChild(option);
+  });
+
+  let initialSlug = currentClassSlug;
+  if (initialSlug && !classes.some((cls) => cls.slug === initialSlug)) {
+    initialSlug = '';
+  }
+  if (!initialSlug && classes.length === 1) {
+    initialSlug = classes[0].slug;
+  }
+
+  if (initialSlug) {
+    select.value = initialSlug;
+    if (!currentClassId || currentClassSlug !== initialSlug) {
+      try {
+        await updateSessionClassSelection(initialSlug, { silent: true });
+      } catch (error) {
+        select.value = '';
+      }
+    }
+  } else {
+    select.value = '';
+    placeholderOption.selected = true;
+  }
+
+  select.addEventListener('change', async (event) => {
+    const nextSlug = event.target.value;
+    if (!nextSlug || nextSlug === currentClassSlug) {
+      return;
+    }
+
+    const previousSlug = currentClassSlug;
+    select.disabled = true;
+    try {
+      await updateSessionClassSelection(nextSlug);
+      await loadCalendar();
+    } catch (error) {
+      if (previousSlug && classes.some((cls) => cls.slug === previousSlug)) {
+        select.value = previousSlug;
+      } else {
+        select.value = '';
+      }
+    } finally {
+      select.disabled = false;
+    }
+  });
 }
 
 function toggleViewMode(canManage) {
@@ -354,6 +549,13 @@ async function saveEdit(evt) {
     ? eventTitle + (description ? `\n\n${description}` : '')
     : description;
 
+  const context = await ensureSessionClassContext();
+  const classId = context?.classId || currentClassId;
+  if (!classId) {
+    showOverlay(ENTRY_FORM_MESSAGES.missingClass || unauthorizedMessage);
+    return;
+  }
+
   if (submitButton) {
     submitButton.disabled = true;
     submitButton.textContent = modalButtons.saveLoading;
@@ -373,11 +575,13 @@ async function saveEdit(evt) {
         description: payloadDescription,
         startzeit: startValue ? `${startValue}:00` : null,
         endzeit: endValue ? `${endValue}:00` : null,
-        fach: subject
+        fach: subject,
+        class_id: classId
       })
     });
     if (await responseRequiresClassContext(res)) {
-      showOverlay(unauthorizedMessage);
+      setCurrentClassContext('', '');
+      showOverlay(ENTRY_FORM_MESSAGES.missingClass || unauthorizedMessage);
       return;
     }
     if (!res.ok) {
@@ -408,13 +612,28 @@ async function deleteEntry() {
     deleteButton.textContent = modalButtons.deleteLoading;
   }
 
+  const context = await ensureSessionClassContext();
+  const classId = context?.classId || currentClassId;
+  if (!classId) {
+    showOverlay(ENTRY_FORM_MESSAGES.missingClass || unauthorizedMessage);
+    if (deleteButton) {
+      deleteButton.disabled = false;
+      deleteButton.textContent = modalButtons.delete;
+    }
+    return;
+  }
+
+  const deleteUrl = new URL(`${API_BASE_URL}/delete_entry/${id}`);
+  deleteUrl.searchParams.set('class_id', classId);
+
   try {
-    const res = await fetchWithSession(`${API_BASE_URL}/delete_entry/${id}`, {
+    const res = await fetchWithSession(deleteUrl.toString(), {
       method: 'DELETE',
       headers: { 'X-Role': role }
     });
     if (await responseRequiresClassContext(res)) {
-      showOverlay(unauthorizedMessage);
+      setCurrentClassContext('', '');
+      showOverlay(ENTRY_FORM_MESSAGES.missingClass || unauthorizedMessage);
       return;
     }
     if (!res.ok) {
@@ -475,9 +694,20 @@ async function handleExportClick(event) {
   if (label) label.textContent = actionText.exportLoading;
 
   try {
-    const response = await fetchWithSession(`${API_BASE_URL}/calendar.ics`);
+    const context = await ensureSessionClassContext();
+    const classId = context?.classId || currentClassId;
+    if (!classId) {
+      showOverlay(classSelectorText.required);
+      return;
+    }
+
+    const exportUrl = new URL(`${API_BASE_URL}/calendar.ics`);
+    exportUrl.searchParams.set('class_id', classId);
+
+    const response = await fetchWithSession(exportUrl.toString());
     if (await responseRequiresClassContext(response)) {
-      showOverlay(exportUnauthorizedMessage);
+      setCurrentClassContext('', '');
+      showOverlay(classSelectorText.required);
       return;
     }
     if (!response.ok) {
@@ -814,10 +1044,23 @@ async function loadCalendar() {
   if (!calendarEl) return;
   showCalendarLoading(calendarEl, t('status.loading', 'Chargement du calendrier …'));
 
+  const context = await ensureSessionClassContext();
+  const classId = context?.classId || currentClassId;
+  if (!classId) {
+    const message = classSelectorEnabled ? classSelectorText.required : unauthorizedMessage;
+    showCalendarError(calendarEl, message);
+    return;
+  }
+
   try {
-    const res = await fetchWithSession(`${API_BASE_URL}/entries`);
+    const entriesUrl = new URL(`${API_BASE_URL}/entries`);
+    entriesUrl.searchParams.set('class_id', classId);
+
+    const res = await fetchWithSession(entriesUrl.toString());
     if (await responseRequiresClassContext(res)) {
-      showCalendarError(calendarEl, unauthorizedMessage);
+      setCurrentClassContext('', '');
+      const message = classSelectorEnabled ? classSelectorText.required : unauthorizedMessage;
+      showCalendarError(calendarEl, message);
       return;
     }
     if (!res.ok) {
@@ -835,5 +1078,12 @@ async function loadCalendar() {
 
 window.addEventListener('DOMContentLoaded', () => {
   initActionBar();
-  loadCalendar();
+  (async () => {
+    try {
+      await initialiseClassSelector();
+      await loadCalendar();
+    } catch (error) {
+      console.error('Impossible d’initialiser le calendrier :', error);
+    }
+  })();
 });
