@@ -856,6 +856,27 @@ def _load_class_slug(conn, class_id: Optional[int]) -> Optional[str]:
         cursor.close()
 
 
+def _load_class_by_slug(conn, slug: str) -> Optional[Dict[str, object]]:
+    slug_value = (slug or '').strip()
+    if not slug_value:
+        return None
+
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute(
+            "SELECT id, slug, title FROM classes WHERE LOWER(slug)=LOWER(%s) LIMIT 1",
+            (slug_value,),
+        )
+        row = cursor.fetchone()
+        if not row:
+            return None
+        row['id'] = int(row['id']) if row.get('id') is not None else None
+        row['slug'] = (row.get('slug') or '').strip()
+        return row
+    finally:
+        cursor.close()
+
+
 def _mark_user_login(conn, user_id: int) -> None:
     cursor = conn.cursor()
     try:
@@ -2551,6 +2572,78 @@ def list_classes():
             cursor.close()
 
     return jsonify(rows)
+
+
+@app.route('/api/session/class', methods=['GET', 'PUT', 'OPTIONS'])
+def manage_session_class():
+    if request.method == 'OPTIONS':
+        return _cors_preflight()
+
+    role = session.get('role') or 'guest'
+
+    if request.method == 'GET':
+        if role not in {'admin', 'teacher', 'class_admin', 'student'}:
+            return jsonify({'status': 'error', 'message': 'forbidden'}), 403
+        numeric_id = _get_session_class_id()
+        entry_class_id = _get_session_entry_class_id()
+        class_slug = session.get('class_slug')
+        response = {
+            'status': 'ok',
+            'class_id': entry_class_id,
+            'class_slug': class_slug,
+            'class_numeric_id': numeric_id,
+        }
+        if class_slug and not entry_class_id:
+            try:
+                response['class_id'] = _normalize_entry_class_id(class_slug)
+            except ValueError:
+                response['class_id'] = None
+        return jsonify(response)
+
+    if role not in {'admin', 'teacher'}:
+        return jsonify({'status': 'error', 'message': 'forbidden'}), 403
+
+    data = request.json or {}
+    raw_class = (data.get('class_id') or data.get('class_slug') or '').strip()
+
+    if not raw_class:
+        session.pop('class_id', None)
+        session.pop('class_slug', None)
+        session.pop('entry_class_id', None)
+        return jsonify({'status': 'ok', 'class_id': None, 'class_slug': None})
+
+    try:
+        normalized = _normalize_entry_class_id(raw_class)
+    except ValueError:
+        return jsonify({'status': 'error', 'message': 'invalid_class_id'}), 400
+
+    try:
+        conn = get_connection()
+    except Exception:
+        return jsonify({'status': 'error', 'message': 'database_unavailable'}), 503
+
+    with closing(conn):
+        try:
+            class_row = _load_class_by_slug(conn, raw_class) or _load_class_by_slug(conn, normalized)
+        except mysql.connector.Error:
+            return jsonify({'status': 'error', 'message': 'database_unavailable'}), 503
+
+        if not class_row:
+            return jsonify({'status': 'error', 'message': 'class_not_found'}), 404
+
+        session['class_id'] = class_row['id']
+        session['class_slug'] = class_row['slug']
+        session['entry_class_id'] = normalized
+
+        response = {
+            'status': 'ok',
+            'class_id': normalized,
+            'class_slug': class_row.get('slug'),
+            'class_numeric_id': class_row.get('id'),
+        }
+        if class_row.get('title'):
+            response['class_title'] = class_row['title']
+        return jsonify(response)
 
 
 @app.route('/api/users/<int:user_id>/class', methods=['PUT', 'OPTIONS'])

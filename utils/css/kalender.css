@@ -218,6 +218,26 @@ body.calendar-theme main {
   align-items: stretch;
 }
 
+.calendar-class-selector {
+  display: none;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.calendar-class-selector.is-visible {
+  display: flex;
+}
+
+.calendar-class-selector label {
+  font-weight: 600;
+  font-size: clamp(0.9rem, 1.3vw, 1rem);
+  color: var(--muted-strong);
+}
+
+.calendar-class-selector select {
+  min-width: 12rem;
+}
+
 .calendar-month-nav {
   display: flex;
   align-items: center;
