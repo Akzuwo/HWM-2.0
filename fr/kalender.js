@@ -4,6 +4,18 @@ const API_BASE_URL =
   (typeof window !== 'undefined' && typeof window.hmResolveApiBase === 'function')
     ? window.hmResolveApiBase()
     : 'https://homework-manager-2-5-backend.onrender.com';
+
+function fetchWithSession(url, options = {}) {
+  const { headers, ...rest } = options || {};
+  const init = {
+    ...rest,
+    credentials: 'include'
+  };
+  if (headers) {
+    init.headers = headers;
+  }
+  return fetch(url, init);
+}
 const role = sessionStorage.getItem('role') || 'guest';
 const userIsAdmin = role === 'admin';
 
@@ -348,7 +360,7 @@ async function saveEdit(evt) {
   }
 
   try {
-    const res = await fetch(`${API_BASE_URL}/update_entry`, {
+    const res = await fetchWithSession(`${API_BASE_URL}/update_entry`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -397,7 +409,7 @@ async function deleteEntry() {
   }
 
   try {
-    const res = await fetch(`${API_BASE_URL}/delete_entry/${id}`, {
+    const res = await fetchWithSession(`${API_BASE_URL}/delete_entry/${id}`, {
       method: 'DELETE',
       headers: { 'X-Role': role }
     });
@@ -463,7 +475,7 @@ async function handleExportClick(event) {
   if (label) label.textContent = actionText.exportLoading;
 
   try {
-    const response = await fetch(`${API_BASE_URL}/calendar.ics`);
+    const response = await fetchWithSession(`${API_BASE_URL}/calendar.ics`);
     if (await responseRequiresClassContext(response)) {
       showOverlay(exportUnauthorizedMessage);
       return;
@@ -803,7 +815,7 @@ async function loadCalendar() {
   showCalendarLoading(calendarEl, t('status.loading', 'Chargement du calendrier …'));
 
   try {
-    const res = await fetch(`${API_BASE_URL}/entries`);
+    const res = await fetchWithSession(`${API_BASE_URL}/entries`);
     if (await responseRequiresClassContext(res)) {
       showCalendarError(calendarEl, unauthorizedMessage);
       return;
