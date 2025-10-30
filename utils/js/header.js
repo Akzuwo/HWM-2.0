@@ -6,12 +6,27 @@ function computePathInfo() {
   const segments = trimmed.split('/').filter(Boolean);
   const hasFile = segments.length > 0 && segments[segments.length - 1].includes('.');
   const directories = hasFile ? segments.slice(0, -1) : segments;
-  const language = directories[0] || '';
-  const rootPrefix = directories.length ? '../'.repeat(directories.length) : '';
-  const extraDepth = language ? Math.max(directories.length - 1, 0) : directories.length;
-  const languagePrefix = extraDepth ? '../'.repeat(extraDepth) : '';
+  const docLanguage = (document.documentElement.lang || '').toLowerCase();
+  const docLanguageBase = docLanguage.includes('-') ? docLanguage.split('-')[0] : docLanguage;
+
+  let languageIndex = -1;
+  if (docLanguage) {
+    languageIndex = directories.findIndex((segment) => segment.toLowerCase() === docLanguage);
+  }
+  if (languageIndex === -1 && docLanguageBase) {
+    languageIndex = directories.findIndex((segment) => segment.toLowerCase() === docLanguageBase);
+  }
+
+  const languageSegment = languageIndex >= 0 ? directories[languageIndex] : '';
+  const language = languageSegment || docLanguageBase || directories[0] || 'en';
+
+  const directoriesAfterLanguage = languageIndex >= 0 ? directories.slice(languageIndex + 1) : directories.slice(1);
+  const languagePrefix = directoriesAfterLanguage.length ? '../'.repeat(directoriesAfterLanguage.length) : '';
+
+  const rootDepth = languageIndex >= 0 ? directories.length - languageIndex : Math.max(directories.length - 1, 0);
+  const rootPrefix = rootDepth > 0 ? '../'.repeat(rootDepth) : '';
   return {
-    language: document.documentElement.lang || language || 'en',
+    language,
     languagePrefix,
     rootPrefix,
     directories,
