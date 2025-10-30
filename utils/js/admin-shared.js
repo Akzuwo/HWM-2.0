@@ -278,6 +278,15 @@ export function createForm(fields, { initialValues = {} } = {}) {
         }
         input.appendChild(opt);
       });
+    } else if (field.type === 'file') {
+      input = document.createElement('input');
+      input.type = 'file';
+      if (field.accept) {
+        input.accept = field.accept;
+      }
+      if (field.multiple) {
+        input.multiple = true;
+      }
     } else {
       input = document.createElement('input');
       input.type = field.type || 'text';
@@ -331,6 +340,8 @@ export function createForm(fields, { initialValues = {} } = {}) {
       input.checked = Boolean(provided);
     } else if (field.type === 'select') {
       input.value = provided != null ? String(provided) : '';
+    } else if (field.type === 'file') {
+      input.value = '';
     } else if (field.type === 'datetime-local') {
       if (provided) {
         const date = new Date(provided);
@@ -390,6 +401,11 @@ export function createForm(fields, { initialValues = {} } = {}) {
         }
         if (field.type === 'password') {
           result[field.name] = input.value;
+          return;
+        }
+        if (field.type === 'file') {
+          const [file] = input.files || [];
+          result[field.name] = file || null;
           return;
         }
         const value = field.trim === false ? input.value : input.value.trim();

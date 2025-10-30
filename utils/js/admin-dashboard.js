@@ -23,7 +23,7 @@ const TRANSLATIONS = {
     create: {
       users: 'Neuen Nutzer anlegen',
       classes: 'Neue Klasse anlegen',
-      schedules: 'Neuen Stundenplan anlegen',
+      schedules: 'Stundenplan importieren',
     },
     buttons: {
       edit: 'Bearbeiten',
@@ -31,6 +31,7 @@ const TRANSLATIONS = {
       cancel: 'Abbrechen',
       save: 'Speichern',
       downloadLogs: 'API-Logs herunterladen',
+      import: 'Importieren',
     },
     confirmDelete: 'Soll dieser Eintrag wirklich gelöscht werden?',
     table: {
@@ -59,9 +60,12 @@ const TRANSLATIONS = {
       source: 'Quelle',
       importHash: 'Import-Hash',
       importedAt: 'Importiert am',
+      classIdentifier: 'Klassen-ID oder -Slug',
+      file: 'Datei',
     },
     help: {
       passwordOptional: 'Leer lassen, um das Passwort unverändert zu lassen.',
+      classIdentifier: 'Gib die ID oder den Slug der Klasse an.',
     },
     status: {
       active: 'Aktiv',
@@ -82,6 +86,9 @@ const TRANSLATIONS = {
       unknownError: 'Es ist ein unbekannter Fehler aufgetreten.',
       logsDownloaded: 'Protokolle heruntergeladen.',
       logsFailed: 'Protokolle konnten nicht heruntergeladen werden.',
+      fileRequired: 'Bitte eine Datei auswählen.',
+      classIdentifierRequired: 'Bitte eine Klassen-ID oder einen Slug angeben.',
+      scheduleImported: (count, hash) => `${count} Stunden importiert (Hash: ${hash}).`,
     },
     empty: 'Keine Daten vorhanden.',
     pagination: {
@@ -99,7 +106,7 @@ const TRANSLATIONS = {
     create: {
       users: 'Create user',
       classes: 'Create class',
-      schedules: 'Create schedule',
+      schedules: 'Import schedule',
     },
     buttons: {
       edit: 'Edit',
@@ -107,6 +114,7 @@ const TRANSLATIONS = {
       cancel: 'Cancel',
       save: 'Save',
       downloadLogs: 'Download API logs',
+      import: 'Import',
     },
     confirmDelete: 'Are you sure you want to delete this item?',
     table: {
@@ -135,9 +143,12 @@ const TRANSLATIONS = {
       source: 'Source',
       importHash: 'Import hash',
       importedAt: 'Imported at',
+      classIdentifier: 'Class ID or slug',
+      file: 'File',
     },
     help: {
       passwordOptional: 'Leave blank to keep the current password.',
+      classIdentifier: 'Provide the class ID or slug.',
     },
     status: {
       active: 'Active',
@@ -158,6 +169,9 @@ const TRANSLATIONS = {
       unknownError: 'An unknown error occurred.',
       logsDownloaded: 'Logs downloaded.',
       logsFailed: 'Unable to download logs.',
+      fileRequired: 'Please choose a file.',
+      classIdentifierRequired: 'Please provide a class ID or slug.',
+      scheduleImported: (count, hash) => `Imported ${count} lessons (hash: ${hash}).`,
     },
     empty: 'No data available.',
     pagination: {
@@ -175,7 +189,7 @@ const TRANSLATIONS = {
     create: {
       users: 'Créer un utilisateur',
       classes: 'Créer une classe',
-      schedules: 'Créer un horaire',
+      schedules: 'Importer un horaire',
     },
     buttons: {
       edit: 'Modifier',
@@ -183,6 +197,7 @@ const TRANSLATIONS = {
       cancel: 'Annuler',
       save: 'Enregistrer',
       downloadLogs: 'Télécharger les journaux API',
+      import: 'Importer',
     },
     confirmDelete: 'Voulez-vous vraiment supprimer cet élément ?',
     table: {
@@ -211,9 +226,12 @@ const TRANSLATIONS = {
       source: 'Source',
       importHash: 'Hash d’import',
       importedAt: 'Importé le',
+      classIdentifier: 'ID ou slug de classe',
+      file: 'Fichier',
     },
     help: {
       passwordOptional: 'Laissez vide pour conserver le mot de passe actuel.',
+      classIdentifier: 'Indiquez l’ID ou le slug de la classe.',
     },
     status: {
       active: 'Actif',
@@ -234,6 +252,9 @@ const TRANSLATIONS = {
       unknownError: 'Une erreur inconnue est survenue.',
       logsDownloaded: 'Journaux téléchargés.',
       logsFailed: 'Impossible de télécharger les journaux.',
+      fileRequired: 'Veuillez sélectionner un fichier.',
+      classIdentifierRequired: 'Veuillez indiquer un ID ou un slug de classe.',
+      scheduleImported: (count, hash) => `${count} cours importés (hash : ${hash}).`,
     },
     empty: 'Aucune donnée disponible.',
     pagination: {
@@ -251,7 +272,7 @@ const TRANSLATIONS = {
     create: {
       users: 'Crea utente',
       classes: 'Crea classe',
-      schedules: 'Crea orario',
+      schedules: 'Importa orario',
     },
     buttons: {
       edit: 'Modifica',
@@ -259,6 +280,7 @@ const TRANSLATIONS = {
       cancel: 'Annulla',
       save: 'Salva',
       downloadLogs: 'Scarica i log API',
+      import: 'Importa',
     },
     confirmDelete: 'Eliminare veramente questo elemento?',
     table: {
@@ -287,9 +309,12 @@ const TRANSLATIONS = {
       source: 'Fonte',
       importHash: 'Hash importazione',
       importedAt: 'Importato il',
+      classIdentifier: 'ID o slug della classe',
+      file: 'File',
     },
     help: {
       passwordOptional: 'Lascia vuoto per mantenere la password attuale.',
+      classIdentifier: 'Indica l’ID o lo slug della classe.',
     },
     status: {
       active: 'Attivo',
@@ -310,6 +335,9 @@ const TRANSLATIONS = {
       unknownError: 'Si è verificato un errore sconosciuto.',
       logsDownloaded: 'Log scaricati.',
       logsFailed: 'Impossibile scaricare i log.',
+      fileRequired: 'Seleziona un file.',
+      classIdentifierRequired: 'Indica un ID o uno slug di classe.',
+      scheduleImported: (count, hash) => `${count} lezioni importate (hash: ${hash}).`,
     },
     empty: 'Nessun dato disponibile.',
     pagination: {
@@ -537,6 +565,23 @@ function buildDashboard(root) {
 
   root.append(header, nav, actionsBar, tableWrapper, pagination.element, messageArea.element);
 
+  const scheduleImportFields = [
+    {
+      name: 'class_identifier',
+      label: t.fields.classIdentifier,
+      placeholder: t.fields.classIdentifier,
+      required: true,
+      helpText: t.help.classIdentifier,
+    },
+    {
+      name: 'file',
+      type: 'file',
+      label: t.fields.file,
+      required: true,
+      accept: 'application/json,.json',
+    },
+  ];
+
   const resources = {
     users: {
       key: 'users',
@@ -630,12 +675,7 @@ function buildDashboard(root) {
         { key: 'imported_at', label: t.table.importedAt, render: (row) => formatDate(row.imported_at, locale) },
       ],
       form: {
-        create: [
-          { name: 'class_id', type: 'number', label: t.fields.classId, required: true, min: 1 },
-          { name: 'source', label: t.fields.source },
-          { name: 'import_hash', label: t.fields.importHash },
-          { name: 'imported_at', type: 'datetime-local', label: t.fields.importedAt },
-        ],
+        create: scheduleImportFields,
         edit: [
           { name: 'class_id', type: 'number', label: t.fields.classId, min: 1 },
           { name: 'source', label: t.fields.source },
@@ -643,6 +683,7 @@ function buildDashboard(root) {
           { name: 'imported_at', type: 'datetime-local', label: t.fields.importedAt },
         ],
       },
+      importForm: scheduleImportFields,
       sanitize: sanitizeSchedulePayload,
     },
   };
@@ -808,6 +849,68 @@ function buildDashboard(root) {
     return { dialog, form, resource };
   }
 
+  function openScheduleImportDialog() {
+    const resource = resources.schedules;
+    const dialog = createDialog({
+      title: t.create.schedules,
+      confirmLabel: t.buttons.import,
+      cancelLabel: t.buttons.cancel,
+    });
+    const form = createForm(resource.importForm);
+    dialog.setContent(form.element);
+    dialog.open();
+    form.focusFirst();
+    dialog.onConfirm(async () => {
+      const values = form.getValues();
+      const classIdentifier = (values.class_identifier || '').trim();
+      const file = values.file || null;
+      if (!classIdentifier) {
+        throw new Error(t.messages.classIdentifierRequired);
+      }
+      if (!file) {
+        throw new Error(t.messages.fileRequired);
+      }
+      const formData = new FormData();
+      formData.append('class_identifier', classIdentifier);
+      formData.append('file', file, file.name || 'schedule.json');
+      formData.append('source', 'admin_dashboard');
+      let response;
+      try {
+        response = await fetch(resolveUrl('/api/admin/schedule-import'), {
+          method: 'POST',
+          credentials: 'include',
+          body: formData,
+        });
+      } catch (error) {
+        throw new Error(error instanceof Error ? error.message : String(error));
+      }
+      let payload = {};
+      try {
+        payload = await response.json();
+      } catch (error) {
+        payload = {};
+      }
+      if (response.status === 401 || response.status === 403) {
+        handleUnauthorized();
+        throw new Error(t.messages.unauthorized);
+      }
+      if (!response.ok) {
+        const message = payload.message || response.statusText || t.messages.unknownError;
+        throw new Error(message);
+      }
+      if (payload && typeof payload.status === 'string' && payload.status !== 'ok') {
+        const message = payload.message || t.messages.unknownError;
+        throw new Error(message);
+      }
+      const inserted = payload.inserted ?? 0;
+      const hash = payload.import_hash ?? '–';
+      await loadData();
+      if (state.authorized) {
+        showMessage('success', t.messages.scheduleImported(inserted, hash));
+      }
+    });
+  }
+
   function refreshAfter(action) {
     switch (action) {
       case 'create':
@@ -828,6 +931,10 @@ function buildDashboard(root) {
   createButton.addEventListener('click', () => {
     if (!state.authorized) {
       showMessage('error', t.messages.unauthorized);
+      return;
+    }
+    if (state.active === 'schedules') {
+      openScheduleImportDialog();
       return;
     }
     const { dialog, form, resource } = openFormDialog(state.active, 'create');
