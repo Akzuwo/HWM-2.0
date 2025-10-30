@@ -20,7 +20,11 @@ function computePathInfo() {
   const languageSegment = languageIndex >= 0 ? directories[languageIndex] : '';
   const language = languageSegment || docLanguageBase || directories[0] || 'en';
 
-  const directoriesAfterLanguage = languageIndex >= 0 ? directories.slice(languageIndex + 1) : directories.slice(1);
+  const directoriesAfterLanguageRaw = languageIndex >= 0 ? directories.slice(languageIndex + 1) : directories.slice(1);
+  const directoriesAfterLanguage =
+    !hasFile && directoriesAfterLanguageRaw.length
+      ? directoriesAfterLanguageRaw.slice(0, -1)
+      : directoriesAfterLanguageRaw;
   const languagePrefix = directoriesAfterLanguage.length ? '../'.repeat(directoriesAfterLanguage.length) : '';
 
   const rootDepth = languageIndex >= 0 ? directories.length - languageIndex : Math.max(directories.length - 1, 0);
