@@ -147,7 +147,8 @@ const DEFAULT_SESSION = {
     email: '',
     emailVerified: false,
     isAdmin: false,
-    isClassAdmin: false
+    isClassAdmin: false,
+    canManageEntries: false
 };
 
 let sessionState = normalizeSession(loadStoredSession());
@@ -177,7 +178,8 @@ function normalizeSession(data = {}) {
         email: data.email || '',
         emailVerified: Boolean(data.emailVerified),
         isAdmin: role === 'admin',
-        isClassAdmin: role === 'admin' || role === 'class_admin'
+        isClassAdmin: role === 'admin' || role === 'class_admin',
+        canManageEntries: role === 'admin' || role === 'teacher' || role === 'class_admin'
     };
 }
 
@@ -229,6 +231,10 @@ function isAdmin() {
 
 function isClassAdmin() {
     return sessionState.isClassAdmin;
+}
+
+function canManageEntries() {
+    return sessionState.canManageEntries;
 }
 
 function isAuthenticated() {
@@ -373,7 +379,7 @@ function updateFeatureVisibility() {
         actionBar.classList.toggle('is-hidden', shouldHide);
     }
     document.querySelectorAll('[data-action="create"]').forEach((element) => {
-        const hideForNonAdmins = !isAdmin();
+        const hideForNonAdmins = !canManageEntries();
         element.classList.toggle('is-hidden', hideForNonAdmins);
     });
 }
@@ -2031,7 +2037,7 @@ function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES)
 }
 
 function showEntryForm() {
-    if (!isAdmin()) {
+    if (!canManageEntries()) {
         showOverlay(CREATE_DISABLED_MESSAGE);
         return;
     }

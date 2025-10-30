@@ -17,7 +17,7 @@ function fetchWithSession(url, options = {}) {
   return fetch(url, init);
 }
 const role = sessionStorage.getItem('role') || 'guest';
-const userIsAdmin = role === 'admin';
+const userCanManageEntries = role === 'admin' || role === 'teacher' || role === 'class_admin';
 
 const t = window.hmI18n ? window.hmI18n.scope('calendar') : (key, fallback) => fallback;
 const modalT = window.hmI18n ? window.hmI18n.scope('calendar.modal') : (key, fallback) => fallback;
@@ -149,11 +149,11 @@ function debounce(fn, wait = 160) {
   };
 }
 
-function toggleViewMode(isAdmin) {
+function toggleViewMode(canManage) {
   const viewMode = document.getElementById('fc-view-mode');
   const editForm = document.getElementById('fc-edit-form');
   if (!viewMode || !editForm) return;
-  if (isAdmin) {
+  if (canManage) {
     viewMode.classList.add('is-hidden');
     editForm.classList.remove('is-hidden');
   } else {
@@ -258,9 +258,9 @@ function openModal(event) {
     editFormController.evaluate();
   }
 
-  toggleViewMode(userIsAdmin);
+  toggleViewMode(userCanManageEntries);
 
-  const initialFocusTarget = userIsAdmin
+  const initialFocusTarget = userCanManageEntries
     ? document.querySelector('#fc-edit-form [data-hm-modal-initial-focus]')
     : overlay.querySelector('.hm-modal__close');
 
@@ -446,7 +446,7 @@ function initActionBar() {
   const backBtn = actionBar.querySelector('[data-action="back"]');
 
   if (createBtn) {
-    if (!userIsAdmin) {
+    if (!userCanManageEntries) {
       createBtn.disabled = true;
       createBtn.setAttribute('aria-disabled', 'true');
     } else {
