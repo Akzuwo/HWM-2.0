@@ -2829,7 +2829,7 @@ def _cors_preflight():
     resp.headers.update({
         'Access-Control-Allow-Origin': origin,
         'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Headers': 'Content-Type, X-Role',
         'Access-Control-Allow-Credentials': 'true',
         'Vary': 'Origin',
     })
@@ -3035,7 +3035,7 @@ def add_cors_headers(response):
         response.headers.pop('Access-Control-Allow-Credentials', None)
 
     response.headers['Access-Control-Allow-Methods'] = 'GET,POST,PUT,DELETE,OPTIONS'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, X-Role'
     return response
 
 # ---------- SERVER START ----------
