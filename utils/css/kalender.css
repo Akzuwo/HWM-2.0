@@ -156,6 +156,19 @@ body.calendar-theme main {
   line-height: 1.5;
 }
 
+.calendar-shell__legend {
+  display: flex;
+  justify-content: flex-end;
+  align-self: flex-end;
+}
+
+@media (max-width: 600px) {
+  .calendar-shell__legend {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
 .calendar-legend {
   display: inline-flex;
   flex-wrap: wrap;
