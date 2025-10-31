@@ -31,6 +31,9 @@ let currentClassSlug = typeof CLASS_STORAGE.getSlug === 'function' ? (CLASS_STOR
 
 const classSelectorEnabled = role === 'admin' || role === 'teacher';
 
+const t = window.hmI18n ? window.hmI18n.scope('calendar') : (key, fallback) => fallback;
+const modalT = window.hmI18n ? window.hmI18n.scope('calendar.modal') : (key, fallback) => fallback;
+
 const classSelectorText = {
   label: t('classSelector.label', 'Classe'),
   placeholder: t('classSelector.placeholder', 'Seleziona una classe'),
@@ -39,9 +42,6 @@ const classSelectorText = {
   changeError: t('classSelector.changeError', 'Impossibile cambiare classe.'),
   required: t('classSelector.required', 'Seleziona una classe per visualizzare il calendario.')
 };
-
-const t = window.hmI18n ? window.hmI18n.scope('calendar') : (key, fallback) => fallback;
-const modalT = window.hmI18n ? window.hmI18n.scope('calendar.modal') : (key, fallback) => fallback;
 
 const TYPE_LABELS = {
   hausaufgabe: t('legend.homework', 'Compito'),
