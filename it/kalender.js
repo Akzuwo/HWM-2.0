@@ -983,6 +983,7 @@ function initialiseCalendar(events) {
   const calendar = new FullCalendar.Calendar(calendarEl, {
     initialView: determineInitialView(),
     locale: 'it',
+    firstDay: 1,
     headerToolbar: false,
     buttonText: {
       month: t('views.month', 'Mese'),
