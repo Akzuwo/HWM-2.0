@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return;
   }
 
-  initCurrentSubjectPage({
+  const controller = initCurrentSubjectPage({
     refreshInterval: 750,
     countdownUpdateInterval: 750,
     text: {
@@ -16,6 +16,39 @@ document.addEventListener('DOMContentLoaded', () => {
       noNextLesson: 'No further lessons today.',
       error: 'Unable to load data.',
       unauthorized: 'Please sign in and make sure you are assigned to a class to view the current subject.',
+      featureUnavailable: 'This feature is not yet available for your class.'
     },
   });
+
+  if (window.hmClassSelector) {
+    const permissions = window.hmCalendar ? window.hmCalendar.permissions : null;
+    const selector = window.hmClassSelector.create({
+      container: '[data-class-selector]',
+      select: '[data-class-select]',
+      permissions,
+      text: {
+        label: 'Class',
+        placeholder: 'Select class',
+        loading: 'Loading classes…',
+        error: 'Unable to load classes.',
+        changeError: 'Unable to change class.',
+        required: 'Please choose a class to use this feature.'
+      },
+      onError: (message) => {
+        if (typeof window.showOverlay === 'function') {
+          window.showOverlay(message, 'error');
+        } else {
+          console.error(message);
+        }
+      },
+      onClassChange: () => {
+        if (controller && typeof controller.refresh === 'function') {
+          controller.refresh();
+        }
+      }
+    });
+    selector.init().catch((error) => {
+      console.error('Failed to initialise class selector:', error);
+    });
+  }
 });

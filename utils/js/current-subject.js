@@ -17,6 +17,7 @@
     noNextLesson: 'No further lessons today',
     error: 'Unable to load data.',
     unauthorized: 'Please sign in and make sure you are assigned to a class to view this page.',
+    featureUnavailable: 'This feature is not available for your class yet.',
   };
 
   async function responseRequiresClassContext(response) {
@@ -101,6 +102,7 @@
       refreshInterval: DEFAULT_REFRESH,
       text: {},
       countdownUpdateInterval: DEFAULT_COUNTDOWN_UPDATE,
+      fetchOptions: null,
       ...options,
     };
     const root = bySelector(config.selector);
@@ -155,6 +157,7 @@
       fetchTimer: null,
       lastPayload: null,
       unauthorized: false,
+      featureUnavailable: false,
     };
 
     function setSubjectLabel(value, isLessonActive) {
@@ -352,11 +355,16 @@
     }
 
     async function fetchData() {
-      if (state.unauthorized) {
+      if (state.unauthorized || state.featureUnavailable) {
         return;
       }
       try {
-        const response = await fetch(config.endpoint, { cache: 'no-store' });
+        const requestInit = {
+          cache: 'no-store',
+          credentials: 'include',
+          ...(config.fetchOptions || {}),
+        };
+        const response = await fetch(config.endpoint, requestInit);
         if (await responseRequiresClassContext(response)) {
           state.unauthorized = true;
           handleError(text.unauthorized || text.error);
@@ -366,10 +374,29 @@
           }
           return;
         }
+        if (response.status === 404) {
+          let payload = null;
+          try {
+            payload = await response.clone().json();
+          } catch (error) {
+            payload = null;
+          }
+          if (payload && payload.error === 'schedule_unavailable') {
+            state.featureUnavailable = true;
+            handleError(text.featureUnavailable || text.error);
+            if (state.fetchTimer) {
+              clearInterval(state.fetchTimer);
+              state.fetchTimer = null;
+            }
+            return;
+          }
+        }
         if (!response.ok) {
           throw new Error(`Request failed with status ${response.status}`);
         }
         const payload = await response.json();
+        state.unauthorized = false;
+        state.featureUnavailable = false;
         state.lastPayload = payload;
         renderCurrent(payload);
         renderNext(payload);
@@ -411,5 +438,20 @@
 
     fetchData();
     scheduleRefresh();
+
+    return {
+      refresh() {
+        state.unauthorized = false;
+        state.featureUnavailable = false;
+        fetchData();
+        if (!state.fetchTimer && Number.isFinite(config.refreshInterval) && config.refreshInterval > 0) {
+          state.fetchTimer = window.setInterval(fetchData, config.refreshInterval);
+        }
+      },
+      destroy: cleanup,
+      getLastPayload() {
+        return state.lastPayload;
+      },
+    };
   };
 })();

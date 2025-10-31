@@ -1129,6 +1129,18 @@ def _load_schedule_for_day(conn, class_id, weekday):
     return _normalize_schedule_rows(rows)
 
 
+def _class_has_schedule(conn, class_id):
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "SELECT 1 FROM stundenplan_entries WHERE class_id=%s LIMIT 1",
+            (class_id,),
+        )
+        return cursor.fetchone() is not None
+    finally:
+        cursor.close()
+
+
 # Hilfsfunktion für die Formatierung von Zeitwerten aus MySQL
 def _format_time_value(value):
     if value is None:
@@ -2852,6 +2864,8 @@ def aktuelles_fach():
         return jsonify({'status': 'error', 'message': 'database_unavailable'}), 503
     with closing(conn):
         try:
+            if not _class_has_schedule(conn, class_id):
+                return jsonify({'error': 'schedule_unavailable'}), 404
             plan = _load_schedule_for_day(conn, class_id, tag)
         except mysql.connector.Error:
             return jsonify({'status': 'error', 'message': 'database_unavailable'}), 503
@@ -2923,6 +2937,8 @@ def tagesuebersicht():
         return jsonify({'status': 'error', 'message': 'database_unavailable'}), 503
     with closing(conn):
         try:
+            if not _class_has_schedule(conn, class_id):
+                return jsonify({'error': 'schedule_unavailable'}), 404
             heute_rows = _load_schedule_for_day(conn, class_id, heute)
             morgen_rows = _load_schedule_for_day(conn, class_id, morgen)
         except mysql.connector.Error:

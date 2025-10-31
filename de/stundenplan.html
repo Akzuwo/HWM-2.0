@@ -10,6 +10,7 @@
   <link rel="icon" type="image/png" href="../media/logo.png">
   <link rel="stylesheet" href="../utils/css/style.css">
   <link rel="stylesheet" href="../utils/css/stundenplan.css">
+  <link rel="stylesheet" href="../utils/css/kalender.css">
 </head>
 <body>
 <main class="current-subject" data-current-subject id="main">
@@ -19,6 +20,12 @@
         <span>Aktuelles Fach</span>
         <span class="current-subject__title-subject" data-subject-name>· —</span>
       </h1>
+      <div class="calendar-class-selector" data-class-selector hidden>
+        <label for="current-class-select">Klasse</label>
+        <select id="current-class-select" data-class-select>
+          <option value="" disabled selected>Klasse wählen</option>
+        </select>
+      </div>
     </header>
     <section class="current-subject__status">
       <div class="current-subject__countdown" aria-live="polite">
@@ -100,6 +107,8 @@
 <script src="../utils/js/overlay.js" defer></script>
   <script src="../utils/js/toast.js" defer></script>
   <script src="../utils/js/footer.js" defer></script>
+  <script src="../utils/js/calendar-permissions.js" defer></script>
+  <script src="../utils/js/class-selector.js" defer></script>
   <script src="../utils/js/current-subject.js" defer></script>
   <script src="stundenplan.js" defer></script>
 </body>

@@ -6,6 +6,7 @@
   <title>Panoramica giornaliera</title>
   <link rel="icon" type="image/png" href="../media/logo.png">
   <link rel="stylesheet" href="../utils/css/style.css">
+  <link rel="stylesheet" href="../utils/css/kalender.css">
 </head>
 <body>
 <main class="page-container" id="main">
@@ -13,6 +14,12 @@
       <div>
         <h1>📅 Panoramica giornaliera</h1>
         <p id="pageDate" class="page-date"></p>
+      </div>
+      <div class="calendar-class-selector" data-class-selector hidden>
+        <label for="overview-class-select">Classe</label>
+        <select id="overview-class-select" data-class-select>
+          <option value="" disabled selected>Seleziona classe</option>
+        </select>
       </div>
       <a class="hm-back-link" href="stundenplan.html">◀️ Indietro</a>
     </header>
@@ -22,6 +29,8 @@
 
   <script type="module" src="../utils/js/header.js"></script>
 <script src="script.js" defer></script>
+  <script src="../utils/js/calendar-permissions.js" defer></script>
+  <script src="../utils/js/class-selector.js" defer></script>
   <script src="tagesuebersicht.js" defer></script>
 </body>
 </html>
