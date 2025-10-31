@@ -21,12 +21,17 @@ function createOverlay() {
     overlay.className = 'overlay';
     overlay.innerHTML = `
         <div class="overlay-content">
+            <button type="button" class="overlay-close" aria-label="Schließen">×</button>
             <p id="overlay-message"></p>
-            <button id="overlay-close">OK</button>
+            <button type="button" id="overlay-ok">OK</button>
         </div>
     `;
     document.body.appendChild(overlay);
-    document.getElementById('overlay-close').addEventListener('click', hideOverlay);
+    overlay.querySelector('.overlay-close').addEventListener('click', hideOverlay);
+    const okButton = document.getElementById('overlay-ok');
+    if (okButton) {
+        okButton.addEventListener('click', hideOverlay);
+    }
 }
 
 document.addEventListener('DOMContentLoaded', createOverlay);
