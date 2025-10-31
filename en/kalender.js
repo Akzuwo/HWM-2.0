@@ -203,6 +203,8 @@ const modalButtons = {
 
 let editFormController = null;
 let calendarInstance = null;
+let lastCalendarViewType = null;
+let lastCalendarDateValue = null;
 let resizeHandler = null;
 let calendarAnimationIndex = 0;
 
@@ -1112,6 +1114,15 @@ function initialiseCalendar(events) {
   if (!calendarEl) return;
 
   if (calendarInstance) {
+    if (calendarInstance.view && calendarInstance.view.type) {
+      lastCalendarViewType = calendarInstance.view.type;
+    }
+    if (typeof calendarInstance.getDate === 'function') {
+      const activeDate = calendarInstance.getDate();
+      if (activeDate) {
+        lastCalendarDateValue = activeDate.valueOf();
+      }
+    }
     calendarInstance.destroy();
     calendarInstance = null;
   }
@@ -1123,8 +1134,11 @@ function initialiseCalendar(events) {
   prepareCalendarContainer(calendarEl);
   calendarAnimationIndex = 0;
 
-  const calendar = new FullCalendar.Calendar(calendarEl, {
-    initialView: determineInitialView(),
+  const preferredView = lastCalendarViewType || determineInitialView();
+  const preferredDate = lastCalendarDateValue ? new Date(lastCalendarDateValue) : null;
+
+  const calendarConfig = {
+    initialView: preferredView,
     locale: 'en-gb',
     firstDay: 1,
     headerToolbar: false,
@@ -1168,7 +1182,13 @@ function initialiseCalendar(events) {
       updateMonthLabel(calendar);
       updateViewButtons(calendar);
     }
-  });
+  };
+
+  if (preferredDate) {
+    calendarConfig.initialDate = preferredDate;
+  }
+
+  const calendar = new FullCalendar.Calendar(calendarEl, calendarConfig);
 
   calendar.render();
   calendarInstance = calendar;
