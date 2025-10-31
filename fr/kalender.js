@@ -201,6 +201,70 @@ const modalButtons = {
   deleteLoading: modalT('buttons.deleteLoading', 'Suppression…')
 };
 
+function getDeleteConfirmOverlay() {
+  if (typeof document === 'undefined') {
+    return null;
+  }
+  return document.getElementById('calendar-delete-confirm-overlay');
+}
+
+function syncDeleteConfirmMessage(overlay) {
+  if (!overlay) {
+    return;
+  }
+  const messageEl = overlay.querySelector('[data-i18n="calendar.modal.deleteConfirm.message"]');
+  if (messageEl && typeof modalText.deleteConfirm === 'string' && modalText.deleteConfirm) {
+    messageEl.textContent = modalText.deleteConfirm;
+  }
+}
+
+function openDeleteConfirmModal(event) {
+  if (event && typeof event.preventDefault === 'function') {
+    event.preventDefault();
+  }
+
+  const overlay = getDeleteConfirmOverlay();
+  if (!overlay) {
+    if (typeof window !== 'undefined' && typeof window.confirm === 'function') {
+      if (window.confirm(modalText.deleteConfirm)) {
+        deleteEntry();
+      }
+    }
+    return;
+  }
+
+  syncDeleteConfirmMessage(overlay);
+
+  if (window.hmModal && typeof window.hmModal.open === 'function') {
+    window.hmModal.open(overlay, {
+      initialFocus: '[data-role="cancel"]',
+      onRequestClose: closeDeleteConfirmModal
+    });
+  } else {
+    overlay.classList.add('is-open');
+    overlay.setAttribute('aria-hidden', 'false');
+  }
+}
+
+function closeDeleteConfirmModal() {
+  const overlay = getDeleteConfirmOverlay();
+  if (!overlay) {
+    return;
+  }
+
+  if (window.hmModal && typeof window.hmModal.close === 'function') {
+    window.hmModal.close(overlay);
+  } else {
+    overlay.classList.remove('is-open');
+    overlay.setAttribute('aria-hidden', 'true');
+  }
+}
+
+function confirmDeleteEntry() {
+  closeDeleteConfirmModal();
+  deleteEntry();
+}
+
 let editFormController = null;
 let calendarInstance = null;
 let lastCalendarViewType = null;
@@ -736,7 +800,6 @@ async function saveEdit(evt) {
 
 async function deleteEntry() {
   const id = document.getElementById('fc-entry-id').value;
-  if (!confirm(modalText.deleteConfirm)) return;
 
   refreshPermissionState();
 
@@ -790,6 +853,9 @@ async function deleteEntry() {
 
 window.deleteEntry = deleteEntry;
 window.saveEdit = saveEdit;
+window.openDeleteConfirmModal = openDeleteConfirmModal;
+window.closeDeleteConfirmModal = closeDeleteConfirmModal;
+window.confirmDeleteEntry = confirmDeleteEntry;
 
 function initActionBar() {
   const actionBar = document.querySelector('.calendar-action-bar');

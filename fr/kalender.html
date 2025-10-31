@@ -339,7 +339,7 @@
             type="button"
             class="hm-btn hm-btn--danger"
             data-role="delete"
-            onclick="deleteEntry()"
+            onclick="openDeleteConfirmModal()"
             data-i18n="calendar.modal.buttons.delete"
           >
             Supprimer
@@ -469,6 +469,82 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <div
+    id="calendar-delete-confirm-overlay"
+    class="hm-modal-overlay"
+    aria-hidden="true"
+    onclick="closeDeleteConfirmModal()"
+  >
+    <div
+      class="hm-modal hm-modal--compact"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="calendar-delete-confirm-title"
+      onclick="event.stopPropagation()"
+    >
+      <header class="hm-modal__header">
+        <button
+          type="button"
+          class="hm-modal__close"
+          onclick="closeDeleteConfirmModal()"
+          aria-label="Fermer"
+          data-i18n-attr="aria-label:calendar.modal.buttons.close"
+        >
+          <span class="visually-hidden" data-i18n="calendar.modal.buttons.close">Fermer</span>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M18 6 6 18"></path>
+            <path d="M6 6l12 12"></path>
+          </svg>
+        </button>
+        <div class="hm-modal__title-wrapper">
+          <h2
+            id="calendar-delete-confirm-title"
+            class="hm-modal__title"
+            data-i18n="calendar.modal.deleteConfirm.title"
+          >
+            Supprimer l’entrée ?
+          </h2>
+        </div>
+      </header>
+
+      <div class="hm-modal__body">
+        <p data-i18n="calendar.modal.deleteConfirm.message">
+          Voulez-vous vraiment supprimer cette entrée ? Cette action est irréversible.
+        </p>
+      </div>
+
+      <div class="hm-modal__footer">
+        <button
+          type="button"
+          class="hm-btn hm-btn--secondary"
+          data-role="cancel"
+          data-hm-modal-initial-focus
+          onclick="closeDeleteConfirmModal()"
+          data-i18n="calendar.modal.buttons.cancel"
+        >
+          Annuler
+        </button>
+        <button
+          type="button"
+          class="hm-btn hm-btn--danger"
+          data-role="confirm"
+          onclick="confirmDeleteEntry()"
+          data-i18n="calendar.modal.buttons.delete"
+        >
+          Supprimer
+        </button>
+      </div>
     </div>
   </div>
 
