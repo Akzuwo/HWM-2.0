@@ -903,6 +903,8 @@ body.hm-modal-open {
 
 .hm-modal__section {
   overflow-y: auto;
+  padding: var(--space-3) calc(var(--space-4) - 0.25rem) var(--space-4);
+  scrollbar-gutter: stable both-edges;
 }
 
 .hm-modal__close {
@@ -934,10 +936,39 @@ body.hm-modal-open {
 .hm-modal__body {
   flex: 1 1 auto;
   overflow-y: auto;
-  padding: 1.35rem 1.75rem 1.6rem;
+  padding: 1.35rem calc(1.75rem + 0.25rem) 1.6rem 1.75rem;
   display: flex;
   flex-direction: column;
   gap: 1.1rem;
+  scrollbar-gutter: stable;
+}
+
+.hm-modal__section,
+.hm-modal__body {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.24) transparent;
+}
+
+.hm-modal__section::-webkit-scrollbar,
+.hm-modal__body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.hm-modal__section::-webkit-scrollbar-track,
+.hm-modal__body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.hm-modal__section::-webkit-scrollbar-thumb,
+.hm-modal__body::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.24);
+  border-radius: 999px;
+  border: 2px solid transparent;
+}
+
+.hm-modal__section::-webkit-scrollbar-thumb:hover,
+.hm-modal__body::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.32);
 }
 
 .hm-modal__section .hm-modal__body {
