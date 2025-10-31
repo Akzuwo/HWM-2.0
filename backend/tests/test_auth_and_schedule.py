@@ -133,6 +133,40 @@ def test_schedule_endpoint_filters_by_class(app_client):
     assert all(entry['fach'] != 'Biologie' for entry in monday_entries)
 
 
+def test_current_subject_returns_404_when_schedule_missing(app_client):
+    client, storage, _ = app_client
+    storage['stundenplan_entries'].clear()
+
+    resp = client.post('/api/auth/login', json={'email': 'admin@example.com', 'password': 'adminpw'})
+    assert resp.status_code == 200
+
+    with client.session_transaction() as sess:
+        sess['class_id'] = 1
+        sess['class_slug'] = 'default'
+
+    resp = client.get('/aktuelles_fach')
+    assert resp.status_code == 404
+    payload = resp.get_json()
+    assert payload['error'] == 'schedule_unavailable'
+
+
+def test_daily_overview_returns_404_when_schedule_missing(app_client):
+    client, storage, _ = app_client
+    storage['stundenplan_entries'].clear()
+
+    resp = client.post('/api/auth/login', json={'email': 'admin@example.com', 'password': 'adminpw'})
+    assert resp.status_code == 200
+
+    with client.session_transaction() as sess:
+        sess['class_id'] = 1
+        sess['class_slug'] = 'default'
+
+    resp = client.get('/tagesuebersicht')
+    assert resp.status_code == 404
+    payload = resp.get_json()
+    assert payload['error'] == 'schedule_unavailable'
+
+
 def test_verification_rate_limit_blocks_after_threshold(app_client, monkeypatch):
     client, _, app_module = app_client
     app_module.VERIFY_RATE_LIMIT.clear()
