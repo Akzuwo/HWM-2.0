@@ -801,9 +801,40 @@ body.has-auth-overlay {
     color: #fff;
     max-width: 400px;
     width: 80%;
+    position: relative;
 }
 
-.overlay-content button {
+.overlay-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: #fff;
+    font-size: 1.5rem;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.overlay-close:hover,
+.overlay-close:focus-visible {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    outline: none;
+}
+
+.overlay-close:focus-visible {
+    box-shadow: 0 0 0 2px rgba(91, 141, 239, 0.6);
+}
+
+.overlay-content button:not(.overlay-close) {
     margin-top: 10px;
     padding: 6px 12px;
 }
