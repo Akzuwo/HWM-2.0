@@ -132,8 +132,6 @@ function hideClassSelector() {
 }
 
 const CLASS_STORAGE = (window.hmClassStorage) ? window.hmClassStorage : {
-
-const CLASS_STORAGE = (window.hmClassStorage) ? window.hmClassStorage : {
   getId: () => '',
   getSlug: () => '',
   set: () => {},
