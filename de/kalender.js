@@ -17,79 +17,43 @@ function fetchWithSession(url, options = {}) {
   return fetch(url, init);
 }
 
-function resolveSessionRole() {
-  if (typeof window === 'undefined' || typeof window.sessionStorage === 'undefined') {
-    return 'guest';
+const CALENDAR_PERMISSIONS = window.hmCalendar?.permissions || null;
+const FALLBACK_PERMISSION_STATE = CALENDAR_PERMISSIONS
+  ? CALENDAR_PERMISSIONS.getState()
+  : { role: 'guest', canManageEntries: false, classSelectorEnabled: false };
+
+let role = FALLBACK_PERMISSION_STATE.role;
+let userCanManageEntries = FALLBACK_PERMISSION_STATE.canManageEntries;
+let classSelectorEnabled = FALLBACK_PERMISSION_STATE.classSelectorEnabled;
+
+function applyPermissionSnapshot(nextState) {
+  if (!nextState) {
+    return;
   }
-  try {
-    const rawSession = window.sessionStorage.getItem('hm.session');
-    if (!rawSession) {
-      return 'guest';
-    }
-    const parsedSession = JSON.parse(rawSession);
-    const nextRole = parsedSession?.role || parsedSession?.user?.role;
-    return (typeof nextRole === 'string' && nextRole.trim()) ? nextRole : 'guest';
-  } catch (error) {
-    console.warn('Konnte Session-Rolle nicht lesen:', error);
-    return 'guest';
+  role = nextState.role;
+  userCanManageEntries = nextState.canManageEntries;
+  classSelectorEnabled = nextState.classSelectorEnabled;
+}
+
+function refreshPermissionState() {
+  if (!CALENDAR_PERMISSIONS) {
+    return;
   }
-}
-
-function computeCanManageEntries(roleValue) {
-  return roleValue === 'admin' || roleValue === 'teacher' || roleValue === 'class_admin';
-}
-
-function computeClassSelectorEnabled(roleValue) {
-  return roleValue === 'admin' || roleValue === 'teacher';
-}
-
-let role = resolveSessionRole();
-let userCanManageEntries = computeCanManageEntries(role);
-let classSelectorEnabled = computeClassSelectorEnabled(role);
-
-function updateRoleState() {
-  const nextRole = resolveSessionRole();
-  role = nextRole;
-  userCanManageEntries = computeCanManageEntries(role);
-  classSelectorEnabled = computeClassSelectorEnabled(role);
-}
-
-if (typeof window !== 'undefined') {
-  window.addEventListener('storage', (event) => {
-    if (event.storageArea && event.storageArea !== window.sessionStorage) {
-      return;
-    }
-    if (event.key && event.key !== 'hm.session') {
-      return;
-    }
-    const previousCanManageEntries = userCanManageEntries;
-    const previousClassSelectorEnabled = classSelectorEnabled;
-    updateRoleState();
-    handleRolePermissionsChange(previousCanManageEntries, previousClassSelectorEnabled);
-  });
-}
-
-function handleRolePermissionsChange(previousCanManageEntries, previousClassSelectorEnabled) {
-  if (previousCanManageEntries !== userCanManageEntries) {
-    updateActionBarPermissions();
-  }
-  if (previousClassSelectorEnabled !== classSelectorEnabled) {
-    if (classSelectorEnabled) {
-      initialiseClassSelector()
-        .then(() => loadCalendar())
-        .catch((error) => {
-          console.error('Klassen-Auswahl konnte nicht aktualisiert werden:', error);
-        });
-    } else {
-      hideClassSelector();
-      loadCalendar().catch((error) => {
-        console.error('Kalender konnte nach Rollenänderung nicht aktualisiert werden:', error);
-      });
-    }
+  const nextState = CALENDAR_PERMISSIONS.refresh();
+  if (nextState) {
+    applyPermissionSnapshot(nextState);
   }
 }
 
-function updateActionBarPermissions() {
+function applyActionBarPermissions() {
+  if (CALENDAR_PERMISSIONS) {
+    CALENDAR_PERMISSIONS.updateActionBarPermissions({
+      onCreate: () => showEntryForm(),
+      canManageEntries: userCanManageEntries
+    });
+    return;
+  }
+
   if (typeof document === 'undefined') {
     return;
   }
@@ -113,6 +77,46 @@ function updateActionBarPermissions() {
       createBtn.dataset.hmRoleBound = 'true';
     }
   }
+}
+
+if (CALENDAR_PERMISSIONS) {
+  CALENDAR_PERMISSIONS.subscribe((nextState, previousState) => {
+    const prevState = previousState
+      ? { ...previousState }
+      : {
+          role,
+          canManageEntries: userCanManageEntries,
+          classSelectorEnabled
+        };
+
+    applyPermissionSnapshot(nextState);
+
+    if (!previousState) {
+      applyActionBarPermissions();
+      return;
+    }
+
+    if (prevState.canManageEntries !== nextState.canManageEntries) {
+      applyActionBarPermissions();
+    }
+
+    if (prevState.classSelectorEnabled !== nextState.classSelectorEnabled) {
+      if (nextState.classSelectorEnabled) {
+        initialiseClassSelector()
+          .then(() => loadCalendar())
+          .catch((error) => {
+            console.error('Klassen-Auswahl konnte nicht aktualisiert werden:', error);
+          });
+      } else {
+        hideClassSelector();
+        loadCalendar().catch((error) => {
+          console.error('Kalender konnte nach Rollenänderung nicht aktualisiert werden:', error);
+        });
+      }
+    }
+  });
+} else {
+  console.warn('hmCalendar-Berechtigungshilfen nicht verfügbar. Fallback auf Gast-Rolle.');
 }
 
 function hideClassSelector() {
@@ -627,7 +631,7 @@ async function saveEdit(evt) {
     evt.preventDefault();
   }
 
-  updateRoleState();
+  refreshPermissionState();
 
   const form = document.getElementById('fc-edit-form');
   if (!form) {
@@ -733,7 +737,7 @@ async function deleteEntry() {
   const id = document.getElementById('fc-entry-id').value;
   if (!confirm(modalText.deleteConfirm)) return;
 
-  updateRoleState();
+  refreshPermissionState();
 
   const deleteButton = document.querySelector('#fc-edit-form [data-role="delete"]');
   if (deleteButton) {
@@ -792,7 +796,7 @@ function initActionBar() {
   const exportBtn = actionBar.querySelector('[data-action="export"]');
   const backBtn = actionBar.querySelector('[data-action="back"]');
 
-  updateActionBarPermissions();
+  applyActionBarPermissions();
 
   if (exportBtn) {
     exportBtn.addEventListener('click', handleExportClick);

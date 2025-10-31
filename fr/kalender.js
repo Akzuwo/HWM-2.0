@@ -16,8 +16,125 @@ function fetchWithSession(url, options = {}) {
   }
   return fetch(url, init);
 }
-const role = sessionStorage.getItem('role') || 'guest';
-const userCanManageEntries = role === 'admin' || role === 'teacher' || role === 'class_admin';
+const CALENDAR_PERMISSIONS = window.hmCalendar?.permissions || null;
+const FALLBACK_PERMISSION_STATE = CALENDAR_PERMISSIONS
+  ? CALENDAR_PERMISSIONS.getState()
+  : { role: 'guest', canManageEntries: false, classSelectorEnabled: false };
+
+let role = FALLBACK_PERMISSION_STATE.role;
+let userCanManageEntries = FALLBACK_PERMISSION_STATE.canManageEntries;
+let classSelectorEnabled = FALLBACK_PERMISSION_STATE.classSelectorEnabled;
+
+function applyPermissionSnapshot(nextState) {
+  if (!nextState) {
+    return;
+  }
+  role = nextState.role;
+  userCanManageEntries = nextState.canManageEntries;
+  classSelectorEnabled = nextState.classSelectorEnabled;
+}
+
+function refreshPermissionState() {
+  if (!CALENDAR_PERMISSIONS) {
+    return;
+  }
+  const nextState = CALENDAR_PERMISSIONS.refresh();
+  if (nextState) {
+    applyPermissionSnapshot(nextState);
+  }
+}
+
+function applyActionBarPermissions() {
+  if (CALENDAR_PERMISSIONS) {
+    CALENDAR_PERMISSIONS.updateActionBarPermissions({
+      onCreate: () => showEntryForm(),
+      canManageEntries: userCanManageEntries
+    });
+    return;
+  }
+
+  if (typeof document === 'undefined') {
+    return;
+  }
+
+  const actionBar = document.querySelector('.calendar-action-bar');
+  if (!actionBar) {
+    return;
+  }
+
+  const createBtn = actionBar.querySelector('[data-action="create"]');
+  if (!createBtn) {
+    return;
+  }
+
+  if (!userCanManageEntries) {
+    createBtn.disabled = true;
+    createBtn.setAttribute('aria-disabled', 'true');
+  } else {
+    createBtn.disabled = false;
+    createBtn.removeAttribute('aria-disabled');
+    if (!createBtn.dataset.hmRoleBound) {
+      createBtn.addEventListener('click', () => showEntryForm());
+      createBtn.dataset.hmRoleBound = 'true';
+    }
+  }
+}
+
+function hideClassSelector() {
+  if (typeof document === 'undefined') {
+    return;
+  }
+  const container = document.querySelector('[data-class-selector]');
+  if (!container) {
+    return;
+  }
+  container.hidden = true;
+  container.classList.remove('is-visible');
+  const select = container.querySelector('[data-class-select]');
+  if (select) {
+    select.disabled = true;
+  }
+}
+
+if (CALENDAR_PERMISSIONS) {
+  CALENDAR_PERMISSIONS.subscribe((nextState, previousState) => {
+    const prevState = previousState
+      ? { ...previousState }
+      : {
+          role,
+          canManageEntries: userCanManageEntries,
+          classSelectorEnabled
+        };
+
+    applyPermissionSnapshot(nextState);
+
+    if (!previousState) {
+      applyActionBarPermissions();
+      return;
+    }
+
+    if (prevState.canManageEntries !== nextState.canManageEntries) {
+      applyActionBarPermissions();
+    }
+
+    if (prevState.classSelectorEnabled !== nextState.classSelectorEnabled) {
+      if (nextState.classSelectorEnabled) {
+        initialiseClassSelector()
+          .then(() => loadCalendar())
+          .catch((error) => {
+            console.error('Impossible de réactualiser la sélection de classe :', error);
+          });
+      } else {
+        hideClassSelector();
+        loadCalendar().catch((error) => {
+          console.error('Impossible de réactualiser le calendrier après le changement de rôle :', error);
+        });
+      }
+    }
+  });
+} else {
+  console.warn('Assistants de permissions hmCalendar indisponibles. Utilisation du rôle invité.');
+}
 
 const CLASS_STORAGE = (window.hmClassStorage) ? window.hmClassStorage : {
   getId: () => '',
@@ -28,8 +145,6 @@ const CLASS_STORAGE = (window.hmClassStorage) ? window.hmClassStorage : {
 
 let currentClassId = typeof CLASS_STORAGE.getId === 'function' ? (CLASS_STORAGE.getId() || '') : '';
 let currentClassSlug = typeof CLASS_STORAGE.getSlug === 'function' ? (CLASS_STORAGE.getSlug() || '') : '';
-
-const classSelectorEnabled = role === 'admin' || role === 'teacher';
 
 const t = window.hmI18n ? window.hmI18n.scope('calendar') : (key, fallback) => fallback;
 const modalT = window.hmI18n ? window.hmI18n.scope('calendar.modal') : (key, fallback) => fallback;
@@ -258,13 +373,23 @@ async function updateSessionClassSelection(slug, { silent = false } = {}) {
 async function initialiseClassSelector() {
   await fetchSessionClassContext();
 
-  if (!classSelectorEnabled) {
-    return;
-  }
-
   const container = document.querySelector('[data-class-selector]');
   const select = container ? container.querySelector('[data-class-select]') : null;
   if (!container || !select) {
+    return;
+  }
+
+  if (!classSelectorEnabled) {
+    container.hidden = true;
+    container.classList.remove('is-visible');
+    select.disabled = true;
+    return;
+  }
+
+  if (container.dataset.hmInitialised === 'true') {
+    container.hidden = false;
+    container.classList.add('is-visible');
+    select.disabled = false;
     return;
   }
 
@@ -282,6 +407,7 @@ async function initialiseClassSelector() {
 
   container.hidden = false;
   container.classList.add('is-visible');
+  select.disabled = false;
 
   let classes = [];
   try {
@@ -342,6 +468,8 @@ async function initialiseClassSelector() {
       select.disabled = false;
     }
   });
+
+  container.dataset.hmInitialised = 'true';
 }
 
 function toggleViewMode(canManage) {
@@ -502,6 +630,8 @@ async function saveEdit(evt) {
     evt.preventDefault();
   }
 
+  refreshPermissionState();
+
   const form = document.getElementById('fc-edit-form');
   if (!form) {
     console.error('Edit form missing.');
@@ -606,6 +736,8 @@ async function deleteEntry() {
   const id = document.getElementById('fc-entry-id').value;
   if (!confirm(modalText.deleteConfirm)) return;
 
+  refreshPermissionState();
+
   const deleteButton = document.querySelector('#fc-edit-form [data-role="delete"]');
   if (deleteButton) {
     deleteButton.disabled = true;
@@ -660,18 +792,10 @@ window.saveEdit = saveEdit;
 function initActionBar() {
   const actionBar = document.querySelector('.calendar-action-bar');
   if (!actionBar) return;
-  const createBtn = actionBar.querySelector('[data-action="create"]');
   const exportBtn = actionBar.querySelector('[data-action="export"]');
   const backBtn = actionBar.querySelector('[data-action="back"]');
 
-  if (createBtn) {
-    if (!userCanManageEntries) {
-      createBtn.disabled = true;
-      createBtn.setAttribute('aria-disabled', 'true');
-    } else {
-      createBtn.addEventListener('click', () => showEntryForm());
-    }
-  }
+  applyActionBarPermissions();
 
   if (exportBtn) {
     exportBtn.addEventListener('click', handleExportClick);
