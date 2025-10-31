@@ -16,8 +16,122 @@ function fetchWithSession(url, options = {}) {
   }
   return fetch(url, init);
 }
-const role = sessionStorage.getItem('role') || 'guest';
-const userCanManageEntries = role === 'admin' || role === 'teacher' || role === 'class_admin';
+
+function resolveSessionRole() {
+  if (typeof window === 'undefined' || typeof window.sessionStorage === 'undefined') {
+    return 'guest';
+  }
+  try {
+    const rawSession = window.sessionStorage.getItem('hm.session');
+    if (!rawSession) {
+      return 'guest';
+    }
+    const parsedSession = JSON.parse(rawSession);
+    const nextRole = parsedSession?.role || parsedSession?.user?.role;
+    return (typeof nextRole === 'string' && nextRole.trim()) ? nextRole : 'guest';
+  } catch (error) {
+    console.warn('Konnte Session-Rolle nicht lesen:', error);
+    return 'guest';
+  }
+}
+
+function computeCanManageEntries(roleValue) {
+  return roleValue === 'admin' || roleValue === 'teacher' || roleValue === 'class_admin';
+}
+
+function computeClassSelectorEnabled(roleValue) {
+  return roleValue === 'admin' || roleValue === 'teacher';
+}
+
+let role = resolveSessionRole();
+let userCanManageEntries = computeCanManageEntries(role);
+let classSelectorEnabled = computeClassSelectorEnabled(role);
+
+function updateRoleState() {
+  const nextRole = resolveSessionRole();
+  role = nextRole;
+  userCanManageEntries = computeCanManageEntries(role);
+  classSelectorEnabled = computeClassSelectorEnabled(role);
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (event) => {
+    if (event.storageArea && event.storageArea !== window.sessionStorage) {
+      return;
+    }
+    if (event.key && event.key !== 'hm.session') {
+      return;
+    }
+    const previousCanManageEntries = userCanManageEntries;
+    const previousClassSelectorEnabled = classSelectorEnabled;
+    updateRoleState();
+    handleRolePermissionsChange(previousCanManageEntries, previousClassSelectorEnabled);
+  });
+}
+
+function handleRolePermissionsChange(previousCanManageEntries, previousClassSelectorEnabled) {
+  if (previousCanManageEntries !== userCanManageEntries) {
+    updateActionBarPermissions();
+  }
+  if (previousClassSelectorEnabled !== classSelectorEnabled) {
+    if (classSelectorEnabled) {
+      initialiseClassSelector()
+        .then(() => loadCalendar())
+        .catch((error) => {
+          console.error('Klassen-Auswahl konnte nicht aktualisiert werden:', error);
+        });
+    } else {
+      hideClassSelector();
+      loadCalendar().catch((error) => {
+        console.error('Kalender konnte nach Rollenänderung nicht aktualisiert werden:', error);
+      });
+    }
+  }
+}
+
+function updateActionBarPermissions() {
+  if (typeof document === 'undefined') {
+    return;
+  }
+  const actionBar = document.querySelector('.calendar-action-bar');
+  if (!actionBar) {
+    return;
+  }
+  const createBtn = actionBar.querySelector('[data-action="create"]');
+  if (!createBtn) {
+    return;
+  }
+
+  if (!userCanManageEntries) {
+    createBtn.disabled = true;
+    createBtn.setAttribute('aria-disabled', 'true');
+  } else {
+    createBtn.disabled = false;
+    createBtn.removeAttribute('aria-disabled');
+    if (!createBtn.dataset.hmRoleBound) {
+      createBtn.addEventListener('click', () => showEntryForm());
+      createBtn.dataset.hmRoleBound = 'true';
+    }
+  }
+}
+
+function hideClassSelector() {
+  if (typeof document === 'undefined') {
+    return;
+  }
+  const container = document.querySelector('[data-class-selector]');
+  if (!container) {
+    return;
+  }
+  container.hidden = true;
+  container.classList.remove('is-visible');
+  const select = container.querySelector('[data-class-select]');
+  if (select) {
+    select.disabled = true;
+  }
+}
+
+const CLASS_STORAGE = (window.hmClassStorage) ? window.hmClassStorage : {
 
 const CLASS_STORAGE = (window.hmClassStorage) ? window.hmClassStorage : {
   getId: () => '',
@@ -28,8 +142,6 @@ const CLASS_STORAGE = (window.hmClassStorage) ? window.hmClassStorage : {
 
 let currentClassId = typeof CLASS_STORAGE.getId === 'function' ? (CLASS_STORAGE.getId() || '') : '';
 let currentClassSlug = typeof CLASS_STORAGE.getSlug === 'function' ? (CLASS_STORAGE.getSlug() || '') : '';
-
-const classSelectorEnabled = role === 'admin' || role === 'teacher';
 
 const t = window.hmI18n ? window.hmI18n.scope('calendar') : (key, fallback) => fallback;
 const modalT = window.hmI18n ? window.hmI18n.scope('calendar.modal') : (key, fallback) => fallback;
@@ -258,13 +370,23 @@ async function updateSessionClassSelection(slug, { silent = false } = {}) {
 async function initialiseClassSelector() {
   await fetchSessionClassContext();
 
-  if (!classSelectorEnabled) {
-    return;
-  }
-
   const container = document.querySelector('[data-class-selector]');
   const select = container ? container.querySelector('[data-class-select]') : null;
   if (!container || !select) {
+    return;
+  }
+
+  if (!classSelectorEnabled) {
+    container.hidden = true;
+    container.classList.remove('is-visible');
+    select.disabled = true;
+    return;
+  }
+
+  if (container.dataset.hmInitialised === 'true') {
+    container.hidden = false;
+    container.classList.add('is-visible');
+    select.disabled = false;
     return;
   }
 
@@ -282,6 +404,7 @@ async function initialiseClassSelector() {
 
   container.hidden = false;
   container.classList.add('is-visible');
+  select.disabled = false;
 
   let classes = [];
   try {
@@ -338,11 +461,15 @@ async function initialiseClassSelector() {
       } else {
         select.value = '';
       }
+      showOverlay(classSelectorText.changeError);
     } finally {
       select.disabled = false;
     }
   });
+
+  container.dataset.hmInitialised = 'true';
 }
+
 
 function toggleViewMode(canManage) {
   const viewMode = document.getElementById('fc-view-mode');
@@ -502,6 +629,8 @@ async function saveEdit(evt) {
     evt.preventDefault();
   }
 
+  updateRoleState();
+
   const form = document.getElementById('fc-edit-form');
   if (!form) {
     console.error('Bearbeitungsformular fehlt.');
@@ -606,6 +735,8 @@ async function deleteEntry() {
   const id = document.getElementById('fc-entry-id').value;
   if (!confirm(modalText.deleteConfirm)) return;
 
+  updateRoleState();
+
   const deleteButton = document.querySelector('#fc-edit-form [data-role="delete"]');
   if (deleteButton) {
     deleteButton.disabled = true;
@@ -660,18 +791,10 @@ window.saveEdit = saveEdit;
 function initActionBar() {
   const actionBar = document.querySelector('.calendar-action-bar');
   if (!actionBar) return;
-  const createBtn = actionBar.querySelector('[data-action="create"]');
   const exportBtn = actionBar.querySelector('[data-action="export"]');
   const backBtn = actionBar.querySelector('[data-action="back"]');
 
-  if (createBtn) {
-    if (!userCanManageEntries) {
-      createBtn.disabled = true;
-      createBtn.setAttribute('aria-disabled', 'true');
-    } else {
-      createBtn.addEventListener('click', () => showEntryForm());
-    }
-  }
+  updateActionBarPermissions();
 
   if (exportBtn) {
     exportBtn.addEventListener('click', handleExportClick);
