@@ -249,7 +249,7 @@ async function updateSessionClassSelection(slug, { silent = false } = {}) {
   } catch (error) {
     console.error('Impossibile aggiornare la classe:', error);
     if (!silent) {
-      showOverlay(classSelectorText.changeError);
+      showOverlay(classSelectorText.changeError, 'error');
     }
     throw error;
   }
@@ -288,7 +288,7 @@ async function initialiseClassSelector() {
     classes = await fetchAvailableClasses();
   } catch (error) {
     select.disabled = true;
-    showOverlay(classSelectorText.error);
+    showOverlay(classSelectorText.error, 'error');
     return;
   }
 
@@ -529,7 +529,7 @@ async function saveEdit(evt) {
   const type = typeSelect ? typeSelect.value : '';
   const isoDate = dateInput ? parseSwissDate(dateInput.value.trim()) : null;
   if (!isoDate) {
-    showOverlay(ENTRY_FORM_MESSAGES.invalidDate);
+    showOverlay(ENTRY_FORM_MESSAGES.invalidDate, 'error');
     dateInput?.focus();
     return;
   }
@@ -537,7 +537,7 @@ async function saveEdit(evt) {
   const startValue = startInput ? startInput.value : '';
   const endValue = endInput && !endInput.disabled ? endInput.value : '';
   if (endValue && startValue && endValue < startValue) {
-    showOverlay(ENTRY_FORM_MESSAGES.invalidEnd);
+    showOverlay(ENTRY_FORM_MESSAGES.invalidEnd, 'error');
     return;
   }
 
@@ -552,7 +552,7 @@ async function saveEdit(evt) {
   const context = await ensureSessionClassContext();
   const classId = context?.classId || currentClassId;
   if (!classId) {
-    showOverlay(ENTRY_FORM_MESSAGES.missingClass || unauthorizedMessage);
+    showOverlay(ENTRY_FORM_MESSAGES.missingClass || unauthorizedMessage, 'error');
     return;
   }
 
@@ -581,7 +581,7 @@ async function saveEdit(evt) {
     });
     if (await responseRequiresClassContext(res)) {
       setCurrentClassContext('', '');
-      showOverlay(ENTRY_FORM_MESSAGES.missingClass || unauthorizedMessage);
+      showOverlay(ENTRY_FORM_MESSAGES.missingClass || unauthorizedMessage, 'error');
       return;
     }
     if (!res.ok) {
@@ -590,10 +590,10 @@ async function saveEdit(evt) {
     }
     closeModal();
     await loadCalendar();
-    showOverlay(CALENDAR_MODAL_MESSAGES.saveSuccess);
+    showOverlay(CALENDAR_MODAL_MESSAGES.saveSuccess, 'success');
   } catch (e) {
     console.error('Errore durante il salvataggio:', e);
-    showOverlay(`${modalText.saveError}\n${e.message}`);
+    showOverlay(`${modalText.saveError}\n${e.message}`, 'error');
   } finally {
     if (submitButton) {
       submitButton.disabled = false;
@@ -615,7 +615,7 @@ async function deleteEntry() {
   const context = await ensureSessionClassContext();
   const classId = context?.classId || currentClassId;
   if (!classId) {
-    showOverlay(ENTRY_FORM_MESSAGES.missingClass || unauthorizedMessage);
+    showOverlay(ENTRY_FORM_MESSAGES.missingClass || unauthorizedMessage, 'error');
     if (deleteButton) {
       deleteButton.disabled = false;
       deleteButton.textContent = modalButtons.delete;
@@ -633,7 +633,7 @@ async function deleteEntry() {
     });
     if (await responseRequiresClassContext(res)) {
       setCurrentClassContext('', '');
-      showOverlay(ENTRY_FORM_MESSAGES.missingClass || unauthorizedMessage);
+      showOverlay(ENTRY_FORM_MESSAGES.missingClass || unauthorizedMessage, 'error');
       return;
     }
     if (!res.ok) {
@@ -642,10 +642,10 @@ async function deleteEntry() {
     }
     closeModal();
     await loadCalendar();
-    showOverlay(modalText.deleteSuccess);
+    showOverlay(modalText.deleteSuccess, 'success');
   } catch (e) {
     console.error('Errore durante l\'eliminazione:', e);
-    showOverlay(`${modalText.deleteError}\n${e.message}`);
+    showOverlay(`${modalText.deleteError}\n${e.message}`, 'error');
   } finally {
     if (deleteButton) {
       deleteButton.disabled = false;
@@ -697,7 +697,7 @@ async function handleExportClick(event) {
     const context = await ensureSessionClassContext();
     const classId = context?.classId || currentClassId;
     if (!classId) {
-      showOverlay(classSelectorText.required);
+      showOverlay(classSelectorText.required, 'error');
       return;
     }
 
@@ -707,7 +707,7 @@ async function handleExportClick(event) {
     const response = await fetchWithSession(exportUrl.toString());
     if (await responseRequiresClassContext(response)) {
       setCurrentClassContext('', '');
-      showOverlay(classSelectorText.required);
+      showOverlay(classSelectorText.required, 'error');
       return;
     }
     if (!response.ok) {
@@ -722,10 +722,10 @@ async function handleExportClick(event) {
     downloadLink.click();
     document.body.removeChild(downloadLink);
     URL.revokeObjectURL(url);
-    showOverlay(actionText.exportSuccess);
+    showOverlay(actionText.exportSuccess, 'success');
   } catch (error) {
     console.error('Esportazione fallita', error);
-    showOverlay(actionText.exportError);
+    showOverlay(actionText.exportError, 'error');
   } finally {
     button.classList.remove('is-loading');
     button.disabled = false;
