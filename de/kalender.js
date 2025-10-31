@@ -1004,6 +1004,9 @@ function determineInitialView() {
 }
 
 function updateMonthLabel(calendar) {
+  if (!calendar) {
+    return;
+  }
   const label = document.querySelector('[data-calendar-month-label]');
   if (label) {
     label.textContent = calendar.view.title;
@@ -1011,6 +1014,9 @@ function updateMonthLabel(calendar) {
 }
 
 function updateViewButtons(calendar) {
+  if (!calendar) {
+    return;
+  }
   const buttons = document.querySelectorAll('[data-calendar-view]');
   buttons.forEach((button) => {
     const targetView = button.getAttribute('data-calendar-view');
@@ -1018,6 +1024,34 @@ function updateViewButtons(calendar) {
     button.classList.toggle('is-active', isActive);
     button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
   });
+}
+
+function handleControlNavClick(event) {
+  if (!calendarInstance) {
+    return;
+  }
+  const action = event.currentTarget.getAttribute('data-calendar-nav');
+  if (action === 'prev') {
+    calendarInstance.prev();
+  } else if (action === 'next') {
+    calendarInstance.next();
+  } else if (action === 'today') {
+    calendarInstance.today();
+  }
+  updateMonthLabel(calendarInstance);
+}
+
+function handleControlViewClick(event) {
+  if (!calendarInstance) {
+    return;
+  }
+  const view = event.currentTarget.getAttribute('data-calendar-view');
+  if (!view) {
+    return;
+  }
+  calendarInstance.changeView(view);
+  updateMonthLabel(calendarInstance);
+  updateViewButtons(calendarInstance);
 }
 
 function setupCalendarControls(calendar) {
@@ -1035,26 +1069,11 @@ function setupCalendarControls(calendar) {
   }
 
   controls.querySelectorAll('[data-calendar-nav]').forEach((button) => {
-    const action = button.getAttribute('data-calendar-nav');
-    button.addEventListener('click', () => {
-      if (action === 'prev') {
-        calendar.prev();
-      } else if (action === 'next') {
-        calendar.next();
-      } else if (action === 'today') {
-        calendar.today();
-      }
-      updateMonthLabel(calendar);
-    });
+    button.addEventListener('click', handleControlNavClick);
   });
 
   controls.querySelectorAll('[data-calendar-view]').forEach((button) => {
-    const view = button.getAttribute('data-calendar-view');
-    button.addEventListener('click', () => {
-      calendar.changeView(view);
-      updateMonthLabel(calendar);
-      updateViewButtons(calendar);
-    });
+    button.addEventListener('click', handleControlViewClick);
   });
 
   updateMonthLabel(calendar);
@@ -1153,9 +1172,9 @@ function initialiseCalendar(events) {
   });
 
   calendar.render();
-  updateWeekStrip(calendar);
-  setupCalendarControls(calendar);
   calendarInstance = calendar;
+  updateWeekStrip(calendarInstance);
+  setupCalendarControls(calendarInstance);
 
   resizeHandler = debounce(() => {
     if (!calendarInstance) return;
