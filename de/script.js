@@ -2097,7 +2097,7 @@ function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES)
 
 function showEntryForm() {
     if (!canManageEntries()) {
-        showOverlay(CREATE_DISABLED_MESSAGE, 'error');
+        showOverlay(CREATE_DISABLED_MESSAGE);
         return;
     }
     const overlay = document.getElementById('entry-modal-overlay');
@@ -2181,13 +2181,13 @@ async function saveEntry(event) {
 
     const isoDate = parseSwissDate(datumInput);
     if (!isoDate) {
-        showOverlay(ENTRY_FORM_MESSAGES.invalidDate, 'error');
+        showOverlay(ENTRY_FORM_MESSAGES.invalidDate);
         dateField.focus();
         return;
     }
 
     if (endzeitInput && startzeitInput && endzeitInput < startzeitInput) {
-        showOverlay(ENTRY_FORM_MESSAGES.invalidEnd, 'error');
+        showOverlay(ENTRY_FORM_MESSAGES.invalidEnd);
         return;
     }
 
@@ -2202,7 +2202,7 @@ async function saveEntry(event) {
 
     const classId = (typeof hmClassStorage.getId === 'function') ? hmClassStorage.getId() : '';
     if (!classId) {
-        showOverlay(ENTRY_FORM_MESSAGES.missingClass, 'error');
+        showOverlay(ENTRY_FORM_MESSAGES.missingClass);
         return;
     }
 
@@ -2222,7 +2222,7 @@ async function saveEntry(event) {
                 body: JSON.stringify({ typ, fach: payloadSubject, beschreibung: payloadBeschreibung, datum: isoDate, startzeit, endzeit, class_id: classId })
             });
             if (response.status === 403) {
-                showOverlay(ENTRY_FORM_MESSAGES.missingClass, 'error');
+                showOverlay(ENTRY_FORM_MESSAGES.missingClass);
                 aborted = true;
                 break;
             }
@@ -2230,7 +2230,7 @@ async function saveEntry(event) {
 
             if (result.status === "ok") {
                 success = true;
-                showOverlay(CALENDAR_MODAL_MESSAGES.saveSuccess, 'success');
+                showOverlay(CALENDAR_MODAL_MESSAGES.saveSuccess);
                 closeEntryModal();
                 document.getElementById('overlay-close')
                     .addEventListener('click', () => location.reload(), { once: true });
@@ -2253,7 +2253,7 @@ async function saveEntry(event) {
     }
 
     if (!success && !aborted) {
-        showOverlay(CALENDAR_MODAL_MESSAGES.saveRetry, 'error');
+        showOverlay(CALENDAR_MODAL_MESSAGES.saveRetry);
     } else if (success) {
         if (form) {
             form.reset();

@@ -783,101 +783,60 @@ body.has-auth-overlay {
 /* Overlay styles for messages */
 .overlay {
     position: fixed;
-    top: clamp(1rem, 3vw, 1.5rem);
-    right: clamp(1rem, 3vw, 1.5rem);
-    width: min(360px, calc(100vw - 2rem));
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
     display: none;
+    align-items: center;
+    justify-content: center;
     z-index: 10000;
-    pointer-events: none;
-    opacity: 0;
-}
-
-.overlay.overlay--visible,
-.overlay.overlay--hiding {
-    display: block;
 }
 
 .overlay-content {
-    background: rgba(23, 30, 45, 0.95);
-    padding: 1rem 1.2rem;
-    border-radius: 10px;
+    background: #1e1e1e;
+    padding: 20px;
+    border-radius: 8px;
     color: #fff;
-    border-left: 4px solid rgba(91, 141, 239, 0.75);
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.35);
-    font-size: 0.95rem;
-    line-height: 1.4;
-    pointer-events: auto;
-    backdrop-filter: blur(8px);
+    max-width: 400px;
+    width: 80%;
+    position: relative;
 }
 
-.overlay p {
-    margin: 0;
+.overlay-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: #fff;
+    font-size: 1.5rem;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
 }
 
-.overlay.overlay--visible {
-    opacity: 1;
+.overlay-close:hover,
+.overlay-close:focus-visible {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    outline: none;
 }
 
-.overlay.overlay--visible .overlay-content {
-    animation: overlay-toast-in 240ms cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+.overlay-close:focus-visible {
+    box-shadow: 0 0 0 2px rgba(91, 141, 239, 0.6);
 }
 
-.overlay.overlay--hiding .overlay-content {
-    animation: overlay-toast-out 200ms cubic-bezier(0.4, 0, 1, 1) forwards;
-}
-
-.overlay--info .overlay-content {
-    border-left-color: rgba(91, 141, 239, 0.9);
-    background: rgba(91, 141, 239, 0.12);
-}
-
-.overlay--success .overlay-content {
-    border-left-color: rgba(46, 165, 107, 0.85);
-    background: rgba(46, 165, 107, 0.12);
-}
-
-.overlay--error .overlay-content {
-    border-left-color: rgba(227, 87, 87, 0.85);
-    background: rgba(227, 87, 87, 0.12);
-}
-
-.overlay--warning .overlay-content {
-    border-left-color: rgba(219, 167, 45, 0.85);
-    background: rgba(219, 167, 45, 0.12);
-}
-
-@keyframes overlay-toast-in {
-    from {
-        opacity: 0;
-        transform: translate3d(30px, 0, 0);
-    }
-    to {
-        opacity: 1;
-        transform: translate3d(0, 0, 0);
-    }
-}
-
-@keyframes overlay-toast-out {
-    from {
-        opacity: 1;
-        transform: translate3d(0, 0, 0);
-    }
-    to {
-        opacity: 0;
-        transform: translate3d(30px, 0, 0);
-    }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .overlay.overlay--visible,
-    .overlay.overlay--hiding {
-        opacity: 1;
-    }
-
-    .overlay.overlay--visible .overlay-content,
-    .overlay.overlay--hiding .overlay-content {
-        animation: none;
-    }
+.overlay-content button:not(.overlay-close) {
+    margin-top: 10px;
+    padding: 6px 12px;
 }
 
 /* --------- Tagesübersicht --------- */
