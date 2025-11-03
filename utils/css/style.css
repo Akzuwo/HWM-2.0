@@ -440,6 +440,33 @@ button {
     display: flex;
     flex-direction: column;
     align-items: center;
+    transition: transform 0.32s ease, box-shadow 0.32s ease;
+}
+
+.login-container.is-switching {
+    transform: translateY(-6px);
+    box-shadow: 0 28px 56px rgba(0, 0, 0, 0.55);
+}
+
+.login-container.is-switching .login-form {
+    animation: auth-switch-fade 0.36s ease forwards;
+}
+
+@keyframes auth-switch-fade {
+    0% {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .login-container.is-switching .login-form {
+        animation: none;
+    }
 }
 
 .login-container [hidden] {
@@ -499,15 +526,20 @@ button {
 
 .auth-overlay__close {
     position: absolute;
-    top: 12px;
-    right: 12px;
+    top: 8px;
+    right: 8px;
     border: none;
     background: transparent;
     color: rgba(255, 255, 255, 0.75);
-    font-size: 1.35rem;
+    font-size: 1.25rem;
     line-height: 1;
     cursor: pointer;
-    padding: 6px;
+    padding: 0;
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     border-radius: 999px;
     transition: background-color 0.2s ease, color 0.2s ease;
 }
@@ -551,6 +583,47 @@ body.has-auth-overlay {
     display: flex;
     flex-direction: column;
     gap: 24px;
+    position: relative;
+}
+
+.login-form .auth-section {
+    transition: opacity 0.28s ease, transform 0.28s ease, max-height 0.32s ease;
+}
+
+.login-form .auth-section-hidden {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px);
+    max-height: 0;
+    pointer-events: none;
+}
+
+.login-form .auth-section-active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    max-height: 520px;
+    pointer-events: auto;
+}
+
+.login-form [data-auth-register-only] {
+    display: none;
+    overflow: hidden;
+    opacity: 0;
+    visibility: hidden;
+    max-height: 0;
+    pointer-events: none;
+}
+
+.login-form [data-auth-register-only].auth-section-active {
+    display: flex;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+.login-form [data-auth-login-only] {
+    overflow: hidden;
 }
 
 .login-banner {
@@ -690,9 +763,11 @@ body.has-auth-overlay {
 }
 
 .login-links {
-    margin-top: -12px;
+    margin-top: 8px;
     display: flex;
+    flex-wrap: wrap;
     justify-content: flex-end;
+    gap: 8px 14px;
 }
 
 .login-link {
@@ -701,7 +776,7 @@ body.has-auth-overlay {
     color: #5b8def;
     font-weight: 600;
     cursor: pointer;
-    padding: 0;
+    padding: 6px 0;
     text-decoration: underline;
 }
 
