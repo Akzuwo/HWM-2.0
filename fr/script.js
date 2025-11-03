@@ -53,11 +53,11 @@ const LOGIN_TEXT = {
     genericError: 'Une erreur est survenue lors de la connexion. Réessaie plus tard.',
     registerPasswordMismatch: 'Les mots de passe ne correspondent pas.',
     registerWeakPassword: 'Le mot de passe doit contenir au moins 8 caractères.',
-    registerEmailInvalid: 'Saisis une adresse e-mail scolaire valide.',
+    registerEmailInvalid: 'Utilise ton adresse e-mail @sluz.ch.',
     registerEmailExists: 'Un compte existe déjà pour cette adresse e-mail.',
     registerPasswordConfirmLabel: 'Confirmer le mot de passe',
     registerClassLabel: 'Classe (facultatif)',
-    registerClassPlaceholder: 'p. ex. 3a',
+    registerClassPlaceholder: 'p. ex. L23a',
     registerClassNotFound: 'Cette classe est introuvable.',
     registerGenericError: 'L’inscription est momentanément indisponible. Réessaie plus tard.',
     registerSuccess: 'Presque terminé ! Saisis le code reçu par e-mail.',
@@ -637,11 +637,63 @@ function applyEmailPrefill(form) {
     }
 }
 
+function toggleAuthSectionVisibility(element, shouldShow) {
+    if (!element) {
+        return;
+    }
+
+    element.removeAttribute('hidden');
+
+    if (!element.dataset.authOriginalDisplay) {
+        if (element.dataset.authDisplay) {
+            element.dataset.authOriginalDisplay = element.dataset.authDisplay;
+        } else if (typeof window !== 'undefined' && window.getComputedStyle) {
+            const computedDisplay = window.getComputedStyle(element).display;
+            if (computedDisplay && computedDisplay !== 'none') {
+                element.dataset.authOriginalDisplay = computedDisplay;
+            }
+        }
+    }
+
+    element.classList.add('auth-section');
+
+    if (typeof window !== 'undefined' && element.__authHideTimer) {
+        window.clearTimeout(element.__authHideTimer);
+        element.__authHideTimer = null;
+    }
+
+    if (shouldShow) {
+        const originalDisplay = element.dataset.authOriginalDisplay || '';
+        if (originalDisplay) {
+            element.style.display = originalDisplay;
+        } else {
+            element.style.removeProperty('display');
+        }
+        element.classList.add('auth-section-active');
+        element.classList.remove('auth-section-hidden');
+        element.removeAttribute('aria-hidden');
+    } else {
+        element.classList.remove('auth-section-active');
+        element.classList.add('auth-section-hidden');
+        element.setAttribute('aria-hidden', 'true');
+
+        if (typeof window !== 'undefined') {
+            element.__authHideTimer = window.setTimeout(() => {
+                element.style.display = 'none';
+                element.__authHideTimer = null;
+            }, 320);
+        } else {
+            element.style.display = 'none';
+        }
+    }
+}
+
 function setAuthMode(form, mode, options = {}) {
     if (!form) {
         return;
     }
 
+    const previousMode = form.dataset.authMode || '';
     const { preserveFeedback = false } = options;
     const normalizedMode = mode === 'register' ? 'register' : mode === 'verification' ? 'verification' : 'login';
     form.dataset.authMode = normalizedMode;
@@ -650,6 +702,17 @@ function setAuthMode(form, mode, options = {}) {
 
     const container = form.closest('.login-container');
     if (container) {
+        if (previousMode && previousMode !== normalizedMode && normalizedMode !== 'verification' && previousMode !== 'verification') {
+            container.classList.add('is-switching');
+            if (container.__authSwitchTimer) {
+                window.clearTimeout(container.__authSwitchTimer);
+            }
+            container.__authSwitchTimer = window.setTimeout(() => {
+                container.classList.remove('is-switching');
+                container.__authSwitchTimer = null;
+            }, 360);
+        }
+
         const title = container.querySelector('[data-auth-title]');
         if (title) {
             if (normalizedMode === 'register') {
@@ -675,10 +738,10 @@ function setAuthMode(form, mode, options = {}) {
     }
 
     form.querySelectorAll('[data-auth-register-only]').forEach((element) => {
-        element.hidden = normalizedMode !== 'register';
+        toggleAuthSectionVisibility(element, normalizedMode === 'register');
     });
     form.querySelectorAll('[data-auth-login-only]').forEach((element) => {
-        element.hidden = normalizedMode !== 'login';
+        toggleAuthSectionVisibility(element, normalizedMode === 'login');
     });
 
     const switchToRegister = form.querySelector('[data-auth-switch="register"]');
@@ -761,6 +824,16 @@ function bindAuthForms() {
                 if (event.key === 'Enter') {
                     event.preventDefault();
                     handleAuthSubmit(form);
+                }
+            });
+            emailInput.addEventListener('blur', () => {
+                if (getAuthMode(form) !== 'register') {
+                    return;
+                }
+
+                const value = emailInput.value.trim().toLowerCase();
+                if (value && !value.endsWith('@sluz.ch')) {
+                    setLoginFeedback(LOGIN_TEXT.registerEmailInvalid, 'error', form);
                 }
             });
         }
@@ -907,11 +980,11 @@ function createAuthOverlay() {
                             </button>
                         </div>
                     </div>
-                    <div class="form-group" data-auth-register-only hidden>
+                    <div class="form-group" data-auth-register-only data-auth-display="flex">
                         <label for="overlay-password-confirm">${LOGIN_TEXT.registerPasswordConfirmLabel}</label>
                         <input type="password" id="overlay-password-confirm" class="form-control" placeholder="${LOGIN_TEXT.passwordPlaceholder}" autocomplete="new-password" data-auth-password-confirm>
                     </div>
-                    <div class="form-group" data-auth-register-only hidden>
+                    <div class="form-group" data-auth-register-only data-auth-display="flex">
                         <label for="overlay-class">${LOGIN_TEXT.registerClassLabel}</label>
                         <input type="text" id="overlay-class" class="form-control" placeholder="${LOGIN_TEXT.registerClassPlaceholder}" autocomplete="organization" data-auth-class>
                     </div>
