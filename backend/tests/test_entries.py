@@ -26,6 +26,7 @@ def test_add_entry_uses_default_class_id(app_client):
     entries = storage['eintraege']
     assert entries, 'entry should have been stored'
     assert entries[0]['class_id'] == DEFAULT_ENTRY_CLASS_ID
+    assert entries[0]['enddatum'] == '2024-05-01'
 
 
 def test_add_entry_accepts_custom_class_id(app_client):
@@ -44,6 +45,7 @@ def test_add_entry_accepts_custom_class_id(app_client):
 
     entries = storage['eintraege']
     assert entries[-1]['class_id'] == 'U24f'
+    assert entries[-1]['enddatum'] == '2024-05-02'
 
 
 def test_add_entry_accepts_multiple_class_ids(app_client):
@@ -67,6 +69,70 @@ def test_add_entry_accepts_multiple_class_ids(app_client):
     new_entries = storage['eintraege'][before:]
     assert {entry['class_id'] for entry in new_entries} == {'L23a', 'U24f'}
     assert len({entry['id'] for entry in new_entries}) == 1
+    assert {entry['enddatum'] for entry in new_entries} == {'2024-05-06'}
+
+
+def test_add_holiday_requires_end_date(app_client):
+    client, storage, _ = app_client
+    _authenticate(client)
+
+    before_entries = list(storage['eintraege'])
+
+    payload = {
+        'typ': 'ferien',
+        'datum': '2024-07-01',
+        'beschreibung': 'Sommerferien',
+    }
+
+    resp = client.post('/add_entry', json=payload)
+    assert resp.status_code == 400
+    assert storage['eintraege'] == before_entries
+
+
+def test_add_holiday_rejects_end_before_start(app_client):
+    client, storage, _ = app_client
+    _authenticate(client)
+
+    before_entries = list(storage['eintraege'])
+
+    payload = {
+        'typ': 'ferien',
+        'datum': '2024-07-10',
+        'enddatum': '2024-07-05',
+        'beschreibung': 'Ungültig',
+    }
+
+    resp = client.post('/add_entry', json=payload)
+    assert resp.status_code == 400
+    assert storage['eintraege'] == before_entries
+
+
+def test_add_holiday_multi_class_entry(app_client):
+    client, storage, _ = app_client
+    _authenticate(client)
+
+    payload = {
+        'typ': 'ferien',
+        'datum': '2024-07-15',
+        'enddatum': '2024-07-22',
+        'beschreibung': 'Sommerferien',
+        'class_ids': ['L23a', 'u24f'],
+    }
+
+    before = len(storage['eintraege'])
+    resp = client.post('/add_entry', json=payload)
+    assert resp.status_code == 200
+
+    result = resp.get_json()
+    assert result.get('created') == 2
+
+    new_entries = storage['eintraege'][before:]
+    assert len(new_entries) == 2
+    assert {entry['class_id'] for entry in new_entries} == {'L23a', 'U24f'}
+    assert {entry['typ'] for entry in new_entries} == {'ferien'}
+    assert {entry['beschreibung'] for entry in new_entries} == {'Sommerferien'}
+    assert {entry['enddatum'] for entry in new_entries} == {'2024-07-22'}
+    assert all(entry.get('fach', '') == '' for entry in new_entries)
 
 
 def test_add_entry_rejects_invalid_class_id(app_client):
@@ -171,6 +237,7 @@ def test_entries_filters_by_session_class_slug(app_client):
             'class_id': 'L23a',
             'beschreibung': 'Class A homework',
             'datum': datetime.date(2024, 5, 6),
+            'enddatum': datetime.date(2024, 5, 6),
             'startzeit': None,
             'endzeit': None,
             'typ': 'homework',
@@ -181,6 +248,7 @@ def test_entries_filters_by_session_class_slug(app_client):
             'class_id': 'U24f',
             'beschreibung': 'Other class homework',
             'datum': datetime.date(2024, 5, 7),
+            'enddatum': datetime.date(2024, 5, 7),
             'startzeit': None,
             'endzeit': None,
             'typ': 'homework',
@@ -211,6 +279,7 @@ def test_update_entry_updates_all_requested_classes(app_client):
             'class_id': 'L23a',
             'beschreibung': 'Original',
             'datum': datetime.date(2024, 5, 10),
+            'enddatum': datetime.date(2024, 5, 10),
             'startzeit': None,
             'endzeit': None,
             'typ': 'hausaufgabe',
@@ -221,6 +290,7 @@ def test_update_entry_updates_all_requested_classes(app_client):
             'class_id': 'U24f',
             'beschreibung': 'Original',
             'datum': datetime.date(2024, 5, 10),
+            'enddatum': datetime.date(2024, 5, 10),
             'startzeit': None,
             'endzeit': None,
             'typ': 'hausaufgabe',
@@ -246,6 +316,7 @@ def test_update_entry_updates_all_requested_classes(app_client):
     assert {entry['beschreibung'] for entry in updated_entries} == {'Aktualisiert'}
     assert {entry['fach'] for entry in updated_entries} == {'DEUT'}
     assert {entry['datum'] for entry in updated_entries} == {'2024-05-11'}
+    assert {entry['enddatum'] for entry in updated_entries} == {'2024-05-11'}
 
 
 def test_update_entry_respects_missing_class_entries(app_client):
@@ -258,6 +329,7 @@ def test_update_entry_respects_missing_class_entries(app_client):
             'class_id': 'L23a',
             'beschreibung': 'Original',
             'datum': '2024-05-10',
+            'enddatum': '2024-05-10',
             'startzeit': None,
             'endzeit': None,
             'typ': 'hausaufgabe',
@@ -281,6 +353,84 @@ def test_update_entry_respects_missing_class_entries(app_client):
     assert storage['eintraege'][0]['beschreibung'] == 'Original'
 
 
+def test_update_holiday_requires_end_date(app_client):
+    client, storage, _ = app_client
+    _authenticate(client)
+
+    storage['eintraege'] = [
+        {
+            'id': 7,
+            'class_id': 'L23a',
+            'beschreibung': 'Sommerferien',
+            'datum': '2024-07-01',
+            'enddatum': '2024-07-05',
+            'startzeit': None,
+            'endzeit': None,
+            'typ': 'ferien',
+            'fach': '',
+        }
+    ]
+
+    payload = {
+        'id': 7,
+        'type': 'ferien',
+        'date': '2024-07-01',
+        'description': 'Sommerferien',
+        'class_ids': ['L23a'],
+    }
+
+    resp = client.put('/update_entry', json=payload)
+    assert resp.status_code == 400
+    assert storage['eintraege'][0]['enddatum'] == '2024-07-05'
+
+
+def test_update_holiday_multi_class_updates_range(app_client):
+    client, storage, _ = app_client
+    _authenticate(client)
+
+    storage['eintraege'] = [
+        {
+            'id': 8,
+            'class_id': 'L23a',
+            'beschreibung': 'Ferien',
+            'datum': '2024-07-10',
+            'enddatum': '2024-07-12',
+            'startzeit': None,
+            'endzeit': None,
+            'typ': 'ferien',
+            'fach': '',
+        },
+        {
+            'id': 8,
+            'class_id': 'U24f',
+            'beschreibung': 'Ferien',
+            'datum': '2024-07-10',
+            'enddatum': '2024-07-12',
+            'startzeit': None,
+            'endzeit': None,
+            'typ': 'ferien',
+            'fach': '',
+        },
+    ]
+
+    payload = {
+        'id': 8,
+        'type': 'ferien',
+        'date': '2024-07-15',
+        'enddatum': '2024-07-20',
+        'description': 'Aktualisierte Ferien',
+        'class_ids': ['L23a', 'U24f'],
+    }
+
+    resp = client.put('/update_entry', json=payload)
+    assert resp.status_code == 200
+
+    updated_entries = [entry for entry in storage['eintraege'] if entry['id'] == 8]
+    assert {entry['datum'] for entry in updated_entries} == {'2024-07-15'}
+    assert {entry['enddatum'] for entry in updated_entries} == {'2024-07-20'}
+    assert {entry['beschreibung'] for entry in updated_entries} == {'Aktualisierte Ferien'}
+
+
 def test_entries_filters_by_other_class_slug(app_client):
     client, storage, _ = app_client
     storage['eintraege'] = [
@@ -289,6 +439,7 @@ def test_entries_filters_by_other_class_slug(app_client):
             'class_id': 'L23a',
             'beschreibung': 'Class A homework',
             'datum': datetime.date(2024, 5, 6),
+            'enddatum': datetime.date(2024, 5, 6),
             'startzeit': None,
             'endzeit': None,
             'typ': 'homework',
@@ -299,6 +450,7 @@ def test_entries_filters_by_other_class_slug(app_client):
             'class_id': 'U24f',
             'beschreibung': 'Other class homework',
             'datum': datetime.date(2024, 5, 7),
+            'enddatum': datetime.date(2024, 5, 7),
             'startzeit': None,
             'endzeit': None,
             'typ': 'homework',

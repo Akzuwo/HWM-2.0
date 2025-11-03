@@ -161,7 +161,8 @@ const classSelectorText = {
 const TYPE_LABELS = {
   hausaufgabe: t('legend.homework', 'Devoir'),
   pruefung: t('legend.exam', 'Évaluation'),
-  event: t('legend.event', 'Événement')
+  event: t('legend.event', 'Événement'),
+  ferien: t('legend.holiday', 'Vacances et jours fériés')
 };
 
 const actionText = {
@@ -322,7 +323,21 @@ function splitEventDescription(type, text) {
   return { eventTitle, description };
 }
 
-function formatDateLabel(dateStr, startStr, endStr) {
+function addDaysToDate(dateStr, days) {
+  if (!dateStr) return '';
+  const [year, month, day] = dateStr.split('-').map(Number);
+  if (Number.isNaN(year) || Number.isNaN(month) || Number.isNaN(day)) {
+    return '';
+  }
+  const date = new Date(Date.UTC(year, month - 1, day));
+  date.setUTCDate(date.getUTCDate() + days);
+  const yyyy = date.getUTCFullYear().toString().padStart(4, '0');
+  const mm = (date.getUTCMonth() + 1).toString().padStart(2, '0');
+  const dd = date.getUTCDate().toString().padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function formatDateLabel(dateStr, startStr, endStr, endDateStr) {
   if (!dateStr) return '';
   const locale = document.documentElement.lang || 'en-GB';
   const formatter = new Intl.DateTimeFormat(locale, {
@@ -330,8 +345,15 @@ function formatDateLabel(dateStr, startStr, endStr) {
     month: '2-digit',
     year: 'numeric'
   });
-  const baseDate = new Date(`${dateStr}T${startStr || '00:00:00'}`);
-  const formattedDate = formatter.format(baseDate);
+  const baseDate = new Date(`${dateStr}T00:00:00`);
+  const formattedStart = formatter.format(baseDate);
+  let formattedDate = formattedStart;
+  if (endDateStr && endDateStr !== dateStr) {
+    const endDate = new Date(`${endDateStr}T00:00:00`);
+    const formattedEnd = formatter.format(endDate);
+    formattedDate = `${formattedStart} – ${formattedEnd}`;
+  }
+
   const startLabel = parseTimeLabel(startStr);
   const endLabel = parseTimeLabel(endStr);
   if (startLabel && endLabel) {
@@ -569,7 +591,7 @@ function setModalDescription(html) {
 
 function openModal(event) {
   const { id } = event;
-  const { type, typeLabel, description, fach, datum, startzeit, endzeit } = event.extendedProps;
+  const { type, typeLabel, description, fach, datum, enddatum, startzeit, endzeit } = event.extendedProps;
 
   const overlay = document.getElementById('fc-modal-overlay');
   const editForm = document.getElementById('fc-edit-form');
@@ -601,7 +623,7 @@ function openModal(event) {
   }
   const dateElement = document.getElementById('fc-modal-date');
   if (dateElement) {
-    dateElement.textContent = formatDateLabel(datum, startzeit, endzeit);
+    dateElement.textContent = formatDateLabel(datum, startzeit, endzeit, enddatum);
   }
 
   setModalDescription(detailDescription ? mdBold(detailDescription) : modalText.noDescription);
@@ -615,6 +637,7 @@ function openModal(event) {
   const subjectSelect = document.getElementById('fc-edit-subject');
   const startInput = document.getElementById('fc-edit-start');
   const endInput = document.getElementById('fc-edit-end');
+  const endDateInput = document.getElementById('fc-edit-end-date');
   const typeSelect = document.getElementById('fc-edit-type');
   const eventTitleInput = document.getElementById('fc-edit-event-title');
 
@@ -630,8 +653,7 @@ function openModal(event) {
     eventTitleInput.value = isEvent ? eventTitle : '';
   }
   if (editForm) {
-    const allowEmptySubject = !subjectSelect?.value && type !== 'event';
-    editForm.dataset.allowEmptySubject = allowEmptySubject ? 'true' : 'false';
+    editForm.dataset.allowEmptySubject = 'true';
   }
   if (dateInput) {
     dateInput.value = datum || '';
@@ -645,6 +667,9 @@ function openModal(event) {
       endInput.value = '';
       endInput.disabled = true;
     }
+  }
+  if (endDateInput) {
+    endDateInput.value = enddatum || '';
   }
   if (descInput) {
     descInput.value = detailDescription;
@@ -688,7 +713,7 @@ function closeModal() {
   }
   if (editForm) {
     editForm.reset();
-    editForm.dataset.allowEmptySubject = 'false';
+    editForm.dataset.allowEmptySubject = 'true';
     editFormController = setupModalFormInteractions(editForm, ENTRY_FORM_MESSAGES);
     editFormController?.setType('event');
     editFormController?.evaluate();
@@ -726,6 +751,7 @@ async function saveEdit(evt) {
   const subjectSelect = document.getElementById('fc-edit-subject');
   const eventTitleInput = document.getElementById('fc-edit-event-title');
   const dateInput = document.getElementById('fc-edit-date');
+  const endDateInput = document.getElementById('fc-edit-end-date');
   const startInput = document.getElementById('fc-edit-start');
   const endInput = document.getElementById('fc-edit-end');
   const descInput = document.getElementById('fc-edit-desc');
@@ -739,10 +765,28 @@ async function saveEdit(evt) {
     return;
   }
 
-  const startValue = startInput ? startInput.value : '';
-  const endValue = endInput && !endInput.disabled ? endInput.value : '';
+  let startValue = startInput ? startInput.value : '';
+  let endValue = endInput && !endInput.disabled ? endInput.value : '';
   if (endValue && startValue && endValue < startValue) {
     showOverlay(ENTRY_FORM_MESSAGES.invalidEnd, 'error');
+    return;
+  }
+
+  const rawEndDate = endDateInput ? endDateInput.value.trim() : '';
+  const endDateIso = rawEndDate ? parseSwissDate(rawEndDate) : null;
+  if (type === 'ferien') {
+    if (!endDateIso) {
+      showOverlay(ENTRY_FORM_MESSAGES.missingEndDate || ENTRY_FORM_MESSAGES.invalidDate, 'error');
+      endDateInput?.focus();
+      return;
+    }
+    startValue = '';
+    endValue = '';
+  }
+
+  if (isoDate && endDateIso && endDateIso < isoDate) {
+    showOverlay(ENTRY_FORM_MESSAGES.invalidEndDate || ENTRY_FORM_MESSAGES.invalidDate, 'error');
+    endDateInput?.focus();
     return;
   }
 
@@ -753,6 +797,8 @@ async function saveEdit(evt) {
   const payloadDescription = type === 'event'
     ? eventTitle + (description ? `\n\n${description}` : '')
     : description;
+
+  const resolvedEndDate = endDateIso || isoDate;
 
   const context = await ensureSessionClassContext();
   const classId = context?.classId || currentClassId;
@@ -780,6 +826,7 @@ async function saveEdit(evt) {
         description: payloadDescription,
         startzeit: startValue ? `${startValue}:00` : null,
         endzeit: endValue ? `${endValue}:00` : null,
+        enddatum: resolvedEndDate,
         fach: subject,
         class_id: classId
       })
@@ -1045,8 +1092,10 @@ function normaliseEvent(entry) {
   const displaySubject = entry.typ === 'event' ? (eventTitle || typeLabel) : (subject || typeLabel);
   const startTime = entry.startzeit ? entry.startzeit.trim() : '';
   const endTime = entry.endzeit ? entry.endzeit.trim() : '';
+  const endDate = entry.enddatum ? entry.enddatum.trim() : '';
   const startLabel = parseTimeLabel(startTime);
   const endLabel = parseTimeLabel(endTime);
+  const hasDateRange = Boolean(endDate && endDate !== entry.datum);
 
   const eventConfig = {
     id: String(entry.id),
@@ -1059,6 +1108,7 @@ function normaliseEvent(entry) {
       description: entry.beschreibung || '',
       fach: subject,
       datum: entry.datum,
+      enddatum: entry.enddatum,
       startzeit: entry.startzeit,
       endzeit: entry.endzeit,
       eventTitle,
@@ -1068,7 +1118,15 @@ function normaliseEvent(entry) {
     }
   };
 
-  if (endLabel) {
+  if (hasDateRange) {
+    if (!startLabel) {
+      eventConfig.end = addDaysToDate(endDate, 1);
+      eventConfig.allDay = true;
+    } else {
+      const endTimeValue = endTime || startTime || '23:59:59';
+      eventConfig.end = `${endDate}T${endTimeValue}`;
+    }
+  } else if (endLabel) {
     eventConfig.end = `${entry.datum}T${entry.endzeit}`;
   }
 

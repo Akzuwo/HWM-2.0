@@ -1908,7 +1908,7 @@ function closeEntryModal() {
     const form = document.getElementById('entry-form');
     if (form) {
         form.reset();
-        form.dataset.allowEmptySubject = 'false';
+        form.dataset.allowEmptySubject = 'true';
         const controller = setupModalFormInteractions(form);
         controller?.setType('event');
         controller?.evaluate();
@@ -1921,10 +1921,12 @@ function closeEntryModal() {
 const ENTRY_FORM_MESSAGES = {
     invalidDate: 'Please enter a valid date in the format DD.MM.YYYY.',
     invalidEnd: 'The end time must not be earlier than the start time.',
+    invalidEndDate: 'The end date must not be earlier than the start date.',
     missingSubject: 'Please choose a subject.',
     missingEventTitle: 'Please enter an event title.',
     missingClass: 'Please select a class.',
     missingClasses: 'Please select at least one class.',
+    missingEndDate: 'Please enter an end date.',
     classLoadError: 'Unable to load classes.'
 };
 
@@ -2159,7 +2161,7 @@ function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES)
         return null;
     }
     if (!('allowEmptySubject' in form.dataset)) {
-        form.dataset.allowEmptySubject = 'false';
+        form.dataset.allowEmptySubject = 'true';
     }
     if (form.dataset.enhanced === 'true' && form._modalController) {
         form._modalController.evaluate();
@@ -2173,8 +2175,12 @@ function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES)
     const eventTitleGroup = form.querySelector('[data-field="event-title"]');
     const eventTitleInput = eventTitleGroup ? eventTitleGroup.querySelector('input') : null;
     const dateInput = form.querySelector('[data-field="date"] input');
-    const startInput = form.querySelector('[data-field="start"] input');
-    const endInput = form.querySelector('[data-field="end"] input');
+    const endDateGroup = form.querySelector('[data-field="end-date"]');
+    const endDateInput = endDateGroup ? endDateGroup.querySelector('input') : null;
+    const startGroup = form.querySelector('[data-field="start"]');
+    const startInput = startGroup ? startGroup.querySelector('input') : null;
+    const endGroup = form.querySelector('[data-field="end"]');
+    const endInput = endGroup ? endGroup.querySelector('input') : null;
     const saveButton = form.querySelector('[data-role="submit"]');
     const cancelButton = form.querySelector('[data-role="cancel"]');
 
@@ -2185,7 +2191,9 @@ function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES)
 
     const evaluate = () => {
         const isEvent = typeSelect && typeSelect.value === 'event';
+        const isHoliday = typeSelect && typeSelect.value === 'ferien';
         const allowEmptySubject = form.dataset.allowEmptySubject === 'true';
+        const requireStart = !isHoliday && form.id === 'entry-form';
 
         if (dateInput) {
             const iso = parseSwissDate(dateInput.value);
@@ -2196,14 +2204,27 @@ function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES)
             }
         }
 
-        if (subjectSelect) {
-            const shouldRequireSubject = !isEvent && !allowEmptySubject;
-            subjectSelect.required = shouldRequireSubject;
-            if (shouldRequireSubject && !subjectSelect.value) {
-                subjectSelect.setCustomValidity(messages.missingSubject || '');
+        if (endDateInput) {
+            const startIso = dateInput ? parseSwissDate(dateInput.value) : null;
+            const endIso = endDateInput.value ? parseSwissDate(endDateInput.value) : null;
+            if (isHoliday) {
+                if (!endIso) {
+                    endDateInput.setCustomValidity(messages.missingEndDate || '');
+                } else if (startIso && endIso && endIso < startIso) {
+                    endDateInput.setCustomValidity(messages.invalidEndDate || messages.invalidDate || '');
+                } else {
+                    endDateInput.setCustomValidity('');
+                }
+            } else if (endIso && startIso && endIso < startIso) {
+                endDateInput.setCustomValidity(messages.invalidEndDate || messages.invalidDate || '');
             } else {
-                subjectSelect.setCustomValidity('');
+                endDateInput.setCustomValidity('');
             }
+        }
+
+        if (subjectSelect) {
+            subjectSelect.required = false;
+            subjectSelect.setCustomValidity('');
         }
 
         if (eventTitleInput) {
@@ -2219,8 +2240,25 @@ function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES)
             }
         }
 
-        if (startInput && endInput) {
-            if (!startInput.value) {
+        if (startInput) {
+            if (isHoliday) {
+                startInput.value = '';
+                startInput.disabled = true;
+                startInput.required = false;
+                startInput.setCustomValidity('');
+            } else {
+                startInput.disabled = false;
+                startInput.required = requireStart;
+                if (!startInput.value && requireStart) {
+                    startInput.setCustomValidity('');
+                } else {
+                    startInput.setCustomValidity('');
+                }
+            }
+        }
+
+        if (endInput) {
+            if (isHoliday || !startInput || !startInput.value) {
                 endInput.value = '';
                 endInput.disabled = true;
                 endInput.setCustomValidity('');
@@ -2234,7 +2272,7 @@ function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES)
             }
         }
 
-        [dateInput, startInput, endInput, subjectSelect, eventTitleInput].forEach(setInvalidState);
+        [dateInput, startInput, endInput, endDateInput, subjectSelect, eventTitleInput].forEach(setInvalidState);
 
         if (saveButton) {
             saveButton.disabled = !form.checkValidity();
@@ -2243,19 +2281,16 @@ function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES)
 
     const toggleTypeFields = () => {
         const isEvent = typeSelect && typeSelect.value === 'event';
-        const allowEmptySubject = form.dataset.allowEmptySubject === 'true';
+        const isHoliday = typeSelect && typeSelect.value === 'ferien';
+
         if (subjectGroup) {
-            subjectGroup.classList.toggle('is-hidden', Boolean(isEvent));
+            subjectGroup.classList.toggle('is-hidden', isEvent || isHoliday);
         }
-        if (subjectSelect) {
-            subjectSelect.required = !isEvent && !allowEmptySubject;
-            if (isEvent) {
-                subjectSelect.value = '';
-                subjectSelect.setCustomValidity('');
-            } else if (!subjectSelect.required && !subjectSelect.value) {
-                subjectSelect.setCustomValidity('');
-            }
+        if (subjectSelect && (isEvent || isHoliday)) {
+            subjectSelect.value = '';
+            subjectSelect.setCustomValidity('');
         }
+
         if (eventTitleGroup) {
             eventTitleGroup.classList.toggle('is-hidden', !isEvent);
         }
@@ -2266,14 +2301,42 @@ function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES)
                 eventTitleInput.setCustomValidity('');
             }
         }
+
+        if (startGroup) {
+            startGroup.classList.toggle('is-hidden', isHoliday);
+        }
+        if (endGroup) {
+            endGroup.classList.toggle('is-hidden', isHoliday);
+        }
+        if (endDateGroup) {
+            endDateGroup.classList.toggle('is-hidden', !isHoliday);
+            if (!isHoliday && endDateInput) {
+                endDateInput.value = '';
+                endDateInput.disabled = true;
+                endDateInput.required = false;
+                endDateInput.setCustomValidity('');
+            } else if (isHoliday && endDateInput) {
+                endDateInput.disabled = false;
+                endDateInput.required = true;
+            }
+        }
+
         evaluate();
     };
 
     if (typeSelect) {
-        typeSelect.addEventListener('change', toggleTypeFields);
+        typeSelect.addEventListener('change', () => {
+            if (endDateInput) {
+                endDateInput.disabled = typeSelect.value !== 'ferien';
+                if (typeSelect.value !== 'ferien') {
+                    endDateInput.value = '';
+                }
+            }
+            toggleTypeFields();
+        });
     }
 
-    [dateInput, startInput, endInput, subjectSelect, eventTitleInput].forEach((input) => {
+    [dateInput, startInput, endInput, endDateInput, subjectSelect, eventTitleInput].forEach((input) => {
         if (!input) return;
         input.addEventListener('input', evaluate);
         input.addEventListener('blur', () => setInvalidState(input));
@@ -2298,8 +2361,16 @@ function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES)
                 dateInput.value = '';
                 dateInput.setCustomValidity('');
             }
+            if (endDateInput) {
+                endDateInput.value = '';
+                endDateInput.disabled = form.querySelector('[data-field="type"] select')?.value !== 'ferien';
+                endDateInput.required = form.querySelector('[data-field="type"] select')?.value === 'ferien';
+                endDateInput.setCustomValidity('');
+            }
             if (startInput) {
                 startInput.value = '';
+                startInput.disabled = false;
+                startInput.setCustomValidity('');
             }
             if (endInput) {
                 endInput.value = '';
@@ -2359,7 +2430,7 @@ async function showEntryForm() {
     }
 
     form.reset();
-    form.dataset.allowEmptySubject = 'false';
+    form.dataset.allowEmptySubject = 'true';
     const controller = setupModalFormInteractions(form);
     if (controller) {
         controller.setType('event');
@@ -2422,6 +2493,7 @@ async function saveEntry(event) {
     const dateField = document.getElementById('datum');
     const startField = document.getElementById('startzeit');
     const endField = document.getElementById('endzeit');
+    const endDateField = document.getElementById('enddatum');
     const eventTitleField = document.getElementById('event-titel');
     const saveButton = document.getElementById('saveButton');
 
@@ -2436,6 +2508,7 @@ async function saveEntry(event) {
     const datumInput = dateField.value.trim();
     const startzeitInput = startField.value;
     const endzeitInput = endField && !endField.disabled ? endField.value : '';
+    const enddatumInput = endDateField ? endDateField.value.trim() : '';
     const eventTitle = eventTitleField ? eventTitleField.value.trim() : '';
 
     const isoDate = parseSwissDate(datumInput);
@@ -2445,19 +2518,35 @@ async function saveEntry(event) {
         return;
     }
 
+    const endDateIso = enddatumInput ? parseSwissDate(enddatumInput) : null;
+    const isHoliday = typ === 'ferien';
+
+    if (isHoliday && !endDateIso) {
+        showOverlay(ENTRY_FORM_MESSAGES.missingEndDate || ENTRY_FORM_MESSAGES.invalidDate, 'error');
+        endDateField?.focus();
+        return;
+    }
+
+    if (isoDate && endDateIso && endDateIso < isoDate) {
+        showOverlay(ENTRY_FORM_MESSAGES.invalidEndDate || ENTRY_FORM_MESSAGES.invalidDate, 'error');
+        endDateField?.focus();
+        return;
+    }
+
     if (endzeitInput && startzeitInput && endzeitInput < startzeitInput) {
         showOverlay(ENTRY_FORM_MESSAGES.invalidEnd, 'error');
         return;
     }
 
-    const startzeit = startzeitInput ? `${startzeitInput}:00` : null;
-    const endzeit = endzeitInput ? `${endzeitInput}:00` : null;
+    const startzeit = (!isHoliday && startzeitInput) ? `${startzeitInput}:00` : null;
+    const endzeit = (!isHoliday && endzeitInput) ? `${endzeitInput}:00` : null;
     const isEvent = typ === 'event';
 
     const payloadBeschreibung = isEvent
         ? eventTitle + (beschreibung ? `\n\n${beschreibung}` : '')
         : beschreibung;
     const payloadSubject = isEvent ? '' : fach;
+    const resolvedEndDate = endDateIso || isoDate;
 
     const storedClassId = (typeof hmClassStorage.getId === 'function') ? hmClassStorage.getId() : '';
     const entryClassPickerController = window.hmEntryClassPicker;
@@ -2493,7 +2582,8 @@ async function saveEntry(event) {
                 beschreibung: payloadBeschreibung,
                 datum: isoDate,
                 startzeit,
-                endzeit
+                endzeit,
+                enddatum: resolvedEndDate
             };
             if (sessionState.isAdmin && selectedClassIds.length > 0) {
                 payload.class_ids = selectedClassIds;

@@ -704,7 +704,7 @@ class FakeCursor:
 
         if (
             normalized.startswith(
-                "select id, beschreibung, datum, startzeit, endzeit, typ, fach from eintraege"
+                "select id, beschreibung, datum, enddatum, startzeit, endzeit, typ, fach from eintraege"
             )
             and "where class_id=%s" in normalized
         ):
@@ -714,6 +714,7 @@ class FakeCursor:
                     'id': entry['id'],
                     'beschreibung': entry.get('beschreibung'),
                     'datum': entry.get('datum'),
+                    'enddatum': entry.get('enddatum'),
                     'startzeit': entry.get('startzeit'),
                     'endzeit': entry.get('endzeit'),
                     'typ': entry.get('typ'),
@@ -730,13 +731,13 @@ class FakeCursor:
             )
             self._prepare_rows(
                 filtered,
-                ['id', 'beschreibung', 'datum', 'startzeit', 'endzeit', 'typ', 'fach'],
+                ['id', 'beschreibung', 'datum', 'enddatum', 'startzeit', 'endzeit', 'typ', 'fach'],
             )
             return
 
         if (
             normalized.startswith(
-                "select id, typ, beschreibung, datum, fach from eintraege"
+                "select id, typ, beschreibung, datum, enddatum, fach from eintraege"
             )
             and "datum >= curdate()" in normalized
         ):
@@ -764,35 +765,38 @@ class FakeCursor:
                         'typ': entry.get('typ'),
                         'beschreibung': entry.get('beschreibung'),
                         'datum': due,
+                        'enddatum': entry.get('enddatum'),
                         'fach': entry.get('fach'),
                     }
                 )
             filtered.sort(key=lambda row: row.get('datum') or today)
             self._prepare_rows(
                 filtered,
-                ['id', 'typ', 'beschreibung', 'datum', 'fach'],
+                ['id', 'typ', 'beschreibung', 'datum', 'enddatum', 'fach'],
             )
             return
 
-        if normalized.startswith("select fach from eintraege where id=%s and class_id=%s"):
+        if normalized.startswith("select 1 from eintraege where id=%s and class_id=%s"):
             entry_id, class_id = params
             for entry in entries:
                 if entry['id'] == entry_id and entry['class_id'] == class_id:
-                    self._prepare_rows([
-                        {'fach': entry.get('fach')}
-                    ], ['fach'])
+                    if self.dictionary:
+                        self._prepare_rows([{'1': 1}], ['1'])
+                    else:
+                        self._rows = [(1,)]
                     return
             self._rows = []
             return
 
-        if normalized.startswith("update eintraege set beschreibung=%s, datum=%s, startzeit=%s, endzeit=%s, typ=%s, fach=%s where id=%s and class_id=%s"):
-            desc, date, start, end, typ, fach, entry_id, class_id = params
+        if normalized.startswith("update eintraege set beschreibung=%s, datum=%s, enddatum=%s, startzeit=%s, endzeit=%s, typ=%s, fach=%s where id=%s and class_id=%s"):
+            desc, date, enddate, start, end, typ, fach, entry_id, class_id = params
             for entry in entries:
                 if entry['id'] == entry_id and entry['class_id'] == class_id:
                     entry.update(
                         {
                             'beschreibung': desc,
                             'datum': date,
+                            'enddatum': enddate,
                             'startzeit': start,
                             'endzeit': end,
                             'typ': typ,
@@ -811,8 +815,8 @@ class FakeCursor:
             self.rowcount = before - len(remaining)
             return
 
-        if normalized.startswith("insert into eintraege (class_id, beschreibung, datum, startzeit, endzeit, typ, fach)"):
-            class_id, desc, date, start, end, typ, fach = params
+        if normalized.startswith("insert into eintraege (class_id, beschreibung, datum, enddatum, startzeit, endzeit, typ, fach)"):
+            class_id, desc, date, enddate, start, end, typ, fach = params
             next_ids = self.storage.setdefault('next_ids', {})
             new_id = next_ids.setdefault('eintraege', 1)
             next_ids['eintraege'] = new_id + 1
@@ -821,6 +825,7 @@ class FakeCursor:
                 'class_id': class_id,
                 'beschreibung': desc,
                 'datum': date,
+                'enddatum': enddate,
                 'startzeit': start,
                 'endzeit': end,
                 'typ': typ,
@@ -831,13 +836,14 @@ class FakeCursor:
             self.rowcount = 1
             return
 
-        if normalized.startswith("insert into eintraege (id, class_id, beschreibung, datum, startzeit, endzeit, typ, fach)"):
-            entry_id, class_id, desc, date, start, end, typ, fach = params
+        if normalized.startswith("insert into eintraege (id, class_id, beschreibung, datum, enddatum, startzeit, endzeit, typ, fach)"):
+            entry_id, class_id, desc, date, enddate, start, end, typ, fach = params
             entry = {
                 'id': entry_id,
                 'class_id': class_id,
                 'beschreibung': desc,
                 'datum': date,
+                'enddatum': enddate,
                 'startzeit': start,
                 'endzeit': end,
                 'typ': typ,
