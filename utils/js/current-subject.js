@@ -116,6 +116,8 @@
     const countdownValueEl = root.querySelector('[data-countdown-value]');
     const progressEl = root.querySelector('[data-progress]');
     const progressBar = root.querySelector('[data-progress-bar]');
+    const loaderIndicator = root.querySelector('[data-loading-indicator]');
+    const countdownContainer = root.querySelector('.current-subject__countdown');
     const currentDetails = root.querySelector('[data-current-details]');
     const currentEmpty = root.querySelector('[data-current-empty]');
     const currentRoom = root.querySelector('[data-current-room]');
@@ -158,7 +160,45 @@
       lastPayload: null,
       unauthorized: false,
       featureUnavailable: false,
+      activeRequests: 0,
     };
+
+    function updateLoadingState() {
+      const isLoading = state.activeRequests > 0;
+      root.classList.toggle('is-loading', isLoading);
+      if (isLoading) {
+        root.setAttribute('aria-busy', 'true');
+      } else {
+        root.removeAttribute('aria-busy');
+      }
+      if (loaderIndicator) {
+        loaderIndicator.hidden = !isLoading;
+      }
+      if (countdownContainer) {
+        if (isLoading) {
+          countdownContainer.setAttribute('aria-hidden', 'true');
+        } else {
+          countdownContainer.removeAttribute('aria-hidden');
+        }
+      }
+      if (progressEl) {
+        if (isLoading) {
+          progressEl.setAttribute('aria-hidden', 'true');
+        } else {
+          progressEl.removeAttribute('aria-hidden');
+        }
+      }
+    }
+
+    function beginLoading() {
+      state.activeRequests += 1;
+      updateLoadingState();
+    }
+
+    function endLoading() {
+      state.activeRequests = Math.max(0, state.activeRequests - 1);
+      updateLoadingState();
+    }
 
     function setSubjectLabel(value, isLessonActive) {
       if (!subjectSuffix) {
@@ -358,6 +398,7 @@
       if (state.unauthorized || state.featureUnavailable) {
         return;
       }
+      beginLoading();
       try {
         const requestInit = {
           cache: 'no-store',
@@ -403,6 +444,8 @@
       } catch (error) {
         console.error('Error while loading current subject', error);
         handleError();
+      } finally {
+        endLoading();
       }
     }
 
