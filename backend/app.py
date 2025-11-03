@@ -1012,6 +1012,7 @@ def ensure_entries_table():
                 "class_id": ("varchar",),
                 "beschreibung": ("text",),
                 "datum": ("date",),
+                "enddatum": ("date",),
                 "startzeit": ("time",),
                 "endzeit": ("time",),
                 "typ": ("enum",),
@@ -1180,6 +1181,20 @@ def _format_time_value(value):
         return value
     return str(value)
 
+
+def _parse_iso_date(value: Optional[str]) -> Optional[datetime.date]:
+    if value is None:
+        return None
+    cleaned = str(value).strip()
+    if not cleaned:
+        return None
+    if 'T' in cleaned:
+        cleaned = cleaned.split('T', 1)[0]
+    try:
+        return datetime.date.fromisoformat(cleaned)
+    except ValueError:
+        return None
+
 # ---------- ROUTES ----------
 
 @app.route("/")
@@ -1197,7 +1212,7 @@ def export_ics():
     cursor = conn.cursor(dictionary=True)
     cursor.execute(
         """
-        SELECT id, typ, beschreibung, datum, fach
+        SELECT id, typ, beschreibung, datum, enddatum, fach
         FROM eintraege
         WHERE class_id=%s AND datum >= CURDATE()
         ORDER BY datum ASC
@@ -1211,6 +1226,23 @@ def export_ics():
     cal = Calendar()
     for e in entries:
         due = e['datum']
+        end_due = e.get('enddatum') or due
+        if isinstance(due, str):
+            try:
+                due = datetime.date.fromisoformat(due)
+            except ValueError:
+                due = datetime.date.today()
+        if isinstance(end_due, str):
+            try:
+                end_due = datetime.date.fromisoformat(end_due)
+            except ValueError:
+                end_due = due
+        if not isinstance(due, datetime.date):
+            due = datetime.date.today()
+        if not isinstance(end_due, datetime.date):
+            end_due = due
+        if end_due < due:
+            end_due = due
         ev = Event()
         subject = e.get('fach', '').strip()
         typ_label = e['typ'].capitalize()
@@ -1221,6 +1253,7 @@ def export_ics():
         ev.description = e['beschreibung']
         ev.begin = due
         ev.make_all_day()
+        ev.end = end_due + datetime.timedelta(days=1)
         ev.uid = f"eintrag-{e['id']}@homework-manager.akzuwo.ch"
         cal.events.add(ev)
 
@@ -1242,7 +1275,7 @@ def entries():
     cursor = conn.cursor(dictionary=True)
     cursor.execute(
         """
-        SELECT id, beschreibung, datum, startzeit, endzeit, typ, fach
+        SELECT id, beschreibung, datum, enddatum, startzeit, endzeit, typ, fach
         FROM eintraege
         WHERE class_id=%s
         ORDER BY datum ASC, startzeit ASC
@@ -1254,6 +1287,13 @@ def entries():
         r['datum'] = r['datum'].strftime('%Y-%m-%d')
         r['startzeit'] = _format_time_value(r.get('startzeit'))
         r['endzeit'] = _format_time_value(r.get('endzeit'))
+        end_date = r.get('enddatum')
+        if isinstance(end_date, datetime.date):
+            r['enddatum'] = end_date.strftime('%Y-%m-%d')
+        elif not end_date:
+            r['enddatum'] = r['datum']
+        else:
+            r['enddatum'] = str(end_date)
     cursor.close()
     conn.close()
     return jsonify(rows)
@@ -2751,11 +2791,12 @@ def update_entry():
         return jsonify(status='error', message='invalid_id'), 400
 
     desc = (data.get('description') or '').strip()
-    date = data.get('date')
+    date_input = data.get('date')
     start = data.get('startzeit') or None
     end = data.get('endzeit') or None
     typ = data.get('type')
     fach = (data.get('fach') or '').strip()
+    enddatum_input = data.get('enddatum')
 
     if start:
         start = start.strip()
@@ -2767,6 +2808,31 @@ def update_entry():
         if len(end) == 5:
             end = f"{end}:00"
         end = end[:8]
+
+    if isinstance(date_input, str) and 'T' in date_input and not start:
+        _, time_part = date_input.split('T', 1)
+        start = time_part or None
+
+    parsed_date = _parse_iso_date(date_input)
+    if parsed_date is None:
+        return jsonify(status='error', message='ungültiges datum'), 400
+
+    parsed_end_date = _parse_iso_date(enddatum_input) if enddatum_input not in (None, '') else None
+    if enddatum_input not in (None, '') and parsed_end_date is None:
+        return jsonify(status='error', message='ungültiges enddatum'), 400
+
+    if typ == 'ferien' and parsed_end_date is None:
+        return jsonify(status='error', message='enddatum ist erforderlich'), 400
+
+    if parsed_end_date is not None and parsed_end_date < parsed_date:
+        return jsonify(status='error', message='enddatum vor datum'), 400
+
+    date = parsed_date.isoformat()
+    enddatum = parsed_end_date.isoformat() if parsed_end_date is not None else date
+
+    if not fach:
+        fach = ''
+
 
     role = session.get('role')
     if role == 'class_admin':
@@ -2780,35 +2846,28 @@ def update_entry():
     conn = get_connection()
     cur = conn.cursor()
     try:
-        existing_fach = None
         for class_id in class_ids:
             cur.execute(
-                "SELECT fach FROM eintraege WHERE id=%s AND class_id=%s",
+                "SELECT 1 FROM eintraege WHERE id=%s AND class_id=%s",
                 (entry_id, class_id),
             )
             row = cur.fetchone()
             if not row:
                 conn.rollback()
                 return jsonify(status='error', message='Eintrag nicht gefunden'), 404
-            if existing_fach is None:
-                existing_fach = (row[0] or '').strip()
-
-        if typ != 'event' and not fach and existing_fach:
-            return jsonify(status='error', message='fach ist für diesen Typ erforderlich'), 400
-        if typ == 'event' and not fach:
-            fach = ''
 
         for class_id in class_ids:
             cur.execute(
                 """
                 UPDATE eintraege
-                SET beschreibung=%s, datum=%s, startzeit=%s, endzeit=%s, typ=%s, fach=%s
+                SET beschreibung=%s, datum=%s, enddatum=%s, startzeit=%s, endzeit=%s, typ=%s, fach=%s
                 WHERE id=%s AND class_id=%s
                 """,
-                (desc, date, start, end, typ, fach, entry_id, class_id)
+                (desc, date, enddatum, start, end, typ, fach, entry_id, class_id),
             )
 
         conn.commit()
+
         return jsonify(status='ok', updated=len(class_ids))
     except Exception as e:
         conn.rollback()
@@ -3002,17 +3061,12 @@ def add_entry():
         except ValueError:
             return jsonify(status='error', message='invalid_class_id'), 400
     beschreibung = (data.get("beschreibung") or '').strip()
-    datum = data.get("datum")
+    datum_input = data.get("datum")
     startzeit = data.get("startzeit")
     endzeit = data.get("endzeit")
     typ = data.get("typ")
     fach = (data.get("fach") or '').strip()
-
-    if datum and 'T' in datum:
-        date_part, time_part = datum.split('T', 1)
-        if not startzeit:
-            startzeit = time_part or None
-        datum = date_part
+    enddatum_input = data.get("enddatum")
 
     if startzeit == '':
         startzeit = None
@@ -3030,11 +3084,31 @@ def add_entry():
             endzeit = f"{endzeit}:00"
         endzeit = endzeit[:8]
 
-    if not typ or not datum:
+    if isinstance(datum_input, str) and 'T' in datum_input and not startzeit:
+        _, time_part = datum_input.split('T', 1)
+        startzeit = time_part or None
+
+    if not typ or not datum_input:
         return jsonify(status="error", message="typ und datum sind erforderlich"), 400
-    if typ != 'event' and not fach:
-        return jsonify(status="error", message="fach ist für diesen Typ erforderlich"), 400
-    if typ == 'event' and not fach:
+
+    start_date = _parse_iso_date(datum_input)
+    if start_date is None:
+        return jsonify(status="error", message="ungültiges datum"), 400
+
+    end_date = _parse_iso_date(enddatum_input) if enddatum_input not in (None, '') else None
+    if enddatum_input not in (None, '') and end_date is None:
+        return jsonify(status="error", message="ungültiges enddatum"), 400
+
+    if typ == 'ferien' and end_date is None:
+        return jsonify(status="error", message="enddatum ist erforderlich"), 400
+
+    if end_date is not None and end_date < start_date:
+        return jsonify(status="error", message="enddatum vor datum"), 400
+
+    datum = start_date.isoformat()
+    enddatum = end_date.isoformat() if end_date is not None else datum
+
+    if not fach:
         fach = ''
 
     role = session.get('role')
@@ -3051,20 +3125,20 @@ def add_entry():
         first_class = class_ids[0]
         cur.execute(
             """
-            INSERT INTO eintraege (class_id, beschreibung, datum, startzeit, endzeit, typ, fach)
-            VALUES (%s,%s,%s,%s,%s,%s,%s)
+            INSERT INTO eintraege (class_id, beschreibung, datum, enddatum, startzeit, endzeit, typ, fach)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
             """,
-            (first_class, beschreibung, datum, startzeit, endzeit, typ, fach),
+            (first_class, beschreibung, datum, enddatum, startzeit, endzeit, typ, fach),
         )
         entry_id = cur.lastrowid
 
         for extra_class in class_ids[1:]:
             cur.execute(
                 """
-                INSERT INTO eintraege (id, class_id, beschreibung, datum, startzeit, endzeit, typ, fach)
-                VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+                INSERT INTO eintraege (id, class_id, beschreibung, datum, enddatum, startzeit, endzeit, typ, fach)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
                 """,
-                (entry_id, extra_class, beschreibung, datum, startzeit, endzeit, typ, fach),
+                (entry_id, extra_class, beschreibung, datum, enddatum, startzeit, endzeit, typ, fach),
             )
 
         conn.commit()

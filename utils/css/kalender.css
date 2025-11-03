@@ -24,6 +24,7 @@
   --hw: #3b82f6;
   --exam: #f87171;
   --event: #34d399;
+  --ferien: #fbbf24;
   --focus-ring: 0 0 0 2px var(--accent-outline);
   --radius-sm: 8px;
   --radius-md: 14px;
@@ -206,6 +207,10 @@ body.calendar-theme main {
 
 .calendar-legend__item[data-type='event'] {
   color: var(--event);
+}
+
+.calendar-legend__item[data-type='ferien'] {
+  color: var(--ferien);
 }
 
 .calendar-shell {
@@ -695,6 +700,11 @@ body.calendar-theme main {
 .fc .calendar-event[data-event-type='event'] {
   background: rgba(52, 211, 153, 0.18);
   border-left: 3px solid var(--event);
+}
+
+.fc .calendar-event[data-event-type='ferien'] {
+  background: rgba(251, 191, 36, 0.2);
+  border-left: 3px solid var(--ferien);
 }
 
 .fc .calendar-event__meta {

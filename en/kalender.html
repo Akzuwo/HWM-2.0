@@ -129,6 +129,10 @@
             <span class="calendar-legend__dot" aria-hidden="true"></span>
             <span data-i18n="calendar.legend.event">Event</span>
           </span>
+          <span class="calendar-legend__item" data-type="ferien" role="listitem">
+            <span class="calendar-legend__dot" aria-hidden="true"></span>
+            <span data-i18n="calendar.legend.holiday">Holidays &amp; Breaks</span>
+          </span>
         </div>
       </div>
       <div
@@ -249,6 +253,7 @@
               <option value="hausaufgabe" data-i18n="calendar.legend.homework">Homework</option>
               <option value="pruefung" data-i18n="calendar.legend.exam">Exam</option>
               <option value="event" data-i18n="calendar.legend.event">Event</option>
+              <option value="ferien" data-i18n="calendar.legend.holiday">Holidays &amp; Breaks</option>
             </select>
           </div>
 
@@ -294,6 +299,11 @@
           <div class="hm-modal__field" data-field="date">
             <label for="fc-edit-date" data-i18n="calendar.modal.labels.date">Date</label>
             <input type="date" id="fc-edit-date" name="datum" required />
+          </div>
+
+          <div class="hm-modal__field is-hidden" data-field="end-date">
+            <label for="fc-edit-end-date" data-i18n="calendar.modal.labels.endDate">End date</label>
+            <input type="date" id="fc-edit-end-date" name="enddatum" />
           </div>
 
           <div class="hm-modal__field" data-field="start">
@@ -378,6 +388,7 @@
               <option value="hausaufgabe" data-i18n="calendar.legend.homework">Homework</option>
               <option value="pruefung" data-i18n="calendar.legend.exam">Exam</option>
               <option value="event" data-i18n="calendar.legend.event">Event</option>
+              <option value="ferien" data-i18n="calendar.legend.holiday">Holidays &amp; Breaks</option>
             </select>
           </div>
 
@@ -434,9 +445,14 @@
             <input type="date" id="datum" name="datum" required />
           </div>
 
+          <div class="hm-modal__field is-hidden" data-field="end-date">
+            <label for="enddatum" data-i18n="calendar.modal.labels.endDate">End date</label>
+            <input type="date" id="enddatum" name="enddatum" />
+          </div>
+
           <div class="hm-modal__field" data-field="start">
             <label for="startzeit" data-i18n="calendar.modal.labels.start">Start time</label>
-            <input type="time" id="startzeit" name="startzeit" required />
+            <input type="time" id="startzeit" name="startzeit" />
           </div>
 
           <div class="hm-modal__field" data-field="end">
