@@ -240,6 +240,20 @@ main.current-subject {
   font-size: 0.95rem;
 }
 
+.current-subject__empty-note--error {
+  color: #fee2e2;
+  background: linear-gradient(
+      135deg,
+      rgba(239, 68, 68, 0.32),
+      rgba(239, 68, 68, 0.18) 55%,
+      rgba(239, 68, 68, 0.08)
+    );
+  border: 1px solid rgba(239, 68, 68, 0.55);
+  border-radius: calc(var(--radius-lg) - 6px);
+  padding: 0.85rem 1.1rem;
+  box-shadow: 0 12px 32px rgba(239, 68, 68, 0.25);
+}
+
 .current-subject__divider {
   border: 0;
   height: 1px;

@@ -7,6 +7,7 @@
   const FREE_TOKENS = ['frei', 'free', 'libero', 'libre', '-'];
   const DEFAULT_REFRESH = 30000;
   const DEFAULT_COUNTDOWN_UPDATE = 1000;
+  const ERROR_NOTE_CLASS = 'current-subject__empty-note--error';
 
   const DEFAULT_TEXT = {
     baseTitle: 'Current Subject',
@@ -218,6 +219,7 @@
         if (!show) {
           currentEmpty.textContent = text.noLesson;
         }
+        currentEmpty.classList.remove(ERROR_NOTE_CLASS);
       }
     }
 
@@ -230,6 +232,7 @@
         if (!show) {
           nextEmpty.textContent = text.noNextLesson;
         }
+        nextEmpty.classList.remove(ERROR_NOTE_CLASS);
       }
     }
 
@@ -381,12 +384,15 @@
       if (currentEmpty) {
         currentEmpty.hidden = false;
         currentEmpty.textContent = message;
+        currentEmpty.classList.add(ERROR_NOTE_CLASS);
       }
       if (currentDetails) {
         currentDetails.hidden = true;
       }
       if (nextEmpty) {
         nextEmpty.hidden = false;
+        nextEmpty.classList.remove(ERROR_NOTE_CLASS);
+        nextEmpty.textContent = text.noNextLesson;
       }
       if (nextDetails) {
         nextDetails.hidden = true;
