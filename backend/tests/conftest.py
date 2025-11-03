@@ -778,7 +778,9 @@ class FakeCursor:
             entry_id, class_id = params
             for entry in entries:
                 if entry['id'] == entry_id and entry['class_id'] == class_id:
-                    self._prepare_rows([(entry.get('fach'),)], ['fach'])
+                    self._prepare_rows([
+                        {'fach': entry.get('fach')}
+                    ], ['fach'])
                     return
             self._rows = []
             return
@@ -829,7 +831,40 @@ class FakeCursor:
             self.rowcount = 1
             return
 
+        if normalized.startswith("insert into eintraege (id, class_id, beschreibung, datum, startzeit, endzeit, typ, fach)"):
+            entry_id, class_id, desc, date, start, end, typ, fach = params
+            entry = {
+                'id': entry_id,
+                'class_id': class_id,
+                'beschreibung': desc,
+                'datum': date,
+                'startzeit': start,
+                'endzeit': end,
+                'typ': typ,
+                'fach': fach,
+            }
+            entries.append(entry)
+            next_ids = self.storage.setdefault('next_ids', {})
+            current_next = next_ids.setdefault('eintraege', entry_id + 1)
+            if current_next <= entry_id:
+                next_ids['eintraege'] = entry_id + 1
+            self.lastrowid = entry_id
+            self.rowcount = 1
+            return
+
         self._rows = []
+
+    def executemany(self, query: str, param_sequence) -> None:  # pragma: no cover - shim
+        total = 0
+        last_id = None
+        for params in param_sequence or []:
+            self.execute(query, params)
+            total += self.rowcount
+            if self.lastrowid is not None:
+                last_id = self.lastrowid
+        self.rowcount = total
+        if last_id is not None:
+            self.lastrowid = last_id
 
     def fetchone(self):  # pragma: no cover - shim
         if not self._rows:

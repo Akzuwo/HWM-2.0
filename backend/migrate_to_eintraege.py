@@ -68,7 +68,7 @@ def main():
     cur.execute(
         f"""
         CREATE TABLE IF NOT EXISTS eintraege (
-            id INT AUTO_INCREMENT PRIMARY KEY,
+            id INT NOT NULL AUTO_INCREMENT,
             class_id VARCHAR(4) NOT NULL DEFAULT '{DEFAULT_ENTRY_CLASS_ID}',
             beschreibung TEXT NOT NULL,
             datum DATE NOT NULL,
@@ -76,6 +76,7 @@ def main():
             endzeit TIME NULL,
             typ ENUM('hausaufgabe','pruefung','event') NOT NULL,
             fach VARCHAR(100) NOT NULL DEFAULT '',
+            PRIMARY KEY (id, class_id),
             CONSTRAINT chk_eintraege_class_id CHECK (class_id IN ({ALLOWED_CLASS_IDS_SQL}))
         )
         """

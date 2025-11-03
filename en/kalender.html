@@ -421,6 +421,14 @@
             </select>
           </div>
 
+          <div class="hm-modal__field" data-field="classes" data-entry-class-field hidden>
+            <label for="entry-class-ids">Classes</label>
+            <select id="entry-class-ids" data-entry-class-select multiple>
+              <option value="" disabled>Loading classes…</option>
+            </select>
+            <p class="field-hint">Hold Ctrl (Windows) or Cmd (Mac) to select multiple classes.</p>
+          </div>
+
           <div class="hm-modal__field" data-field="date">
             <label for="datum" data-i18n="calendar.modal.labels.date">Date</label>
             <input type="date" id="datum" name="datum" required />

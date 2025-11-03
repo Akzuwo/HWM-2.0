@@ -1921,6 +1921,9 @@ function closeEntryModal() {
         const controller = setupModalFormInteractions(form);
         controller?.setType('event');
         controller?.evaluate();
+        if (window.hmEntryClassPicker && typeof window.hmEntryClassPicker.reset === 'function') {
+            window.hmEntryClassPicker.reset();
+        }
     }
 }
 
@@ -1929,7 +1932,9 @@ const ENTRY_FORM_MESSAGES = {
     invalidEnd: 'Die Endzeit darf nicht vor der Startzeit liegen.',
     missingSubject: 'Bitte wähle ein Fach aus.',
     missingEventTitle: 'Bitte gib einen Event-Titel ein.',
-    missingClass: 'Bitte wähle eine Klasse aus.'
+    missingClass: 'Bitte wähle eine Klasse aus.',
+    missingClasses: 'Bitte wähle mindestens eine Klasse aus.',
+    classLoadError: 'Die Klassen konnten nicht geladen werden.'
 };
 
 if (window.hmI18n) {
@@ -1937,6 +1942,186 @@ if (window.hmI18n) {
     if (formMessages && typeof formMessages === 'object') {
         Object.assign(ENTRY_FORM_MESSAGES, formMessages);
     }
+}
+
+const ENTRY_CLASS_FIELD_SELECTORS = {
+    container: '[data-entry-class-field]',
+    select: '[data-entry-class-select]'
+};
+
+function resolveEntryClassElements() {
+    if (typeof document === 'undefined') {
+        return { container: null, select: null };
+    }
+    const container = document.querySelector(ENTRY_CLASS_FIELD_SELECTORS.container);
+    const select = container
+        ? container.querySelector(ENTRY_CLASS_FIELD_SELECTORS.select)
+        : document.querySelector(ENTRY_CLASS_FIELD_SELECTORS.select);
+    return { container, select };
+}
+
+function getStoredEntryClassId() {
+    return (typeof hmClassStorage.getId === 'function')
+        ? (hmClassStorage.getId() || '')
+        : '';
+}
+
+const entryClassPicker = (() => {
+    let cachedClasses = [];
+    let loadPromise = null;
+
+    function hideField(container, select) {
+        if (container) {
+            container.hidden = true;
+        }
+        if (select) {
+            select.disabled = true;
+        }
+    }
+
+    function getSelectedValues(select) {
+        if (!select) {
+            return [];
+        }
+        const seen = new Set();
+        const values = [];
+        Array.from(select.selectedOptions || []).forEach((option) => {
+            const value = option.value;
+            if (value && !seen.has(value)) {
+                seen.add(value);
+                values.push(value);
+            }
+        });
+        return values;
+    }
+
+    function populateSelect(select, classes, selectedValues) {
+        if (!select) {
+            return;
+        }
+        const selectedSet = new Set(selectedValues || []);
+        const wasFocused = document.activeElement === select;
+        select.innerHTML = '';
+        classes.forEach((cls) => {
+            if (!cls || !cls.slug) {
+                return;
+            }
+            const option = document.createElement('option');
+            option.value = cls.slug;
+            option.textContent = cls.title ? `${cls.title} (${cls.slug})` : cls.slug;
+            if (selectedSet.has(cls.slug)) {
+                option.selected = true;
+            }
+            select.appendChild(option);
+        });
+        if (wasFocused && typeof select.focus === 'function') {
+            try {
+                select.focus({ preventScroll: true });
+            } catch (error) {
+                select.focus();
+            }
+        }
+    }
+
+    async function ensureClasses() {
+        if (cachedClasses.length) {
+            return cachedClasses;
+        }
+        if (!loadPromise) {
+            loadPromise = (async () => {
+                const res = await fetchWithSession(`${API_BASE}/api/classes`);
+                if (!res.ok) {
+                    const message = await res.text().catch(() => '');
+                    throw new Error(message || `Status ${res.status}`);
+                }
+                const rows = await res.json();
+                cachedClasses = (rows || []).filter((row) => row && row.slug);
+                return cachedClasses;
+            })();
+        }
+        try {
+            return await loadPromise;
+        } finally {
+            loadPromise = null;
+        }
+    }
+
+    function syncSelection(select, classId) {
+        if (!select || !classId) {
+            return;
+        }
+        const currentValues = getSelectedValues(select);
+        if (currentValues.length > 0) {
+            return;
+        }
+        const option = Array.from(select.options || []).find((opt) => opt.value === classId);
+        if (option) {
+            option.selected = true;
+        }
+    }
+
+    return {
+        async prepare() {
+            const { container, select } = resolveEntryClassElements();
+            if (!container || !select) {
+                return [];
+            }
+            if (!sessionState.isAdmin) {
+                hideField(container, select);
+                return [];
+            }
+            container.hidden = false;
+            select.disabled = true;
+            try {
+                const classes = await ensureClasses();
+                const previousSelection = getSelectedValues(select);
+                populateSelect(select, classes, previousSelection);
+                select.disabled = false;
+                syncSelection(select, getStoredEntryClassId());
+                return classes;
+            } catch (error) {
+                console.error('Eintragsklassen konnten nicht geladen werden:', error);
+                showOverlay(ENTRY_FORM_MESSAGES.classLoadError || ENTRY_FORM_MESSAGES.missingClass, 'error');
+                hideField(container, select);
+                return [];
+            }
+        },
+        reset() {
+            const { container, select } = resolveEntryClassElements();
+            if (select) {
+                Array.from(select.options || []).forEach((option) => {
+                    option.selected = false;
+                });
+            }
+            if (!sessionState.isAdmin) {
+                hideField(container, select);
+            }
+        },
+        getSelection() {
+            if (!sessionState.isAdmin) {
+                return [];
+            }
+            const { select } = resolveEntryClassElements();
+            return getSelectedValues(select);
+        },
+        syncWithCurrentClass(classId) {
+            if (!sessionState.isAdmin) {
+                return;
+            }
+            const { select } = resolveEntryClassElements();
+            if (!select || !(select.options && select.options.length)) {
+                return;
+            }
+            syncSelection(select, classId);
+        },
+        clearCache() {
+            cachedClasses = [];
+        }
+    };
+})();
+
+if (typeof window !== 'undefined') {
+    window.hmEntryClassPicker = entryClassPicker;
 }
 
 function parseSwissDate(value) {
@@ -2168,7 +2353,7 @@ function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES)
     return controller;
 }
 
-function showEntryForm() {
+async function showEntryForm() {
     if (!canManageEntries()) {
         showOverlay(CREATE_DISABLED_MESSAGE, 'error');
         return;
@@ -2186,6 +2371,14 @@ function showEntryForm() {
     if (controller) {
         controller.setType('event');
         controller.evaluate();
+    }
+
+    if (window.hmEntryClassPicker && typeof window.hmEntryClassPicker.prepare === 'function') {
+        try {
+            await window.hmEntryClassPicker.prepare();
+        } catch (error) {
+            console.error('Auswahl der Klassen konnte nicht vorbereitet werden:', error);
+        }
     }
     const saveButton = form.querySelector('#saveButton');
     if (saveButton) {
@@ -2273,8 +2466,20 @@ async function saveEntry(event) {
         : beschreibung;
     const payloadSubject = isEvent ? '' : fach;
 
-    const classId = (typeof hmClassStorage.getId === 'function') ? hmClassStorage.getId() : '';
-    if (!classId) {
+    const storedClassId = (typeof hmClassStorage.getId === 'function') ? hmClassStorage.getId() : '';
+    const entryClassPickerController = window.hmEntryClassPicker;
+    let selectedClassIds = [];
+
+    if (sessionState.isAdmin && entryClassPickerController && typeof entryClassPickerController.getSelection === 'function') {
+        selectedClassIds = entryClassPickerController.getSelection();
+        if (!selectedClassIds.length && storedClassId) {
+            selectedClassIds = [storedClassId];
+        }
+        if (!selectedClassIds.length) {
+            showOverlay(ENTRY_FORM_MESSAGES.missingClasses || ENTRY_FORM_MESSAGES.missingClass, 'error');
+            return;
+        }
+    } else if (!storedClassId) {
         showOverlay(ENTRY_FORM_MESSAGES.missingClass, 'error');
         return;
     }
@@ -2289,10 +2494,24 @@ async function saveEntry(event) {
 
     while (!success && attempt < maxAttempts) {
         try {
+            const payload = {
+                typ,
+                fach: payloadSubject,
+                beschreibung: payloadBeschreibung,
+                datum: isoDate,
+                startzeit,
+                endzeit
+            };
+            if (sessionState.isAdmin && selectedClassIds.length > 0) {
+                payload.class_ids = selectedClassIds;
+            } else {
+                payload.class_id = storedClassId;
+            }
+
             const response = await fetchWithSession(`${API_BASE}/add_entry`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ typ, fach: payloadSubject, beschreibung: payloadBeschreibung, datum: isoDate, startzeit, endzeit, class_id: classId })
+                body: JSON.stringify(payload)
             });
             if (response.status === 403) {
                 showOverlay(ENTRY_FORM_MESSAGES.missingClass, 'error');

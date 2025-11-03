@@ -351,18 +351,27 @@ function debounce(fn, wait = 160) {
   };
 }
 
-function setCurrentClassContext(classId, classSlug) {
-  currentClassId = classId || '';
-  currentClassSlug = classSlug || '';
-  if (currentClassId) {
-    const slugToStore = currentClassSlug || currentClassId;
-    if (typeof CLASS_STORAGE.set === 'function') {
-      CLASS_STORAGE.set(currentClassId, slugToStore);
+  function setCurrentClassContext(classId, classSlug) {
+    currentClassId = classId || '';
+    currentClassSlug = classSlug || '';
+    if (currentClassId) {
+      const slugToStore = currentClassSlug || currentClassId;
+      if (typeof CLASS_STORAGE.set === 'function') {
+        CLASS_STORAGE.set(currentClassId, slugToStore);
+      }
+    } else if (typeof CLASS_STORAGE.clear === 'function') {
+      CLASS_STORAGE.clear();
     }
-  } else if (typeof CLASS_STORAGE.clear === 'function') {
-    CLASS_STORAGE.clear();
+    const syncTarget = currentClassSlug || currentClassId || '';
+    const picker = typeof window !== 'undefined' ? window.hmEntryClassPicker : null;
+    if (picker && typeof picker.syncWithCurrentClass === 'function') {
+      try {
+        picker.syncWithCurrentClass(syncTarget);
+      } catch (error) {
+        console.warn('Échec de la synchronisation du sélecteur de classes :', error);
+      }
+    }
   }
-}
 
 async function fetchSessionClassContext() {
   try {

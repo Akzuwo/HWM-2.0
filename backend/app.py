@@ -9,7 +9,7 @@ import html
 from collections import OrderedDict, deque
 from contextlib import closing
 from email.message import EmailMessage
-from typing import Dict, Optional, Tuple, Any, Iterable
+from typing import Dict, Optional, Tuple, Any, Iterable, List
 
 from logging.handlers import RotatingFileHandler
 
@@ -434,6 +434,28 @@ def _normalize_entry_class_id(raw_value: Optional[object]) -> str:
     prefix, suffix = value[:-1], value[-1]
     normalized = f"{prefix.upper()}{suffix.lower()}"
     if normalized not in ENTRY_CLASS_ID_SET:
+        raise ValueError('invalid_class_id')
+    return normalized
+
+
+def _normalize_entry_class_id_list(raw_values: Optional[object]) -> List[str]:
+    if raw_values is None:
+        return []
+
+    if isinstance(raw_values, str):
+        candidates = [raw_values]
+    elif isinstance(raw_values, (list, tuple, set, frozenset)):
+        candidates = list(raw_values)
+    else:
+        raise ValueError('invalid_class_id')
+
+    normalized: List[str] = []
+    for candidate in candidates:
+        normalized_id = _normalize_entry_class_id(candidate)
+        if normalized_id not in normalized:
+            normalized.append(normalized_id)
+
+    if not normalized:
         raise ValueError('invalid_class_id')
     return normalized
 
@@ -2713,11 +2735,21 @@ def update_entry():
 
     data = request.json or {}
     try:
-        class_id = _normalize_entry_class_id(data.get('class_id'))
+        class_ids = _normalize_entry_class_id_list(data.get('class_ids'))
     except ValueError:
         return jsonify(status='error', message='invalid_class_id'), 400
 
-    id = data.get('id')
+    if not class_ids:
+        try:
+            class_ids = [_normalize_entry_class_id(data.get('class_id'))]
+        except ValueError:
+            return jsonify(status='error', message='invalid_class_id'), 400
+
+    try:
+        entry_id = int(data.get('id'))
+    except (TypeError, ValueError):
+        return jsonify(status='error', message='invalid_id'), 400
+
     desc = (data.get('description') or '').strip()
     date = data.get('date')
     start = data.get('startzeit') or None
@@ -2741,37 +2773,43 @@ def update_entry():
         allowed_class = _get_session_entry_class_id() or ''
         if not allowed_class:
             return jsonify(status='error', message='class_required'), 403
-        if class_id != allowed_class:
+        if any(class_id != allowed_class for class_id in class_ids):
             return jsonify(status='error', message='forbidden'), 403
+        class_ids = [allowed_class]
 
     conn = get_connection()
     cur = conn.cursor()
     try:
-        cur.execute(
-            "SELECT fach FROM eintraege WHERE id=%s AND class_id=%s",
-            (id, class_id),
-        )
-        row = cur.fetchone()
-        if not row:
-            return jsonify(status='error', message='Eintrag nicht gefunden'), 404
-
-        existing_fach = (row[0] or '').strip()
+        existing_fach = None
+        for class_id in class_ids:
+            cur.execute(
+                "SELECT fach FROM eintraege WHERE id=%s AND class_id=%s",
+                (entry_id, class_id),
+            )
+            row = cur.fetchone()
+            if not row:
+                conn.rollback()
+                return jsonify(status='error', message='Eintrag nicht gefunden'), 404
+            if existing_fach is None:
+                existing_fach = (row[0] or '').strip()
 
         if typ != 'event' and not fach and existing_fach:
             return jsonify(status='error', message='fach ist für diesen Typ erforderlich'), 400
         if typ == 'event' and not fach:
             fach = ''
 
-        cur.execute(
-            """
-            UPDATE eintraege
-            SET beschreibung=%s, datum=%s, startzeit=%s, endzeit=%s, typ=%s, fach=%s
-            WHERE id=%s AND class_id=%s
-            """,
-            (desc, date, start, end, typ, fach, id, class_id)
-        )
+        for class_id in class_ids:
+            cur.execute(
+                """
+                UPDATE eintraege
+                SET beschreibung=%s, datum=%s, startzeit=%s, endzeit=%s, typ=%s, fach=%s
+                WHERE id=%s AND class_id=%s
+                """,
+                (desc, date, start, end, typ, fach, entry_id, class_id)
+            )
+
         conn.commit()
-        return jsonify(status='ok')
+        return jsonify(status='ok', updated=len(class_ids))
     except Exception as e:
         conn.rollback()
         return jsonify(status='error', message=str(e)), 500
@@ -2954,9 +2992,15 @@ def add_entry():
 
     data = request.json or {}
     try:
-        class_id = _normalize_entry_class_id(data.get('class_id'))
+        class_ids = _normalize_entry_class_id_list(data.get('class_ids'))
     except ValueError:
         return jsonify(status='error', message='invalid_class_id'), 400
+
+    if not class_ids:
+        try:
+            class_ids = [_normalize_entry_class_id(data.get('class_id'))]
+        except ValueError:
+            return jsonify(status='error', message='invalid_class_id'), 400
     beschreibung = (data.get("beschreibung") or '').strip()
     datum = data.get("datum")
     startzeit = data.get("startzeit")
@@ -2998,21 +3042,35 @@ def add_entry():
         allowed_class = _get_session_entry_class_id() or ''
         if not allowed_class:
             return jsonify(status='error', message='class_required'), 403
-        if class_id != allowed_class:
+        if any(class_id != allowed_class for class_id in class_ids):
             return jsonify(status='error', message='forbidden'), 403
+        class_ids = [allowed_class]
 
     conn = get_connection(); cur = conn.cursor()
     try:
+        first_class = class_ids[0]
         cur.execute(
             """
             INSERT INTO eintraege (class_id, beschreibung, datum, startzeit, endzeit, typ, fach)
             VALUES (%s,%s,%s,%s,%s,%s,%s)
             """,
-            (class_id, beschreibung, datum, startzeit, endzeit, typ, fach)
+            (first_class, beschreibung, datum, startzeit, endzeit, typ, fach),
         )
+        entry_id = cur.lastrowid
+
+        for extra_class in class_ids[1:]:
+            cur.execute(
+                """
+                INSERT INTO eintraege (id, class_id, beschreibung, datum, startzeit, endzeit, typ, fach)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+                """,
+                (entry_id, extra_class, beschreibung, datum, startzeit, endzeit, typ, fach),
+            )
+
         conn.commit()
-        return jsonify(status="ok")
+        return jsonify(status="ok", created=len(class_ids), id=entry_id)
     except Exception as e:
+        conn.rollback()
         return jsonify(status="error", message=str(e)), 500
     finally:
         cur.close(); conn.close()
