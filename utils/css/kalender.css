@@ -21,40 +21,68 @@
   --danger-strong: #ff6b68;
   --success: #34d399;
   --warning: #f59e0b;
-  --select-bg-default: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
-  --select-border-default: rgba(255, 255, 255, 0.24);
-  --select-hover-bg-default: linear-gradient(135deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.05));
-  --select-hover-border-default: rgba(144, 181, 255, 0.7);
+  --select-bg-default: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.02));
+  --select-border-default: rgba(255, 255, 255, 0.26);
+  --select-hover-bg-default: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.06));
+  --select-hover-border-default: rgba(144, 181, 255, 0.78);
   --select-ring-default:
     0 0 0 1px rgba(7, 10, 18, 0.85),
     0 0 0 4px rgba(144, 181, 255, 0.32);
-  --select-arrow-default: rgba(244, 246, 251, 0.76);
-  --select-type-bg: linear-gradient(135deg, rgba(91, 141, 239, 0.32), rgba(91, 141, 239, 0.1));
-  --select-type-hover-bg: linear-gradient(135deg, rgba(124, 163, 255, 0.45), rgba(91, 141, 239, 0.16));
-  --select-type-border: rgba(124, 163, 255, 0.82);
-  --select-type-hover-border: rgba(144, 181, 255, 0.92);
+  --select-arrow-default: rgba(244, 246, 251, 0.82);
+  --select-option-bg: #111726;
+  --select-option-text: var(--fg);
+  --select-type-bg: linear-gradient(135deg, rgba(91, 141, 239, 0.38), rgba(91, 141, 239, 0.12));
+  --select-type-hover-bg: linear-gradient(135deg, rgba(124, 163, 255, 0.55), rgba(91, 141, 239, 0.2));
+  --select-type-border: rgba(124, 163, 255, 0.88);
+  --select-type-hover-border: rgba(144, 181, 255, 0.96);
   --select-type-ring:
     0 0 0 1px rgba(28, 46, 83, 0.95),
     0 0 0 4px rgba(124, 163, 255, 0.38);
-  --select-type-arrow: rgba(202, 220, 255, 0.95);
-  --select-subject-bg: linear-gradient(135deg, rgba(52, 211, 153, 0.28), rgba(52, 211, 153, 0.08));
-  --select-subject-hover-bg: linear-gradient(135deg, rgba(110, 239, 194, 0.42), rgba(52, 211, 153, 0.12));
-  --select-subject-border: rgba(52, 211, 153, 0.7);
-  --select-subject-hover-border: rgba(110, 239, 194, 0.92);
+  --select-type-arrow: rgba(214, 227, 255, 0.96);
+  --select-type-text: #f5f7ff;
+  --select-type-option-bg: #152442;
+  --select-type-option-text: #f4f8ff;
+  --select-subject-bg: linear-gradient(135deg, rgba(52, 211, 153, 0.34), rgba(52, 211, 153, 0.1));
+  --select-subject-hover-bg: linear-gradient(135deg, rgba(110, 239, 194, 0.52), rgba(52, 211, 153, 0.14));
+  --select-subject-border: rgba(52, 211, 153, 0.78);
+  --select-subject-hover-border: rgba(110, 239, 194, 0.95);
   --select-subject-ring:
     0 0 0 1px rgba(15, 61, 49, 0.92),
     0 0 0 4px rgba(52, 211, 153, 0.35);
-  --select-subject-arrow: rgba(189, 250, 227, 0.95);
-  --select-class-bg: linear-gradient(135deg, rgba(91, 141, 239, 0.22), rgba(91, 141, 239, 0.05));
-  --select-class-hover-bg: linear-gradient(135deg, rgba(91, 141, 239, 0.36), rgba(91, 141, 239, 0.12));
-  --select-class-border: rgba(144, 181, 255, 0.65);
-  --select-class-hover-border: rgba(144, 181, 255, 0.85);
+  --select-subject-arrow: rgba(212, 250, 233, 0.96);
+  --select-subject-text: #f4fffa;
+  --select-subject-option-bg: #0f3226;
+  --select-subject-option-text: #f2fff9;
+  --select-class-bg: linear-gradient(135deg, rgba(181, 126, 255, 0.3), rgba(91, 141, 239, 0.08));
+  --select-class-hover-bg: linear-gradient(135deg, rgba(181, 126, 255, 0.46), rgba(91, 141, 239, 0.16));
+  --select-class-border: rgba(181, 126, 255, 0.78);
+  --select-class-hover-border: rgba(181, 126, 255, 0.95);
   --select-class-ring:
     0 0 0 1px rgba(19, 33, 61, 0.9),
     0 0 0 4px rgba(124, 163, 255, 0.3);
-  --legend-bg: rgba(16, 20, 31, 0.86);
-  --legend-border: rgba(124, 163, 255, 0.24);
-  --legend-text: var(--fg-strong);
+  --select-class-arrow: rgba(232, 214, 255, 0.96);
+  --select-class-text: #f8f4ff;
+  --select-class-option-bg: #21193c;
+  --select-class-option-text: #f9f5ff;
+  --legend-bg: rgba(10, 14, 24, 0.94);
+  --legend-border: rgba(144, 181, 255, 0.32);
+  --legend-text: #f7f9ff;
+  --legend-dot-ring: rgba(6, 9, 16, 0.78);
+  --legend-dot-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  --tooltip-bg: rgba(9, 12, 22, 0.96);
+  --tooltip-border: rgba(144, 181, 255, 0.38);
+  --tooltip-text: #f4f6ff;
+  --tooltip-shadow: 0 16px 34px rgba(5, 7, 12, 0.65);
+  --tooltip-offset: 0.65rem;
+  --cta-primary-bg: linear-gradient(135deg, rgba(91, 141, 239, 0.55), rgba(91, 141, 239, 0.2));
+  --cta-primary-hover-bg: linear-gradient(135deg, rgba(124, 163, 255, 0.72), rgba(91, 141, 239, 0.3));
+  --cta-primary-text: #f7f9ff;
+  --cta-secondary-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
+  --cta-secondary-hover-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.06));
+  --cta-secondary-text: var(--fg);
+  --cta-border: rgba(255, 255, 255, 0.18);
+  --cta-hover-border: rgba(144, 181, 255, 0.88);
+  --cta-shadow: 0 24px 38px rgba(5, 7, 12, 0.55);
   --hw: #3b82f6;
   --exam: #f87171;
   --event: #34d399;
@@ -209,10 +237,12 @@ body.calendar-theme main {
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-3);
-  background: var(--legend-bg, rgba(16, 20, 31, 0.86));
-  border: 1px solid var(--legend-border, rgba(124, 163, 255, 0.24));
+  background: var(--legend-bg);
+  border: 1px solid var(--legend-border);
   border-radius: var(--radius-md);
-  padding: 0.65rem 0.85rem;
+  padding: 0.7rem 0.95rem;
+  box-shadow: 0 18px 42px rgba(5, 7, 12, 0.58);
+  backdrop-filter: blur(18px);
 }
 
 .calendar-legend__item {
@@ -220,31 +250,40 @@ body.calendar-theme main {
   align-items: center;
   gap: 0.45rem;
   font-size: 0.85rem;
-  color: var(--legend-text, var(--fg-strong));
+  color: var(--legend-text);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-shadow: 0 1px 4px rgba(5, 7, 12, 0.55);
 }
 
 .calendar-legend__dot {
   width: 0.85rem;
   height: 0.85rem;
   border-radius: 999px;
-  background: currentColor;
-  box-shadow: 0 0 0 3px rgba(12, 15, 24, 0.6), 0 0 18px rgba(0, 0, 0, 0.2);
+  background: var(--legend-dot-color, var(--accent));
+  box-shadow:
+    0 0 0 3px var(--legend-dot-ring, rgba(6, 9, 16, 0.78)),
+    var(--legend-dot-shadow, 0 0 18px rgba(0, 0, 0, 0.2));
 }
 
 .calendar-legend__item[data-type='hausaufgabe'] {
-  color: var(--hw);
+  --legend-dot-color: var(--hw);
+  --legend-dot-ring: rgba(59, 130, 246, 0.28);
 }
 
 .calendar-legend__item[data-type='pruefung'] {
-  color: var(--exam);
+  --legend-dot-color: var(--exam);
+  --legend-dot-ring: rgba(248, 113, 113, 0.28);
 }
 
 .calendar-legend__item[data-type='event'] {
-  color: var(--event);
+  --legend-dot-color: var(--event);
+  --legend-dot-ring: rgba(52, 211, 153, 0.28);
 }
 
 .calendar-legend__item[data-type='ferien'] {
-  color: var(--ferien);
+  --legend-dot-color: var(--ferien);
+  --legend-dot-ring: rgba(251, 191, 36, 0.32);
 }
 
 .calendar-shell {
@@ -813,6 +852,136 @@ body.calendar-theme main {
   width: min(540px, 92vw);
 }
 
+.calendar-cta {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  padding: 0.62rem 1.2rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--cta-border);
+  background: var(--cta-secondary-bg);
+  color: var(--cta-secondary-text);
+  font-weight: 600;
+  font-size: 0.92rem;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease,
+    color 0.25s ease,
+    box-shadow 0.25s ease,
+    transform 0.2s ease;
+}
+
+.calendar-cta svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.calendar-cta--primary {
+  background: var(--cta-primary-bg);
+  color: var(--cta-primary-text);
+  border-color: rgba(144, 181, 255, 0.85);
+}
+
+.calendar-cta--secondary {
+  background: var(--cta-secondary-bg);
+}
+
+.calendar-cta:hover,
+.calendar-cta:focus-visible {
+  border-color: var(--cta-hover-border);
+  background: var(--cta-secondary-hover-bg);
+  box-shadow: var(--focus-ring);
+  transform: translateY(-1px);
+  outline: none;
+  color: var(--cta-primary-text);
+}
+
+.calendar-cta--primary:hover,
+.calendar-cta--primary:focus-visible {
+  background: var(--cta-primary-hover-bg);
+}
+
+.calendar-cta:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.calendar-cta[disabled],
+.calendar-cta[aria-disabled='true'] {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.calendar-cta[aria-label]::before,
+.calendar-cta[aria-label]::after {
+  position: absolute;
+  left: 50%;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  z-index: 20;
+}
+
+.calendar-cta[aria-label]::before {
+  content: '';
+  bottom: calc(100% + var(--tooltip-offset) - 0.1rem);
+  transform: translate(-50%, 6px);
+  border-width: 6px;
+  border-style: solid;
+  border-color: transparent transparent var(--tooltip-bg) transparent;
+}
+
+.calendar-cta[aria-label]::after {
+  content: attr(data-tooltip);
+  bottom: calc(100% + var(--tooltip-offset));
+  transform: translate(-50%, 8px);
+  background: var(--tooltip-bg);
+  color: var(--tooltip-text);
+  border: 1px solid var(--tooltip-border);
+  border-radius: 10px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  box-shadow: var(--tooltip-shadow);
+}
+
+.calendar-cta:focus-visible::before,
+.calendar-cta:focus-visible::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+@media (hover: hover) {
+  .calendar-cta:hover::before,
+  .calendar-cta:hover::after {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .calendar-cta {
+    transition: none;
+  }
+
+  .calendar-cta:focus-visible,
+  .calendar-cta:hover {
+    transform: none;
+  }
+
+  .calendar-cta[aria-label]::before,
+  .calendar-cta[aria-label]::after {
+    transition: none;
+  }
+}
+
 .calendar-action {
   position: relative;
   display: inline-flex;
@@ -1076,11 +1245,15 @@ body.hm-modal-open {
   --_select-ring: var(--select-ring-default);
   --_select-arrow-color: var(--select-arrow-default);
   --_select-text: var(--fg);
+  --_select-option-bg: var(--select-option-bg);
+  --_select-option-text: var(--select-option-text);
+  position: relative;
   display: block;
   width: 100%;
-  padding: 0.65rem 2.75rem 0.65rem 0.95rem;
+  padding: 0.68rem 2.8rem 0.68rem 0.95rem;
   border-radius: var(--radius-sm);
   border: 1px solid var(--_select-border);
+  background-color: transparent;
   background-image:
     linear-gradient(45deg, transparent 50%, var(--_select-arrow-color) 50%),
     linear-gradient(135deg, var(--_select-arrow-color) 50%, transparent 50%),
@@ -1090,11 +1263,17 @@ body.hm-modal-open {
   background-repeat: no-repeat;
   color: var(--_select-text);
   font-weight: 500;
+  font-size: 0.95rem;
+  line-height: 1.25;
   letter-spacing: 0.01em;
   appearance: none;
   cursor: pointer;
-  transition: background-image 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease,
-    color 0.25s ease;
+  transition:
+    background-image 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    color 0.25s ease,
+    transform 0.2s ease;
 }
 
 .hm-select:hover {
@@ -1106,13 +1285,15 @@ body.hm-modal-open {
 }
 
 .hm-select:focus-visible {
-  outline: none;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
   box-shadow: var(--_select-ring);
   border-color: var(--_select-hover-border);
   background-image:
     linear-gradient(45deg, transparent 50%, var(--_select-arrow-color) 50%),
     linear-gradient(135deg, var(--_select-arrow-color) 50%, transparent 50%),
     var(--_select-hover-bg);
+  transform: translateY(-1px);
 }
 
 .hm-select:disabled,
@@ -1120,10 +1301,21 @@ body.hm-modal-open {
   cursor: not-allowed;
   opacity: 0.6;
   border-color: rgba(255, 255, 255, 0.14);
+  color: rgba(244, 246, 251, 0.58);
   background-image:
     linear-gradient(45deg, transparent 50%, rgba(244, 246, 251, 0.45) 50%),
     linear-gradient(135deg, rgba(244, 246, 251, 0.45) 50%, transparent 50%),
     linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
+}
+
+.hm-select option {
+  background-color: var(--_select-option-bg);
+  color: var(--_select-option-text);
+}
+
+.hm-select optgroup {
+  background-color: var(--surface-0);
+  color: var(--muted-strong);
 }
 
 .hm-select[multiple] {
@@ -1133,6 +1325,11 @@ body.hm-modal-open {
   background-size: 100% 100%;
   min-height: 8.5rem;
   cursor: default;
+  line-height: 1.4;
+}
+
+.hm-select[multiple] option {
+  padding: 0.4rem 0.5rem;
 }
 
 .hm-select--type {
@@ -1142,6 +1339,9 @@ body.hm-modal-open {
   --_select-hover-border: var(--select-type-hover-border);
   --_select-ring: var(--select-type-ring);
   --_select-arrow-color: var(--select-type-arrow);
+  --_select-text: var(--select-type-text);
+  --_select-option-bg: var(--select-type-option-bg);
+  --_select-option-text: var(--select-type-option-text);
 }
 
 .hm-select--subject {
@@ -1151,6 +1351,9 @@ body.hm-modal-open {
   --_select-hover-border: var(--select-subject-hover-border);
   --_select-ring: var(--select-subject-ring);
   --_select-arrow-color: var(--select-subject-arrow);
+  --_select-text: var(--select-subject-text);
+  --_select-option-bg: var(--select-subject-option-bg);
+  --_select-option-text: var(--select-subject-option-text);
 }
 
 .hm-select--classes {
@@ -1159,6 +1362,20 @@ body.hm-modal-open {
   --_select-border: var(--select-class-border);
   --_select-hover-border: var(--select-class-hover-border);
   --_select-ring: var(--select-class-ring);
+  --_select-arrow-color: var(--select-class-arrow);
+  --_select-text: var(--select-class-text);
+  --_select-option-bg: var(--select-class-option-bg);
+  --_select-option-text: var(--select-class-option-text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hm-select {
+    transition: none;
+  }
+
+  .hm-select:focus-visible {
+    transform: none;
+  }
 }
 
 .hm-modal__field textarea {
