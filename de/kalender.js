@@ -1275,6 +1275,10 @@ function initialiseCalendar(events) {
     initialView: preferredView,
     locale: 'de',
     firstDay: 1,
+    height: 'auto',
+    contentHeight: 'auto',
+    expandRows: true,
+    handleWindowResize: true,
     headerToolbar: false,
     buttonText: {
       month: t('views.month', 'Monat'),

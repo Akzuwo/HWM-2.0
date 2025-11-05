@@ -226,7 +226,7 @@ body.calendar-theme main {
   display: flex;
   flex-direction: column;
   gap: clamp(1.2rem, 2vw, 1.75rem);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .calendar-controls {
@@ -587,12 +587,15 @@ body.calendar-theme main {
 
 .fc-theme-standard .fc-scrollgrid {
   border-radius: calc(var(--radius-lg) - 6px);
-  overflow: hidden;
+  overflow: visible;
+  max-height: none;
 }
 
 .fc .fc-scroller {
   padding-right: clamp(0.75rem, 1.5vw, 1rem);
   scrollbar-gutter: stable both-edges;
+  overflow-y: visible;
+  max-height: none;
 }
 
 .fc .fc-col-header-cell {
