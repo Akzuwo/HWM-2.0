@@ -94,6 +94,27 @@ class FakeCursor:
             return
 
         if (
+            normalized.startswith("select id, email, role, class_id, is_active, email_verified_at")
+            and "where id=%s" in normalized
+        ):
+            user_id = params[0] if params else None
+            user = users.get(user_id)
+            if not user:
+                self._rows = []
+                return
+            self._prepare_rows([
+                {
+                    'id': user['id'],
+                    'email': user['email'],
+                    'role': user.get('role', 'student'),
+                    'class_id': user.get('class_id'),
+                    'is_active': user.get('is_active', 1),
+                    'email_verified_at': user.get('email_verified_at'),
+                }
+            ], ['id', 'email', 'role', 'class_id', 'is_active', 'email_verified_at'])
+            return
+
+        if (
             normalized.startswith("select u.id, u.email, u.role, u.class_id")
             and "from users u" in normalized
             and "left join classes" in normalized
@@ -979,6 +1000,9 @@ def app_client(monkeypatch):
     app_module.app.config['TESTING'] = True
     monkeypatch.setattr(app_module, 'CONTACT_RATE_LIMIT', {})
     monkeypatch.setattr(app_module, 'CONTACT_MIN_DURATION_MS', 0)
+    monkeypatch.setattr(app_module, 'CONTACT_USER_COOLDOWN', {})
+    monkeypatch.setattr(app_module, 'CONTACT_USER_COOLDOWN_SECONDS', 120)
+    monkeypatch.setattr(app_module, 'CONTACT_TARGET_ADDRESS', 'dest@example.com')
     monkeypatch.setattr(app_module, 'LOGIN_RATE_LIMIT', {})
     monkeypatch.setattr(app_module, 'VERIFY_RATE_LIMIT', {})
     monkeypatch.setattr(app_module, 'LOGIN_RATE_LIMIT_WINDOW', 1)

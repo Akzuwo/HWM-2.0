@@ -355,7 +355,9 @@ CONTACT_RATE_LIMIT_WINDOW = int(os.getenv('CONTACT_RATE_LIMIT_WINDOW', 3600))
 CONTACT_RATE_LIMIT_MAX = int(os.getenv('CONTACT_RATE_LIMIT_MAX', 5))
 CONTACT_MIN_DURATION_MS = int(os.getenv('CONTACT_MIN_DURATION_MS', 3000))
 CONTACT_MIN_MESSAGE_LENGTH = int(os.getenv('CONTACT_MIN_MESSAGE_LENGTH', 20))
-CONTACT_EMAIL_REGEX = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
+CONTACT_USER_COOLDOWN = {}
+CONTACT_USER_COOLDOWN_SECONDS = int(os.getenv('CONTACT_USER_COOLDOWN_SECONDS', 120))
+CONTACT_TARGET_ADDRESS = os.getenv('CONTACT_TARGET_ADDRESS', 'timowigger8@gmail.com')
 
 PRIMARY_TEST_BASE_URL = os.getenv('PRIMARY_TEST_BASE_URL', 'https://hwm-beta.akzuwo.ch')
 LOGIN_RATE_LIMIT = {}
@@ -541,6 +543,21 @@ def _check_contact_rate_limit(ip_address: str) -> bool:
     )
 
 
+def _is_contact_user_limited(user_id: int) -> bool:
+    if user_id is None:
+        return False
+    last_activity = CONTACT_USER_COOLDOWN.get(user_id)
+    if last_activity is None:
+        return False
+    return (time.time() - last_activity) < CONTACT_USER_COOLDOWN_SECONDS
+
+
+def _mark_contact_user_activity(user_id: int) -> None:
+    if user_id is None:
+        return
+    CONTACT_USER_COOLDOWN[user_id] = time.time()
+
+
 def _deliver_email(
     to_address: str,
     subject: str,
@@ -628,9 +645,9 @@ def _deliver_email(
     raise RuntimeError('mail_failed')
 
 
-def _send_contact_email(name: str, email_address: str, subject: str, body: str, attachment=None) -> None:
+def _send_contact_email(sender_email: str, subject: str, body: str, attachment=None) -> None:
     contact_settings = _get_runtime_contact_settings()
-    recipient = contact_settings["recipient"]
+    recipient = CONTACT_TARGET_ADDRESS or contact_settings["recipient"]
     from_address = contact_settings["from_address"]
     user = contact_settings["user"]
 
@@ -639,14 +656,14 @@ def _send_contact_email(name: str, email_address: str, subject: str, body: str, 
 
     final_subject = subject.strip() or 'Kontaktanfrage'
     prefixed_subject = f"[Homework Manager] {final_subject}"
-    sender = from_address or email_address or user or recipient
+    sender = from_address or user or recipient
 
     _deliver_email(
         recipient,
         prefixed_subject,
         body,
         sender=sender,
-        reply_to=email_address or None,
+        reply_to=sender_email or None,
         attachment=attachment,
     )
 
@@ -855,6 +872,21 @@ def _load_user_by_email(conn, email: str) -> Optional[Dict[str, object]]:
             FROM users WHERE email=%s LIMIT 1
             """,
             (email,),
+        )
+        return cursor.fetchone()
+    finally:
+        cursor.close()
+
+
+def _load_user_by_id(conn, user_id: int) -> Optional[Dict[str, object]]:
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute(
+            """
+            SELECT id, email, role, class_id, is_active, email_verified_at
+            FROM users WHERE id=%s LIMIT 1
+            """,
+            (user_id,),
         )
         return cursor.fetchone()
     finally:
@@ -1306,8 +1338,43 @@ def submit_contact():
     if honeypot:
         return jsonify({'status': 'ok'}), 200
 
-    name = (form.get('name') or '').strip()
-    email_address = (form.get('email') or '').strip()
+    user_id_raw = session.get('user_id')
+    if not user_id_raw:
+        return jsonify({'message': 'forbidden'}), 403
+
+    try:
+        user_id = int(user_id_raw)
+    except (TypeError, ValueError):
+        return jsonify({'message': 'forbidden'}), 403
+
+    try:
+        conn = get_connection()
+    except Exception:
+        app.logger.exception('Failed to obtain database connection for contact request')
+        return jsonify({'message': 'unavailable'}), 503
+
+    user = None
+    with closing(conn):
+        try:
+            user = _load_user_by_id(conn, user_id)
+        except mysql.connector.Error:
+            app.logger.exception('Failed to load user %s for contact request', user_id)
+            return jsonify({'message': 'unavailable'}), 503
+
+    if not user:
+        return jsonify({'message': 'forbidden'}), 403
+
+    try:
+        is_active = user.get('is_active')
+        if is_active is not None and int(is_active) == 0:
+            return jsonify({'message': 'forbidden'}), 403
+    except (TypeError, ValueError):
+        pass
+
+    user_email = (user.get('email') or '').strip()
+    if not user_email:
+        return jsonify({'message': 'forbidden'}), 403
+
     subject = (form.get('subject') or '').strip()
     message_text = (form.get('message') or '').strip()
     consent_given = form.get('consent') in ('true', 'on', '1')
@@ -1315,10 +1382,6 @@ def submit_contact():
 
     errors = {}
 
-    if not name:
-        errors['name'] = 'required'
-    if not email_address or not CONTACT_EMAIL_REGEX.match(email_address):
-        errors['email'] = 'invalid'
     if not subject:
         errors['subject'] = 'required'
     if len(message_text) < CONTACT_MIN_MESSAGE_LENGTH:
@@ -1328,7 +1391,7 @@ def submit_contact():
 
     try:
         started_ms = int(started_raw) if started_raw else 0
-    except ValueError:
+    except (TypeError, ValueError):
         started_ms = 0
 
     if started_ms:
@@ -1357,7 +1420,8 @@ def submit_contact():
         return jsonify({'message': 'invalid', 'errors': errors}), 400
 
     contact_settings = _get_runtime_contact_settings()
-    if not (contact_settings["host"] and contact_settings["recipient"]):
+    target_recipient = CONTACT_TARGET_ADDRESS or contact_settings["recipient"]
+    if not (contact_settings["host"] and target_recipient):
         return jsonify({'message': 'unavailable'}), 503
 
     ip_address = _get_request_ip()
@@ -1365,10 +1429,15 @@ def submit_contact():
     if not _check_contact_rate_limit(ip_address):
         return jsonify({'message': 'rate_limited'}), 429
 
+    if _is_contact_user_limited(user_id):
+        return jsonify({'message': 'rate_limited_user'}), 429
+
     timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat()
     body = (
-        f"Name: {name}\n"
-        f"E-Mail: {email_address}\n"
+        f"Benutzer-ID: {user_id}\n"
+        f"E-Mail: {user_email}\n"
+        f"Rolle: {user.get('role') or '-'}\n"
+        f"Klassen-ID: {user.get('class_id') or '-'}\n"
         f"Betreff: {subject or '-'}\n"
         f"Einwilligung: {'ja' if consent_given else 'nein'}\n"
         f"IP-Adresse: {ip_address}\n"
@@ -1377,10 +1446,12 @@ def submit_contact():
     )
 
     try:
-        _send_contact_email(name, email_address, subject, body, attachment_tuple)
+        _send_contact_email(user_email, subject, body, attachment_tuple)
     except Exception as exc:
         app.logger.exception('Fehler beim Versenden der Kontaktanfrage: %s', exc)
         return jsonify({'message': 'send_failed'}), 502
+
+    _mark_contact_user_activity(user_id)
 
     return jsonify({'status': 'ok'}), 200
 

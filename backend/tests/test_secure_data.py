@@ -280,10 +280,20 @@ def test_admin_schedule_entries_validation_and_class_guard(app_client):
     assert resp.status_code == 403
 
 
-def test_contact_requires_valid_data(app_client):
+def test_contact_requires_login(app_client):
     client, _, _ = app_client
+    resp = client.post('/api/contact', data={'subject': 'Test'})
+    assert resp.status_code == 403
+
+
+def test_contact_requires_valid_input_after_login(app_client):
+    client, _, _ = app_client
+    _login_admin(client)
     resp = client.post('/api/contact', data={})
     assert resp.status_code == 400
+    data = resp.get_json()
+    assert data['message'] == 'invalid'
+    assert {'subject', 'message', 'consent'} <= set(data['errors'])
 
 
 def test_contact_success(app_client, monkeypatch):
@@ -294,20 +304,19 @@ def test_contact_success(app_client, monkeypatch):
 
     sent: Dict[str, object] = {}
 
-    def fake_send(name, email, subject, body, attachment):
-        sent['name'] = name
-        sent['email'] = email
+    def fake_send(sender_email, subject, body, attachment):
+        sent['sender'] = sender_email
         sent['subject'] = subject
         sent['body'] = body
         sent['attachment'] = attachment
 
     monkeypatch.setattr(app_module, '_send_contact_email', fake_send)
 
+    _login_admin(client)
+
     resp = client.post(
         '/api/contact',
         data={
-            'name': 'Tester',
-            'email': 'tester@example.com',
             'subject': 'Feedback',
             'message': 'Dies ist eine ausführliche Nachricht.' * 2,
             'consent': 'true',
@@ -316,7 +325,32 @@ def test_contact_success(app_client, monkeypatch):
     )
     assert resp.status_code == 200
     assert sent.get('subject') == 'Feedback'
-    assert 'Tester' in sent.get('body', '')
+    body_text = sent.get('body', '')
+    assert 'Benutzer-ID: 1' in body_text
+    assert 'admin@example.com' in body_text
+    assert sent.get('sender') == 'admin@example.com'
+
+
+def test_contact_user_cooldown(app_client, monkeypatch):
+    client, _, app_module = app_client
+    monkeypatch.setattr(app_module, '_send_contact_email', lambda *args, **kwargs: None)
+    monkeypatch.setattr(app_module, 'CONTACT_USER_COOLDOWN', {})
+    monkeypatch.setattr(app_module, 'CONTACT_USER_COOLDOWN_SECONDS', 120)
+
+    _login_admin(client)
+
+    payload = {
+        'subject': 'Feedback',
+        'message': 'Nachricht ' + ('x' * 40),
+        'consent': 'true',
+        'hm-contact-start': str(int(time.time() * 1000)),
+    }
+
+    first = client.post('/api/contact', data=payload)
+    assert first.status_code == 200
+
+    second = client.post('/api/contact', data=payload)
+    assert second.status_code == 429
 
 
 def test_deliver_email_falls_back_to_ssl(monkeypatch, app_client):

@@ -200,6 +200,7 @@ let lastAuthEmail = sessionState.email || '';
 let currentVerificationEmail = '';
 let authOverlayInitialized = false;
 let authOverlayPreviousFocus = null;
+let lastAuthBroadcast = null;
 
 function normalizeRole(value) {
     if (!value) {
@@ -286,6 +287,56 @@ function canManageEntries() {
 function isAuthenticated() {
     return sessionState.role !== 'guest';
 }
+
+function getAuthSnapshot() {
+    return {
+        isAuthenticated: isAuthenticated(),
+        email: sessionState.email || '',
+        role: sessionState.role || 'guest'
+    };
+}
+
+function dispatchAuthChange(force = false) {
+    const snapshot = getAuthSnapshot();
+    if (
+        !force
+        && lastAuthBroadcast
+        && lastAuthBroadcast.isAuthenticated === snapshot.isAuthenticated
+        && lastAuthBroadcast.email === snapshot.email
+        && lastAuthBroadcast.role === snapshot.role
+    ) {
+        return;
+    }
+
+    lastAuthBroadcast = { ...snapshot };
+
+    if (typeof window === 'undefined') {
+        return;
+    }
+
+    const bridge = window.hmAuth || {};
+    bridge.isAuthenticated = () => isAuthenticated();
+    bridge.currentEmail = () => sessionState.email || '';
+    bridge.currentRole = () => sessionState.role || 'guest';
+    window.hmAuth = bridge;
+
+    if (typeof window.dispatchEvent === 'function') {
+        try {
+            window.dispatchEvent(new CustomEvent('hm:auth-changed', { detail: snapshot }));
+            return;
+        } catch (error) {
+            /* CustomEvent might not be supported */
+        }
+    }
+
+    if (typeof document !== 'undefined' && typeof document.createEvent === 'function') {
+        const fallbackEvent = document.createEvent('CustomEvent');
+        fallbackEvent.initCustomEvent('hm:auth-changed', true, true, snapshot);
+        window.dispatchEvent(fallbackEvent);
+    }
+}
+
+dispatchAuthChange(true);
 
 function getRoleLabel(role = sessionState.role) {
     const labels = LOGIN_TEXT.roleLabels || {};
@@ -436,6 +487,7 @@ function updateAuthUI() {
     updateRoleHint();
     updateAuthStatus();
     updateFeatureVisibility();
+    dispatchAuthChange();
 }
 
 function queryAuthForms() {
