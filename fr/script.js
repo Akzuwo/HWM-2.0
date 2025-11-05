@@ -57,7 +57,7 @@ const LOGIN_TEXT = {
     registerEmailExists: 'Un compte existe déjà pour cette adresse e-mail.',
     registerPasswordConfirmLabel: 'Confirmer le mot de passe',
     registerClassLabel: 'Classe (facultatif)',
-    registerClassPlaceholder: 'p. ex. L23a',
+    registerClassPlaceholder: 'p. ex. L23a / Enseignants : laissez ce champ vide',
     registerClassNotFound: 'Cette classe est introuvable.',
     registerGenericError: 'L’inscription est momentanément indisponible. Réessaie plus tard.',
     registerSuccess: 'Presque terminé ! Saisis le code reçu par e-mail.',

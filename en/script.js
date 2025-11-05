@@ -57,7 +57,7 @@ const LOGIN_TEXT = {
     registerEmailExists: 'An account already exists for this email address.',
     registerPasswordConfirmLabel: 'Confirm password',
     registerClassLabel: 'Class (optional)',
-    registerClassPlaceholder: 'e.g. L23a',
+    registerClassPlaceholder: 'e.g. L23a / Teachers: leave this blank',
     registerClassNotFound: 'We could not find this class.',
     registerGenericError: 'Registration is currently unavailable. Please try again later.',
     registerSuccess: 'Almost done! Enter the verification code we emailed you.',
