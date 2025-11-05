@@ -2018,9 +2018,66 @@ const entryClassPicker = (() => {
     function hideField(container, select) {
         if (container) {
             container.hidden = true;
+            updateHint(container, false);
         }
         if (select) {
             select.disabled = true;
+            select.multiple = false;
+        }
+    }
+
+    function shouldAllowSelection() {
+        return Boolean(sessionState.isAdmin || sessionState.isClassAdmin);
+    }
+
+    function updateHint(container, shouldShow) {
+        if (!container) {
+            return;
+        }
+        const hintText = (container.dataset && container.dataset.entryClassHint) || '';
+        let hintElement = container.querySelector('[data-entry-class-hint-element]');
+        if (!hintElement) {
+            if (!hintText) {
+                return;
+            }
+            hintElement = document.createElement('p');
+            hintElement.className = 'field-hint';
+            hintElement.dataset.entryClassHintElement = 'true';
+            hintElement.hidden = true;
+            container.appendChild(hintElement);
+        }
+        if (!hintText || !shouldShow) {
+            hintElement.textContent = '';
+            hintElement.hidden = true;
+            return;
+        }
+        hintElement.textContent = hintText;
+        hintElement.hidden = false;
+    }
+
+    function setMultiple(select, allowMultiple) {
+        if (!select) {
+            return;
+        }
+        select.multiple = Boolean(allowMultiple);
+        if (!select.multiple) {
+            const selectedOptions = Array.from(select.options || []).filter((option) => option.selected);
+            selectedOptions.forEach((option, index) => {
+                option.selected = index === 0;
+            });
+        }
+    }
+
+    function ensureSingleSelection(select) {
+        if (!select || select.multiple) {
+            return;
+        }
+        if (select.value) {
+            return;
+        }
+        const firstAvailable = Array.from(select.options || []).find((option) => option.value);
+        if (firstAvailable) {
+            firstAvailable.selected = true;
         }
     }
 
@@ -2097,13 +2154,17 @@ const entryClassPicker = (() => {
         if (!select || !classId) {
             return;
         }
-        const currentValues = getSelectedValues(select);
-        if (currentValues.length > 0) {
+        const option = Array.from(select.options || []).find((opt) => opt.value === classId);
+        if (!option) {
             return;
         }
-        const option = Array.from(select.options || []).find((opt) => opt.value === classId);
-        if (option) {
+        if (select.multiple) {
             option.selected = true;
+        } else {
+            select.value = classId;
+            if (!option.selected) {
+                option.selected = true;
+            }
         }
     }
 
@@ -2113,18 +2174,25 @@ const entryClassPicker = (() => {
             if (!container || !select) {
                 return [];
             }
-            if (!sessionState.isAdmin) {
+            if (!shouldAllowSelection()) {
                 hideField(container, select);
                 return [];
             }
+            const allowMultiple = Boolean(sessionState.isAdmin);
             container.hidden = false;
             select.disabled = true;
+            updateHint(container, allowMultiple);
             try {
                 const classes = await ensureClasses();
                 const previousSelection = getSelectedValues(select);
                 populateSelect(select, classes, previousSelection);
+                setMultiple(select, allowMultiple);
                 select.disabled = false;
                 syncSelection(select, getStoredEntryClassId());
+                if (!allowMultiple) {
+                    ensureSingleSelection(select);
+                }
+                updateHint(container, allowMultiple);
                 return classes;
             } catch (error) {
                 console.error('Unable to load entry classes:', error);
@@ -2139,20 +2207,43 @@ const entryClassPicker = (() => {
                 Array.from(select.options || []).forEach((option) => {
                     option.selected = false;
                 });
+                setMultiple(select, sessionState.isAdmin);
             }
-            if (!sessionState.isAdmin) {
+            if (!shouldAllowSelection()) {
                 hideField(container, select);
+            } else {
+                updateHint(container, Boolean(sessionState.isAdmin));
             }
         },
         getSelection() {
-            if (!sessionState.isAdmin) {
+            if (!shouldAllowSelection()) {
                 return [];
             }
             const { select } = resolveEntryClassElements();
-            return getSelectedValues(select);
+            if (!select) {
+                return [];
+            }
+            if (select.multiple) {
+                return getSelectedValues(select);
+            }
+            let value = select.value;
+            if (!value) {
+                const selectedOption = Array.from(select.options || []).find((option) => option.selected && option.value);
+                if (selectedOption) {
+                    value = selectedOption.value;
+                }
+            }
+            if (!value) {
+                const firstAvailable = Array.from(select.options || []).find((option) => option.value);
+                if (firstAvailable) {
+                    firstAvailable.selected = true;
+                    value = firstAvailable.value;
+                }
+            }
+            return value ? [value] : [];
         },
         syncWithCurrentClass(classId) {
-            if (!sessionState.isAdmin) {
+            if (!shouldAllowSelection()) {
                 return;
             }
             const { select } = resolveEntryClassElements();
@@ -2160,6 +2251,9 @@ const entryClassPicker = (() => {
                 return;
             }
             syncSelection(select, classId);
+            if (!select.multiple) {
+                ensureSingleSelection(select);
+            }
         },
         clearCache() {
             cachedClasses = [];
@@ -2604,13 +2698,17 @@ async function saveEntry(event) {
     const entryClassPickerController = window.hmEntryClassPicker;
     let selectedClassIds = [];
 
-    if (sessionState.isAdmin && entryClassPickerController && typeof entryClassPickerController.getSelection === 'function') {
-        selectedClassIds = entryClassPickerController.getSelection();
+    const canChooseClasses = Boolean(sessionState.isAdmin || sessionState.isClassAdmin);
+    if (canChooseClasses && entryClassPickerController && typeof entryClassPickerController.getSelection === 'function') {
+        selectedClassIds = entryClassPickerController.getSelection() || [];
         if (!selectedClassIds.length && storedClassId) {
             selectedClassIds = [storedClassId];
         }
         if (!selectedClassIds.length) {
-            showOverlay(ENTRY_FORM_MESSAGES.missingClasses || ENTRY_FORM_MESSAGES.missingClass, 'error');
+            const message = sessionState.isAdmin
+                ? (ENTRY_FORM_MESSAGES.missingClasses || ENTRY_FORM_MESSAGES.missingClass)
+                : ENTRY_FORM_MESSAGES.missingClass;
+            showOverlay(message, 'error');
             return;
         }
     } else if (!storedClassId) {
@@ -2639,6 +2737,8 @@ async function saveEntry(event) {
             };
             if (sessionState.isAdmin && selectedClassIds.length > 0) {
                 payload.class_ids = selectedClassIds;
+            } else if (sessionState.isClassAdmin && selectedClassIds.length > 0) {
+                payload.class_id = selectedClassIds[0];
             } else {
                 payload.class_id = storedClassId;
             }
