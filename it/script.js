@@ -2017,6 +2017,9 @@ function getStoredEntryClassId() {
 const entryClassPicker = (() => {
     let cachedClasses = [];
     let loadPromise = null;
+    let baseAllowMultiple = false;
+    let multipleOverride = null;
+    let currentMultipleAllowed = false;
 
     function hideField(container, select) {
         if (container) {
@@ -2027,6 +2030,7 @@ const entryClassPicker = (() => {
             select.disabled = true;
             select.multiple = false;
         }
+        currentMultipleAllowed = false;
     }
 
     function shouldAllowSelection() {
@@ -2153,6 +2157,33 @@ const entryClassPicker = (() => {
         }
     }
 
+    function resolveBaseAllowMultiple() {
+        baseAllowMultiple = Boolean(sessionState.isAdmin);
+        return baseAllowMultiple;
+    }
+
+    function resolveEffectiveMultiple() {
+        if (!resolveBaseAllowMultiple()) {
+            return false;
+        }
+        if (multipleOverride === null) {
+            return true;
+        }
+        return Boolean(multipleOverride);
+    }
+
+    function applyMultipleState(select, container, allowMultiple) {
+        const final = Boolean(allowMultiple);
+        if (select) {
+            setMultiple(select, final);
+            if (!final) {
+                ensureSingleSelection(select);
+            }
+        }
+        updateHint(container, final);
+        currentMultipleAllowed = final;
+    }
+
     function syncSelection(select, classId) {
         if (!select || !classId) {
             return;
@@ -2181,7 +2212,7 @@ const entryClassPicker = (() => {
                 hideField(container, select);
                 return [];
             }
-            const allowMultiple = Boolean(sessionState.isAdmin);
+            const allowMultiple = resolveEffectiveMultiple();
             container.hidden = false;
             select.disabled = true;
             updateHint(container, allowMultiple);
@@ -2189,13 +2220,12 @@ const entryClassPicker = (() => {
                 const classes = await ensureClasses();
                 const previousSelection = getSelectedValues(select);
                 populateSelect(select, classes, previousSelection);
-                setMultiple(select, allowMultiple);
+                applyMultipleState(select, container, allowMultiple);
                 select.disabled = false;
                 syncSelection(select, getStoredEntryClassId());
                 if (!allowMultiple) {
                     ensureSingleSelection(select);
                 }
-                updateHint(container, allowMultiple);
                 return classes;
             } catch (error) {
                 console.error('Impossibile caricare le classi per il modulo:', error);
@@ -2210,12 +2240,13 @@ const entryClassPicker = (() => {
                 Array.from(select.options || []).forEach((option) => {
                     option.selected = false;
                 });
-                setMultiple(select, sessionState.isAdmin);
             }
+            multipleOverride = null;
             if (!shouldAllowSelection()) {
                 hideField(container, select);
             } else {
-                updateHint(container, Boolean(sessionState.isAdmin));
+                const allowMultiple = resolveEffectiveMultiple();
+                applyMultipleState(select, container, allowMultiple);
             }
         },
         getSelection() {
@@ -2257,6 +2288,24 @@ const entryClassPicker = (() => {
             if (!select.multiple) {
                 ensureSingleSelection(select);
             }
+        },
+        setMultipleAllowed(allow) {
+            const { container, select } = resolveEntryClassElements();
+            if (!shouldAllowSelection()) {
+                multipleOverride = null;
+                hideField(container, select);
+                return;
+            }
+            if (allow === null || typeof allow === 'undefined') {
+                multipleOverride = null;
+            } else {
+                multipleOverride = Boolean(allow);
+            }
+            const allowMultiple = resolveEffectiveMultiple();
+            applyMultipleState(select, container, allowMultiple);
+        },
+        isMultipleAllowed() {
+            return currentMultipleAllowed;
         },
         clearCache() {
             cachedClasses = [];
@@ -2332,6 +2381,7 @@ function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES)
     const endInput = endGroup ? endGroup.querySelector('input') : null;
     const saveButton = form.querySelector('[data-role="submit"]');
     const cancelButton = form.querySelector('[data-role="cancel"]');
+    const entryClassPickerController = window.hmEntryClassPicker;
 
     const setInvalidState = (input) => {
         if (!input) return;
@@ -2431,6 +2481,9 @@ function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES)
     const toggleTypeFields = () => {
         const isEvent = typeSelect && typeSelect.value === 'event';
         const isHoliday = typeSelect && typeSelect.value === 'ferien';
+        const typeValue = typeSelect ? typeSelect.value : '';
+        const requiresSingleClass = typeValue === 'hausaufgabe' || typeValue === 'pruefung';
+        const allowMultipleClasses = !requiresSingleClass;
 
         if (subjectGroup) {
             subjectGroup.classList.toggle('is-hidden', isEvent || isHoliday);
@@ -2438,6 +2491,10 @@ function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES)
         if (subjectSelect && (isEvent || isHoliday)) {
             subjectSelect.value = '';
             subjectSelect.setCustomValidity('');
+        }
+
+        if (entryClassPickerController && typeof entryClassPickerController.setMultipleAllowed === 'function') {
+            entryClassPickerController.setMultipleAllowed(allowMultipleClasses);
         }
 
         if (eventTitleGroup) {
@@ -2702,8 +2759,16 @@ async function saveEntry(event) {
     let selectedClassIds = [];
 
     const canChooseClasses = Boolean(sessionState.isAdmin || sessionState.isClassAdmin);
+    const multipleAllowedForSelection = entryClassPickerController && typeof entryClassPickerController.isMultipleAllowed === 'function'
+        ? entryClassPickerController.isMultipleAllowed()
+        : Boolean(sessionState.isAdmin);
+
     if (canChooseClasses && entryClassPickerController && typeof entryClassPickerController.getSelection === 'function') {
         selectedClassIds = entryClassPickerController.getSelection() || [];
+        selectedClassIds = Array.from(new Set((selectedClassIds || []).filter(Boolean)));
+        if (!multipleAllowedForSelection && selectedClassIds.length > 1) {
+            selectedClassIds = selectedClassIds.slice(0, 1);
+        }
         if (!selectedClassIds.length && storedClassId) {
             selectedClassIds = [storedClassId];
         }
@@ -2714,9 +2779,15 @@ async function saveEntry(event) {
             showOverlay(message, 'error');
             return;
         }
-    } else if (!storedClassId) {
+    } else if (storedClassId) {
+        selectedClassIds = [storedClassId];
+    } else {
         showOverlay(ENTRY_FORM_MESSAGES.missingClass, 'error');
         return;
+    }
+
+    if (!multipleAllowedForSelection && selectedClassIds.length > 1) {
+        selectedClassIds = selectedClassIds.slice(0, 1);
     }
 
     saveButton.disabled = true;
@@ -2738,9 +2809,10 @@ async function saveEntry(event) {
                 endzeit,
                 enddatum: resolvedEndDate
             };
-            if (sessionState.isAdmin && selectedClassIds.length > 0) {
+            const allowMultipleForPayload = Boolean(sessionState.isAdmin && multipleAllowedForSelection);
+            if (allowMultipleForPayload && selectedClassIds.length > 0) {
                 payload.class_ids = selectedClassIds;
-            } else if (sessionState.isClassAdmin && selectedClassIds.length > 0) {
+            } else if (selectedClassIds.length > 0) {
                 payload.class_id = selectedClassIds[0];
             } else {
                 payload.class_id = storedClassId;
