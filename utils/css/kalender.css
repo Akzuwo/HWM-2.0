@@ -21,6 +21,40 @@
   --danger-strong: #ff6b68;
   --success: #34d399;
   --warning: #f59e0b;
+  --select-bg-default: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
+  --select-border-default: rgba(255, 255, 255, 0.24);
+  --select-hover-bg-default: linear-gradient(135deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.05));
+  --select-hover-border-default: rgba(144, 181, 255, 0.7);
+  --select-ring-default:
+    0 0 0 1px rgba(7, 10, 18, 0.85),
+    0 0 0 4px rgba(144, 181, 255, 0.32);
+  --select-arrow-default: rgba(244, 246, 251, 0.76);
+  --select-type-bg: linear-gradient(135deg, rgba(91, 141, 239, 0.32), rgba(91, 141, 239, 0.1));
+  --select-type-hover-bg: linear-gradient(135deg, rgba(124, 163, 255, 0.45), rgba(91, 141, 239, 0.16));
+  --select-type-border: rgba(124, 163, 255, 0.82);
+  --select-type-hover-border: rgba(144, 181, 255, 0.92);
+  --select-type-ring:
+    0 0 0 1px rgba(28, 46, 83, 0.95),
+    0 0 0 4px rgba(124, 163, 255, 0.38);
+  --select-type-arrow: rgba(202, 220, 255, 0.95);
+  --select-subject-bg: linear-gradient(135deg, rgba(52, 211, 153, 0.28), rgba(52, 211, 153, 0.08));
+  --select-subject-hover-bg: linear-gradient(135deg, rgba(110, 239, 194, 0.42), rgba(52, 211, 153, 0.12));
+  --select-subject-border: rgba(52, 211, 153, 0.7);
+  --select-subject-hover-border: rgba(110, 239, 194, 0.92);
+  --select-subject-ring:
+    0 0 0 1px rgba(15, 61, 49, 0.92),
+    0 0 0 4px rgba(52, 211, 153, 0.35);
+  --select-subject-arrow: rgba(189, 250, 227, 0.95);
+  --select-class-bg: linear-gradient(135deg, rgba(91, 141, 239, 0.22), rgba(91, 141, 239, 0.05));
+  --select-class-hover-bg: linear-gradient(135deg, rgba(91, 141, 239, 0.36), rgba(91, 141, 239, 0.12));
+  --select-class-border: rgba(144, 181, 255, 0.65);
+  --select-class-hover-border: rgba(144, 181, 255, 0.85);
+  --select-class-ring:
+    0 0 0 1px rgba(19, 33, 61, 0.9),
+    0 0 0 4px rgba(124, 163, 255, 0.3);
+  --legend-bg: rgba(16, 20, 31, 0.86);
+  --legend-border: rgba(124, 163, 255, 0.24);
+  --legend-text: var(--fg-strong);
   --hw: #3b82f6;
   --exam: #f87171;
   --event: #34d399;
@@ -175,8 +209,8 @@ body.calendar-theme main {
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-3);
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--border);
+  background: var(--legend-bg, rgba(16, 20, 31, 0.86));
+  border: 1px solid var(--legend-border, rgba(124, 163, 255, 0.24));
   border-radius: var(--radius-md);
   padding: 0.65rem 0.85rem;
 }
@@ -186,7 +220,7 @@ body.calendar-theme main {
   align-items: center;
   gap: 0.45rem;
   font-size: 0.85rem;
-  color: var(--muted-strong);
+  color: var(--legend-text, var(--fg-strong));
 }
 
 .calendar-legend__dot {
@@ -194,7 +228,7 @@ body.calendar-theme main {
   height: 0.85rem;
   border-radius: 999px;
   background: currentColor;
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.04);
+  box-shadow: 0 0 0 3px rgba(12, 15, 24, 0.6), 0 0 18px rgba(0, 0, 0, 0.2);
 }
 
 .calendar-legend__item[data-type='hausaufgabe'] {
@@ -1023,12 +1057,108 @@ body.hm-modal-open {
 }
 
 .hm-modal__field input,
-.hm-modal__field select,
 .hm-modal__field textarea {
   width: 100%;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: var(--radius-sm);
+}
+
+.hm-modal__field select {
+  width: 100%;
+}
+
+.hm-select {
+  --_select-bg: var(--select-bg-default);
+  --_select-hover-bg: var(--select-hover-bg-default);
+  --_select-border: var(--select-border-default);
+  --_select-hover-border: var(--select-hover-border-default);
+  --_select-ring: var(--select-ring-default);
+  --_select-arrow-color: var(--select-arrow-default);
+  --_select-text: var(--fg);
+  display: block;
+  width: 100%;
+  padding: 0.65rem 2.75rem 0.65rem 0.95rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--_select-border);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--_select-arrow-color) 50%),
+    linear-gradient(135deg, var(--_select-arrow-color) 50%, transparent 50%),
+    var(--_select-bg);
+  background-position: right 1.2rem center, right 0.75rem center, center;
+  background-size: 0.55rem 0.55rem, 0.55rem 0.55rem, 100% 100%;
+  background-repeat: no-repeat;
+  color: var(--_select-text);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  appearance: none;
+  cursor: pointer;
+  transition: background-image 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease,
+    color 0.25s ease;
+}
+
+.hm-select:hover {
+  border-color: var(--_select-hover-border);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--_select-arrow-color) 50%),
+    linear-gradient(135deg, var(--_select-arrow-color) 50%, transparent 50%),
+    var(--_select-hover-bg);
+}
+
+.hm-select:focus-visible {
+  outline: none;
+  box-shadow: var(--_select-ring);
+  border-color: var(--_select-hover-border);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--_select-arrow-color) 50%),
+    linear-gradient(135deg, var(--_select-arrow-color) 50%, transparent 50%),
+    var(--_select-hover-bg);
+}
+
+.hm-select:disabled,
+.hm-select[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.6;
+  border-color: rgba(255, 255, 255, 0.14);
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgba(244, 246, 251, 0.45) 50%),
+    linear-gradient(135deg, rgba(244, 246, 251, 0.45) 50%, transparent 50%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
+}
+
+.hm-select[multiple] {
+  padding-right: 0.95rem;
+  background-image: var(--_select-bg);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  min-height: 8.5rem;
+  cursor: default;
+}
+
+.hm-select--type {
+  --_select-bg: var(--select-type-bg);
+  --_select-hover-bg: var(--select-type-hover-bg);
+  --_select-border: var(--select-type-border);
+  --_select-hover-border: var(--select-type-hover-border);
+  --_select-ring: var(--select-type-ring);
+  --_select-arrow-color: var(--select-type-arrow);
+}
+
+.hm-select--subject {
+  --_select-bg: var(--select-subject-bg);
+  --_select-hover-bg: var(--select-subject-hover-bg);
+  --_select-border: var(--select-subject-border);
+  --_select-hover-border: var(--select-subject-hover-border);
+  --_select-ring: var(--select-subject-ring);
+  --_select-arrow-color: var(--select-subject-arrow);
+}
+
+.hm-select--classes {
+  --_select-bg: var(--select-class-bg);
+  --_select-hover-bg: var(--select-class-hover-bg);
+  --_select-border: var(--select-class-border);
+  --_select-hover-border: var(--select-class-hover-border);
+  --_select-ring: var(--select-class-ring);
 }
 
 .hm-modal__field textarea {
