@@ -615,6 +615,14 @@ body.has-auth-overlay {
     pointer-events: none;
 }
 
+.login-form.is-register-mode [data-auth-register-only] {
+    display: flex;
+    opacity: 1;
+    visibility: visible;
+    max-height: 520px;
+    pointer-events: auto;
+}
+
 .login-form [data-auth-register-only].auth-section-active {
     display: flex;
     opacity: 1;
