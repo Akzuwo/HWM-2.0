@@ -9,6 +9,7 @@
   const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2 MB
   const MIN_MESSAGE_LENGTH = 20;
   const MIN_DURATION_MS = 3000;
+  const AUTH_EVENT_NAME = 'hm:auth-changed';
 
   const FALLBACK_TEXT = {
     'common.footer.navigation': 'Rechtliche Links',
@@ -18,8 +19,6 @@
     'common.footer.changelog': 'Changelog',
     'contact.title': 'Kontakt aufnehmen',
     'contact.description': 'Schreibe uns eine Nachricht – wir melden uns so schnell wie möglich.',
-    'contact.name': 'Name',
-    'contact.email': 'E-Mail-Adresse',
     'contact.subject': 'Betreff',
     'contact.message': 'Nachricht',
     'contact.attachment': 'Datei anhängen (optional)',
@@ -30,9 +29,14 @@
     'contact.success': 'Vielen Dank! Deine Nachricht wurde verschickt.',
     'contact.error': 'Nachricht konnte nicht gesendet werden. Bitte versuche es erneut.',
     'contact.errorValidation': 'Bitte überprüfe die markierten Felder.',
+    'contact.errorAuth': 'Bitte melde dich an, um eine Nachricht zu senden.',
+    'contact.error429': 'Bitte warte kurz, bevor du eine weitere Nachricht sendest.',
     'contact.fallbackTitle': 'Alternativ kannst du uns auch per E-Mail erreichen:',
     'contact.fallbackCta': 'E-Mail schreiben',
     'contact.close': 'Schließen',
+    'contact.userInfo': 'Angemeldet als {email}',
+    'contact.userMissing': 'Bitte melde dich an, um das Kontaktformular zu verwenden.',
+    'contact.cooldown': 'Du kannst nur alle 2 Minuten eine Nachricht senden.',
   };
 
   function translate(key) {
@@ -55,6 +59,106 @@
     const parts = window.location.pathname.split('/').filter(Boolean);
     const candidate = (parts[0] || '').toLowerCase();
     return SUPPORTED_LOCALES.includes(candidate) ? candidate : 'de';
+  }
+
+  function getAuthBridge() {
+    return global.hmAuth || null;
+  }
+
+  function userIsAuthenticated() {
+    const auth = getAuthBridge();
+    if (auth && typeof auth.isAuthenticated === 'function') {
+      try {
+        return Boolean(auth.isAuthenticated());
+      } catch (error) {
+        return false;
+      }
+    }
+    if (auth && typeof auth.isAuthenticated === 'boolean') {
+      return Boolean(auth.isAuthenticated);
+    }
+    return false;
+  }
+
+  function getAuthenticatedEmail() {
+    const auth = getAuthBridge();
+    if (!auth) {
+      return '';
+    }
+    if (typeof auth.currentEmail === 'function') {
+      try {
+        return auth.currentEmail() || '';
+      } catch (error) {
+        return '';
+      }
+    }
+    if (typeof auth.email === 'string') {
+      return auth.email;
+    }
+    return '';
+  }
+
+  function getAuthenticatedLabel() {
+    const auth = getAuthBridge();
+    if (auth) {
+      if (typeof auth.currentDisplayName === 'function') {
+        try {
+          const value = auth.currentDisplayName();
+          if (value) {
+            return value;
+          }
+        } catch (error) {
+          /* ignore display name errors */
+        }
+      }
+      if (typeof auth.displayName === 'string' && auth.displayName) {
+        return auth.displayName;
+      }
+    }
+    return getAuthenticatedEmail();
+  }
+
+  function showToast(message, type = 'error') {
+    if (global.hmToast && typeof global.hmToast[type] === 'function') {
+      global.hmToast[type](message, { closeLabel: translate('contact.close') });
+      return;
+    }
+    if (type === 'success') {
+      // eslint-disable-next-line no-alert
+      window.alert(message);
+    } else {
+      // eslint-disable-next-line no-alert
+      window.alert(message);
+    }
+  }
+
+  function notifyAuthRequired() {
+    showToast(translate('contact.errorAuth'));
+  }
+
+  function formatUserInfo() {
+    const label = getAuthenticatedLabel();
+    if (!label) {
+      return translate('contact.userMissing');
+    }
+    return translate('contact.userInfo').replace('{email}', label);
+  }
+
+  function updateModalAuthState() {
+    const modal = document.getElementById(MODAL_ID);
+    if (!modal) {
+      return;
+    }
+    const note = modal.querySelector('[data-auth-note]');
+    const submit = modal.querySelector('[data-submit]');
+    const authenticated = userIsAuthenticated();
+    if (note) {
+      note.textContent = authenticated ? formatUserInfo() : translate('contact.userMissing');
+      note.classList.toggle('is-warning', !authenticated);
+    }
+    if (submit) {
+      submit.disabled = !authenticated;
+    }
   }
 
   function removeLegacyFooters() {
@@ -149,15 +253,9 @@
         <form id="${FORM_ID}" class="hm-contact-modal__form" novalidate>
           <input type="hidden" name="${START_FIELD}" value="">
           <div class="hm-contact-modal__grid">
-            <div class="hm-contact-modal__field">
-              <label for="hm-contact-name">${translate('contact.name')}*</label>
-              <input id="hm-contact-name" name="name" type="text" autocomplete="name" required aria-describedby="hm-contact-name-error" />
-              <p class="hm-contact-modal__error" id="hm-contact-name-error"></p>
-            </div>
-            <div class="hm-contact-modal__field">
-              <label for="hm-contact-email">${translate('contact.email')}*</label>
-              <input id="hm-contact-email" name="email" type="email" autocomplete="email" required aria-describedby="hm-contact-email-error" />
-              <p class="hm-contact-modal__error" id="hm-contact-email-error"></p>
+            <div class="hm-contact-modal__meta">
+              <p class="hm-contact-modal__note" id="hm-contact-user-note" data-auth-note></p>
+              <p class="hm-contact-modal__hint hm-contact-modal__hint--info">${translate('contact.cooldown')}</p>
             </div>
             <div class="hm-contact-modal__field hm-contact-modal__field--full">
               <label for="hm-contact-subject">${translate('contact.subject')}*</label>
@@ -201,10 +299,12 @@
 
     document.body.appendChild(modal);
     attachModalHandlers(modal);
-  }
+    updateModalAuthState();
 
-  function emailIsValid(value) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+    if (!authListenerAttached && typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+      window.addEventListener(AUTH_EVENT_NAME, updateModalAuthState);
+      authListenerAttached = true;
+    }
   }
 
   function setError(field, message) {
@@ -233,7 +333,7 @@
   function resetForm(form) {
     form.reset();
     form.querySelector(`input[name="${START_FIELD}"]`).value = String(Date.now());
-    ['name', 'email', 'subject', 'message', 'file', 'consent'].forEach((field) => clearError(field));
+    ['subject', 'message', 'file', 'consent'].forEach((field) => clearError(field));
     const fallback = document.getElementById(FALLBACK_ID);
     if (fallback) {
       fallback.hidden = true;
@@ -249,8 +349,6 @@
   function serialize(form) {
     const data = new FormData(form);
     const payload = new FormData();
-    payload.set('name', data.get('name'));
-    payload.set('email', data.get('email'));
     payload.set('subject', data.get('subject'));
     payload.set('message', data.get('message'));
     payload.set('consent', data.get('consent') ? 'true' : 'false');
@@ -265,28 +363,16 @@
 
   function validate(form) {
     let valid = true;
-    clearError('name');
-    clearError('email');
     clearError('subject');
     clearError('message');
     clearError('file');
     clearError('consent');
 
-    const name = form.elements.name.value.trim();
-    const email = form.elements.email.value.trim();
     const subject = form.elements.subject.value.trim();
     const message = form.elements.message.value.trim();
     const consent = form.elements.consent.checked;
     const fileInput = form.elements.attachment;
 
-    if (!name) {
-      setError('name', translate('contact.errorValidation'));
-      valid = false;
-    }
-    if (!emailIsValid(email)) {
-      setError('email', translate('contact.errorValidation'));
-      valid = false;
-    }
     if (!subject) {
       setError('subject', translate('contact.errorValidation'));
       valid = false;
@@ -320,6 +406,12 @@
     const form = event.currentTarget;
     if (!form) return;
 
+    if (!userIsAuthenticated()) {
+      notifyAuthRequired();
+      closeContactModal();
+      return;
+    }
+
     const start = Number(form.querySelector(`input[name="${START_FIELD}"]`).value || '0');
     if (start && Date.now() - start < MIN_DURATION_MS) {
       setError('message', translate('contact.errorValidation'));
@@ -340,32 +432,43 @@
       body: serialize(form),
     })
       .then(async (response) => {
+        const data = await response.json().catch(() => ({}));
         if (!response.ok) {
-          const data = await response.json().catch(() => ({}));
-          throw new Error(data.message || response.statusText);
+          const error = new Error(data.message || response.statusText);
+          error.status = response.status;
+          error.payload = data;
+          throw error;
         }
-        return response.json();
+        return data;
       })
       .then(() => {
         resetForm(form);
         closeContactModal();
-        if (global.hmToast) {
-          global.hmToast.success(translate('contact.success'), { closeLabel: translate('contact.close') });
-        }
+        showToast(translate('contact.success'), 'success');
       })
-      .catch(() => {
+      .catch((error) => {
         setLoading(form, false);
         const fallback = document.getElementById(FALLBACK_ID);
-        if (fallback) {
-          fallback.hidden = false;
+        const status = error && typeof error.status === 'number' ? error.status : 0;
+        if (status === 403) {
+          notifyAuthRequired();
+          updateModalAuthState();
+          closeContactModal();
+          return;
         }
-        if (global.hmToast) {
-          global.hmToast.error(translate('contact.error'), { closeLabel: translate('contact.close') });
+        if (status === 429) {
+          showToast(translate('contact.error429'));
+        } else {
+          if (fallback) {
+            fallback.hidden = false;
+          }
+          showToast(translate('contact.error'));
         }
       });
   }
 
   let lastFocused = null;
+  let authListenerAttached = false;
 
   function trapFocus(modal) {
     const selectors = [
@@ -402,6 +505,13 @@
       return;
     }
 
+    updateModalAuthState();
+
+    if (!userIsAuthenticated()) {
+      notifyAuthRequired();
+      return;
+    }
+
     lastFocused = document.activeElement;
     modal.setAttribute('aria-hidden', 'false');
     modal.classList.add('is-visible');
@@ -410,11 +520,11 @@
     const form = modal.querySelector('form');
     if (form) {
       form.querySelector(`input[name="${START_FIELD}"]`).value = String(Date.now());
-      const nameField = form.querySelector('#hm-contact-name');
-      if (nameField) {
-        nameField.focus();
-        if (typeof nameField.select === 'function') {
-          nameField.select();
+      const subjectField = form.querySelector('#hm-contact-subject');
+      if (subjectField) {
+        subjectField.focus();
+        if (typeof subjectField.select === 'function') {
+          subjectField.select();
         }
       }
     }

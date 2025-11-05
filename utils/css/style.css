@@ -1177,6 +1177,14 @@ body.has-auth-overlay {
     gap: 1.5rem;
 }
 
+.hm-contact-modal__form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin: 0;
+    width: 100%;
+}
+
 .hm-contact-modal__close {
     position: absolute;
     inset-inline-end: 1rem;
@@ -1206,6 +1214,24 @@ body.has-auth-overlay {
     gap: 1rem;
 }
 
+.hm-contact-modal__meta {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.hm-contact-modal__note {
+    margin: 0;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: rgba(148, 163, 184, 0.9);
+}
+
+.hm-contact-modal__note.is-warning {
+    color: rgba(248, 113, 113, 0.9);
+}
+
 .hm-contact-modal__field--full {
     grid-column: 1 / -1;
 }
@@ -1220,6 +1246,8 @@ body.has-auth-overlay {
 .hm-contact-modal__field input,
 .hm-contact-modal__field textarea {
     width: 100%;
+    max-width: 100%;
+    margin: 0;
     border-radius: 12px;
     border: 1px solid rgba(148, 163, 184, 0.25);
     background: rgba(15, 23, 42, 0.85);
@@ -1244,6 +1272,10 @@ body.has-auth-overlay {
     margin: 0.35rem 0 0;
     font-size: 0.85rem;
     color: rgba(148, 163, 184, 0.75);
+}
+
+.hm-contact-modal__hint--info {
+    color: rgba(148, 163, 184, 0.8);
 }
 
 .hm-contact-modal__error {
@@ -1282,6 +1314,9 @@ body.has-auth-overlay {
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
+    width: auto;
+    max-width: none;
+    margin: 0;
     border-radius: 999px;
     padding: 0.75rem 1.75rem;
     border: 1px solid transparent;
