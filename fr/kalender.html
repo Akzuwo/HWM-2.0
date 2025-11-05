@@ -249,7 +249,13 @@
         <div class="hm-modal__body">
           <div class="hm-modal__field" data-field="type">
             <label for="fc-edit-type" data-i18n="calendar.modal.labels.type">Type</label>
-            <select id="fc-edit-type" name="typ" required data-hm-modal-initial-focus>
+            <select
+              id="fc-edit-type"
+              class="hm-select hm-select--type"
+              name="typ"
+              required
+              data-hm-modal-initial-focus
+            >
               <option value="hausaufgabe" data-i18n="calendar.legend.homework">Homework</option>
               <option value="pruefung" data-i18n="calendar.legend.exam">Exam</option>
               <option value="event" data-i18n="calendar.legend.event">Event</option>
@@ -270,7 +276,7 @@
 
           <div class="hm-modal__field" data-field="subject">
             <label for="fc-edit-subject" data-i18n="calendar.modal.labels.subject">Matière</label>
-            <select id="fc-edit-subject" name="fach">
+            <select id="fc-edit-subject" class="hm-select hm-select--subject" name="fach">
               <option value="" data-i18n="calendar.modal.placeholders.subject">– select –</option>
               <option>MA</option>
               <option>DE</option>
@@ -384,7 +390,13 @@
         <div class="hm-modal__body">
           <div class="hm-modal__field" data-field="type">
             <label for="typ" data-i18n="calendar.modal.labels.type">Type</label>
-            <select id="typ" name="typ" required data-hm-modal-initial-focus>
+            <select
+              id="typ"
+              class="hm-select hm-select--type"
+              name="typ"
+              required
+              data-hm-modal-initial-focus
+            >
               <option value="hausaufgabe" data-i18n="calendar.legend.homework">Homework</option>
               <option value="pruefung" data-i18n="calendar.legend.exam">Exam</option>
               <option value="event" data-i18n="calendar.legend.event">Event</option>
@@ -406,7 +418,7 @@
 
           <div class="hm-modal__field" data-field="subject">
             <label for="fach" data-i18n="calendar.modal.labels.subject">Matière</label>
-            <select id="fach" name="fach">
+            <select id="fach" class="hm-select hm-select--subject" name="fach">
               <option value="" data-i18n="calendar.modal.placeholders.subject">– select –</option>
               <option>MA</option>
               <option>DE</option>
@@ -440,7 +452,7 @@
             hidden
           >
             <label for="entry-class-ids">Classes</label>
-            <select id="entry-class-ids" data-entry-class-select>
+            <select id="entry-class-ids" class="hm-select hm-select--classes" data-entry-class-select>
               <option value="" disabled>Chargement des classes…</option>
             </select>
           </div>
