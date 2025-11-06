@@ -44,13 +44,32 @@
           title: 'Release 2.0',
           date: 'Oktober 2025',
           summary:
-            'Wir feiern den Start von Homework Manager 2.0 – mit frischem Look and Feel und vielen Verbesserungen im Hintergrund. Die Highlights des Releases folgen in Kürze.',
+            'Release 2.0 bündelt alles, was den Schulalltag leichter macht – von der neuen Oberfläche über Events bis hin zu Rollen, Datenschutz und frischen Übersichten.',
           highlights: {
-            design: 'Modernes Dark-Theme-Design für Kalender, Fächerübersicht und Tools.',
-            performance: 'Schnellere APIs für reibungsloses Laden der Hausaufgaben.',
-            overlays: 'Überarbeitete Overlays für komfortableres Bearbeiten von Einträgen.',
+            design: 'Rundum neu gestaltetes Dark-Theme mit präziser Typografie.',
+            animations: 'Sanfte Animationen sorgen für flüssige Übergänge.',
+            events: 'Event-Feature für spontane Termine, AGs und Aktionen.',
+            upcoming: 'Neue Seite für anstehende Ereignisse schafft Überblick.',
+            privacy: 'Datenschutzhinweis direkt integriert.',
+            accounts: 'Account-System mit Rollen, Rechten und E-Mail-Verifikation.',
+            imprint: 'Impressum ergänzt die rechtlichen Infos.',
+            holidays: 'Ferien und Feiertage erscheinen im Kalender.',
+            multiClass: 'Events und Ferien für mehrere Klassen planbar.',
+            contact: 'Neues Kontaktformular für Feedback.',
+            dayView: 'Tagesübersicht vereint Aufgaben, Prüfungen und Events.',
           },
           cta: 'Mehr erfahren',
+        },
+        guide: {
+          title: 'Bedienungsanleitung',
+          summary:
+            'Die wichtigsten Schritte für Lehrkräfte, Schüler:innen und Klassen-Admins auf einen Blick.',
+          points: {
+            teachers: 'Unterricht vorbereiten, Aufgaben posten und Events teilen.',
+            students: 'Aufgaben finden, Termine merken und Tagesfeed nutzen.',
+            admins: 'Rollen verwalten, Klassen koppeln und Ferien planen.',
+          },
+          cta: 'Zur Anleitung',
         },
       },
       changelog: {
@@ -67,10 +86,16 @@
           items: {
             design:
               'Rundum neu gestaltete Benutzeroberfläche mit harmonischem Dark-Theme und präziser Typografie.',
+            animations: 'Flüssige Mikro-Animationen lassen Seiten und Panels noch weicher wirken.',
             events: 'Frisches „Event“-Feature für spontane Veranstaltungen, AGs und besondere Termine.',
+            upcoming: 'Neue Seite für anstehende Ereignisse bringt Klarheit in die Planung.',
+            privacy: 'Datenschutzhinweis direkt integriert.',
+            accounts: 'Neues Account-System mit Rollen, Rechten und E-Mail-Verifikation.',
+            imprint: 'Impressum nahtlos in die Plattform eingebettet.',
+            holidays: 'Ferien und Feiertage erscheinen jetzt direkt im Kalender.',
+            multiClass: 'Events und Ferien lassen sich für mehrere Klassen gleichzeitig planen.',
+            contact: 'Frisches Kontaktformular für schnelle Rückmeldungen.',
             dayView: 'Neue Tagesübersicht bündelt Aufgaben, Prüfungen und Events in einem fokussierten Feed.',
-            account:
-              'Grundstein für das kommende Account-System (Work in Progress) – die Teamarbeit ist vorbereitet.',
           },
         },
         archive: {
@@ -269,13 +294,32 @@
           title: 'Release 2.0',
           date: 'October 2025',
           summary:
-            'We are launching Homework Manager 2.0 with a refreshed look and deep technical upgrades. Detailed highlights will follow soon.',
+            'Release 2.0 focuses on classroom essentials – a redesigned interface, powerful event tools, smarter overviews, and role-aware accounts.',
           highlights: {
-            design: 'Cohesive dark theme visuals across calendar, subject view and tools.',
-            performance: 'Faster APIs for effortless homework syncing.',
-            overlays: 'Refined overlays that make editing entries more comfortable.',
+            design: 'Redesigned dark theme with finely tuned typography.',
+            animations: 'Smooth animations keep every transition fluid.',
+            events: 'Event feature for spontaneous gatherings, clubs, and special dates.',
+            upcoming: 'Upcoming events page keeps plans crystal clear.',
+            privacy: 'Privacy notice woven right into the experience.',
+            accounts: 'Account system with roles, permissions, and email verification.',
+            imprint: 'Legal notice (imprint) now included.',
+            holidays: 'Holidays and vacations live inside the calendar.',
+            multiClass: 'Plan events and breaks for multiple classes simultaneously.',
+            contact: 'Contact form streamlines feedback.',
+            dayView: 'Day overview unites assignments, exams, and events.',
           },
           cta: 'Learn more',
+        },
+        guide: {
+          title: 'User guide',
+          summary:
+            'Step-by-step guidance for teachers, students, and class admins in one place.',
+          points: {
+            teachers: 'Plan lessons, post assignments, and schedule events.',
+            students: 'Track homework, remember dates, and follow the daily feed.',
+            admins: 'Manage roles, connect classes, and coordinate holidays.',
+          },
+          cta: 'Open the guide',
         },
       },
       changelog: {
@@ -292,10 +336,16 @@
           items: {
             design:
               'Completely redesigned interface with a cohesive dark theme and refined typography.',
+            animations: 'Fluid micro-animations make every page feel smoother.',
             events: 'Brand-new “Event” feature to capture club meetings, outings, and special occasions.',
+            upcoming: 'Upcoming events page delivers a clearer overview.',
+            privacy: 'Privacy notice is built right into the experience.',
+            accounts: 'New account system with roles, permissions, and email verification.',
+            imprint: 'Legal notice (imprint) now ships with the platform.',
+            holidays: 'Holidays and vacations appear directly inside the calendar.',
+            multiClass: 'Plan events and breaks for multiple classes at once.',
+            contact: 'Contact form makes feedback effortless.',
             dayView: 'Day overview gathers assignments, exams, and events into one focused stream.',
-            account:
-              'Foundation for the upcoming account system (work in progress) to enable shared access.',
           },
         },
         archive: {
@@ -493,13 +543,32 @@
           title: 'Release 2.0',
           date: 'Ottobre 2025',
           summary:
-            'Lanciamo Homework Manager 2.0 con un aspetto rinnovato e numerosi miglioramenti tecnici. I dettagli arriveranno a breve.',
+            'La release 2.0 porta tutto ciò che serve in classe: interfaccia rinnovata, gestione degli eventi, ruoli dedicati e maggiore attenzione a privacy e panoramiche.',
           highlights: {
-            design: 'Nuovo design dark theme per calendario, panoramica materie e strumenti.',
-            performance: 'API più rapide per sincronizzare i compiti senza attese.',
-            overlays: 'Overlay migliorati per modificare le voci con maggiore comodità.',
+            design: 'Tema scuro riprogettato con tipografia precisa.',
+            animations: 'Micro-animazioni fluide per passaggi più morbidi.',
+            events: 'Funzione Eventi per uscite, club e date speciali.',
+            upcoming: 'Nuova pagina degli eventi in arrivo per una visione chiara.',
+            privacy: 'Informativa sulla privacy integrata.',
+            accounts: 'Sistema di account con ruoli, permessi e verifica e-mail.',
+            imprint: 'Informazioni legali aggiunte alla piattaforma.',
+            holidays: 'Vacanze e festività direttamente nel calendario.',
+            multiClass: 'Eventi e vacanze per più classi in un colpo solo.',
+            contact: 'Modulo di contatto per inviare feedback.',
+            dayView: 'Panoramica giornaliera con compiti, verifiche ed eventi.',
           },
           cta: 'Scopri di più',
+        },
+        guide: {
+          title: 'Guida rapida',
+          summary:
+            'I passaggi fondamentali per docenti, studenti e admin di classe riuniti in un’unica pagina.',
+          points: {
+            teachers: 'Preparare lezioni, pubblicare compiti e creare eventi.',
+            students: 'Trovare i compiti, segnare le date e seguire il feed giornaliero.',
+            admins: 'Gestire i ruoli, collegare le classi e pianificare le vacanze.',
+          },
+          cta: 'Apri la guida',
         },
       },
       changelog: {
@@ -516,11 +585,17 @@
           items: {
             design:
               'Interfaccia riprogettata da cima a fondo con un tema scuro coerente e tipografia curata.',
+            animations: 'Micro-animazioni fluide rendono ogni pagina ancora più morbida.',
             events: 'Nuova funzione «Eventi» per pianificare uscite, club e appuntamenti speciali.',
+            upcoming: 'Pagina degli eventi in arrivo per una panoramica più chiara.',
+            privacy: 'Informativa sulla privacy integrata nell’esperienza.',
+            accounts: 'Nuovo sistema di account con ruoli, permessi e verifica e-mail.',
+            imprint: 'Informazioni legali (impressum) aggiunte alla piattaforma.',
+            holidays: 'Vacanze e festività ora visibili direttamente nel calendario.',
+            multiClass: 'Crea eventi e vacanze per più classi contemporaneamente.',
+            contact: 'Modulo di contatto per inviare feedback rapidamente.',
             dayView:
               'La panoramica giornaliera riunisce compiti, verifiche ed eventi in un unico flusso concentrato.',
-            account:
-              'Posa le basi per il futuro sistema di account (work in progress) e la collaborazione condivisa.',
           },
         },
         archive: {
@@ -720,13 +795,32 @@
           title: 'Version 2.0',
           date: 'Octobre 2025',
           summary:
-            'Nous lançons Homework Manager 2.0 avec une apparence renouvelée et de profondes améliorations techniques. Les points forts détaillés suivront bientôt.',
+            'La version 2.0 met l’accent sur l’essentiel en classe : interface repensée, gestion des événements, nouveaux rôles et contrôles de confidentialité.',
           highlights: {
-            design: 'Habillage sombre harmonisé pour le calendrier, la vue des matières et les outils.',
-            performance: 'Des API plus rapides pour synchroniser les devoirs sans effort.',
-            overlays: 'Des fenêtres modales retravaillées pour modifier les entrées plus confortablement.',
+            design: 'Thème sombre repensé avec une typographie précise.',
+            animations: 'Micro-animations fluides pour des transitions souples.',
+            events: 'Fonction « Événement » pour sorties, clubs et moments spéciaux.',
+            upcoming: 'Nouvelle page des événements à venir pour garder le cap.',
+            privacy: 'Notice de confidentialité intégrée.',
+            accounts: 'Système de comptes avec rôles, droits et vérification e-mail.',
+            imprint: 'Mentions légales désormais incluses.',
+            holidays: 'Vacances et jours fériés directement dans le calendrier.',
+            multiClass: 'Planification d’événements et de vacances pour plusieurs classes.',
+            contact: 'Formulaire de contact pour recueillir les retours.',
+            dayView: 'Vue quotidienne combinant devoirs, évaluations et événements.',
           },
           cta: 'En savoir plus',
+        },
+        guide: {
+          title: 'Guide d’utilisation',
+          summary:
+            'Retrouvez l’essentiel pour les enseignant·e·s, les élèves et les admins de classe.',
+          points: {
+            teachers: 'Préparer les cours, publier des devoirs et annoncer des événements.',
+            students: 'Consulter les devoirs, noter les dates et suivre le flux quotidien.',
+            admins: 'Gérer les rôles, relier les classes et organiser les vacances.',
+          },
+          cta: 'Ouvrir le guide',
         },
       },
       changelog: {
@@ -743,10 +837,16 @@
           items: {
             design:
               'Interface entièrement réinventée avec un thème sombre cohérent et une typographie soignée.',
+            animations: 'Micro-animations fluides pour une navigation encore plus douce.',
             events: 'Nouveau module « Événement » pour planifier sorties, clubs et rendez-vous spéciaux.',
+            upcoming: 'Page des événements à venir pour une vue d’ensemble plus claire.',
+            privacy: 'Notice de confidentialité intégrée directement.',
+            accounts: 'Nouveau système de comptes avec rôles, droits et vérification par e-mail.',
+            imprint: 'Mentions légales désormais incluses dans la plateforme.',
+            holidays: 'Vacances et jours fériés visibles directement dans le calendrier.',
+            multiClass: 'Création d’événements et de vacances pour plusieurs classes en même temps.',
+            contact: 'Formulaire de contact pour recueillir les retours rapidement.',
             dayView: 'Vue quotidienne regroupant devoirs, examens et événements dans un flux focalisé.',
-            account:
-              'Fondations posées pour le futur système de comptes (travail en cours) afin de faciliter l’usage partagé.',
           },
         },
         archive: {
@@ -1015,3 +1115,214 @@
     document.addEventListener('DOMContentLoaded', () => apply());
   }
 })(window);
+      help: {
+        pageTitle: 'Bedienungsanleitung',
+        back: '← Zurück zur Startseite',
+        title: 'Bedienungsanleitung',
+        subtitle: 'Praktische Hinweise, damit jede Rolle den Homework Manager sofort einsetzen kann.',
+        note: 'Die Anleitung nutzt das neue Dark-Theme samt Scroll-Animationen.',
+        teacher: {
+          title: 'Für Lehrkräfte',
+          summary: 'Plane Einträge und halte deine Klasse zuverlässig informiert.',
+          steps: {
+            create: 'Klicke im Kalender auf den gewünschten Tag, wähle Typ und Zeiten und speichere den neuen Eintrag.',
+            format: 'Nutze *TEXT* in der Beschreibung, um wichtige Hinweise fett hervorzuheben.',
+            attachments:
+              'Dateianhänge werden nicht unterstützt – verlinke Materialien direkt im Beschreibungstext.',
+            overview:
+              'Mit der Tagesübersicht behältst du Aufgaben und Prüfungen im Blick, sobald ein Stundenplan als .json eingereicht wurde.',
+          },
+        },
+        students: {
+          title: 'Für Schüler:innen',
+          summary: 'Behalte Termine, Räume und Aufgaben auf jedem Gerät im Blick.',
+          steps: {
+            dayView:
+              'Die Tagesübersicht zeigt dir anstehende Aufgaben, Prüfungen und Events, sobald euer Stundenplan als .json hinterlegt ist.',
+            currentSubject: 'Die Seite „Aktuelles Fach“ verrät dir, wo deine nächste Lektion stattfindet.',
+            calendar:
+              'Tippe im Kalender auf einen Tag, um Details zu Terminen zu sehen und Einträge schneller zu finden.',
+            questions: 'Bei offenen Fragen hilft dir das Support-Team über das Kontaktformular weiter.',
+          },
+        },
+        admins: {
+          title: 'Für Klassen-Admins',
+          summary: 'Sorge dafür, dass Rollen, Stundenpläne und Einträge gepflegt bleiben.',
+          steps: {
+            schedule:
+              'Stelle sicher, dass ein Mitglied eurer Klasse den Stundenplan als .json-Datei einreicht, damit Tagesübersicht und Aktuelles Fach freigeschaltet werden.',
+            create: 'Lege bei Bedarf selbst Einträge an, indem du im Kalender auf den entsprechenden Tag klickst.',
+            privacy: 'Verweise für ausführliche Datenschutzinformationen auf die entsprechende Seite.',
+            support:
+              'Nutze bei Rückfragen das Kontaktformular – es dient ausschließlich zur Kontaktaufnahme mit dem Support.',
+          },
+        },
+        callout: {
+          title: 'Gut zu wissen',
+          schedule:
+            'Tagesübersicht und Aktuelles Fach stehen erst zur Verfügung, wenn ein Stundenplan im .json-Format eingereicht wurde.',
+          contactForm:
+            'Das Kontaktformular ist nicht für Nachrichten an Schüler:innen gedacht, sondern ausschließlich für den Support.',
+          privacy: 'Für weiterführende Informationen zum Datenschutz lies bitte die Datenschutz-Seite.',
+          support: 'Wenn Fragen offenbleiben, kontaktiere jederzeit den Support.',
+        },
+      },
+      help: {
+        pageTitle: 'User guide',
+        back: '← Back to the homepage',
+        title: 'User guide',
+        subtitle: 'Practical tips so every role can get started right away.',
+        note: 'This guide follows the refreshed dark theme and scroll animations.',
+        teacher: {
+          title: 'For teachers',
+          summary: 'Plan entries and keep your class informed.',
+          steps: {
+            create: 'Click the desired day in the calendar, choose the type and times, then save the entry.',
+            format: 'Use *TEXT* inside the description to highlight important details in bold.',
+            attachments:
+              'Attachments are not supported—share links or references directly in the description.',
+            overview:
+              'Review upcoming work in the day overview once a timetable .json has been submitted.',
+          },
+        },
+        students: {
+          title: 'For students',
+          summary: 'Track rooms, deadlines, and assignments on any device.',
+          steps: {
+            dayView:
+              'The day overview lists homework, exams, and events once your class has submitted its timetable .json.',
+            currentSubject: 'The “Current subject” page shows where your next lesson will take place.',
+            calendar: 'Tap a day in the calendar to read entry details and find events quickly.',
+            questions: 'If anything is unclear, contact the support team through the contact form.',
+          },
+        },
+        admins: {
+          title: 'For class admins',
+          summary: 'Keep roles, timetables, and entries organised.',
+          steps: {
+            schedule:
+              'Make sure someone from your class submits the timetable .json so the day overview and current subject unlock.',
+            create: 'Create entries yourself by clicking the appropriate day in the calendar.',
+            privacy: 'Point people to the privacy page for detailed information.',
+            support:
+              'Use the contact form to reach support when you need help—it is not meant for student emails.',
+          },
+        },
+        callout: {
+          title: 'Good to know',
+          schedule:
+            'Day overview and current subject become available only after a timetable has been provided in .json format.',
+          contactForm:
+            'The contact form is intended for support requests, not for emailing students.',
+          privacy: 'For more about privacy, read the dedicated privacy page.',
+          support: 'Still curious? Reach out to support.',
+        },
+      },
+      help: {
+        pageTitle: 'Guide d’utilisation',
+        back: '← Retour à l’accueil',
+        title: 'Guide d’utilisation',
+        subtitle: 'Conseils pratiques pour que chaque rôle démarre rapidement.',
+        note: 'Ce guide suit le nouveau thème sombre et les animations de défilement.',
+        teacher: {
+          title: 'Pour les enseignant·e·s',
+          summary: 'Planifiez les entrées et tenez votre classe informée.',
+          steps: {
+            create:
+              'Cliquez sur le jour souhaité dans le calendrier, choisissez le type et les horaires, puis enregistrez l’entrée.',
+            format:
+              'Utilisez *TEXTE* dans la description pour mettre en avant les informations importantes en gras.',
+            attachments:
+              'Les fichiers joints ne sont pas pris en charge : partagez vos liens ou consignes directement dans la description.',
+            overview:
+              'Surveillez le travail à venir avec la vue du jour dès qu’un fichier emploi du temps .json a été transmis.',
+          },
+        },
+        students: {
+          title: 'Pour les élèves',
+          summary: 'Suivez salles, échéances et devoirs sur n’importe quel appareil.',
+          steps: {
+            dayView:
+              'La vue du jour liste devoirs, évaluations et événements une fois que votre classe a fourni son emploi du temps au format .json.',
+            currentSubject: 'La page « Cours actuel » vous indique où se déroule votre prochaine leçon.',
+            calendar:
+              'Touchez un jour dans le calendrier pour consulter les détails et retrouver rapidement les entrées.',
+            questions: 'En cas de doute, contactez l’équipe support via le formulaire.',
+          },
+        },
+        admins: {
+          title: 'Pour les admins de classe',
+          summary: 'Veillez à garder rôles, emplois du temps et entrées à jour.',
+          steps: {
+            schedule:
+              'Assurez-vous qu’un membre de la classe remet le fichier d’emploi du temps au format .json pour activer la vue du jour et Cours actuel.',
+            create: 'Créez des entrées en cliquant sur le jour concerné dans le calendrier.',
+            privacy: 'Renvoie vers la page de confidentialité pour des informations détaillées.',
+            support:
+              'Utilisez le formulaire de contact pour joindre le support ; il n’est pas destiné à écrire aux élèves.',
+          },
+        },
+        callout: {
+          title: 'Bon à savoir',
+          schedule:
+            'La vue du jour et Cours actuel ne sont disponibles qu’après la remise d’un emploi du temps au format .json.',
+          contactForm:
+            'Le formulaire de contact est réservé aux demandes de support, pas pour envoyer des messages aux élèves.',
+          privacy: 'Pour en savoir plus sur la protection des données, consultez la page dédiée.',
+          support: 'D’autres questions ? Contactez le support.',
+        },
+      },
+      help: {
+        pageTitle: 'Guida rapida',
+        back: '← Torna alla home',
+        title: 'Guida rapida',
+        subtitle: 'Suggerimenti pratici per iniziare subito con ogni ruolo.',
+        note: 'Questa guida segue il nuovo tema scuro e le animazioni di scorrimento.',
+        teacher: {
+          title: 'Per i docenti',
+          summary: 'Pianifica le voci e tieni informata la classe.',
+          steps: {
+            create:
+              'Fai clic sul giorno desiderato nel calendario, scegli tipo e orari e salva la voce.',
+            format:
+              'Usa *TESTO* nella descrizione per mettere in grassetto le informazioni importanti.',
+            attachments:
+              'Gli allegati non sono supportati: condividi link o indicazioni direttamente nella descrizione.',
+            overview:
+              'Controlla le attività in arrivo nella panoramica giornaliera dopo l’invio del file orario .json.',
+          },
+        },
+        students: {
+          title: 'Per gli studenti',
+          summary: 'Segui aule, scadenze e compiti su qualsiasi dispositivo.',
+          steps: {
+            dayView:
+              'La panoramica giornaliera mostra compiti, verifiche ed eventi appena la vostra classe ha fornito l’orario in formato .json.',
+            currentSubject: 'La pagina «Materia attuale» ti indica dove si svolgerà la prossima lezione.',
+            calendar:
+              'Tocca un giorno nel calendario per leggere i dettagli e trovare subito le voci.',
+            questions: 'Se hai dubbi, contatta il supporto tramite il modulo.',
+          },
+        },
+        admins: {
+          title: 'Per gli admin di classe',
+          summary: 'Mantieni aggiornati ruoli, orari e voci.',
+          steps: {
+            schedule:
+              'Assicurati che qualcuno della classe consegni il file orario in formato .json per attivare panoramica giornaliera e Materia attuale.',
+            create: 'Crea le voci cliccando sul giorno corrispondente nel calendario.',
+            privacy: 'Indirizza alla pagina sulla privacy per ulteriori dettagli.',
+            support:
+              'Usa il modulo di contatto per rivolgerti al supporto: non serve per scrivere agli studenti.',
+          },
+        },
+        callout: {
+          title: 'Da sapere',
+          schedule:
+            'Panoramica giornaliera e Materia attuale sono disponibili solo dopo aver fornito un orario in formato .json.',
+          contactForm:
+            'Il modulo di contatto è pensato per richieste al supporto, non per inviare email agli studenti.',
+          privacy: 'Per maggiori informazioni sulla privacy consulta la pagina dedicata.',
+          support: 'Hai altre domande? Contatta il supporto.',
+        },
+      },

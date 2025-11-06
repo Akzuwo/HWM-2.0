@@ -1,7 +1,14 @@
 (function () {
   function initHomeAnimations() {
     var body = document.body;
-    if (!body || !body.classList.contains('home-page')) {
+    if (!body) {
+      return;
+    }
+
+    var isHome = body.classList.contains('home-page');
+    var isHelp = body.classList.contains('help-page');
+
+    if (!isHome && !isHelp) {
       return;
     }
 
@@ -10,7 +17,7 @@
       : false;
 
     var markLoaded = function () {
-      body.classList.add('home-loaded');
+      body.classList.add(isHelp ? 'help-loaded' : 'home-loaded');
     };
 
     if (typeof window.requestAnimationFrame === 'function') {
@@ -19,9 +26,18 @@
       markLoaded();
     }
 
-    var animatedElements = Array.prototype.slice.call(
-      document.querySelectorAll('.home-callout, .home-card')
-    );
+    var animatedSelectors = [];
+    if (isHome) {
+      animatedSelectors.push('.home-callout', '.home-card');
+    }
+    if (isHelp) {
+      animatedSelectors.push('.help-hero', '.help-section', '.help-callout');
+    }
+
+    var selector = animatedSelectors.join(', ');
+    var animatedElements = selector
+      ? Array.prototype.slice.call(document.querySelectorAll(selector))
+      : [];
 
     if (!animatedElements.length) {
       return;
