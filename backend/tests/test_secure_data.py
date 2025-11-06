@@ -280,6 +280,53 @@ def test_admin_schedule_entries_validation_and_class_guard(app_client):
     assert resp.status_code == 403
 
 
+def test_admin_can_delete_class_schedule_via_dashboard(app_client):
+    client, storage, _ = app_client
+    _login_admin(client)
+
+    now = datetime.datetime.utcnow()
+    storage['class_schedules'][1] = {
+        'id': 1,
+        'class_id': 1,
+        'source': 'manual',
+        'import_hash': 'hash',
+        'imported_at': None,
+        'created_at': now,
+        'updated_at': now,
+    }
+    storage['stundenplan_entries'].append(
+        {
+            'id': 1,
+            'class_id': 1,
+            'tag': 'Monday',
+            'start': '08:00',
+            'end': '08:45',
+            'fach': 'Mathe',
+            'raum': '101',
+        }
+    )
+
+    resp = client.delete('/api/admin/classes/1/schedule')
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data['status'] == 'ok'
+    assert data['removed_entries'] == 1
+    assert data['removed_schedules'] == 1
+    assert not any(entry.get('class_id') == 1 for entry in storage['stundenplan_entries'])
+    assert all(item.get('class_id') != 1 for item in storage['class_schedules'].values())
+
+    audit_log = next(
+        (
+            entry
+            for entry in storage['audit_logs']
+            if entry['entity_type'] == 'schedule' and entry['action'] == 'delete'
+        ),
+        None,
+    )
+    assert audit_log is not None
+    assert '"class_id": 1' in (audit_log.get('details') or '')
+
+
 def test_contact_requires_login(app_client):
     client, _, _ = app_client
     resp = client.post('/api/contact', data={'subject': 'Test'})

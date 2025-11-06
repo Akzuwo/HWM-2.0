@@ -169,6 +169,27 @@ def _tail_log_file(path: str, max_lines: int) -> Tuple[str, bool]:
 
 _setup_file_logging()
 
+
+def _log_user_event(event: str, user_id: Optional[int] = None, **details: object) -> None:
+    """Write a structured audit log entry to the application logger."""
+
+    if user_id is None:
+        try:
+            user_id = int(session.get('user_id'))
+        except (TypeError, ValueError):
+            user_id = session.get('user_id')
+
+    serialized: Dict[str, Any] = {}
+    for key, value in details.items():
+        serialized[key] = _serialize_value(value)
+
+    try:
+        encoded_details = json.dumps(serialized, ensure_ascii=False, sort_keys=True)
+    except (TypeError, ValueError):
+        encoded_details = str(serialized)
+
+    app.logger.info('AUDIT event=%s user_id=%s details=%s', event, user_id, encoded_details)
+
 def _resolve_cors_origin() -> Optional[str]:
     origin = request.headers.get("Origin")
     if not origin:
@@ -1610,6 +1631,14 @@ def auth_login():
         except (mysql.connector.Error, KeyError, ValueError):
             app.logger.exception('Failed to update last login for user %s', user)
 
+        _log_user_event(
+            'login',
+            user_id=int(user['id']),
+            email=user.get('email'),
+            role=role,
+            ip_address=ip_address,
+        )
+
     LOGIN_RATE_LIMIT.pop(ip_address, None)
     return jsonify(status='ok', role=session.get('role'))
 
@@ -2438,6 +2467,73 @@ def admin_schedules_resource(schedule_id: int):
     return jsonify(status='ok', id=schedule_id)
 
 
+@app.route('/api/admin/classes/<int:class_id>/schedule', methods=['DELETE', 'OPTIONS'])
+@require_role('admin')
+def admin_class_schedule_delete(class_id: int):
+    if request.method == 'OPTIONS':
+        return _cors_preflight()
+
+    if class_id <= 0:
+        return jsonify(status='error', message='invalid_class_id'), 400
+
+    try:
+        conn = get_connection()
+    except Exception:
+        return jsonify(status='error', message='database_unavailable'), 503
+
+    with closing(conn):
+        cursor = conn.cursor(dictionary=True)
+        try:
+            cursor.execute("SELECT id FROM classes WHERE id=%s", (class_id,))
+            exists = cursor.fetchone()
+        except mysql.connector.Error:
+            return jsonify(status='error', message='database_unavailable'), 503
+        finally:
+            cursor.close()
+
+        if not exists:
+            return jsonify(status='error', message='class_not_found'), 404
+
+        cursor = conn.cursor()
+        entries_deleted = 0
+        schedules_deleted = 0
+        try:
+            cursor.execute("DELETE FROM stundenplan_entries WHERE class_id=%s", (class_id,))
+            entries_deleted = cursor.rowcount or 0
+            cursor.execute("DELETE FROM class_schedules WHERE class_id=%s", (class_id,))
+            schedules_deleted = cursor.rowcount or 0
+            _log_admin_action(
+                conn,
+                'delete',
+                'schedule',
+                None,
+                {
+                    'class_id': class_id,
+                    'entries_deleted': entries_deleted,
+                    'schedule_records_deleted': schedules_deleted,
+                },
+            )
+            conn.commit()
+        except mysql.connector.Error:
+            conn.rollback()
+            return jsonify(status='error', message='database_unavailable'), 503
+        finally:
+            cursor.close()
+
+        _log_user_event(
+            'schedule_delete',
+            class_id=class_id,
+            entries_deleted=entries_deleted,
+            schedule_records_deleted=schedules_deleted,
+        )
+
+        return jsonify(
+            status='ok',
+            removed_entries=entries_deleted,
+            removed_schedules=schedules_deleted,
+        )
+
+
 @app.route('/api/admin/schedule-entries', methods=['GET', 'POST', 'OPTIONS'])
 @require_role('admin')
 def admin_schedule_entries_collection():
@@ -2938,6 +3034,16 @@ def update_entry():
             )
 
         conn.commit()
+        _log_user_event(
+            'entry_update',
+            entry_id=entry_id,
+            class_ids=class_ids,
+            typ=typ,
+            datum=date,
+            enddatum=enddatum,
+            fach=fach,
+            beschreibung=desc,
+        )
 
         return jsonify(status='ok', updated=len(class_ids))
     except Exception as e:
@@ -2979,7 +3085,10 @@ def delete_entry(id):
             "DELETE FROM eintraege WHERE id=%s AND class_id=%s",
             (id, class_id),
         )
+        deleted = cur.rowcount or 0
         conn.commit()
+        if deleted:
+            _log_user_event('entry_delete', entry_id=id, class_id=class_id, deleted=deleted)
         return jsonify(status='ok')
     except Exception as e:
         return jsonify(status='error', message=str(e)), 500
@@ -3213,6 +3322,16 @@ def add_entry():
             )
 
         conn.commit()
+        _log_user_event(
+            'entry_create',
+            entry_id=entry_id,
+            class_ids=class_ids,
+            typ=typ,
+            datum=datum,
+            enddatum=enddatum,
+            fach=fach,
+            beschreibung=beschreibung,
+        )
         return jsonify(status="ok", created=len(class_ids), id=entry_id)
     except Exception as e:
         conn.rollback()

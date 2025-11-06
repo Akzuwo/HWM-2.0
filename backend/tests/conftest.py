@@ -476,6 +476,16 @@ class FakeCursor:
                 self.rowcount = 1
             return
 
+        if normalized.startswith("delete from class_schedules where class_id=%s"):
+            class_id = params[0]
+            removed = 0
+            for schedule_id in list(schedules.keys()):
+                if schedules[schedule_id].get('class_id') == class_id:
+                    schedules.pop(schedule_id, None)
+                    removed += 1
+            self.rowcount = removed
+            return
+
         if normalized.startswith("insert into admin_audit_logs"):
             actor_id, action, entity_type, entity_id, details = params
             log_id = self.storage.setdefault('next_ids', {}).setdefault('audit_logs', 1)
