@@ -17,7 +17,8 @@
 }
 
 body.home-page,
-body.changelog-page {
+body.changelog-page,
+body.help-page {
   background: var(--home-bg);
   color: var(--home-text-primary);
   font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, 'Helvetica Neue',
@@ -51,6 +52,17 @@ body.changelog-page.changelog-loaded {
   transform: none;
 }
 
+body.help-page {
+  opacity: 0;
+  transform: translateY(1.5rem);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+body.help-page.help-loaded {
+  opacity: 1;
+  transform: none;
+}
+
 
 
 
@@ -68,7 +80,8 @@ body.changelog-page.changelog-loaded {
 
 
 main.home-main,
-main.changelog-main {
+main.changelog-main,
+main.help-main {
   flex: 1;
   width: min(1120px, 100%);
   margin: 0 auto;
@@ -86,6 +99,32 @@ main.changelog-main {
 }
 
 .home-grid {
+  display: grid;
+  gap: var(--space-lg);
+}
+
+.help-hero {
+  display: grid;
+  gap: var(--space-sm);
+  padding: clamp(1.5rem, 3vw, 2.25rem);
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.16), rgba(59, 130, 246, 0.06) 60%),
+    rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.45);
+  opacity: 0;
+  transform: translateY(2.5rem);
+  transition: opacity 0.75s ease, transform 0.75s ease;
+  transition-delay: var(--home-section-delay, 0ms);
+  will-change: opacity, transform;
+}
+
+.help-hero.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+.help-grid {
   display: grid;
   gap: var(--space-lg);
 }
@@ -155,6 +194,10 @@ main.changelog-main {
   .home-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .help-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 .home-card {
@@ -177,6 +220,99 @@ main.changelog-main {
 .home-card.is-visible {
   opacity: 1;
   transform: none;
+}
+
+.help-section {
+  background: linear-gradient(150deg, rgba(34, 197, 94, 0.12), transparent 58%), var(--home-surface);
+  border: 1px solid var(--home-border);
+  border-radius: 20px;
+  box-shadow: var(--home-shadow);
+  padding: clamp(1.75rem, 4vw, 2.4rem);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  opacity: 0;
+  transform: translateY(2.5rem);
+  transition: opacity 0.75s ease, transform 0.75s ease;
+  transition-delay: var(--home-section-delay, 0ms);
+  will-change: opacity, transform;
+}
+
+.help-section.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+.help-section__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.help-section__icon {
+  width: clamp(48px, 6vw, 56px);
+  height: clamp(48px, 6vw, 56px);
+  display: grid;
+  place-items: center;
+  font-size: clamp(1.5rem, 3.5vw, 1.85rem);
+  border-radius: 16px;
+  background: rgba(34, 197, 94, 0.12);
+  color: #6ee7b7;
+  box-shadow: inset 0 0 0 1px rgba(110, 231, 183, 0.25);
+}
+
+.help-section p {
+  margin: 0;
+  color: var(--home-text-secondary);
+  line-height: 1.7;
+}
+
+.help-section ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: var(--space-xs);
+  color: var(--home-text-secondary);
+}
+
+.help-section li::marker {
+  color: rgba(110, 231, 183, 0.85);
+}
+
+.help-callout {
+  margin-top: clamp(2rem, 6vw, 3rem);
+  padding: clamp(1.5rem, 5vw, 2.25rem);
+  border-radius: 24px;
+  background: var(--home-surface-alt);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  display: grid;
+  gap: var(--space-sm);
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.45s ease, transform 0.45s ease;
+}
+
+.help-callout.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+.help-callout h2 {
+  margin: 0;
+  color: var(--home-text-primary);
+  font-size: clamp(1.25rem, 3vw, 1.6rem);
+}
+
+.help-callout ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: var(--space-xs);
+  color: var(--home-text-secondary);
+}
+
+.help-callout li::marker {
+  color: rgba(94, 234, 212, 0.9);
 }
 
 .home-card--release {
