@@ -109,6 +109,109 @@ function populateRoutes(header, info) {
   }
 }
 
+function setupMobileNavigation(header) {
+  const toggle = header.querySelector('[data-nav-toggle]');
+  const drawer = header.querySelector('[data-nav-drawer]');
+  const overlay = header.querySelector('[data-nav-overlay]');
+
+  if (!toggle || !drawer || !overlay) {
+    return;
+  }
+
+  if (typeof window.__hmNavCleanup === 'function') {
+    window.__hmNavCleanup();
+    window.__hmNavCleanup = null;
+  }
+
+  const focusableSelector = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  let previousFocus = null;
+
+  const closeDrawer = ({ restoreFocus = true } = {}) => {
+    const isMobileView = window.matchMedia('(max-width: 768px)').matches;
+    overlay.classList.remove('is-open');
+    if (!overlay.hasAttribute('hidden')) {
+      overlay.setAttribute('hidden', '');
+    }
+    drawer.classList.remove('is-open');
+    drawer.setAttribute('aria-hidden', isMobileView ? 'true' : 'false');
+    toggle.setAttribute('aria-expanded', 'false');
+    const focusTarget = previousFocus;
+    previousFocus = null;
+    if (restoreFocus && focusTarget instanceof HTMLElement && document.contains(focusTarget)) {
+      focusTarget.focus();
+    }
+  };
+
+  const openDrawer = () => {
+    if (drawer.classList.contains('is-open')) {
+      return;
+    }
+    previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    drawer.classList.add('is-open');
+    drawer.setAttribute('aria-hidden', 'false');
+    overlay.classList.add('is-open');
+    overlay.removeAttribute('hidden');
+    toggle.setAttribute('aria-expanded', 'true');
+    const firstFocusable = drawer.querySelector(focusableSelector);
+    if (firstFocusable instanceof HTMLElement) {
+      try {
+        firstFocusable.focus({ preventScroll: true });
+      } catch (error) {
+        firstFocusable.focus();
+      }
+    }
+  };
+
+  const handleToggleClick = () => {
+    if (drawer.classList.contains('is-open')) {
+      closeDrawer();
+    } else {
+      openDrawer();
+    }
+  };
+
+  const handleOverlayClick = () => {
+    closeDrawer();
+  };
+
+  const handleDrawerClick = (event) => {
+    const target = event.target instanceof HTMLElement ? event.target.closest('a.nav-link') : null;
+    if (target) {
+      closeDrawer({ restoreFocus: false });
+    }
+  };
+
+  const handleKeyDown = (event) => {
+    if (event.key === 'Escape' && drawer.classList.contains('is-open')) {
+      event.preventDefault();
+      closeDrawer();
+    }
+  };
+
+  const handleResize = () => {
+    if (window.innerWidth > 768) {
+      closeDrawer({ restoreFocus: false });
+    }
+  };
+
+  toggle.addEventListener('click', handleToggleClick);
+  overlay.addEventListener('click', handleOverlayClick);
+  drawer.addEventListener('click', handleDrawerClick);
+  document.addEventListener('keydown', handleKeyDown);
+  window.addEventListener('resize', handleResize);
+
+  closeDrawer({ restoreFocus: false });
+
+  window.__hmNavCleanup = () => {
+    toggle.removeEventListener('click', handleToggleClick);
+    overlay.removeEventListener('click', handleOverlayClick);
+    drawer.removeEventListener('click', handleDrawerClick);
+    document.removeEventListener('keydown', handleKeyDown);
+    window.removeEventListener('resize', handleResize);
+    closeDrawer({ restoreFocus: false });
+  };
+}
+
 async function loadHeader() {
   try {
     const response = await fetch(HEADER_URL, { cache: 'no-store' });
@@ -133,9 +236,14 @@ async function loadHeader() {
     }
     const existing = body.querySelector('.hm-navbar');
     if (existing) {
+      if (typeof window.__hmNavCleanup === 'function') {
+        window.__hmNavCleanup();
+        window.__hmNavCleanup = null;
+      }
       existing.remove();
     }
     body.insertBefore(header, body.firstChild);
+    setupMobileNavigation(header);
 
     window.dispatchEvent(
       new CustomEvent('hm:header-ready', {
