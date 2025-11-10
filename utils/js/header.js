@@ -109,6 +109,206 @@ function populateRoutes(header, info) {
   }
 }
 
+function setupMobileNavigation(header) {
+  const toggle = header.querySelector('[data-nav-toggle]');
+  const drawer = header.querySelector('[data-nav-drawer]');
+  const overlay = header.querySelector('[data-nav-overlay]');
+  const inner = header.querySelector('.hm-navbar__inner');
+
+  if (!toggle || !drawer || !overlay || !inner) {
+    return;
+  }
+
+  if (typeof window.__hmNavCleanup === 'function') {
+    window.__hmNavCleanup();
+    window.__hmNavCleanup = null;
+  }
+
+  const focusableSelector = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  let previousFocus = null;
+  let isCondensed = false;
+
+  const updateDrawerAria = () => {
+    if (!isCondensed) {
+      drawer.setAttribute('aria-hidden', 'false');
+      return;
+    }
+    drawer.setAttribute('aria-hidden', drawer.classList.contains('is-open') ? 'false' : 'true');
+  };
+
+  const closeDrawer = ({ restoreFocus = true } = {}) => {
+    overlay.classList.remove('is-open');
+    overlay.setAttribute('aria-hidden', 'true');
+    if (!overlay.hasAttribute('hidden')) {
+      overlay.setAttribute('hidden', '');
+    }
+    drawer.classList.remove('is-open');
+    updateDrawerAria();
+    toggle.setAttribute('aria-expanded', 'false');
+    const focusTarget = previousFocus;
+    previousFocus = null;
+    if (restoreFocus && focusTarget instanceof HTMLElement && document.contains(focusTarget)) {
+      focusTarget.focus();
+    }
+  };
+
+  const openDrawer = () => {
+    if (!isCondensed || drawer.classList.contains('is-open')) {
+      return;
+    }
+    previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    drawer.classList.add('is-open');
+    updateDrawerAria();
+    overlay.classList.add('is-open');
+    overlay.removeAttribute('hidden');
+    overlay.setAttribute('aria-hidden', 'false');
+    toggle.setAttribute('aria-expanded', 'true');
+    const firstFocusable = drawer.querySelector(focusableSelector);
+    if (firstFocusable instanceof HTMLElement) {
+      try {
+        firstFocusable.focus({ preventScroll: true });
+      } catch (error) {
+        firstFocusable.focus();
+      }
+    }
+  };
+
+  const handleToggleClick = () => {
+    if (!isCondensed) {
+      return;
+    }
+    if (drawer.classList.contains('is-open')) {
+      closeDrawer();
+    } else {
+      openDrawer();
+    }
+  };
+
+  const handleOverlayClick = () => {
+    if (drawer.classList.contains('is-open')) {
+      closeDrawer();
+    }
+  };
+
+  const handleDrawerClick = (event) => {
+    const target = event.target instanceof HTMLElement ? event.target.closest('a.nav-link') : null;
+    if (target) {
+      closeDrawer({ restoreFocus: false });
+    }
+  };
+
+  const handleKeyDown = (event) => {
+    if (event.key === 'Escape' && drawer.classList.contains('is-open')) {
+      event.preventDefault();
+      closeDrawer();
+    }
+  };
+
+  const detectWrap = () => {
+    const children = Array.from(inner.children).filter(
+      (child) => child instanceof HTMLElement && child.offsetParent !== null
+    );
+    if (!children.length) {
+      return false;
+    }
+
+    const tops = new Set(children.map((child) => Math.round(child.getBoundingClientRect().top)));
+    if (tops.size > 1) {
+      return true;
+    }
+
+    const scrollDelta = inner.scrollHeight - inner.clientHeight;
+    return scrollDelta > 1;
+  };
+
+  const setCondensed = (nextCondensed) => {
+    const previous = isCondensed;
+    isCondensed = nextCondensed;
+    header.classList.toggle('is-condensed', isCondensed);
+
+    if (previous !== isCondensed) {
+      closeDrawer({ restoreFocus: false });
+      return;
+    }
+
+    updateDrawerAria();
+    toggle.setAttribute('aria-expanded', drawer.classList.contains('is-open') ? 'true' : 'false');
+    if (!isCondensed) {
+      overlay.classList.remove('is-open');
+      overlay.setAttribute('aria-hidden', 'true');
+      if (!overlay.hasAttribute('hidden')) {
+        overlay.setAttribute('hidden', '');
+      }
+    }
+  };
+
+  const evaluateLayout = () => {
+    header.classList.add('is-measuring');
+    header.classList.remove('is-condensed');
+    const shouldCondense = detectWrap();
+    header.classList.remove('is-measuring');
+    setCondensed(shouldCondense);
+  };
+
+  toggle.addEventListener('click', handleToggleClick);
+  overlay.addEventListener('click', handleOverlayClick);
+  drawer.addEventListener('click', handleDrawerClick);
+  document.addEventListener('keydown', handleKeyDown);
+
+  const resizeObserver = typeof ResizeObserver === 'function' ? new ResizeObserver(() => {
+    evaluateLayout();
+  }) : null;
+
+  if (resizeObserver) {
+    resizeObserver.observe(inner);
+  }
+
+  window.addEventListener('resize', evaluateLayout);
+  window.addEventListener('load', evaluateLayout, { once: true });
+
+  let fontsListener = null;
+  if (document && document.fonts && typeof document.fonts.addEventListener === 'function') {
+    fontsListener = () => {
+      evaluateLayout();
+      if (document && document.fonts && typeof document.fonts.removeEventListener === 'function' && fontsListener) {
+        document.fonts.removeEventListener('loadingdone', fontsListener);
+      }
+      fontsListener = null;
+    };
+    document.fonts.addEventListener('loadingdone', fontsListener);
+  } else if (document && document.fonts && typeof document.fonts.ready?.then === 'function') {
+    document.fonts.ready.then(() => evaluateLayout());
+  }
+
+  overlay.setAttribute('aria-hidden', 'true');
+  if (!overlay.hasAttribute('hidden')) {
+    overlay.setAttribute('hidden', '');
+  }
+
+  evaluateLayout();
+  if (typeof window.requestAnimationFrame === 'function') {
+    window.requestAnimationFrame(() => evaluateLayout());
+  }
+
+  window.__hmNavCleanup = () => {
+    toggle.removeEventListener('click', handleToggleClick);
+    overlay.removeEventListener('click', handleOverlayClick);
+    drawer.removeEventListener('click', handleDrawerClick);
+    document.removeEventListener('keydown', handleKeyDown);
+    window.removeEventListener('resize', evaluateLayout);
+    window.removeEventListener('load', evaluateLayout);
+    if (resizeObserver) {
+      resizeObserver.disconnect();
+    }
+    if (fontsListener && document && document.fonts && typeof document.fonts.removeEventListener === 'function') {
+      document.fonts.removeEventListener('loadingdone', fontsListener);
+      fontsListener = null;
+    }
+    header.classList.remove('is-condensed', 'is-measuring');
+    closeDrawer({ restoreFocus: false });
+  };
+}
+
 async function loadHeader() {
   try {
     const response = await fetch(HEADER_URL, { cache: 'no-store' });
@@ -133,9 +333,14 @@ async function loadHeader() {
     }
     const existing = body.querySelector('.hm-navbar');
     if (existing) {
+      if (typeof window.__hmNavCleanup === 'function') {
+        window.__hmNavCleanup();
+        window.__hmNavCleanup = null;
+      }
       existing.remove();
     }
     body.insertBefore(header, body.firstChild);
+    setupMobileNavigation(header);
 
     window.dispatchEvent(
       new CustomEvent('hm:header-ready', {
