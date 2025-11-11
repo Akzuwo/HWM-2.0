@@ -178,12 +178,14 @@ button {
 
 .hm-navbar.is-condensed .hm-navbar__toggle {
     display: inline-flex;
+    margin-left: auto;
 }
 
 .hm-navbar.is-condensed .hm-navbar__inner {
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: center;
     gap: clamp(0.5rem, 2vw, 1rem);
+    width: 100%;
 }
 
 .hm-navbar.is-condensed .logo {
