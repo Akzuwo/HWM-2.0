@@ -72,6 +72,7 @@ button {
     --accent: #007bff;
     --header-radius: 8px;
     --header-gap: clamp(0.75rem, 2vw, 1.1rem);
+    --navbar-max-width: min(1400px, 100%);
 }
 
 .hm-navbar {
@@ -87,7 +88,7 @@ button {
 }
 
 .hm-navbar__inner {
-    width: min(1200px, 100%);
+    width: var(--navbar-max-width, min(1400px, 100%));
     max-width: 100%;
     margin: 0;
     display: flex;
@@ -309,6 +310,7 @@ button {
 .logo {
     display: inline-flex;
     align-items: center;
+    align-self: stretch;
     gap: 0.6rem;
     flex: 0 0 auto;
 }
@@ -415,6 +417,10 @@ button {
     align-items: center;
 }
 
+.language-switcher:not(.is-open) .language-menu {
+    display: none;
+}
+
 .lang-switch {
     display: inline-flex;
     align-items: center;
@@ -473,6 +479,7 @@ button {
 }
 
 .language-switcher.is-open .language-menu {
+    display: flex;
     opacity: 1;
     visibility: visible;
     transform: translateY(0);
