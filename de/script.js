@@ -1968,6 +1968,7 @@ function closeEntryModal() {
     }
     const form = document.getElementById('entry-form');
     if (form) {
+        form._hmEntryDefaults = null;
         form.reset();
         form.dataset.allowEmptySubject = 'true';
         const controller = setupModalFormInteractions(form);
@@ -2566,39 +2567,49 @@ function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES)
     }
 
     form.addEventListener('reset', () => {
+        const defaults = form._hmEntryDefaults || null;
         window.setTimeout(() => {
-            if (dateInput) {
-                dateInput.value = '';
-                dateInput.setCustomValidity('');
+            const getDefault = (key, fallback = '') =>
+                defaults && Object.prototype.hasOwnProperty.call(defaults, key) ? defaults[key] : fallback;
+
+            if (typeSelect) {
+                typeSelect.value = getDefault('type', 'event');
             }
-        if (endDateInput) {
-            endDateInput.value = '';
-            endDateInput.disabled = form.querySelector('[data-field="type"] select')?.value !== 'ferien';
-            endDateInput.required = form.querySelector('[data-field="type"] select')?.value === 'ferien';
-            endDateInput.setCustomValidity('');
-        }
+
+            if (dateInput) {
+                const value = getDefault('date', '');
+                dateInput.value = value;
+                dateInput.setCustomValidity('');
+                dateInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+            if (endDateInput) {
+                endDateInput.value = getDefault('endDate', '');
+                endDateInput.disabled = (typeSelect?.value || 'event') !== 'ferien';
+                endDateInput.required = (typeSelect?.value || 'event') === 'ferien';
+                endDateInput.setCustomValidity('');
+            }
             if (startInput) {
-                startInput.value = '';
+                startInput.value = getDefault('start', '');
                 startInput.disabled = false;
                 startInput.setCustomValidity('');
             }
             if (endInput) {
-                endInput.value = '';
-                endInput.disabled = true;
+                const endValue = getDefault('end', '');
+                endInput.value = endValue;
+                endInput.disabled = !endValue;
                 endInput.setCustomValidity('');
             }
             if (eventTitleInput) {
-                eventTitleInput.value = '';
+                eventTitleInput.value = getDefault('eventTitle', '');
                 eventTitleInput.setCustomValidity('');
             }
             if (subjectSelect) {
-                subjectSelect.value = '';
+                subjectSelect.value = getDefault('subject', '');
                 subjectSelect.setCustomValidity('');
             }
-            if (typeSelect) {
-                typeSelect.value = 'event';
-            }
+
             toggleTypeFields();
+            evaluate();
         }, 0);
     });
 
@@ -2627,7 +2638,7 @@ function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES)
     return controller;
 }
 
-async function showEntryForm() {
+async function showEntryForm(defaults = null) {
     if (!canManageEntries()) {
         showOverlay(CREATE_DISABLED_MESSAGE, 'error');
         return;
@@ -2639,12 +2650,17 @@ async function showEntryForm() {
         return;
     }
 
+    form._hmEntryDefaults = defaults ? { ...defaults } : null;
     form.reset();
     form.dataset.allowEmptySubject = 'true';
     const controller = setupModalFormInteractions(form);
     if (controller) {
-        controller.setType('event');
-        controller.evaluate();
+        if (!form._hmEntryDefaults || !Object.prototype.hasOwnProperty.call(form._hmEntryDefaults, 'type')) {
+            controller.setType('event');
+        } else {
+            controller.toggleTypeFields();
+            controller.evaluate();
+        }
     }
 
     if (window.hmEntryClassPicker && typeof window.hmEntryClassPicker.prepare === 'function') {
