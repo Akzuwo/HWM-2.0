@@ -2644,9 +2644,9 @@ async function showEntryForm(defaults = null) {
     }
 
     form._hmEntryDefaults = defaults ? { ...defaults } : null;
-    form.reset();
     form.dataset.allowEmptySubject = 'true';
     const controller = setupModalFormInteractions(form);
+    form.reset();
     if (controller) {
         if (!form._hmEntryDefaults || !Object.prototype.hasOwnProperty.call(form._hmEntryDefaults, 'type')) {
             controller.setType('event');
