@@ -1304,12 +1304,14 @@ function initialiseCalendar(events) {
         { once: true }
       );
     },
-    dateClick: (info) => {
-      showEntryForm();
-      const dateInput = document.getElementById('datum');
+    dateClick: async (info) => {
+      await showEntryForm({ date: info.dateStr });
+      const form = document.getElementById('entry-form');
+      const dateInput = form?.querySelector('[data-field="date"] input');
       if (dateInput) {
-        dateInput.value = info.dateStr;
+        dateInput.dispatchEvent(new Event('input', { bubbles: true }));
       }
+      form?._modalController?.evaluate?.();
     },
     eventClick: (info) => {
       info.jsEvent.preventDefault();
