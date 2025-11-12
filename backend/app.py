@@ -388,6 +388,17 @@ VERIFY_RATE_LIMIT = {}
 VERIFY_RATE_LIMIT_WINDOW = int(os.getenv('VERIFY_RATE_LIMIT_WINDOW', 3600))
 VERIFY_RATE_LIMIT_MAX = int(os.getenv('VERIFY_RATE_LIMIT_MAX', 5))
 
+PASSWORD_RESET_REQUEST_LIMIT = {}
+PASSWORD_RESET_REQUEST_WINDOW = int(os.getenv('PASSWORD_RESET_REQUEST_WINDOW', 3600))
+PASSWORD_RESET_REQUEST_MAX = int(os.getenv('PASSWORD_RESET_REQUEST_MAX', 5))
+PASSWORD_RESET_VERIFY_LIMIT = {}
+PASSWORD_RESET_VERIFY_WINDOW = int(os.getenv('PASSWORD_RESET_VERIFY_WINDOW', 3600))
+PASSWORD_RESET_VERIFY_MAX = int(os.getenv('PASSWORD_RESET_VERIFY_MAX', 10))
+PASSWORD_RESET_CODE_LENGTH = int(os.getenv('PASSWORD_RESET_CODE_LENGTH', 8))
+PASSWORD_RESET_CODE_LIFETIME_SECONDS = int(os.getenv('PASSWORD_RESET_CODE_LIFETIME_SECONDS', 15 * 60))
+PASSWORD_RESET_FROM_ADDRESS = os.getenv('PASSWORD_RESET_FROM_ADDRESS', CONTACT_FROM_ADDRESS or CONTACT_SMTP_USER or CONTACT_RECIPIENT)
+PASSWORD_RESET_SUBJECT = os.getenv('PASSWORD_RESET_SUBJECT', 'Passwort zurücksetzen')
+
 EMAIL_VERIFICATION_CODE_LIFETIME_SECONDS = int(os.getenv('EMAIL_VERIFICATION_CODE_LIFETIME_SECONDS', 8 * 60))
 EMAIL_VERIFICATION_FROM_ADDRESS = os.getenv('EMAIL_VERIFICATION_FROM_ADDRESS', CONTACT_FROM_ADDRESS or CONTACT_SMTP_USER or CONTACT_RECIPIENT)
 EMAIL_VERIFICATION_SUBJECT = os.getenv('EMAIL_VERIFICATION_SUBJECT', 'Bitte E-Mail-Adresse bestätigen')
@@ -729,6 +740,48 @@ def _send_verification_email(email_address: str, code: str, expires_at: datetime
     )
 
 
+def _send_password_reset_email(email_address: str, code: str, expires_at: datetime.datetime) -> None:
+    if not email_address:
+        raise ValueError('email_address is required')
+
+    expiration_text = expires_at.strftime('%d.%m.%Y %H:%M UTC')
+    body = (
+        "Hallo,\n\n"
+        "du hast eine Zurücksetzung deines Passworts für den Homework Manager angefordert."
+        " Verwende den folgenden Code, um ein neues Passwort zu setzen:\n"
+        f"{code}\n\n"
+        f"Der Code ist bis {expiration_text} gültig.\n\n"
+        "Falls du diese Anfrage nicht gestellt hast, ignoriere diese E-Mail.\n"
+    )
+
+    html_body = (
+        '<html><body>'
+        '<p>Hallo,</p>'
+        '<p>du hast eine Zurücksetzung deines Passworts für den Homework Manager angefordert. '
+        'Verwende den folgenden Code, um ein neues Passwort zu setzen:</p>'
+        f'<p><strong>{html.escape(code)}</strong></p>'
+        f'<p>Der Code ist bis {html.escape(expiration_text)} gültig.</p>'
+        '<p>Falls du diese Anfrage nicht gestellt hast, ignoriere diese E-Mail.</p>'
+        '</body></html>'
+    )
+
+    contact_settings = _get_runtime_contact_settings()
+    sender = (
+        PASSWORD_RESET_FROM_ADDRESS
+        or contact_settings["from_address"]
+        or contact_settings["user"]
+        or contact_settings["recipient"]
+    )
+
+    _deliver_email(
+        email_address,
+        PASSWORD_RESET_SUBJECT,
+        body,
+        sender=sender,
+        html_body=html_body,
+    )
+
+
 @app.route('/api/admin/logs', methods=['GET', 'OPTIONS'])
 @require_role('admin')
 def admin_logs() -> Response:
@@ -999,6 +1052,62 @@ def _create_email_verification(conn, user: Dict[str, object]) -> Tuple[str, date
     return code, expires_at
 
 
+def _create_password_reset(conn, user: Dict[str, object]) -> Tuple[str, datetime.datetime]:
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "DELETE FROM password_resets WHERE user_id=%s",
+            (int(user['id']),),
+        )
+        code = generate_numeric_code(PASSWORD_RESET_CODE_LENGTH)
+        expires_at = calculate_token_expiry(PASSWORD_RESET_CODE_LIFETIME_SECONDS)
+        cursor.execute(
+            """
+            INSERT INTO password_resets (user_id, email, code, expires_at, used_at)
+            VALUES (%s, %s, %s, %s, NULL)
+            """,
+            (int(user['id']), user['email'], code, expires_at),
+        )
+        conn.commit()
+    except mysql.connector.Error:
+        conn.rollback()
+        raise
+    finally:
+        cursor.close()
+
+    try:
+        _send_password_reset_email(user['email'], code, expires_at)
+    except Exception as exc:
+        raise RuntimeError('password_reset_email_failed') from exc
+
+    _log_user_event(
+        'password_reset_requested',
+        user_id=int(user['id']),
+        email=user.get('email'),
+        expires_at=expires_at.isoformat() if hasattr(expires_at, 'isoformat') else expires_at,
+    )
+
+    return code, expires_at
+
+
+def _load_password_reset(conn, user_id: int, code: str) -> Optional[Dict[str, object]]:
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute(
+            """
+            SELECT id, user_id, email, code, expires_at, used_at
+            FROM password_resets
+            WHERE user_id=%s AND code=%s
+            ORDER BY created_at DESC
+            LIMIT 1
+            """,
+            (user_id, code),
+        )
+        return cursor.fetchone()
+    finally:
+        cursor.close()
+
+
 def _validate_columns(table_name, columns, requirements):
     missing = [col for col in requirements if col not in columns]
     if missing:
@@ -1111,9 +1220,44 @@ def ensure_email_verifications_table():
         conn.close()
 
 
+def ensure_password_resets_table():
+    try:
+        conn = get_connection()
+    except Exception:
+        return
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS password_resets (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                email VARCHAR(255) NOT NULL,
+                code VARCHAR(16) NOT NULL,
+                expires_at DATETIME NOT NULL,
+                used_at DATETIME NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_password_resets_user (user_id),
+                INDEX idx_password_resets_email (email),
+                INDEX idx_password_resets_code (code),
+                CONSTRAINT fk_password_resets_user FOREIGN KEY (user_id)
+                    REFERENCES users(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            """
+        )
+        conn.commit()
+    except mysql.connector.Error:
+        conn.rollback()
+        raise
+    finally:
+        cur.close()
+        conn.close()
+
+
 ensure_stundenplan_table()
 ensure_entries_table()
 ensure_email_verifications_table()
+ensure_password_resets_table()
 
 # ---- Klassen- und Stundenplanhilfen ----
 
@@ -1818,7 +1962,197 @@ def auth_resend():
 
 @app.route('/api/auth/password-reset', methods=['POST'])
 def auth_password_reset():
-    return jsonify(status='error', message='not_implemented'), 501
+    data = request.json or {}
+    action = (data.get('action') or 'request').strip().lower() or 'request'
+
+    if action in {'request', 'create'}:
+        email = (data.get('email') or '').strip().lower()
+        if not email:
+            return jsonify(status='error', message='email_required'), 400
+
+        ip_address = _get_request_ip()
+        if not _check_rate_limit(
+            PASSWORD_RESET_REQUEST_LIMIT,
+            ip_address,
+            PASSWORD_RESET_REQUEST_WINDOW,
+            PASSWORD_RESET_REQUEST_MAX,
+        ):
+            return jsonify(status='error', message='rate_limited'), 429
+
+        try:
+            conn = get_connection()
+        except Exception:
+            return jsonify(status='error', message='database_unavailable'), 503
+
+        with closing(conn):
+            try:
+                user = _load_user_by_email(conn, email)
+            except mysql.connector.Error:
+                app.logger.exception('Failed to load user for password reset request')
+                return jsonify(status='error', message='database_unavailable'), 503
+
+            if not user:
+                return jsonify(status='ok')
+
+            try:
+                user_id = int(user['id'])
+            except (KeyError, TypeError, ValueError):
+                return jsonify(status='ok')
+
+            if not _check_rate_limit(
+                PASSWORD_RESET_REQUEST_LIMIT,
+                f'user:{user_id}',
+                PASSWORD_RESET_REQUEST_WINDOW,
+                PASSWORD_RESET_REQUEST_MAX,
+            ):
+                return jsonify(status='error', message='rate_limited'), 429
+
+            try:
+                _create_password_reset(conn, user)
+            except mysql.connector.Error:
+                app.logger.exception('Failed to persist password reset for user %s', user)
+                return jsonify(status='error', message='reset_failed'), 500
+            except RuntimeError:
+                return jsonify(status='error', message='mail_failed'), 502
+
+        return jsonify(status='ok')
+
+    if action in {'confirm', 'reset'}:
+        email = (data.get('email') or '').strip().lower()
+        code = (data.get('code') or '').strip()
+        password = (data.get('password') or '').strip()
+
+        if not email:
+            return jsonify(status='error', message='email_required'), 400
+        if not code:
+            return jsonify(status='error', message='code_required'), 400
+        if not password:
+            return jsonify(status='error', message='password_required'), 400
+        if len(password) < 8:
+            return jsonify(status='error', message='weak_password'), 400
+
+        ip_address = _get_request_ip()
+        if not _check_rate_limit(
+            PASSWORD_RESET_VERIFY_LIMIT,
+            ip_address,
+            PASSWORD_RESET_VERIFY_WINDOW,
+            PASSWORD_RESET_VERIFY_MAX,
+        ):
+            return jsonify(status='error', message='rate_limited'), 429
+
+        try:
+            conn = get_connection()
+        except Exception:
+            return jsonify(status='error', message='database_unavailable'), 503
+
+        reset_user_id: Optional[int] = None
+        current_time = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+
+        with closing(conn):
+            try:
+                user = _load_user_by_email(conn, email)
+            except mysql.connector.Error:
+                app.logger.exception('Failed to load user for password reset confirmation')
+                return jsonify(status='error', message='database_unavailable'), 503
+
+            if not user:
+                return jsonify(status='error', message='reset_not_found'), 404
+
+            try:
+                reset_user_id = int(user['id'])
+            except (KeyError, TypeError, ValueError):
+                return jsonify(status='error', message='reset_failed'), 500
+
+            if not _check_rate_limit(
+                PASSWORD_RESET_VERIFY_LIMIT,
+                f'user:{reset_user_id}',
+                PASSWORD_RESET_VERIFY_WINDOW,
+                PASSWORD_RESET_VERIFY_MAX,
+            ):
+                return jsonify(status='error', message='rate_limited'), 429
+
+            try:
+                reset_entry = _load_password_reset(conn, reset_user_id, code)
+            except mysql.connector.Error:
+                app.logger.exception('Failed to load password reset entry for user %s', user)
+                return jsonify(status='error', message='reset_failed'), 500
+
+            if not reset_entry:
+                return jsonify(status='error', message='invalid_code'), 400
+
+            try:
+                reset_id = int(reset_entry['id'])
+            except (KeyError, TypeError, ValueError):
+                return jsonify(status='error', message='reset_failed'), 500
+
+            expires_at = reset_entry.get('expires_at')
+            used_at = reset_entry.get('used_at')
+
+            if isinstance(expires_at, datetime.datetime) and expires_at.tzinfo is not None:
+                expires_at = expires_at.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+            if isinstance(used_at, datetime.datetime) and used_at.tzinfo is not None:
+                used_at = used_at.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+
+            if used_at:
+                return jsonify(status='error', message='code_used'), 409
+
+            if expires_at and expires_at < current_time:
+                cleanup_cursor = conn.cursor()
+                try:
+                    cleanup_cursor.execute(
+                        "DELETE FROM password_resets WHERE id=%s",
+                        (reset_id,),
+                    )
+                    conn.commit()
+                except mysql.connector.Error:
+                    conn.rollback()
+                    cleanup_cursor.close()
+                    return jsonify(status='error', message='reset_failed'), 500
+                finally:
+                    cleanup_cursor.close()
+                return jsonify(status='error', message='code_expired'), 410
+
+            try:
+                password_hash_value = hash_password(password)
+            except ValueError:
+                return jsonify(status='error', message='weak_password'), 400
+
+            update_cursor = conn.cursor()
+            try:
+                update_cursor.execute(
+                    "UPDATE users SET password_hash=%s, updated_at=%s WHERE id=%s",
+                    (password_hash_value, current_time, reset_user_id),
+                )
+                update_cursor.execute(
+                    "UPDATE password_resets SET used_at=%s WHERE id=%s",
+                    (current_time, reset_id),
+                )
+                update_cursor.execute(
+                    "DELETE FROM password_resets WHERE user_id=%s AND id<>%s",
+                    (reset_user_id, reset_id),
+                )
+                conn.commit()
+            except mysql.connector.Error:
+                conn.rollback()
+                update_cursor.close()
+                return jsonify(status='error', message='reset_failed'), 500
+            finally:
+                update_cursor.close()
+
+            _log_user_event(
+                'password_reset_completed',
+                user_id=reset_user_id,
+                email=user.get('email'),
+            )
+
+        PASSWORD_RESET_VERIFY_LIMIT.pop(ip_address, None)
+        if reset_user_id is not None:
+            PASSWORD_RESET_VERIFY_LIMIT.pop(f'user:{reset_user_id}', None)
+            PASSWORD_RESET_REQUEST_LIMIT.pop(f'user:{reset_user_id}', None)
+
+        return jsonify(status='ok')
+
+    return jsonify(status='error', message='invalid_action'), 400
 
 
 @app.route('/api/admin/resend-verification', methods=['POST'])

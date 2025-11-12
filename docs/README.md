@@ -57,6 +57,11 @@ export LOGIN_RATE_LIMIT_WINDOW=300
 export LOGIN_RATE_LIMIT_MAX=10
 export VERIFY_RATE_LIMIT_WINDOW=3600
 export VERIFY_RATE_LIMIT_MAX=5
+export PASSWORD_RESET_REQUEST_WINDOW=3600
+export PASSWORD_RESET_REQUEST_MAX=5
+export PASSWORD_RESET_VERIFY_WINDOW=3600
+export PASSWORD_RESET_VERIFY_MAX=10
+export PASSWORD_RESET_CODE_LIFETIME_SECONDS=900
 ```
 
 Zusätzlich muss der Sitzungs-Secret-Schlüssel als Datei bereitstehen:
@@ -133,6 +138,13 @@ Neue Umgebungsvariablen steuern die Ratenbegrenzung der Login- und Verifikations
 | `LOGIN_RATE_LIMIT_MAX` | `10` Versuche | Maximal erlaubte Versuche pro IP im Fenster. |
 | `VERIFY_RATE_LIMIT_WINDOW` | `3600` Sekunden | Zeitraum für `/api/auth/verify` Anfragen. |
 | `VERIFY_RATE_LIMIT_MAX` | `5` Versuche | Maximal erlaubte Verifikationsversuche pro IP im Fenster. |
+| `PASSWORD_RESET_REQUEST_WINDOW` | `3600` Sekunden | Zeitraum, in dem Anfragen zur Code-Erstellung pro Identität gezählt werden. |
+| `PASSWORD_RESET_REQUEST_MAX` | `5` Versuche | Maximale Anzahl an Code-Anforderungen pro IP/E-Mail im Fenster. |
+| `PASSWORD_RESET_VERIFY_WINDOW` | `3600` Sekunden | Zeitraum für Code-Einlösungen beim Passwort-Reset. |
+| `PASSWORD_RESET_VERIFY_MAX` | `10` Versuche | Maximale Anzahl Code-Prüfungen pro IP/E-Mail im Fenster. |
+| `PASSWORD_RESET_CODE_LIFETIME_SECONDS` | `900` Sekunden | Gültigkeitsdauer eines generierten Reset-Codes. |
+| `PASSWORD_RESET_CODE_LENGTH` | `8` Ziffern | Länge des generierten Reset-Codes. |
+| `PASSWORD_RESET_SUBJECT` | `Passwort zurücksetzen` | Betreffzeile der Reset-E-Mail. |
 
 Die Standard-URL für E-Mail-Verifikationen orientiert sich jetzt am Beta-System. Über die Variable `PRIMARY_TEST_BASE_URL` (Standard: `https://hwm-beta.akzuwo.ch`) lässt sich die Basis anpassen; sie definiert zugleich `EMAIL_VERIFICATION_LINK_BASE`, sofern letzteres nicht explizit gesetzt wird.
 

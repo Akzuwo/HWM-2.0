@@ -46,6 +46,7 @@ class FakeCursor:
         schedules: Dict[int, Dict[str, object]] = self.storage.setdefault('class_schedules', {})
         schedule_entries: List[Dict[str, object]] = self.storage.setdefault('stundenplan_entries', [])
         entries: List[Dict[str, object]] = self.storage.setdefault('eintraege', [])
+        password_resets: List[Dict[str, object]] = self.storage.setdefault('password_resets', [])
 
         if normalized.startswith("select count(*) as total from users"):
             self._prepare_rows([
@@ -554,6 +555,103 @@ class FakeCursor:
             self.rowcount = 1
             return
 
+        if normalized.startswith("insert into password_resets"):
+            if len(params) == 4:
+                user_id, email, code, expires_at = params
+                used_at = None
+            else:
+                user_id, email, code, expires_at, used_at = params
+            resets = self.storage.setdefault('password_resets', [])
+            next_ids = self.storage.setdefault('next_ids', {})
+            reset_id = next_ids.setdefault('password_resets', 1)
+            next_ids['password_resets'] = reset_id + 1
+            record = {
+                'id': reset_id,
+                'user_id': user_id,
+                'email': email,
+                'code': code,
+                'expires_at': expires_at,
+                'used_at': used_at,
+                'created_at': datetime.datetime.utcnow(),
+            }
+            resets.append(record)
+            self.lastrowid = reset_id
+            self.rowcount = 1
+            return
+
+        if normalized.startswith("delete from password_resets where user_id=%s and id<>%s"):
+            user_id, keep_id = params
+            resets = self.storage.setdefault('password_resets', [])
+            remaining = [entry for entry in resets if not (entry['user_id'] == user_id and entry['id'] != keep_id)]
+            removed = len(resets) - len(remaining)
+            self.storage['password_resets'] = remaining
+            self.rowcount = removed
+            return
+
+        if normalized.startswith("delete from password_resets where user_id=%s"):
+            user_id = params[0]
+            resets = self.storage.setdefault('password_resets', [])
+            remaining = [entry for entry in resets if entry['user_id'] != user_id]
+            removed = len(resets) - len(remaining)
+            self.storage['password_resets'] = remaining
+            self.rowcount = removed
+            return
+
+        if normalized.startswith("delete from password_resets where id=%s"):
+            reset_id = params[0]
+            resets = self.storage.setdefault('password_resets', [])
+            remaining = [entry for entry in resets if entry['id'] != reset_id]
+            removed = len(resets) - len(remaining)
+            self.storage['password_resets'] = remaining
+            self.rowcount = removed
+            return
+
+        if normalized.startswith("update password_resets set used_at"):
+            used_at, reset_id = params
+            resets = self.storage.setdefault('password_resets', [])
+            for entry in resets:
+                if entry['id'] == reset_id:
+                    entry['used_at'] = used_at
+                    break
+            self.rowcount = 1
+            return
+
+        if normalized.startswith("select id, user_id, email, code, expires_at, used_at from password_resets"):
+            resets = self.storage.setdefault('password_resets', [])
+            filtered = []
+            if "where user_id=%s and code=%s" in normalized:
+                user_id, code = params
+                filtered = [
+                    entry
+                    for entry in resets
+                    if entry['user_id'] == user_id and str(entry['code']) == str(code)
+                ]
+            elif "where user_id=%s" in normalized:
+                user_id = params[0]
+                filtered = [entry for entry in resets if entry['user_id'] == user_id]
+            elif "where code=%s" in normalized:
+                code = params[0]
+                filtered = [entry for entry in resets if str(entry['code']) == str(code)]
+            if filtered:
+                filtered.sort(key=lambda item: item.get('created_at') or datetime.datetime.min, reverse=True)
+                record = filtered[0]
+                self._prepare_rows(
+                    [
+                        {
+                            'id': record['id'],
+                            'user_id': record['user_id'],
+                            'email': record.get('email'),
+                            'code': record.get('code'),
+                            'expires_at': record.get('expires_at'),
+                            'used_at': record.get('used_at'),
+                        }
+                    ],
+                    ['id', 'user_id', 'email', 'code', 'expires_at', 'used_at'],
+                )
+            else:
+                self._rows = []
+            return
+
         if normalized.startswith("select id from users where id=%s"):
             user_id = params[0]
             if user_id in users:
@@ -990,6 +1088,7 @@ def app_client(monkeypatch):
         'eintraege': [],
         'audit_logs': [],
         'verifications': [],
+        'password_resets': [],
         'next_ids': {
             'users': 2,
             'classes': 2,
@@ -997,6 +1096,7 @@ def app_client(monkeypatch):
             'audit_logs': 1,
             'stundenplan_entries': 1,
             'eintraege': 1,
+            'password_resets': 1,
         },
     }
 
@@ -1019,6 +1119,12 @@ def app_client(monkeypatch):
     monkeypatch.setattr(app_module, 'LOGIN_RATE_LIMIT_MAX', 100)
     monkeypatch.setattr(app_module, 'VERIFY_RATE_LIMIT_WINDOW', 1)
     monkeypatch.setattr(app_module, 'VERIFY_RATE_LIMIT_MAX', 100)
+    monkeypatch.setattr(app_module, 'PASSWORD_RESET_REQUEST_LIMIT', {})
+    monkeypatch.setattr(app_module, 'PASSWORD_RESET_VERIFY_LIMIT', {})
+    monkeypatch.setattr(app_module, 'PASSWORD_RESET_REQUEST_WINDOW', 1)
+    monkeypatch.setattr(app_module, 'PASSWORD_RESET_REQUEST_MAX', 100)
+    monkeypatch.setattr(app_module, 'PASSWORD_RESET_VERIFY_WINDOW', 1)
+    monkeypatch.setattr(app_module, 'PASSWORD_RESET_VERIFY_MAX', 100)
 
     def fake_get_connection():
         return FakeConnection(storage)
