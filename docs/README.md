@@ -9,7 +9,7 @@ Homework Manager 2.0 bündelt Stundenpläne, Hausaufgabenverwaltung, Mitteilunge
 * **Überarbeiteter Stundenplan-Importer:** `backend/scripts/import_schedule.py` validiert JSON-Eingaben, erzeugt einen Import-Hash und ersetzt bestehende Einträge inklusive Metadaten. Damit lassen sich mehrere Klassen nacheinander synchronisieren, ohne manuelle Bereinigungsschritte.
 * **Feingranulares Rate-Limiting:** Login- und Verifikations-Endpunkte werden durch konfigurierbare Ratenbegrenzung geschützt. Die zugehörigen Umgebungsvariablen (`LOGIN_RATE_LIMIT_*`, `VERIFY_RATE_LIMIT_*`) ermöglichen eine Anpassung je Deployment.
 * **Direkter Support-Kanal:** Rückmeldungen laufen gebündelt über support@akzuwo.ch; das frühere Kontaktformular wurde entfernt.
-* **Account System:** Jeder Benutze hat seinen eigenen Account. Jeder Account ist einer Klasse zugeteilt und hat eine Rolle die ihm entsprechende Rechte geben.
+* **Account System:** Jeder Benutzer hat seinen eigenen Account. Jeder Account ist einer Klasse zugeteilt und hat eine Rolle die ihm entsprechende Rechte geben.
 * **Beta- und Produktions-Workflows:** Die Basis-URL für Verifizierungslinks orientiert sich am Beta-System (`PRIMARY_TEST_BASE_URL`). Fallback-Konfigurationen sind nicht mehr notwendig, Tests erfolgen direkt gegen die Beta-Instanz.
 * **Erweiterte Protokollierung:** Rotierende Logfiles (`/tmp/hwm-backend.log` per Default) erleichtern das Debugging und liefern Kontext für Supportanfragen, ohne dass der Dienst neu gestartet werden muss.
 
