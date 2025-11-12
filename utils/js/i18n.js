@@ -16,7 +16,7 @@
         },
         footer: {
           copyright: '©️ Timo Wigger 2025',
-          contact: 'Kontakt',
+          contact: 'support@akzuwo.ch',
           imprint: 'Impressum',
           privacy: 'Datenschutz',
           changelog: 'Changelog',
@@ -55,7 +55,7 @@
             imprint: 'Impressum ergänzt die rechtlichen Infos.',
             holidays: 'Ferien und Feiertage erscheinen im Kalender.',
             multiClass: 'Events und Ferien für mehrere Klassen planbar.',
-            contact: 'Neues Kontaktformular für Feedback.',
+            contact: 'Direkter Support per E-Mail an support@akzuwo.ch.',
             dayView: 'Tagesübersicht vereint Aufgaben, Prüfungen und Events.',
           },
           cta: 'Mehr erfahren',
@@ -94,7 +94,7 @@
             imprint: 'Impressum nahtlos in die Plattform eingebettet.',
             holidays: 'Ferien und Feiertage erscheinen jetzt direkt im Kalender.',
             multiClass: 'Events und Ferien lassen sich für mehrere Klassen gleichzeitig planen.',
-            contact: 'Frisches Kontaktformular für schnelle Rückmeldungen.',
+            contact: 'Support-Anfragen erreichen uns ab sofort per E-Mail an support@akzuwo.ch.',
             dayView: 'Neue Tagesübersicht bündelt Aufgaben, Prüfungen und Events in einem fokussierten Feed.',
           },
         },
@@ -266,7 +266,7 @@
         },
         footer: {
           copyright: '©️ Timo Wigger 2025',
-          contact: 'Contact',
+          contact: 'support@akzuwo.ch',
           imprint: 'Legal notice',
           privacy: 'Privacy policy',
           changelog: 'Changelog',
@@ -305,7 +305,7 @@
             imprint: 'Legal notice (imprint) now included.',
             holidays: 'Holidays and vacations live inside the calendar.',
             multiClass: 'Plan events and breaks for multiple classes simultaneously.',
-            contact: 'Contact form streamlines feedback.',
+            contact: 'Direct support now lives at support@akzuwo.ch.',
             dayView: 'Day overview unites assignments, exams, and events.',
           },
           cta: 'Learn more',
@@ -344,7 +344,7 @@
             imprint: 'Legal notice (imprint) now ships with the platform.',
             holidays: 'Holidays and vacations appear directly inside the calendar.',
             multiClass: 'Plan events and breaks for multiple classes at once.',
-            contact: 'Contact form makes feedback effortless.',
+            contact: 'Need help? Reach the team via support@akzuwo.ch.',
             dayView: 'Day overview gathers assignments, exams, and events into one focused stream.',
           },
         },
@@ -515,7 +515,7 @@
         },
         footer: {
           copyright: '©️ Timo Wigger 2025',
-          contact: 'Contatto',
+          contact: 'support@akzuwo.ch',
           imprint: 'Note legali',
           privacy: 'Privacy',
           changelog: 'Changelog',
@@ -554,7 +554,7 @@
             imprint: 'Informazioni legali aggiunte alla piattaforma.',
             holidays: 'Vacanze e festività direttamente nel calendario.',
             multiClass: 'Eventi e vacanze per più classi in un colpo solo.',
-            contact: 'Modulo di contatto per inviare feedback.',
+            contact: 'Supporto diretto via email a support@akzuwo.ch.',
             dayView: 'Panoramica giornaliera con compiti, verifiche ed eventi.',
           },
           cta: 'Scopri di più',
@@ -593,7 +593,7 @@
             imprint: 'Informazioni legali (impressum) aggiunte alla piattaforma.',
             holidays: 'Vacanze e festività ora visibili direttamente nel calendario.',
             multiClass: 'Crea eventi e vacanze per più classi contemporaneamente.',
-            contact: 'Modulo di contatto per inviare feedback rapidamente.',
+            contact: 'Hai bisogno di aiuto? Scrivi a support@akzuwo.ch.',
             dayView:
               'La panoramica giornaliera riunisce compiti, verifiche ed eventi in un unico flusso concentrato.',
           },
@@ -767,7 +767,7 @@
         },
         footer: {
           copyright: '©️ Timo Wigger 2025',
-          contact: 'Contact',
+          contact: 'support@akzuwo.ch',
           imprint: 'Mentions légales',
           privacy: 'Protection des données',
           changelog: 'Journal des modifications',
@@ -806,7 +806,7 @@
             imprint: 'Mentions légales désormais incluses.',
             holidays: 'Vacances et jours fériés directement dans le calendrier.',
             multiClass: 'Planification d’événements et de vacances pour plusieurs classes.',
-            contact: 'Formulaire de contact pour recueillir les retours.',
+            contact: 'Support direct par e-mail via support@akzuwo.ch.',
             dayView: 'Vue quotidienne combinant devoirs, évaluations et événements.',
           },
           cta: 'En savoir plus',
@@ -845,7 +845,7 @@
             imprint: 'Mentions légales désormais incluses dans la plateforme.',
             holidays: 'Vacances et jours fériés visibles directement dans le calendrier.',
             multiClass: 'Création d’événements et de vacances pour plusieurs classes en même temps.',
-            contact: 'Formulaire de contact pour recueillir les retours rapidement.',
+            contact: 'Besoin d’aide ? Écrivez à support@akzuwo.ch.',
             dayView: 'Vue quotidienne regroupant devoirs, examens et événements dans un flux focalisé.',
           },
         },
@@ -1142,7 +1142,7 @@
             currentSubject: 'Die Seite „Aktuelles Fach“ verrät dir, wo deine nächste Lektion stattfindet.',
             calendar:
               'Tippe im Kalender auf einen Tag, um Details zu Terminen zu sehen und Einträge schneller zu finden.',
-            questions: 'Bei offenen Fragen hilft dir das Support-Team über das Kontaktformular weiter.',
+            questions: 'Bei offenen Fragen hilft dir das Support-Team per E-Mail an support@akzuwo.ch weiter.',
           },
         },
         admins: {
@@ -1154,7 +1154,7 @@
             create: 'Lege bei Bedarf selbst Einträge an, indem du im Kalender auf den entsprechenden Tag klickst.',
             privacy: 'Verweise für ausführliche Datenschutzinformationen auf die entsprechende Seite.',
             support:
-              'Nutze bei Rückfragen das Kontaktformular – es dient ausschließlich zur Kontaktaufnahme mit dem Support.',
+              'Nutze bei Rückfragen die Support-Adresse support@akzuwo.ch – sie ist ausschließlich für Support-Anfragen gedacht.',
           },
         },
         callout: {
@@ -1162,7 +1162,7 @@
           schedule:
             'Tagesübersicht und Aktuelles Fach stehen erst zur Verfügung, wenn ein Stundenplan im .json-Format eingereicht wurde.',
           contactForm:
-            'Das Kontaktformular ist nicht für Nachrichten an Schüler:innen gedacht, sondern ausschließlich für den Support.',
+            'Support erreichst du ausschließlich per E-Mail an support@akzuwo.ch.',
           privacy: 'Für weiterführende Informationen zum Datenschutz lies bitte die Datenschutz-Seite.',
           support: 'Wenn Fragen offenbleiben, kontaktiere jederzeit den Support.',
         },
@@ -1193,7 +1193,7 @@
               'The day overview lists homework, exams, and events once your class has submitted its timetable .json.',
             currentSubject: 'The “Current subject” page shows where your next lesson will take place.',
             calendar: 'Tap a day in the calendar to read entry details and find events quickly.',
-            questions: 'If anything is unclear, contact the support team through the contact form.',
+            questions: 'If anything is unclear, email support@akzuwo.ch for help.',
           },
         },
         admins: {
@@ -1205,7 +1205,7 @@
             create: 'Create entries yourself by clicking the appropriate day in the calendar.',
             privacy: 'Point people to the privacy page for detailed information.',
             support:
-              'Use the contact form to reach support when you need help—it is not meant for student emails.',
+              'Need a hand? Email support@akzuwo.ch—this address is dedicated to support requests only.',
           },
         },
         callout: {
@@ -1213,7 +1213,7 @@
           schedule:
             'Day overview and current subject become available only after a timetable has been provided in .json format.',
           contactForm:
-            'The contact form is intended for support requests, not for emailing students.',
+            'Support is handled exclusively via support@akzuwo.ch.',
           privacy: 'For more about privacy, read the dedicated privacy page.',
           support: 'Still curious? Reach out to support.',
         },
@@ -1247,7 +1247,7 @@
             currentSubject: 'La page « Cours actuel » vous indique où se déroule votre prochaine leçon.',
             calendar:
               'Touchez un jour dans le calendrier pour consulter les détails et retrouver rapidement les entrées.',
-            questions: 'En cas de doute, contactez l’équipe support via le formulaire.',
+            questions: 'En cas de doute, écrivez à support@akzuwo.ch.',
           },
         },
         admins: {
@@ -1259,7 +1259,7 @@
             create: 'Créez des entrées en cliquant sur le jour concerné dans le calendrier.',
             privacy: 'Renvoie vers la page de confidentialité pour des informations détaillées.',
             support:
-              'Utilisez le formulaire de contact pour joindre le support ; il n’est pas destiné à écrire aux élèves.',
+              'Besoin d’aide ? Contactez support@akzuwo.ch ; cette adresse est dédiée au support.',
           },
         },
         callout: {
@@ -1267,9 +1267,9 @@
           schedule:
             'La vue du jour et Cours actuel ne sont disponibles qu’après la remise d’un emploi du temps au format .json.',
           contactForm:
-            'Le formulaire de contact est réservé aux demandes de support, pas pour envoyer des messages aux élèves.',
+            'Le support se fait exclusivement via support@akzuwo.ch.',
           privacy: 'Pour en savoir plus sur la protection des données, consultez la page dédiée.',
-          support: 'D’autres questions ? Contactez le support.',
+          support: 'D’autres questions ? Écrivez à support@akzuwo.ch.',
         },
       },
       help: {
@@ -1301,7 +1301,7 @@
             currentSubject: 'La pagina «Materia attuale» ti indica dove si svolgerà la prossima lezione.',
             calendar:
               'Tocca un giorno nel calendario per leggere i dettagli e trovare subito le voci.',
-            questions: 'Se hai dubbi, contatta il supporto tramite il modulo.',
+            questions: 'Se hai dubbi, scrivi a support@akzuwo.ch.',
           },
         },
         admins: {
@@ -1313,7 +1313,7 @@
             create: 'Crea le voci cliccando sul giorno corrispondente nel calendario.',
             privacy: 'Indirizza alla pagina sulla privacy per ulteriori dettagli.',
             support:
-              'Usa il modulo di contatto per rivolgerti al supporto: non serve per scrivere agli studenti.',
+              'Per assistenza scrivi a support@akzuwo.ch: l’indirizzo è riservato alle richieste di supporto.',
           },
         },
         callout: {
@@ -1321,8 +1321,8 @@
           schedule:
             'Panoramica giornaliera e Materia attuale sono disponibili solo dopo aver fornito un orario in formato .json.',
           contactForm:
-            'Il modulo di contatto è pensato per richieste al supporto, non per inviare email agli studenti.',
+            'L’assistenza è disponibile esclusivamente via support@akzuwo.ch.',
           privacy: 'Per maggiori informazioni sulla privacy consulta la pagina dedicata.',
-          support: 'Hai altre domande? Contatta il supporto.',
+          support: 'Hai altre domande? Scrivi a support@akzuwo.ch.',
         },
       },

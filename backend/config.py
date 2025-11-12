@@ -40,7 +40,7 @@ def get_db_config() -> Dict[str, Any]:
 
 
 def get_contact_smtp_settings() -> Dict[str, Any]:
-    """Return SMTP settings for the contact form from environment variables."""
+    """Return SMTP settings for the optional support mailer from environment variables."""
 
     host = _require_env("CONTACT_SMTP_HOST")
     user = _optional_env("CONTACT_SMTP_USER")
