@@ -98,6 +98,18 @@ pytest backend/tests
 
 Das Test-Setup mockt notwendige Secrets (z. B. `hwm-session-secret`) und stellt Dummy-Datenbanken bereit, sodass keine externe Infrastruktur benötigt wird.
 
+### Manuelle QA (Passwort-Reset-Flow)
+
+1. Öffne eine beliebige Sprachversion (`de/login.html`, `en/login.html`, `fr/login.html`, `it/login.html`) und starte den Login-Overlay.
+2. Gib eine gültige oder dummy E-Mail-Adresse ein und klicke auf **„Password vergessen?“** / entsprechende Übersetzung. Prüfe, dass eine Erfolgsmeldung erscheint und der Overlay in den neuen Reset-Modus mit Code- und Passwortfeldern wechselt.
+3. Teste den **„Reset-Code anfordern“**-Link innerhalb des Reset-Modus erneut; der Status sollte aktualisiert werden, ohne den Modus zu verlassen.
+4. Validiere die Eingaben:
+   * Leere Code-Eingabe → entsprechende Fehlermeldung.
+   * Passwort kürzer als 8 Zeichen → Fehlermeldung zur Mindestlänge.
+   * Abweichende Bestätigung → Fehlermeldung zur Übereinstimmung.
+5. Gib einen Beispielcode (z. B. `123456`) und zwei identische Passwörter ein und bestätige. Da das Backend eventuell keinen echten Code akzeptiert, erwarte eine Fehlermeldung „Code ungültig“; bei echter Umgebung sollte eine Erfolgsmeldung erscheinen und der Overlay zurück in den Login-Modus wechseln.
+6. Überprüfe, dass nach einer erfolgreichen oder simulierten Bestätigung die Login-Eingaben wieder sichtbar sind und die E-Mail erhalten bleibt, sodass ein erneuter Login möglich ist.
+
 ## Stundenplan-Import
 
 Der CLI-Befehl [`backend/scripts/import_schedule.py`](../backend/scripts/import_schedule.py) importiert `stundenplan-<klasse>.json`-Dateien in die Tabelle `stundenplan_entries` der neuen Datenstruktur.

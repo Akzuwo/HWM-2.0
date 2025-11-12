@@ -30,7 +30,27 @@ const LOGIN_TEXT = {
     cooldownWarning: 'Attendi un momento prima di riprovare.',
     forgotPassword: 'Password dimenticata?',
     forgotPasswordMissingEmail: 'Inserisci prima il tuo indirizzo e-mail.',
-    passwordResetSent: 'Se esiste un account, abbiamo inviato un link di reset.',
+    passwordResetTitle: '🔁 Reimposta password',
+    passwordResetSubtitle: 'Inserisci il codice ricevuto via e-mail e scegli una nuova password.',
+    passwordResetCodeLabel: 'Codice di reimpostazione',
+    passwordResetCodePlaceholder: 'Codice a 6 cifre',
+    passwordResetCodeHint: 'Il codice è valido per 10 minuti. Controlla anche la cartella spam.',
+    passwordResetRequest: 'Richiedi codice',
+    passwordResetRequestLoading: 'Invio in corso…',
+    passwordResetRequestSuccess: 'Se esiste un account, ti abbiamo appena inviato un codice di reimpostazione.',
+    passwordResetRequestError: 'Al momento non è possibile richiedere un codice. Riprova più tardi.',
+    passwordResetNewPasswordLabel: 'Nuova password',
+    passwordResetNewPasswordPlaceholder: 'Nuova password',
+    passwordResetConfirmLabel: 'Conferma nuova password',
+    passwordResetSubmit: 'Cambia password',
+    passwordResetSubmitLoading: 'Aggiornamento…',
+    passwordResetCancel: 'Torna al login',
+    passwordResetCodeRequired: 'Inserisci il codice di reimpostazione.',
+    passwordResetPasswordRequired: 'Inserisci una nuova password.',
+    passwordResetPasswordWeak: 'La nuova password deve contenere almeno 8 caratteri.',
+    passwordResetPasswordMismatch: 'Le password non coincidono.',
+    passwordResetInvalidCode: 'Il codice non è valido o è scaduto.',
+    passwordResetSuccess: 'La tua password è stata aggiornata. Ora puoi accedere.',
     passwordResetError: 'Impossibile completare il reset. Riprova più tardi.',
     submit: 'Accedi',
     submitLoading: 'Accesso…',
@@ -81,7 +101,8 @@ const AUTH_API = {
     logout: `${API_BASE}/api/auth/logout`,
     resend: `${API_BASE}/api/auth/resend`,
     verify: `${API_BASE}/api/auth/verify`,
-    passwordReset: `${API_BASE}/api/auth/password-reset`
+    passwordReset: `${API_BASE}/api/auth/password-reset`,
+    passwordResetConfirm: `${API_BASE}/api/auth/password-reset/confirm`
 };
 
 const AUTH_PATHS = {
@@ -518,11 +539,27 @@ function getClassInput(form) {
     return form ? form.querySelector('[data-auth-class]') : null;
 }
 
+function getPasswordResetCodeInput(form) {
+    return form ? form.querySelector('[data-auth-reset-code]') : null;
+}
+
+function getPasswordResetInput(form) {
+    return form ? form.querySelector('[data-auth-reset-password]') : null;
+}
+
+function getPasswordResetConfirmInput(form) {
+    return form ? form.querySelector('[data-auth-reset-password-confirm]') : null;
+}
+
 function getAuthMode(form) {
     if (!form) {
         return 'login';
     }
-    return form.dataset.authMode === 'register' ? 'register' : 'login';
+    const mode = form.dataset.authMode;
+    if (mode === 'register' || mode === 'verification' || mode === 'password-reset') {
+        return mode;
+    }
+    return 'login';
 }
 
 function applyRegisterCooldown(form) {
@@ -559,6 +596,9 @@ function getSubmitLabel(form, isLoading) {
     if (mode === 'verification') {
         return isLoading ? LOGIN_TEXT.verificationCodeSubmitLoading : LOGIN_TEXT.verificationCodeSubmit;
     }
+    if (mode === 'password-reset') {
+        return isLoading ? LOGIN_TEXT.passwordResetSubmitLoading : LOGIN_TEXT.passwordResetSubmit;
+    }
     return isLoading ? LOGIN_TEXT.submitLoading : LOGIN_TEXT.submit;
 }
 
@@ -591,8 +631,31 @@ function togglePasswordVisibility(form) {
     input.focus();
 }
 
+function togglePasswordResetVisibility(form) {
+    const input = getPasswordResetInput(form);
+    const toggle = form ? form.querySelector('[data-auth-reset-toggle]') : null;
+    if (!input || !toggle) {
+        return;
+    }
+    const shouldShow = input.type === 'password';
+    input.type = shouldShow ? 'text' : 'password';
+    toggle.setAttribute('aria-label', shouldShow ? LOGIN_TEXT.hide : LOGIN_TEXT.show);
+    toggle.classList.toggle('visible', shouldShow);
+    input.focus();
+}
+
 function focusPasswordField(form) {
     const input = getPasswordInput(form);
+    if (input) {
+        input.focus();
+        if (typeof input.select === 'function') {
+            input.select();
+        }
+    }
+}
+
+function focusPasswordResetCode(form) {
+    const input = getPasswordResetCodeInput(form);
     if (input) {
         input.focus();
         if (typeof input.select === 'function') {
@@ -691,6 +754,58 @@ function clearVerificationEmail(form) {
     currentVerificationEmail = '';
 }
 
+function setPasswordResetEmail(form, email) {
+    if (!form) {
+        return;
+    }
+    const normalized = (email || '').trim().toLowerCase();
+    if (normalized) {
+        form.dataset.authResetEmail = normalized;
+    } else {
+        delete form.dataset.authResetEmail;
+    }
+}
+
+function getPasswordResetEmail(form) {
+    if (form && form.dataset.authResetEmail) {
+        return form.dataset.authResetEmail;
+    }
+    const emailInput = getEmailInput(form);
+    if (emailInput && emailInput.value) {
+        return emailInput.value.trim().toLowerCase();
+    }
+    return '';
+}
+
+function clearPasswordResetInputs(form) {
+    const codeInput = getPasswordResetCodeInput(form);
+    if (codeInput) {
+        codeInput.value = '';
+    }
+    const passwordInput = getPasswordResetInput(form);
+    if (passwordInput) {
+        passwordInput.value = '';
+        passwordInput.type = 'password';
+    }
+    const confirmInput = getPasswordResetConfirmInput(form);
+    if (confirmInput) {
+        confirmInput.value = '';
+    }
+    const toggle = form ? form.querySelector('[data-auth-reset-toggle]') : null;
+    if (toggle) {
+        toggle.classList.remove('visible');
+        toggle.setAttribute('aria-label', LOGIN_TEXT.show);
+    }
+}
+
+function clearPasswordResetState(form) {
+    if (!form) {
+        return;
+    }
+    clearPasswordResetInputs(form);
+    delete form.dataset.authResetEmail;
+}
+
 function toggleAuthSectionVisibility(element, shouldShow) {
     if (!element) {
         return;
@@ -749,14 +864,26 @@ function setAuthMode(form, mode, options = {}) {
 
     const previousMode = form.dataset.authMode || '';
     const { preserveFeedback = false } = options;
-    const normalizedMode = mode === 'register' ? 'register' : mode === 'verification' ? 'verification' : 'login';
+    const normalizedMode = mode === 'register'
+        ? 'register'
+        : mode === 'verification'
+            ? 'verification'
+            : mode === 'password-reset'
+                ? 'password-reset'
+                : 'login';
     form.dataset.authMode = normalizedMode;
     form.classList.toggle('is-register-mode', normalizedMode === 'register');
     form.classList.toggle('is-verification-mode', normalizedMode === 'verification');
+    form.classList.toggle('is-password-reset-mode', normalizedMode === 'password-reset');
 
     const container = form.closest('.login-container');
     if (container) {
-        if (previousMode && previousMode !== normalizedMode && normalizedMode !== 'verification' && previousMode !== 'verification') {
+        if (
+            previousMode &&
+            previousMode !== normalizedMode &&
+            normalizedMode !== 'verification' &&
+            previousMode !== 'verification'
+        ) {
             container.classList.add('is-switching');
             if (container.__authSwitchTimer) {
                 window.clearTimeout(container.__authSwitchTimer);
@@ -773,6 +900,8 @@ function setAuthMode(form, mode, options = {}) {
                 title.textContent = LOGIN_TEXT.registerTitle;
             } else if (normalizedMode === 'verification') {
                 title.textContent = LOGIN_TEXT.verificationStepTitle;
+            } else if (normalizedMode === 'password-reset') {
+                title.textContent = LOGIN_TEXT.passwordResetTitle;
             } else {
                 title.textContent = LOGIN_TEXT.title;
             }
@@ -784,6 +913,9 @@ function setAuthMode(form, mode, options = {}) {
                 description.hidden = false;
             } else if (normalizedMode === 'verification') {
                 description.textContent = LOGIN_TEXT.verificationStepSubtitle;
+                description.hidden = false;
+            } else if (normalizedMode === 'password-reset') {
+                description.textContent = LOGIN_TEXT.passwordResetSubtitle;
                 description.hidden = false;
             } else {
                 description.hidden = true;
@@ -814,18 +946,23 @@ function setAuthMode(form, mode, options = {}) {
 
     const submit = form.querySelector('[data-auth-submit]');
     if (submit) {
-        submit.hidden = normalizedMode === 'verification';
+        submit.hidden = normalizedMode === 'verification' || normalizedMode === 'password-reset';
         submit.textContent = getSubmitLabel(form, false);
     }
 
     const credentials = form.querySelector('[data-auth-credentials]');
     if (credentials) {
-        credentials.hidden = normalizedMode === 'verification';
+        credentials.hidden = normalizedMode === 'verification' || normalizedMode === 'password-reset';
     }
 
     const verificationStep = form.querySelector('[data-auth-code-step]');
     if (verificationStep) {
         verificationStep.hidden = normalizedMode !== 'verification';
+    }
+
+    const resetStep = form.querySelector('[data-auth-reset-step]');
+    if (resetStep) {
+        resetStep.hidden = normalizedMode !== 'password-reset';
     }
 
     const passwordInput = getPasswordInput(form);
@@ -839,6 +976,12 @@ function setAuthMode(form, mode, options = {}) {
         if (normalizedMode !== 'register') {
             confirmInput.value = '';
         }
+    }
+
+    if (normalizedMode === 'password-reset') {
+        window.setTimeout(() => focusPasswordResetCode(form), 0);
+    } else if (previousMode === 'password-reset') {
+        clearPasswordResetState(form);
     }
 
     if (!preserveFeedback) {
@@ -924,6 +1067,11 @@ function bindAuthForms() {
             toggle.addEventListener('click', () => togglePasswordVisibility(form));
         }
 
+        const resetToggle = form.querySelector('[data-auth-reset-toggle]');
+        if (resetToggle) {
+            resetToggle.addEventListener('click', () => togglePasswordResetVisibility(form));
+        }
+
         form.querySelectorAll('[data-auth-switch]').forEach((button) => {
             button.addEventListener('click', () => {
                 const targetMode = button.dataset.authSwitch === 'register' ? 'register' : 'login';
@@ -971,6 +1119,60 @@ function bindAuthForms() {
         const forgotButton = form.querySelector('[data-auth-forgot]');
         if (forgotButton) {
             forgotButton.addEventListener('click', () => handlePasswordReset(form));
+        }
+
+        const resetSubmit = form.querySelector('[data-auth-reset-submit]');
+        if (resetSubmit) {
+            resetSubmit.addEventListener('click', () => submitPasswordResetConfirmation(form));
+        }
+
+        const resetRequest = form.querySelector('[data-auth-reset-request]');
+        if (resetRequest) {
+            resetRequest.addEventListener('click', () => handlePasswordReset(form, { trigger: resetRequest }));
+        }
+
+        const resetCancel = form.querySelector('[data-auth-reset-cancel]');
+        if (resetCancel) {
+            resetCancel.addEventListener('click', () => {
+                setAuthMode(form, 'login');
+                setLoginFeedback('', 'neutral', form);
+            });
+        }
+
+        const resetCodeInput = getPasswordResetCodeInput(form);
+        if (resetCodeInput) {
+            resetCodeInput.addEventListener('input', () => {
+                resetCodeInput.value = resetCodeInput.value.replace(/[^0-9]/g, '').slice(0, 6);
+                setLoginFeedback('', 'neutral', form);
+            });
+            resetCodeInput.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    submitPasswordResetConfirmation(form);
+                }
+            });
+        }
+
+        const resetPasswordInput = getPasswordResetInput(form);
+        if (resetPasswordInput) {
+            resetPasswordInput.addEventListener('input', () => setLoginFeedback('', 'neutral', form));
+            resetPasswordInput.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    submitPasswordResetConfirmation(form);
+                }
+            });
+        }
+
+        const resetConfirmInput = getPasswordResetConfirmInput(form);
+        if (resetConfirmInput) {
+            resetConfirmInput.addEventListener('input', () => setLoginFeedback('', 'neutral', form));
+            resetConfirmInput.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    submitPasswordResetConfirmation(form);
+                }
+            });
         }
 
         form.dataset.authBound = 'true';
@@ -1062,6 +1264,31 @@ function createAuthOverlay() {
                     <div class="login-actions">
                         <button type="button" class="login-button" data-auth-code-submit>${LOGIN_TEXT.verificationCodeSubmit}</button>
                         <button type="button" class="login-link" data-auth-resend>${LOGIN_TEXT.verificationCodeResend}</button>
+                    </div>
+                </div>
+                <div class="password-reset-step" data-auth-reset-step hidden>
+                    <p class="login-hint" data-auth-reset-hint>${LOGIN_TEXT.passwordResetCodeHint}</p>
+                    <div class="form-group">
+                        <label for="overlay-reset-code">${LOGIN_TEXT.passwordResetCodeLabel}</label>
+                        <input type="text" id="overlay-reset-code" class="form-control" placeholder="${LOGIN_TEXT.passwordResetCodePlaceholder}" inputmode="numeric" autocomplete="one-time-code" maxlength="6" data-auth-reset-code>
+                    </div>
+                    <div class="form-group">
+                        <label for="overlay-reset-password">${LOGIN_TEXT.passwordResetNewPasswordLabel}</label>
+                        <div class="password-field">
+                            <input type="password" id="overlay-reset-password" class="form-control" placeholder="${LOGIN_TEXT.passwordResetNewPasswordPlaceholder}" autocomplete="new-password" data-auth-reset-password>
+                            <button type="button" class="toggle-password" data-auth-reset-toggle aria-label="${LOGIN_TEXT.show}">
+                                <span class="eye-icon" aria-hidden="true"></span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="overlay-reset-password-confirm">${LOGIN_TEXT.passwordResetConfirmLabel}</label>
+                        <input type="password" id="overlay-reset-password-confirm" class="form-control" placeholder="${LOGIN_TEXT.passwordResetNewPasswordPlaceholder}" autocomplete="new-password" data-auth-reset-password-confirm>
+                    </div>
+                    <div class="login-actions password-reset-actions">
+                        <button type="button" class="login-button" data-auth-reset-submit>${LOGIN_TEXT.passwordResetSubmit}</button>
+                        <button type="button" class="login-link" data-auth-reset-request>${LOGIN_TEXT.passwordResetRequest}</button>
+                        <button type="button" class="login-link" data-auth-reset-cancel>${LOGIN_TEXT.passwordResetCancel}</button>
                     </div>
                 </div>
             </form>
@@ -1156,6 +1383,8 @@ function handleAuthSubmit(form) {
         register(form);
     } else if (mode === 'verification') {
         verifyCode(form);
+    } else if (mode === 'password-reset') {
+        submitPasswordResetConfirmation(form);
     } else {
         login(form);
     }
@@ -1520,44 +1749,154 @@ async function resendVerification(form) {
     }
 }
 
-async function handlePasswordReset(form) {
+async function submitPasswordResetConfirmation(form) {
     const targetForm = form || getActiveAuthForm();
     if (!targetForm) {
         return;
     }
 
-    const emailInput = getEmailInput(targetForm);
-    const email = emailInput ? emailInput.value.trim().toLowerCase() : '';
+    const codeInput = getPasswordResetCodeInput(targetForm);
+    const passwordInput = getPasswordResetInput(targetForm);
+    const confirmInput = getPasswordResetConfirmInput(targetForm);
+
+    const code = codeInput ? codeInput.value.trim() : '';
+    if (!code) {
+        setLoginFeedback(LOGIN_TEXT.passwordResetCodeRequired, 'error', targetForm);
+        codeInput?.focus();
+        return;
+    }
+
+    const newPassword = passwordInput ? passwordInput.value : '';
+    if (!newPassword) {
+        setLoginFeedback(LOGIN_TEXT.passwordResetPasswordRequired, 'error', targetForm);
+        passwordInput?.focus();
+        return;
+    }
+
+    if (newPassword.length < 8) {
+        setLoginFeedback(LOGIN_TEXT.passwordResetPasswordWeak, 'error', targetForm);
+        passwordInput?.focus();
+        return;
+    }
+
+    const confirmation = confirmInput ? confirmInput.value : '';
+    if (newPassword !== confirmation) {
+        setLoginFeedback(LOGIN_TEXT.passwordResetPasswordMismatch, 'error', targetForm);
+        confirmInput?.focus();
+        return;
+    }
+
+    const email = getPasswordResetEmail(targetForm);
     if (!email) {
         setLoginFeedback(LOGIN_TEXT.forgotPasswordMissingEmail, 'error', targetForm);
+        setAuthMode(targetForm, 'login', { preserveFeedback: true });
+        const emailInput = getEmailInput(targetForm);
         emailInput?.focus();
         return;
     }
 
-    const button = targetForm.querySelector('[data-auth-forgot]');
-    if (button) {
-        button.disabled = true;
+    const submitButton = targetForm.querySelector('[data-auth-reset-submit]');
+    if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.dataset.loading = 'true';
+        submitButton.textContent = LOGIN_TEXT.passwordResetSubmitLoading;
     }
+
+    setLoginFeedback('', 'neutral', targetForm);
+
+    try {
+        const response = await fetch(AUTH_API.passwordResetConfirm, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ email, code, password: newPassword })
+        });
+
+        if (response.ok) {
+            rememberEmail(email);
+            setLoginFeedback(LOGIN_TEXT.passwordResetSuccess, 'success', targetForm);
+            setAuthMode(targetForm, 'login', { preserveFeedback: true });
+            const emailInput = getEmailInput(targetForm);
+            if (emailInput && !emailInput.value) {
+                emailInput.value = email;
+            }
+            focusPasswordField(targetForm);
+            return;
+        }
+
+        if (response.status === 400 || response.status === 404) {
+            setLoginFeedback(LOGIN_TEXT.passwordResetInvalidCode, 'error', targetForm);
+        } else {
+            setLoginFeedback(LOGIN_TEXT.passwordResetError, 'error', targetForm);
+        }
+    } catch (error) {
+        console.error('Conferma reset password fallita', error);
+        setLoginFeedback(LOGIN_TEXT.passwordResetError, 'error', targetForm);
+    } finally {
+        if (submitButton) {
+            submitButton.disabled = false;
+            delete submitButton.dataset.loading;
+            submitButton.textContent = LOGIN_TEXT.passwordResetSubmit;
+        }
+    }
+}
+
+async function handlePasswordReset(form, options = {}) {
+    const targetForm = form || getActiveAuthForm();
+    if (!targetForm) {
+        return;
+    }
+
+    const email = getPasswordResetEmail(targetForm);
+    const emailInput = getEmailInput(targetForm);
+    if (!email) {
+        setLoginFeedback(LOGIN_TEXT.forgotPasswordMissingEmail, 'error', targetForm);
+        if (emailInput) {
+            emailInput.focus();
+        }
+        setAuthMode(targetForm, 'login', { preserveFeedback: true });
+        return;
+    }
+
+    const triggerButton = options && options.trigger ? options.trigger : targetForm.querySelector('[data-auth-forgot]');
+    if (triggerButton) {
+        triggerButton.disabled = true;
+        triggerButton.dataset.loading = 'true';
+        triggerButton.textContent = LOGIN_TEXT.passwordResetRequestLoading;
+    }
+
+    setLoginFeedback('', 'neutral', targetForm);
 
     try {
         const response = await fetch(AUTH_API.passwordReset, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
             body: JSON.stringify({ email })
         });
 
         if (response.ok) {
-            setLoginFeedback(LOGIN_TEXT.passwordResetSent, 'success', targetForm);
             rememberEmail(email);
+            setPasswordResetEmail(targetForm, email);
+            clearPasswordResetInputs(targetForm);
+            setLoginFeedback(LOGIN_TEXT.passwordResetRequestSuccess, 'success', targetForm);
+            setAuthMode(targetForm, 'password-reset', { preserveFeedback: true });
+            focusPasswordResetCode(targetForm);
         } else {
-            setLoginFeedback(LOGIN_TEXT.passwordResetError, 'error', targetForm);
+            setLoginFeedback(LOGIN_TEXT.passwordResetRequestError, 'error', targetForm);
         }
     } catch (error) {
-        console.error('Reset password fallito', error);
-        setLoginFeedback(LOGIN_TEXT.passwordResetError, 'error', targetForm);
+        console.error('Richiesta reset password fallita', error);
+        setLoginFeedback(LOGIN_TEXT.passwordResetRequestError, 'error', targetForm);
     } finally {
-        if (button) {
-            button.disabled = false;
+        if (triggerButton) {
+            triggerButton.disabled = false;
+            delete triggerButton.dataset.loading;
+            if (triggerButton.hasAttribute('data-auth-reset-request')) {
+                triggerButton.textContent = LOGIN_TEXT.passwordResetRequest;
+            } else {
+                triggerButton.textContent = LOGIN_TEXT.forgotPassword;
+            }
         }
     }
 }
