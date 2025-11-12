@@ -101,8 +101,7 @@ const AUTH_API = {
     logout: `${API_BASE}/api/auth/logout`,
     resend: `${API_BASE}/api/auth/resend`,
     verify: `${API_BASE}/api/auth/verify`,
-    passwordReset: `${API_BASE}/api/auth/password-reset`,
-    passwordResetConfirm: `${API_BASE}/api/auth/password-reset/confirm`
+    passwordReset: `${API_BASE}/api/auth/password-reset`
 };
 
 const AUTH_PATHS = {
@@ -1798,11 +1797,11 @@ async function submitPasswordResetConfirmation(form) {
     setLoginFeedback('', 'neutral', targetForm);
 
     try {
-        const response = await fetch(AUTH_API.passwordResetConfirm, {
+        const response = await fetch(AUTH_API.passwordReset, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
-            body: JSON.stringify({ email, code, password: newPassword })
+            body: JSON.stringify({ action: 'confirm', email, code, password: newPassword })
         });
 
         if (response.ok) {
