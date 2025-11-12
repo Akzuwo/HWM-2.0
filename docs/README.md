@@ -2,13 +2,13 @@
 
 ## Überblick
 
-Homework Manager 2.0 bündelt Stundenpläne, Hausaufgabenverwaltung, Mitteilungen und Service-Seiten in einer einzigen Plattform. Das Repository enthält den Python-basierten Backend-Dienst, die lokalisierten statischen Frontends sowie Hilfsskripte für Migrationen und Datenimporte. Die Anwendung ist für den Betrieb in einer MySQL-Umgebung optimiert und stellt REST-Endpunkte für die Weboberfläche sowie ein moderiertes Kontaktformular zur Verfügung.
+Homework Manager 2.0 bündelt Stundenpläne, Hausaufgabenverwaltung, Mitteilungen und Service-Seiten in einer einzigen Plattform. Das Repository enthält den Python-basierten Backend-Dienst, die lokalisierten statischen Frontends sowie Hilfsskripte für Migrationen und Datenimporte. Die Anwendung ist für den Betrieb in einer MySQL-Umgebung optimiert, stellt REST-Endpunkte für die Weboberfläche bereit und verweist für Supportanfragen auf die zentrale Adresse support@akzuwo.ch.
 
 ## Neue Funktionen in Version 2.0
 
 * **Überarbeiteter Stundenplan-Importer:** `backend/scripts/import_schedule.py` validiert JSON-Eingaben, erzeugt einen Import-Hash und ersetzt bestehende Einträge inklusive Metadaten. Damit lassen sich mehrere Klassen nacheinander synchronisieren, ohne manuelle Bereinigungsschritte.
 * **Feingranulares Rate-Limiting:** Login- und Verifikations-Endpunkte werden durch konfigurierbare Ratenbegrenzung geschützt. Die zugehörigen Umgebungsvariablen (`LOGIN_RATE_LIMIT_*`, `VERIFY_RATE_LIMIT_*`) ermöglichen eine Anpassung je Deployment.
-* **Verbesserte SMTP-Integration:** Das Backend versucht automatisch STARTTLS (Port 587) und SMTPS (Port 465). Absender- und Empfängeradressen werden zentral über `config.get_contact_smtp_settings()` verwaltet, wodurch Secrets nicht mehr an mehreren Stellen gepflegt werden müssen.
+* **Direkter Support-Kanal:** Rückmeldungen laufen gebündelt über support@akzuwo.ch; das frühere Kontaktformular wurde entfernt.
 * **Beta- und Produktions-Workflows:** Die Basis-URL für Verifizierungslinks orientiert sich am Beta-System (`PRIMARY_TEST_BASE_URL`). Fallback-Konfigurationen sind nicht mehr notwendig, Tests erfolgen direkt gegen die Beta-Instanz.
 * **Erweiterte Protokollierung:** Rotierende Logfiles (`/tmp/hwm-backend.log` per Default) erleichtern das Debugging und liefern Kontext für Supportanfragen, ohne dass der Dienst neu gestartet werden muss.
 
@@ -16,7 +16,7 @@ Homework Manager 2.0 bündelt Stundenpläne, Hausaufgabenverwaltung, Mitteilunge
 
 | Pfad | Beschreibung |
 | --- | --- |
-| `backend/` | Flask-Anwendung inklusive Authentifizierung, Kontaktformular, Import-Logik und Tests. |
+| `backend/` | Flask-Anwendung inklusive Authentifizierung, Import-Logik, Tests und REST-API. |
 | `backend/scripts/` | Hilfsskripte wie der Stundenplan-Importer. |
 | `backend/migrations/` | SQL-Migrationsskripte für die aktuelle Datenstruktur. |
 | `de/`, `en/`, `fr/`, `it/` | Lokalisierte statische Inhalte, die vom Backend ausgeliefert werden. |
@@ -30,7 +30,6 @@ Homework Manager 2.0 bündelt Stundenpläne, Hausaufgabenverwaltung, Mitteilunge
 
 * Python 3.10 oder neuer
 * MySQL 8.x oder eine kompatible MariaDB-Instanz
-* Zugriff auf ein SMTP-Konto für Kontaktformular-Tests (optional)
 
 ### Installation
 
@@ -52,12 +51,6 @@ export DB_USER=hwm
 export DB_PASSWORD=hwm
 export DB_NAME=hwm
 export DB_PORT=3306
-
-export CONTACT_SMTP_HOST=localhost
-export CONTACT_SMTP_USER=test@example.com
-export CONTACT_SMTP_PASSWORD=secret
-export CONTACT_RECIPIENT=admin@example.com
-export CONTACT_FROM_ADDRESS=noreply@example.com
 
 export LOGIN_RATE_LIMIT_WINDOW=300
 export LOGIN_RATE_LIMIT_MAX=10
@@ -144,19 +137,9 @@ Die Standard-URL für E-Mail-Verifikationen orientiert sich jetzt am Beta-System
 
 Bei Deployments sollte die Beta-Instanz als primärer Testlauf genutzt werden; ein Fallback ist nicht mehr nötig.
 
-## Produktivbetrieb: SMTP-Konfiguration und Neustart
+## Support & Rückmeldungen
 
-Für den Versand von Nachrichten aus dem Kontaktformular benötigt `backend/app.py` gültige SMTP-Zugangsdaten. In der produktiven `.env`-Datei (oder dem entsprechenden Secret des Deployments) müssen daher folgende Variablen gesetzt sein:
-
-```
-CONTACT_SMTP_HOST
-CONTACT_SMTP_USER
-CONTACT_SMTP_PASSWORD
-CONTACT_RECIPIENT
-CONTACT_FROM_ADDRESS (optional)
-```
-
-Der Backend-Dienst versucht automatisch die SMTP-Ports 587 (STARTTLS) und 465 (SMTPS); eine separate Port-Variable ist daher nicht mehr erforderlich. Pflegen Sie die produktiven Zugangsdaten zentral in Ihrer Secret-Verwaltung. Nach Änderungen an diesen Werten muss der Backend-Dienst neu gestartet werden, damit der Prozess die aktualisierten Variablen übernimmt, z. B. via `systemctl restart homework-manager-backend.service`.
+Technische Rückfragen, Bugreports und allgemeine Hinweise laufen zentral über [support@akzuwo.ch](mailto:support@akzuwo.ch). Bitte gib bei Produktionsvorfällen die betroffene Instanz und einen Zeitstempel an, damit Logs zielgerichtet ausgewertet werden können.
 
 ## Internationalisierung & Inhalte
 
