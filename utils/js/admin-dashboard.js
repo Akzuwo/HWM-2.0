@@ -30,7 +30,10 @@ const TRANSLATIONS = {
       delete: 'Löschen',
       cancel: 'Abbrechen',
       save: 'Speichern',
+      viewLogs: 'API-Logs anzeigen',
+      hideLogs: 'API-Logs verbergen',
       downloadLogs: 'API-Logs herunterladen',
+      refreshLogs: 'Aktualisieren',
       import: 'Importieren',
     },
     confirmDelete: 'Soll dieser Eintrag wirklich gelöscht werden?',
@@ -90,6 +93,17 @@ const TRANSLATIONS = {
       classIdentifierRequired: 'Bitte eine Klassen-ID oder einen Slug angeben.',
       scheduleImported: (count, hash) => `${count} Stunden importiert (Hash: ${hash}).`,
     },
+    logs: {
+      title: 'API-Protokolle',
+      linesLabel: 'Zeilen',
+      loading: 'Protokolle werden geladen …',
+      missing: 'Die Logdatei wurde nicht gefunden.',
+      missingHint: 'Sobald Einträge vorhanden sind, erscheinen sie hier.',
+      truncated: (lines) => `Es werden die letzten ${lines} Zeilen angezeigt.`,
+      source: (value) => `Quelle: ${value}`,
+      lastUpdated: (value) => `Aktualisiert: ${value}`,
+      empty: 'Keine Logeinträge vorhanden.',
+    },
     empty: 'Keine Daten vorhanden.',
     pagination: {
       summary: (page, pages, total) => `Seite ${page} von ${pages} (${total} Einträge)`
@@ -113,7 +127,10 @@ const TRANSLATIONS = {
       delete: 'Delete',
       cancel: 'Cancel',
       save: 'Save',
+      viewLogs: 'View API logs',
+      hideLogs: 'Hide API logs',
       downloadLogs: 'Download API logs',
+      refreshLogs: 'Refresh',
       import: 'Import',
     },
     confirmDelete: 'Are you sure you want to delete this item?',
@@ -173,6 +190,17 @@ const TRANSLATIONS = {
       classIdentifierRequired: 'Please provide a class ID or slug.',
       scheduleImported: (count, hash) => `Imported ${count} lessons (hash: ${hash}).`,
     },
+    logs: {
+      title: 'API logs',
+      linesLabel: 'Lines',
+      loading: 'Loading logs…',
+      missing: 'Log file not found.',
+      missingHint: 'The logs will appear here once entries are available.',
+      truncated: (lines) => `Showing the latest ${lines} lines.`,
+      source: (value) => `Source: ${value}`,
+      lastUpdated: (value) => `Last updated: ${value}`,
+      empty: 'No log entries yet.',
+    },
     empty: 'No data available.',
     pagination: {
       summary: (page, pages, total) => `Page ${page} of ${pages} (${total} items)`
@@ -196,7 +224,10 @@ const TRANSLATIONS = {
       delete: 'Supprimer',
       cancel: 'Annuler',
       save: 'Enregistrer',
+      viewLogs: 'Afficher les journaux API',
+      hideLogs: 'Masquer les journaux API',
       downloadLogs: 'Télécharger les journaux API',
+      refreshLogs: 'Actualiser',
       import: 'Importer',
     },
     confirmDelete: 'Voulez-vous vraiment supprimer cet élément ?',
@@ -256,6 +287,17 @@ const TRANSLATIONS = {
       classIdentifierRequired: 'Veuillez indiquer un ID ou un slug de classe.',
       scheduleImported: (count, hash) => `${count} cours importés (hash : ${hash}).`,
     },
+    logs: {
+      title: 'Journaux de l’API',
+      linesLabel: 'Lignes',
+      loading: 'Chargement des journaux…',
+      missing: 'Fichier journal introuvable.',
+      missingHint: 'Les journaux apparaîtront ici lorsqu’ils seront disponibles.',
+      truncated: (lines) => `Affichage des ${lines} dernières lignes.`,
+      source: (value) => `Source : ${value}`,
+      lastUpdated: (value) => `Dernière mise à jour : ${value}`,
+      empty: 'Aucune entrée de journal pour le moment.',
+    },
     empty: 'Aucune donnée disponible.',
     pagination: {
       summary: (page, pages, total) => `Page ${page} sur ${pages} (${total} éléments)`
@@ -279,7 +321,10 @@ const TRANSLATIONS = {
       delete: 'Elimina',
       cancel: 'Annulla',
       save: 'Salva',
+      viewLogs: 'Mostra log API',
+      hideLogs: 'Nascondi log API',
       downloadLogs: 'Scarica i log API',
+      refreshLogs: 'Aggiorna',
       import: 'Importa',
     },
     confirmDelete: 'Eliminare veramente questo elemento?',
@@ -339,12 +384,28 @@ const TRANSLATIONS = {
       classIdentifierRequired: 'Indica un ID o uno slug di classe.',
       scheduleImported: (count, hash) => `${count} lezioni importate (hash: ${hash}).`,
     },
+    logs: {
+      title: 'Log API',
+      linesLabel: 'Righe',
+      loading: 'Caricamento dei log…',
+      missing: 'File di log non trovato.',
+      missingHint: 'Quando saranno disponibili, i log verranno mostrati qui.',
+      truncated: (lines) => `Visualizzate le ultime ${lines} righe.`,
+      source: (value) => `Origine: ${value}`,
+      lastUpdated: (value) => `Ultimo aggiornamento: ${value}`,
+      empty: 'Nessuna voce di log al momento.',
+    },
     empty: 'Nessun dato disponibile.',
     pagination: {
       summary: (page, pages, total) => `Pagina ${page} di ${pages} (${total} elementi)`
     },
   },
 };
+
+const LOG_LINE_DEFAULT = 500;
+const LOG_LINE_MIN = 50;
+const LOG_LINE_MAX = 5000;
+const LOG_LINE_STEP = 50;
 
 function getTranslations() {
   const lang = document.documentElement.lang?.toLowerCase() || 'en';
@@ -377,6 +438,87 @@ function formatDate(value, locale) {
     dateStyle: 'medium',
     timeStyle: 'short',
   });
+}
+
+function sanitizeLogLines(value) {
+  const numeric = Number.parseInt(value, 10);
+  if (Number.isNaN(numeric) || !Number.isFinite(numeric)) {
+    return LOG_LINE_DEFAULT;
+  }
+  const clamped = Math.min(Math.max(Math.round(numeric), LOG_LINE_MIN), LOG_LINE_MAX);
+  return clamped;
+}
+
+function createLogsSection(translations) {
+  const section = document.createElement('section');
+  section.className = 'admin-dashboard__logs';
+  section.hidden = true;
+
+  const header = document.createElement('div');
+  header.className = 'admin-dashboard__logs-header';
+
+  const title = document.createElement('h2');
+  title.textContent = translations.logs.title;
+  title.className = 'admin-dashboard__logs-title';
+
+  const controls = document.createElement('div');
+  controls.className = 'admin-dashboard__logs-controls';
+
+  const linesLabel = document.createElement('label');
+  linesLabel.className = 'admin-dashboard__logs-lines';
+  linesLabel.textContent = translations.logs.linesLabel;
+
+  const linesInput = document.createElement('input');
+  linesInput.type = 'number';
+  linesInput.className = 'admin-dashboard__logs-lines-input';
+  linesInput.min = String(LOG_LINE_MIN);
+  linesInput.max = String(LOG_LINE_MAX);
+  linesInput.step = String(LOG_LINE_STEP);
+  linesInput.value = String(LOG_LINE_DEFAULT);
+  linesInput.inputMode = 'numeric';
+  linesInput.pattern = '\\d*';
+  linesInput.setAttribute('aria-label', translations.logs.linesLabel);
+
+  linesLabel.appendChild(linesInput);
+
+  const refreshButton = createActionButton(translations.buttons.refreshLogs);
+  refreshButton.classList.add('admin-dashboard__logs-refresh');
+
+  controls.append(linesLabel, refreshButton);
+
+  header.append(title, controls);
+
+  const meta = document.createElement('div');
+  meta.className = 'admin-dashboard__logs-meta';
+
+  const source = document.createElement('span');
+  source.className = 'admin-dashboard__logs-source';
+
+  const updated = document.createElement('span');
+  updated.className = 'admin-dashboard__logs-updated';
+
+  meta.append(source, updated);
+
+  const status = document.createElement('div');
+  status.className = 'admin-dashboard__logs-status';
+
+  const content = document.createElement('pre');
+  content.className = 'admin-dashboard__logs-content';
+  content.setAttribute('role', 'log');
+  content.setAttribute('aria-live', 'polite');
+  content.setAttribute('tabindex', '0');
+
+  section.append(header, meta, status, content);
+
+  return {
+    element: section,
+    linesInput,
+    refreshButton,
+    status,
+    source,
+    updated,
+    content,
+  };
 }
 
 function resolveUrl(url) {
@@ -561,16 +703,26 @@ function buildDashboard(root) {
   const actionsBar = document.createElement('div');
   actionsBar.className = 'admin-dashboard__actions';
 
+  const viewLogsButton = createActionButton(t.buttons.viewLogs);
   const downloadLogsButton = createActionButton(t.buttons.downloadLogs);
   const createButton = createActionButton(t.create.users);
-  actionsBar.append(downloadLogsButton, createButton);
+  actionsBar.append(viewLogsButton, downloadLogsButton, createButton);
+
+  const logsSection = createLogsSection(t);
+  const logsPanel = logsSection.element;
+  const logsLinesInput = logsSection.linesInput;
+  const logsRefreshButton = logsSection.refreshButton;
+  const logsStatus = logsSection.status;
+  const logsSource = logsSection.source;
+  const logsUpdated = logsSection.updated;
+  const logsContent = logsSection.content;
 
   const tableWrapper = document.createElement('div');
   tableWrapper.className = 'admin-dashboard__table';
 
   const pagination = createPaginationControls(t);
 
-  root.append(header, nav, actionsBar, tableWrapper, pagination.element, messageArea.element);
+  root.append(header, nav, actionsBar, logsPanel, tableWrapper, pagination.element, messageArea.element);
 
   const scheduleImportFields = [
     {
@@ -722,7 +874,20 @@ function buildDashboard(root) {
     authorized: true,
     classes: [],
     classesLoaded: false,
+    logs: {
+      visible: false,
+      loading: false,
+      lines: sanitizeLogLines(logsLinesInput.value),
+      truncated: false,
+      missing: false,
+      content: '',
+      source: '',
+      lastUpdated: null,
+      error: '',
+    },
   };
+
+  logsLinesInput.value = String(state.logs.lines);
 
   let classesPromise = null;
 
@@ -733,6 +898,10 @@ function buildDashboard(root) {
     createButton.setAttribute('aria-disabled', String(!allowed));
     downloadLogsButton.disabled = !allowed;
     downloadLogsButton.setAttribute('aria-disabled', String(!allowed));
+    viewLogsButton.disabled = !allowed;
+    viewLogsButton.setAttribute('aria-disabled', String(!allowed));
+    logsRefreshButton.disabled = !allowed || state.logs.loading;
+    logsLinesInput.disabled = !allowed || state.logs.loading;
     nav.querySelectorAll('button').forEach((button) => {
       button.disabled = !allowed;
       button.setAttribute('aria-disabled', String(!allowed));
@@ -746,7 +915,11 @@ function buildDashboard(root) {
       pagination.update({ page: state.page, pageSize: state.pageSize, total: state.total });
       pagination.prev.disabled = true;
       pagination.next.disabled = true;
+      setLogsVisibility(false);
+      resetLogsData(true);
+      logsLinesInput.value = String(state.logs.lines);
     }
+    updateLogsUI();
   }
 
   function handleUnauthorized() {
@@ -755,6 +928,123 @@ function buildDashboard(root) {
     }
     setAuthorizationState(false);
     showMessage('error', t.messages.unauthorized);
+  }
+
+  function resetLogsData(resetLines = false) {
+    if (resetLines) {
+      state.logs.lines = LOG_LINE_DEFAULT;
+    } else {
+      state.logs.lines = sanitizeLogLines(state.logs.lines);
+    }
+    state.logs.loading = false;
+    state.logs.truncated = false;
+    state.logs.missing = false;
+    state.logs.content = '';
+    state.logs.source = '';
+    state.logs.lastUpdated = null;
+    state.logs.error = '';
+  }
+
+  function updateLogsUI() {
+    const { logs } = state;
+    logsPanel.hidden = !logs.visible;
+    logsPanel.classList.toggle('is-loading', logs.loading);
+    logsContent.setAttribute('aria-busy', logs.loading ? 'true' : 'false');
+    logsLinesInput.value = String(sanitizeLogLines(logs.lines));
+    logsRefreshButton.disabled = !state.authorized || logs.loading;
+    logsLinesInput.disabled = !state.authorized || logs.loading;
+    viewLogsButton.textContent = logs.visible ? t.buttons.hideLogs : t.buttons.viewLogs;
+
+    if (logs.source) {
+      logsSource.textContent = t.logs.source(logs.source);
+    } else {
+      logsSource.textContent = '';
+    }
+    logsSource.style.display = logsSource.textContent ? '' : 'none';
+
+    if (logs.lastUpdated instanceof Date && !Number.isNaN(logs.lastUpdated.getTime())) {
+      const formatted = logs.lastUpdated.toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' });
+      logsUpdated.textContent = t.logs.lastUpdated(formatted);
+    } else {
+      logsUpdated.textContent = '';
+    }
+    logsUpdated.style.display = logsUpdated.textContent ? '' : 'none';
+
+    logsStatus.textContent = '';
+    logsStatus.classList.remove('is-error');
+
+    if (logs.loading) {
+      logsStatus.textContent = t.logs.loading;
+    } else if (logs.error) {
+      logsStatus.textContent = logs.error;
+      logsStatus.classList.add('is-error');
+    } else if (logs.missing) {
+      const messages = [t.logs.missing, t.logs.missingHint].filter(Boolean);
+      logsStatus.textContent = messages.join(' ');
+    } else {
+      const messages = [];
+      if (logs.truncated) {
+        messages.push(t.logs.truncated(logs.lines));
+      }
+      if (!logs.content) {
+        messages.push(t.logs.empty);
+      }
+      logsStatus.textContent = messages.join(' ');
+    }
+
+    logsContent.textContent = logs.missing ? '' : (logs.content || '');
+  }
+
+  function setLogsVisibility(visible) {
+    const nextVisible = Boolean(visible);
+    if (state.logs.visible === nextVisible) {
+      updateLogsUI();
+      return;
+    }
+    state.logs.visible = nextVisible;
+    updateLogsUI();
+    if (nextVisible) {
+      loadLogs(true);
+    }
+  }
+
+  function toggleLogsVisibility() {
+    setLogsVisibility(!state.logs.visible);
+  }
+
+  async function loadLogs(force = false) {
+    if (!state.authorized) {
+      return;
+    }
+    if (!state.logs.visible && !force) {
+      return;
+    }
+    const lines = sanitizeLogLines(state.logs.lines);
+    state.logs.lines = lines;
+    state.logs.loading = true;
+    state.logs.error = '';
+    updateLogsUI();
+    try {
+      const response = await fetchJson(`/api/admin/logs?lines=${lines}`);
+      const logsText = typeof response.logs === 'string' ? response.logs : '';
+      state.logs.truncated = Boolean(response.truncated);
+      state.logs.missing = Boolean(response.missing);
+      state.logs.source = response.source || '';
+      state.logs.content = state.logs.missing ? '' : logsText;
+      state.logs.lastUpdated = new Date();
+      showMessage();
+    } catch (error) {
+      if (error.status === 401 || error.status === 403) {
+        handleUnauthorized();
+        return;
+      }
+      const message = error.message || t.messages.logsFailed;
+      state.logs.error = message;
+      showMessage('error', message);
+    } finally {
+      state.logs.loading = false;
+      updateLogsUI();
+    }
   }
 
   function buildClassLabel(klass = {}) {
@@ -1074,6 +1364,33 @@ function buildDashboard(root) {
     }
   }
 
+  viewLogsButton.addEventListener('click', () => {
+    if (!state.authorized) {
+      showMessage('error', t.messages.unauthorized);
+      return;
+    }
+    toggleLogsVisibility();
+  });
+
+  logsRefreshButton.addEventListener('click', () => {
+    if (!state.authorized) {
+      showMessage('error', t.messages.unauthorized);
+      return;
+    }
+    loadLogs(true);
+  });
+
+  logsLinesInput.addEventListener('change', () => {
+    const lines = sanitizeLogLines(logsLinesInput.value);
+    state.logs.lines = lines;
+    logsLinesInput.value = String(lines);
+    if (state.logs.visible) {
+      loadLogs(true);
+    } else {
+      updateLogsUI();
+    }
+  });
+
   createButton.addEventListener('click', () => {
     if (!state.authorized) {
       showMessage('error', t.messages.unauthorized);
@@ -1110,9 +1427,14 @@ function buildDashboard(root) {
     }
     downloadLogsButton.disabled = true;
     try {
-      const response = await fetchJson('/api/admin/logs');
+      const lines = sanitizeLogLines(state.logs.lines);
+      state.logs.lines = lines;
+      logsLinesInput.value = String(lines);
+      const response = await fetchJson(`/api/admin/logs?lines=${lines}`);
       const logs = response.logs || '';
       const source = response.source || '';
+      const truncated = Boolean(response.truncated);
+      const missing = Boolean(response.missing);
       const fileName = source.split(/[/\\]/).filter(Boolean).pop()
         || `api-logs-${new Date().toISOString().replace(/[:.]/g, '-')}.log`;
       const blob = new Blob([logs], { type: 'text/plain;charset=utf-8' });
@@ -1124,12 +1446,22 @@ function buildDashboard(root) {
       link.click();
       document.body.removeChild(link);
       window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      state.logs.truncated = truncated;
+      state.logs.missing = missing;
+      state.logs.source = source;
+      state.logs.content = missing ? '' : logs;
+      state.logs.lastUpdated = new Date();
+      state.logs.error = '';
+      updateLogsUI();
       showMessage('success', t.messages.logsDownloaded);
     } catch (error) {
       if (error.status === 401 || error.status === 403) {
         handleUnauthorized();
       } else {
-        showMessage('error', error.message || t.messages.logsFailed);
+        const message = error.message || t.messages.logsFailed;
+        state.logs.error = message;
+        updateLogsUI();
+        showMessage('error', message);
       }
     } finally {
       downloadLogsButton.disabled = !state.authorized;
