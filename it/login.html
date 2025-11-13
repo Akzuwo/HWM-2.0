@@ -9,10 +9,15 @@
 </head>
 <body>
   <div class="login-container">
-    <img src="../media/logo.png" alt="Logo" class="login-logo">
-    <h2 class="login-title" data-auth-title>🔒 Login</h2>
-    <p class="login-description" data-auth-description hidden>Registrati con la tua e-mail scolastica.</p>
-    <p class="login-status" data-auth-status>Non connesso</p>
+    <header class="login-header">
+      <img src="../media/logo.png" alt="Logo" class="login-logo">
+      <div class="login-heading">
+        <h2 class="login-title" data-auth-title>🔒 Login</h2>
+        <span class="login-badge" data-auth-register-only data-auth-display="inline-flex" aria-hidden="true" hidden>NUOVO</span>
+      </div>
+      <p class="login-description" data-auth-description hidden>Registrati con la tua e-mail scolastica.</p>
+      <p class="login-status" data-auth-status>Non connesso</p>
+    </header>
     <form class="login-form" data-auth-form novalidate>
       <div class="login-banner" data-auth-verification hidden>
         <strong>Verifica e-mail necessaria</strong>
@@ -37,7 +42,7 @@
         <label for="login-password-confirm">Conferma password</label>
         <input type="password" id="login-password-confirm" class="form-control" placeholder="Password" autocomplete="new-password" data-auth-password-confirm>
       </div>
-      <div class="form-group" data-auth-register-only data-auth-display="flex">
+      <div class="form-group form-group--optional" data-auth-register-only data-auth-display="flex">
         <label for="login-class">Classe (facoltativo)</label>
         <input type="text" id="login-class" class="form-control" placeholder="es. L23a / Docenti: lasciare questo campo vuoto" autocomplete="organization" data-auth-class>
       </div>
