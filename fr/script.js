@@ -3,6 +3,7 @@ const LOGIN_TEXT = {
     title: '🔒 Connexion',
     registerTitle: '🆕 Créer un compte',
     registerSubtitle: 'Inscris-toi avec ton adresse e-mail scolaire.',
+    newBadge: 'NOUVEAU',
     emailLabel: 'Adresse e-mail',
     emailPlaceholder: 'nom@example.com',
     passwordLabel: 'Mot de passe',
@@ -916,10 +917,12 @@ function setAuthMode(form, mode, options = {}) {
         }
     }
 
-    form.querySelectorAll('[data-auth-register-only]').forEach((element) => {
+    const registerScope = container || form;
+    registerScope.querySelectorAll('[data-auth-register-only]').forEach((element) => {
         toggleAuthSectionVisibility(element, normalizedMode === 'register');
     });
-    form.querySelectorAll('[data-auth-login-only]').forEach((element) => {
+    const loginScope = container || form;
+    loginScope.querySelectorAll('[data-auth-login-only]').forEach((element) => {
         toggleAuthSectionVisibility(element, normalizedMode === 'login');
     });
 
@@ -1209,10 +1212,15 @@ function createAuthOverlay() {
         <div class="auth-overlay__backdrop" data-auth-close></div>
         <div class="login-container" role="dialog" aria-modal="true" aria-labelledby="auth-overlay-title">
             <button type="button" class="auth-overlay__close" data-auth-close aria-label="${LOGIN_TEXT.close}">×</button>
-            <img src="../media/logo.png" alt="Logo" class="login-logo">
-            <h2 class="login-title" id="auth-overlay-title" data-auth-title>${LOGIN_TEXT.title}</h2>
-            <p class="login-description" data-auth-description hidden>${LOGIN_TEXT.registerSubtitle}</p>
-            <p class="login-status" data-auth-status>${getAuthStatusText()}</p>
+            <header class="login-header">
+                <img src="../media/logo.png" alt="Logo" class="login-logo">
+                <div class="login-heading">
+                    <h2 class="login-title" id="auth-overlay-title" data-auth-title>${LOGIN_TEXT.title}</h2>
+                    <span class="login-badge" data-auth-register-only data-auth-display="inline-flex" aria-hidden="true" hidden>${LOGIN_TEXT.newBadge || 'NOUVEAU'}</span>
+                </div>
+                <p class="login-description" data-auth-description hidden>${LOGIN_TEXT.registerSubtitle}</p>
+                <p class="login-status" data-auth-status>${getAuthStatusText()}</p>
+            </header>
             <form class="login-form" data-auth-form novalidate>
                 <div class="login-feedback" data-auth-feedback role="alert" aria-live="polite" hidden></div>
                 <div data-auth-credentials>
@@ -1233,7 +1241,7 @@ function createAuthOverlay() {
                         <label for="overlay-password-confirm">${LOGIN_TEXT.registerPasswordConfirmLabel}</label>
                         <input type="password" id="overlay-password-confirm" class="form-control" placeholder="${LOGIN_TEXT.passwordPlaceholder}" autocomplete="new-password" data-auth-password-confirm>
                     </div>
-                    <div class="form-group" data-auth-register-only data-auth-display="flex">
+                    <div class="form-group form-group--optional" data-auth-register-only data-auth-display="flex">
                         <label for="overlay-class">${LOGIN_TEXT.registerClassLabel}</label>
                         <input type="text" id="overlay-class" class="form-control" placeholder="${LOGIN_TEXT.registerClassPlaceholder}" autocomplete="organization" data-auth-class>
                     </div>
