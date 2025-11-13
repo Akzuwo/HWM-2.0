@@ -100,7 +100,7 @@ def test_admin_classes_and_schedules_crud(app_client):
     resp = client.post(
         '/api/admin/classes',
         json={
-            'slug': 'new-class',
+            'slug': 'L23a',
             'title': 'Neue Klasse',
             'description': 'Test',
             'is_active': True,
@@ -110,6 +110,7 @@ def test_admin_classes_and_schedules_crud(app_client):
     assert resp.status_code == 200
     new_class_id = class_data['id']
     assert new_class_id in storage['classes']
+    assert storage['classes'][new_class_id]['slug'] == 'L23a'
 
     resp = client.put(
         f'/api/admin/classes/{new_class_id}',

@@ -2444,12 +2444,12 @@ def admin_classes_collection():
             return _pagination_response(rows, total, page, page_size)
 
         data = request.json or {}
-        slug = (data.get('slug') or '').strip().lower()
+        slug = (data.get('slug') or '').strip()
         title = (data.get('title') or '').strip()
         description = (data.get('description') or '').strip() or None
         is_active = _parse_bool(data.get('is_active'), True)
 
-        if not slug or not re.match(r'^[a-z0-9\-]+$', slug):
+        if not slug or not re.match(r'^[A-Za-z0-9\-]+$', slug):
             return jsonify(status='error', message='invalid_slug'), 400
         if not title:
             return jsonify(status='error', message='title_required'), 400
@@ -2528,8 +2528,8 @@ def admin_classes_resource(class_id: int):
             values = []
 
             if 'slug' in data:
-                slug = (data.get('slug') or '').strip().lower()
-                if not slug or not re.match(r'^[a-z0-9\-]+$', slug):
+                slug = (data.get('slug') or '').strip()
+                if not slug or not re.match(r'^[A-Za-z0-9\-]+$', slug):
                     return jsonify(status='error', message='invalid_slug'), 400
                 updates.append('slug=%s')
                 values.append(slug)
