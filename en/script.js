@@ -34,7 +34,7 @@ const LOGIN_TEXT = {
     passwordResetTitle: '🔁 Reset password',
     passwordResetSubtitle: 'Enter the code from your email and choose a new password.',
     passwordResetCodeLabel: 'Reset code',
-    passwordResetCodePlaceholder: '6-digit code',
+    passwordResetCodePlaceholder: '8-digit code',
     passwordResetCodeHint: 'The code is valid for 10 minutes. Please also check your spam folder.',
     passwordResetRequest: 'Request reset code',
     passwordResetRequestLoading: 'Requesting…',
@@ -1138,7 +1138,7 @@ function bindAuthForms() {
         const resetCodeInput = getPasswordResetCodeInput(form);
         if (resetCodeInput) {
             resetCodeInput.addEventListener('input', () => {
-                resetCodeInput.value = resetCodeInput.value.replace(/[^0-9]/g, '').slice(0, 6);
+                resetCodeInput.value = resetCodeInput.value.replace(/[^0-9]/g, '').slice(0, 8);
                 setLoginFeedback('', 'neutral', form);
             });
             resetCodeInput.addEventListener('keydown', (event) => {
@@ -1271,7 +1271,7 @@ function createAuthOverlay() {
                     <p class="login-hint" data-auth-reset-hint>${LOGIN_TEXT.passwordResetCodeHint}</p>
                     <div class="form-group">
                         <label for="overlay-reset-code">${LOGIN_TEXT.passwordResetCodeLabel}</label>
-                        <input type="text" id="overlay-reset-code" class="form-control" placeholder="${LOGIN_TEXT.passwordResetCodePlaceholder}" inputmode="numeric" autocomplete="one-time-code" maxlength="6" data-auth-reset-code>
+                        <input type="text" id="overlay-reset-code" class="form-control" placeholder="${LOGIN_TEXT.passwordResetCodePlaceholder}" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{8}" maxlength="8" data-auth-reset-code>
                     </div>
                     <div class="form-group">
                         <label for="overlay-reset-password">${LOGIN_TEXT.passwordResetNewPasswordLabel}</label>
