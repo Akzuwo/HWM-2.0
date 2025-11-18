@@ -34,7 +34,7 @@ const LOGIN_TEXT = {
     passwordResetTitle: '🔁 Reimposta password',
     passwordResetSubtitle: 'Inserisci il codice ricevuto via e-mail e scegli una nuova password.',
     passwordResetCodeLabel: 'Codice di reimpostazione',
-    passwordResetCodePlaceholder: 'Codice a 6 cifre',
+    passwordResetCodePlaceholder: 'Codice a 8 cifre',
     passwordResetCodeHint: 'Il codice è valido per 10 minuti. Controlla anche la cartella spam.',
     passwordResetRequest: 'Richiedi codice',
     passwordResetRequestLoading: 'Invio in corso…',
@@ -1144,7 +1144,7 @@ function bindAuthForms() {
         const resetCodeInput = getPasswordResetCodeInput(form);
         if (resetCodeInput) {
             resetCodeInput.addEventListener('input', () => {
-                resetCodeInput.value = resetCodeInput.value.replace(/[^0-9]/g, '').slice(0, 6);
+                resetCodeInput.value = resetCodeInput.value.replace(/[^0-9]/g, '').slice(0, 8);
                 setLoginFeedback('', 'neutral', form);
             });
             resetCodeInput.addEventListener('keydown', (event) => {
@@ -1277,7 +1277,7 @@ function createAuthOverlay() {
                     <p class="login-hint" data-auth-reset-hint>${LOGIN_TEXT.passwordResetCodeHint}</p>
                     <div class="form-group">
                         <label for="overlay-reset-code">${LOGIN_TEXT.passwordResetCodeLabel}</label>
-                        <input type="text" id="overlay-reset-code" class="form-control" placeholder="${LOGIN_TEXT.passwordResetCodePlaceholder}" inputmode="numeric" autocomplete="one-time-code" maxlength="6" data-auth-reset-code>
+                        <input type="text" id="overlay-reset-code" class="form-control" placeholder="${LOGIN_TEXT.passwordResetCodePlaceholder}" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{8}" maxlength="8" data-auth-reset-code>
                     </div>
                     <div class="form-group">
                         <label for="overlay-reset-password">${LOGIN_TEXT.passwordResetNewPasswordLabel}</label>
