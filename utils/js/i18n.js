@@ -129,6 +129,17 @@
         pageTitle: 'Kalender',
         heading: '📅 Kalender',
         description: 'Behalte Hausaufgaben, Prüfungen und Events in einer dunklen, klar strukturierten Ansicht im Blick.',
+        header: {
+          eyebrow: 'Planungsboard',
+          badge: 'Kalender-Board',
+          subtitle: 'Live-Überblick für Aufgaben, Prüfungen und Events.',
+          status: 'Live synchronisiert',
+          menuLabel: 'Kalender Navigation',
+          actions: {
+            help: 'Hilfe & Support',
+            upcoming: 'Anstehend',
+          },
+        },
         status: {
           loading: 'Kalender wird geladen …',
           error: 'Fehler beim Laden der Kalendereinträge!',
@@ -379,6 +390,17 @@
         pageTitle: 'Calendar',
         heading: '📅 Calendar',
         description: 'Keep homework, exams and events in view with a cohesive dark experience.',
+        header: {
+          eyebrow: 'Planning board',
+          badge: 'Calendar hub',
+          subtitle: 'Real-time overview for homework, exams and events.',
+          status: 'Live synced',
+          menuLabel: 'Calendar navigation',
+          actions: {
+            help: 'Help & support',
+            upcoming: 'Upcoming',
+          },
+        },
         status: {
           loading: 'Loading calendar …',
           error: 'Unable to load calendar entries!',
@@ -631,6 +653,17 @@
         pageTitle: 'Calendario',
         heading: '📅 Calendario',
         description: 'Gestisci compiti, verifiche ed eventi in un\'interfaccia scura e coerente.',
+        header: {
+          eyebrow: 'Area di pianificazione',
+          badge: 'Hub calendario',
+          subtitle: 'Panoramica in tempo reale di compiti, verifiche ed eventi.',
+          status: 'Sincronizzato in tempo reale',
+          menuLabel: 'Navigazione calendario',
+          actions: {
+            help: 'Aiuto & supporto',
+            upcoming: 'In arrivo',
+          },
+        },
         status: {
           loading: 'Caricamento del calendario …',
           error: 'Impossibile caricare le voci del calendario!',
@@ -882,6 +915,17 @@
         pageTitle: 'Calendrier',
         heading: '📅 Calendrier',
         description: 'Gardez devoirs, évaluations et événements en vue grâce à une interface sombre harmonisée.',
+        header: {
+          eyebrow: 'Espace planification',
+          badge: 'Hub calendrier',
+          subtitle: 'Vue en temps réel des devoirs, évaluations et événements.',
+          status: 'Synchronisé en direct',
+          menuLabel: 'Navigation du calendrier',
+          actions: {
+            help: 'Aide & support',
+            upcoming: 'À venir',
+          },
+        },
         status: {
           loading: 'Chargement du calendrier …',
           error: 'Impossible de charger les entrées du calendrier !',

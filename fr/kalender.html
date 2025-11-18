@@ -13,17 +13,77 @@
   <link rel="stylesheet" href="../utils/css/kalender.css" />
 </head>
 <body class="calendar-theme">
-<main class="calendar-page" id="main">
-    <section class="calendar-intro">
-      <div class="calendar-intro__heading">
-        <div class="calendar-intro__title-row">
-          <h1 data-i18n="calendar.heading">📅 Calendrier</h1>
-        </div>
-        <p data-i18n="calendar.description">
-          Gardez devoirs, évaluations et événements en vue grâce à une interface sombre harmonisée.
-        </p>
+  <header class="calendar-header" data-calendar-header>
+    <div class="calendar-header__inner">
+      <div class="calendar-header__row">
+        <a class="calendar-header__brand" href="index.html">
+          <img src="../media/logo.png" alt="" aria-hidden="true" width="40" height="40" />
+          <div class="calendar-header__brand-copy">
+            <span class="calendar-header__eyebrow" data-i18n="calendar.header.eyebrow">Espace planification</span>
+            <span class="calendar-header__name" data-i18n="common.appName">Homework Manager</span>
+          </div>
+        </a>
+        <span class="calendar-header__status" data-i18n="calendar.header.status">Synchronisé en direct</span>
+        <button
+          class="calendar-header__menu-toggle"
+          type="button"
+          data-calendar-menu-toggle
+          aria-expanded="false"
+          aria-controls="calendar-header-nav"
+          data-i18n-attr="aria-label:calendar.header.menuLabel"
+        >
+          <span class="visually-hidden" data-i18n="calendar.header.menuLabel">Navigation du calendrier</span>
+          <span aria-hidden="true"></span>
+        </button>
       </div>
-    </section>
+      <div class="calendar-header__content">
+        <div class="calendar-header__title-block">
+          <p class="calendar-header__label" data-i18n="calendar.header.badge">Hub calendrier</p>
+          <h1 class="calendar-header__title" data-i18n="calendar.heading">📅 Calendrier</h1>
+          <p class="calendar-header__subtitle" data-i18n="calendar.header.subtitle">
+            Vue en temps réel des devoirs, évaluations et événements.
+          </p>
+        </div>
+        <div class="calendar-header__actions">
+          <a class="calendar-header__action calendar-header__action--ghost" href="help.html" data-i18n="calendar.header.actions.help"
+            >Aide &amp; support</a
+          >
+          <a
+            class="calendar-header__action calendar-header__action--solid"
+            href="upcoming.html"
+            data-i18n="calendar.header.actions.upcoming"
+            >À venir</a
+          >
+        </div>
+      </div>
+    </div>
+    <nav
+      class="calendar-header__nav"
+      id="calendar-header-nav"
+      aria-label="Navigation du calendrier"
+      data-i18n-attr="aria-label:calendar.header.menuLabel"
+      data-calendar-menu
+    >
+      <a class="calendar-header__nav-link" href="index.html" data-route="index.html" data-i18n="common.nav.home">Accueil</a>
+      <a class="calendar-header__nav-link" href="kalender.html" data-route="kalender.html" data-i18n="common.nav.calendar"
+        >Calendrier</a
+      >
+      <a class="calendar-header__nav-link" href="upcoming.html" data-route="upcoming.html" data-i18n="common.nav.upcoming"
+        >À venir</a
+      >
+      <a
+        class="calendar-header__nav-link"
+        href="stundenplan.html"
+        data-route="stundenplan.html"
+        data-i18n="common.nav.currentSubject"
+        >Matière en cours</a
+      >
+      <a class="calendar-header__nav-link" href="notenrechner.html" data-route="notenrechner.html" data-i18n="common.nav.grades"
+        >Calculateur de notes</a
+      >
+    </nav>
+  </header>
+  <main class="calendar-page" id="main">
 
     <section class="calendar-shell" aria-live="polite">
       <div class="calendar-weekstrip" data-week-strip>
@@ -591,7 +651,7 @@
 
   <div id="calendar-toast-container" class="calendar-toast-container" aria-live="polite" aria-atomic="true"></div>
 
-  <script type="module" src="../utils/js/header.js"></script>
+  <script src="../utils/js/calendar-header.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js" defer></script>
 <script src="../utils/js/i18n.js" defer></script>
   <script src="../utils/js/modal.js" defer></script>
