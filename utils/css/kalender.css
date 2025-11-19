@@ -233,7 +233,6 @@ body.calendar-theme main {
   align-items: center;
   gap: var(--space-4);
   flex-wrap: wrap;
-  justify-content: flex-start;
 }
 
 .calendar-header__brand {
@@ -242,9 +241,6 @@ body.calendar-theme main {
   gap: var(--space-3);
   color: inherit;
   text-decoration: none;
-  margin-left: auto;
-  text-align: right;
-  order: 2;
 }
 
 .calendar-header__brand img {
@@ -258,7 +254,7 @@ body.calendar-theme main {
   display: flex;
   flex-direction: column;
   gap: 0.1rem;
-  align-items: flex-end;
+  align-items: flex-start;
 }
 
 .calendar-header__eyebrow {
@@ -399,11 +395,11 @@ body.calendar-theme main {
   display: flex;
   align-items: center;
   gap: var(--space-4);
-  margin-left: 0;
+  margin-left: auto;
   position: relative;
   z-index: 1;
   transition: opacity 0.25s ease, transform 0.25s ease;
-  order: 1;
+  order: 2;
   flex-wrap: wrap;
 }
 
@@ -481,9 +477,9 @@ body.calendar-theme main {
 
 .calendar-page {
   flex: 1;
-  width: 100%;
-  max-width: none;
-  margin: 0;
+  width: 90%;
+  max-width: 1400px;
+  margin: 0 auto;
   padding: clamp(1rem, 3vw, 2rem);
   display: flex;
   flex-direction: column;
