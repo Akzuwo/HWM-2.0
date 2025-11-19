@@ -272,7 +272,7 @@ body.calendar-theme main {
 
 .calendar-header__menu-toggle {
   display: none;
-  margin-left: var(--space-3);
+  margin-left: auto;
   align-items: center;
   justify-content: center;
   width: 44px;
@@ -430,6 +430,7 @@ body.calendar-theme main {
   .calendar-header__menu-toggle {
     display: inline-flex;
     margin-left: auto;
+    order: 3;
   }
 
   .calendar-header__content {
@@ -470,8 +471,10 @@ body.calendar-theme main {
   .calendar-header__nav-link {
     width: 100%;
     text-align: left;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    background: rgba(10, 14, 24, 0.5);
+    font-size: 1.15rem;
+    padding: 0.65rem 0;
+    border: none;
+    background: transparent;
   }
 }
 
