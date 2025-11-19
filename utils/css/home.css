@@ -152,6 +152,16 @@ main.help-main {
   transform: none;
 }
 
+.home-callout--milestone {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(79, 70, 229, 0.1) 55%), rgba(16, 16, 32, 0.9);
+  border-color: rgba(129, 140, 248, 0.4);
+}
+
+.home-callout--milestone .home-callout__icon {
+  background: rgba(79, 70, 229, 0.35);
+  box-shadow: inset 0 0 0 1px rgba(191, 219, 254, 0.3);
+}
+
 .home-callout__icon {
   width: clamp(48px, 8vw, 60px);
   height: clamp(48px, 8vw, 60px);
