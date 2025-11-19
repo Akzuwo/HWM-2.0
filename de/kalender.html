@@ -36,26 +36,6 @@
           <span aria-hidden="true"></span>
         </button>
       </div>
-      <div class="calendar-header__content">
-        <div class="calendar-header__title-block">
-          <p class="calendar-header__label" data-i18n="calendar.header.badge">Kalender-Board</p>
-          <h1 class="calendar-header__title" data-i18n="calendar.heading">📅 Kalender</h1>
-          <p class="calendar-header__subtitle" data-i18n="calendar.header.subtitle">
-            Live-Überblick für Aufgaben, Prüfungen und Events.
-          </p>
-        </div>
-        <div class="calendar-header__actions">
-          <a class="calendar-header__action calendar-header__action--ghost" href="help.html" data-i18n="calendar.header.actions.help"
-            >Hilfe &amp; Support</a
-          >
-          <a
-            class="calendar-header__action calendar-header__action--solid"
-            href="upcoming.html"
-            data-i18n="calendar.header.actions.upcoming"
-            >Anstehend</a
-          >
-        </div>
-      </div>
     </div>
     <nav
       class="calendar-header__nav"
@@ -84,7 +64,15 @@
     </nav>
   </header>
   <main class="calendar-page" id="main">
-
+    <section class="calendar-intro">
+      <div class="calendar-intro__heading">
+        <p class="calendar-header__label" data-i18n="calendar.header.badge">Kalender-Board</p>
+        <h1 class="calendar-header__title" data-i18n="calendar.heading">📅 Kalender</h1>
+        <p class="calendar-header__subtitle" data-i18n="calendar.header.subtitle">
+          Live-Überblick für Aufgaben, Prüfungen und Events.
+        </p>
+      </div>
+    </section>
     <section class="calendar-shell" aria-live="polite">
       <div class="calendar-weekstrip" data-week-strip>
         <span class="calendar-weekstrip__label" data-i18n="calendar.weekStrip.label">Kalenderwochen</span>

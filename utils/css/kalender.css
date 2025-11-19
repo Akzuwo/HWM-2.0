@@ -411,6 +411,11 @@ body.calendar-theme main {
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   position: relative;
   z-index: 1;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.calendar-header__nav[hidden] {
+  display: none;
 }
 
 .calendar-header__nav-link {
@@ -455,16 +460,34 @@ body.calendar-theme main {
   }
 
   .calendar-header__nav {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(320px, 82vw);
     flex-direction: column;
     align-items: stretch;
     gap: var(--space-3);
-    margin-top: var(--space-3);
-    padding-top: var(--space-3);
+    margin: 0;
+    padding: clamp(1.5rem, 5vw, 2.25rem);
+    border-top: none;
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.94);
+    box-shadow: -16px 0 45px rgba(0, 0, 0, 0.65);
+    transform: translateX(100%);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .calendar-header--menu-open .calendar-header__nav {
+    transform: translateX(0);
+    opacity: 1;
+    pointer-events: auto;
   }
 
   .calendar-header__nav-link {
     width: 100%;
-    text-align: center;
+    text-align: left;
     border: 1px solid rgba(255, 255, 255, 0.12);
     background: rgba(10, 14, 24, 0.5);
   }
