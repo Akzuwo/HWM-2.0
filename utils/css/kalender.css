@@ -241,6 +241,7 @@ body.calendar-theme main {
   gap: var(--space-3);
   color: inherit;
   text-decoration: none;
+  order: 0;
 }
 
 .calendar-header__brand img {
@@ -281,6 +282,7 @@ body.calendar-theme main {
   border: 1px solid rgba(255, 255, 255, 0.18);
   background: rgba(0, 0, 0, 0.2);
   color: inherit;
+  order: 2;
 }
 
 .calendar-header__menu-toggle span[aria-hidden='true'] {
@@ -399,7 +401,7 @@ body.calendar-theme main {
   position: relative;
   z-index: 1;
   transition: opacity 0.25s ease, transform 0.25s ease;
-  order: 2;
+  order: 1;
   flex-wrap: wrap;
 }
 
