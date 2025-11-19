@@ -23,7 +23,31 @@
             <span class="calendar-header__name" data-i18n="common.appName">Homework Manager</span>
           </div>
         </a>
-        <span class="calendar-header__status" data-i18n="calendar.header.status">Live synchronisiert</span>
+        <nav
+          class="calendar-header__nav"
+          id="calendar-header-nav"
+          aria-label="Kalender Navigation"
+          data-i18n-attr="aria-label:calendar.header.menuLabel"
+          data-calendar-menu
+        >
+          <a class="calendar-header__nav-link" href="index.html" data-route="index.html" data-i18n="common.nav.home">Startseite</a>
+          <a class="calendar-header__nav-link" href="kalender.html" data-route="kalender.html" data-i18n="common.nav.calendar"
+            >Kalender</a
+          >
+          <a class="calendar-header__nav-link" href="upcoming.html" data-route="upcoming.html" data-i18n="common.nav.upcoming"
+            >Anstehend</a
+          >
+          <a
+            class="calendar-header__nav-link"
+            href="stundenplan.html"
+            data-route="stundenplan.html"
+            data-i18n="common.nav.currentSubject"
+            >Aktuelles Fach</a
+          >
+          <a class="calendar-header__nav-link" href="notenrechner.html" data-route="notenrechner.html" data-i18n="common.nav.grades"
+            >Notenrechner</a
+          >
+        </nav>
         <button
           class="calendar-header__menu-toggle"
           type="button"
@@ -37,31 +61,6 @@
         </button>
       </div>
     </div>
-    <nav
-      class="calendar-header__nav"
-      id="calendar-header-nav"
-      aria-label="Kalender Navigation"
-      data-i18n-attr="aria-label:calendar.header.menuLabel"
-      data-calendar-menu
-    >
-      <a class="calendar-header__nav-link" href="index.html" data-route="index.html" data-i18n="common.nav.home">Startseite</a>
-      <a class="calendar-header__nav-link" href="kalender.html" data-route="kalender.html" data-i18n="common.nav.calendar"
-        >Kalender</a
-      >
-      <a class="calendar-header__nav-link" href="upcoming.html" data-route="upcoming.html" data-i18n="common.nav.upcoming"
-        >Anstehend</a
-      >
-      <a
-        class="calendar-header__nav-link"
-        href="stundenplan.html"
-        data-route="stundenplan.html"
-        data-i18n="common.nav.currentSubject"
-        >Aktuelles Fach</a
-      >
-      <a class="calendar-header__nav-link" href="notenrechner.html" data-route="notenrechner.html" data-i18n="common.nav.grades"
-        >Notenrechner</a
-      >
-    </nav>
   </header>
   <main class="calendar-page" id="main">
     <section class="calendar-intro">
