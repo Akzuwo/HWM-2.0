@@ -235,7 +235,7 @@ body.calendar-theme main {
   display: flex;
   align-items: center;
   gap: var(--space-4);
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .calendar-header__brand {
@@ -409,9 +409,8 @@ body.calendar-theme main {
   order: 1;
   flex-wrap: nowrap;
   flex: 1 1 auto;
-  justify-content: space-between;
+  justify-content: flex-end;
   min-width: 0;
-  width: 100%;
 }
 
 .calendar-header__nav[hidden] {
@@ -424,7 +423,7 @@ body.calendar-theme main {
   text-decoration: none;
   border: none;
   padding: 0 clamp(0.5rem, 3vw, 1.25rem);
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   text-align: center;
 }
 
@@ -444,6 +443,10 @@ body.calendar-theme main {
     display: inline-flex !important;
     margin-left: auto;
     order: 3;
+  }
+
+  .calendar-header__row {
+    flex-wrap: wrap;
   }
 
   .calendar-header__content {
