@@ -999,6 +999,18 @@ body.calendar-theme main {
   padding: 0.85rem 0;
 }
 
+/* Ensure the FullCalendar column header uses the dark theme background
+   (fixes the white bar that appears in some browsers / themes) */
+.fc .fc-col-header,
+.fc .fc-col-header-row,
+.fc-theme-standard thead,
+.fc-theme-standard thead tr,
+.fc-theme-standard thead th,
+.fc .fc-col-header-cell {
+  background: rgba(255, 255, 255, 0.03) !important;
+  color: var(--muted-strong) !important;
+}
+
 .fc .fc-daygrid-day-number {
   color: var(--muted-strong);
   font-weight: 600;
