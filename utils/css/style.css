@@ -1163,6 +1163,14 @@ body.has-auth-overlay {
     padding: 0.85rem 3.25rem 0.85rem 1rem;
 }
 
+/* Ensure email input visually matches password input width (accounts for toggle button padding) */
+.login-container input[data-auth-email].form-control,
+.auth-overlay input[data-auth-email].form-control {
+    /* match right padding of password-field so inner text width aligns */
+    padding-right: 3.25rem;
+    box-sizing: border-box;
+}
+
 .toggle-password {
     position: absolute;
     right: 12px;
