@@ -8,43 +8,49 @@
   <link rel="stylesheet" href="../utils/css/style.css" />
 </head>
 <body class="profile-page">
-  <main id="main" class="content">
-    <article class="card">
-      <header class="card__header">
-        <h1>Profile</h1>
-      </header>
-      <section class="card__body">
-        <dl>
-          <dt>Email</dt>
-          <dd id="profile-email">–</dd>
+  <script type="module" src="../utils/js/header.js"></script>
+  <main id="main" class="page">
+    <div class="page__inner">
+      <div class="container">
+        <article class="card card--center">
+          <header class="card__header">
+            <h1 data-i18n="profile.title">Profile</h1>
+          </header>
+          <section class="card__body">
+            <dl class="profile-list">
+              <div class="profile-row">
+                <dt data-i18n="profile.email">Email</dt>
+                <dd id="profile-email">–</dd>
+              </div>
+              <div class="profile-row">
+                <dt data-i18n="profile.accountAge">Account age</dt>
+                <dd id="profile-age">–</dd>
+              </div>
+              <div class="profile-row">
+                <dt data-i18n="profile.class">Class</dt>
+                <dd>
+                  <input id="profile-class-input" class="input" type="text" placeholder="Class (e.g. 10A)" />
+                  <div id="class-cooldown-msg" class="muted"></div>
+                  <div style="margin-top:0.5rem">
+                    <button id="change-class-btn" class="button"> <span data-i18n="profile.changeClass">Change class</span></button>
+                  </div>
+                </dd>
+              </div>
+            </dl>
 
-          <dt>Account age</dt>
-          <dd id="profile-age">–</dd>
+            <hr />
 
-          <dt>Class</dt>
-          <dd>
-            <input id="profile-class-input" type="text" placeholder="Class (e.g. 10A)" />
-            <div id="class-cooldown-msg" class="muted"></div>
-            <button id="change-class-btn" class="button">Change class</button>
-          </dd>
-        </dl>
-
-        <hr />
-
-        <section>
-          <h2>Delete account</h2>
-          <p class="muted">This will permanently remove your account.</p>
-          <button id="delete-account-btn" class="button button--danger">Delete account</button>
-        </section>
-      </section>
-    </article>
+            <section>
+              <h2 data-i18n="profile.deleteTitle">Delete account</h2>
+              <p class="muted" data-i18n="profile.deleteWarning">This will permanently remove your account.</p>
+              <button id="delete-account-btn" class="button button--danger" data-i18n="profile.deleteButton">Delete account</button>
+            </section>
+          </section>
+        </article>
+      </div>
+    </div>
   </main>
 
-  <footer class="site-footer">
-    <a href="index.html">Back</a>
-  </footer>
-
-  <script type="module" src="../utils/js/header.js"></script>
   <script src="../utils/js/i18n.js" defer></script>
   <script src="../utils/js/overlay.js" defer></script>
   <script src="../utils/js/toast.js" defer></script>

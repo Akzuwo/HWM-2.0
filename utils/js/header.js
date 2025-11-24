@@ -109,6 +109,49 @@ function populateRoutes(header, info) {
   }
 }
 
+function localizedLoggedInPrefix(lang) {
+  switch ((lang || '').toLowerCase()) {
+    case 'de':
+      return 'Angemeldet als';
+    case 'fr':
+      return 'Connecté en tant que';
+    case 'it':
+      return 'Connesso come';
+    default:
+      return 'Signed in as';
+  }
+}
+
+async function tryInjectUserBadge(header, info) {
+  const userArea = header.querySelector('[data-user-area]');
+  if (!userArea) return;
+  const prefix = info.languagePrefix || '';
+  try {
+    const res = await fetch('/api/me', { credentials: 'include' });
+    if (!res.ok) return; // not logged in or error
+    const payload = await res.json().catch(() => null);
+    if (!payload || payload.status !== 'ok' || !payload.data) return;
+    const data = payload.data;
+
+    const labelPrefix = localizedLoggedInPrefix(info.language);
+    const display = data.role ? `${labelPrefix} ${data.role}` : `${labelPrefix} ${data.email || ''}`;
+
+    const a = document.createElement('a');
+    a.className = 'user-badge nav-link';
+    const profileHref = info.language ? `/${info.language}/profile.html` : '/profile.html';
+    a.setAttribute('href', profileHref);
+    a.setAttribute('title', display);
+    a.textContent = display;
+
+    // replace contents of userArea
+    userArea.innerHTML = '';
+    userArea.appendChild(a);
+  } catch (err) {
+    // ignore: keep login button
+    return;
+  }
+}
+
 function setupMobileNavigation(header) {
   const toggle = header.querySelector('[data-nav-toggle]');
   const drawer = header.querySelector('[data-nav-drawer]');
@@ -326,6 +369,8 @@ async function loadHeader() {
     populateRoutes(header, info);
     applyLanguageCode(header, info.language.slice(0, 2));
     markActiveLink(header, info);
+    // attempt to render user badge if authenticated
+    tryInjectUserBadge(header, info);
 
     const body = document.body;
     if (!body) {
