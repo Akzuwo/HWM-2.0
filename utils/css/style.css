@@ -401,6 +401,91 @@ button {
     transform: scaleX(1);
 }
 
+/* Admin logs styling */
+.admin-dashboard__logs {
+    margin: 1rem 0 2rem 0;
+    text-align: left;
+}
+.admin-dashboard__logs-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+}
+.admin-dashboard__logs-meta {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.9rem;
+    color: rgba(255,255,255,0.75);
+    margin-bottom: 0.5rem;
+}
+.admin-dashboard__logs-status {
+    margin-bottom: 0.5rem;
+    color: rgba(255,255,255,0.9);
+}
+.admin-dashboard__logs-content {
+    background: rgba(0,0,0,0.35);
+    border: 1px solid rgba(255,255,255,0.04);
+    padding: 0.6rem;
+    border-radius: 8px;
+    max-height: 48vh;
+    overflow: auto;
+}
+.admin-dashboard__logs-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+.admin-dashboard__log-line {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+    padding: 0.45rem 0.6rem;
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+    border-radius: 6px;
+}
+.admin-dashboard__log-meta {
+    min-width: 12rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    color: rgba(255,255,255,0.7);
+    font-size: 0.8rem;
+}
+.admin-dashboard__log-timestamp {
+    font-variant-numeric: tabular-nums;
+}
+.admin-dashboard__log-level {
+    display: inline-block;
+    padding: 0.12rem 0.4rem;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+}
+.admin-dashboard__log-level--error { background: #6b1a1a; color: #ffd6d6; }
+.admin-dashboard__log-level--warn, .admin-dashboard__log-level--warning { background: #6b4d1a; color: #fff0c2; }
+.admin-dashboard__log-level--info { background: #1a4f6b; color: #d6f0ff; }
+.admin-dashboard__log-level--debug { background: #2b2b2b; color: #e6e6e6; }
+.admin-dashboard__log-message { flex: 1 1 auto; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace; font-size: 0.9rem; color: rgba(255,255,255,0.95); }
+.admin-dashboard__log-request { display:flex; gap:0.6rem; margin-bottom:0.25rem; align-items:center; }
+.admin-dashboard__log-request-method { font-weight:700; color:var(--accent); padding:0.12rem 0.4rem; background:rgba(255,255,255,0.02); border-radius:4px; font-family:inherit; }
+.admin-dashboard__log-request-path { color: rgba(255,255,255,0.9); font-family:inherit; }
+.admin-dashboard__log-rest { color: rgba(255,255,255,0.85); font-size:0.85rem; }
+.admin-dashboard__log-empty { color: rgba(255,255,255,0.7); padding:0.4rem; }
+
+/* small badges used in admin tables */
+.admin-badge {
+    display: inline-block;
+    padding: 0.18rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+.admin-badge--ok { background: rgba(0,128,0,0.12); color: #bff0bf; }
+.admin-badge--muted { background: rgba(255,255,255,0.02); color: rgba(255,255,255,0.7); }
+
 .nav-link.active::after,
 .nav-link[aria-current="page"]::after {
     opacity: 1;
