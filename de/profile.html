@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Profil</title>
+  <link rel="icon" type="image/png" href="../media/logo.png" />
+  <link rel="stylesheet" href="../utils/css/style.css" />
+</head>
+<body class="profile-page">
+  <main id="main" class="content">
+    <article class="card">
+      <header class="card__header">
+        <h1>Profil</h1>
+      </header>
+      <section class="card__body">
+        <dl>
+          <dt>E‑Mail</dt>
+          <dd id="profile-email">–</dd>
+
+          <dt>Accountalter</dt>
+          <dd id="profile-age">–</dd>
+
+          <dt>Klasse</dt>
+          <dd>
+            <input id="profile-class-input" type="text" placeholder="Klasse (z.B. 10A)" />
+            <div id="class-cooldown-msg" class="muted"></div>
+            <button id="change-class-btn" class="button">Klasse ändern</button>
+          </dd>
+        </dl>
+
+        <hr />
+
+        <section>
+          <h2>Account löschen</h2>
+          <p class="muted">Diese Aktion löscht Ihr Benutzerkonto unwiderruflich.</p>
+          <button id="delete-account-btn" class="button button--danger">Account löschen</button>
+        </section>
+      </section>
+    </article>
+  </main>
+
+  <footer class="site-footer">
+    <a href="index.html">Zurück</a>
+  </footer>
+
+  <script type="module" src="../utils/js/header.js"></script>
+  <script src="../utils/js/i18n.js" defer></script>
+  <script src="../utils/js/overlay.js" defer></script>
+  <script src="../utils/js/toast.js" defer></script>
+  <script src="../utils/js/footer.js" defer></script>
+  <script src="../utils/js/profile.js" defer></script>
+</body>
+</html>
