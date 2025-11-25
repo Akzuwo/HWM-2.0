@@ -369,8 +369,6 @@ async function loadHeader() {
     populateRoutes(header, info);
     applyLanguageCode(header, info.language.slice(0, 2));
     markActiveLink(header, info);
-    // attempt to render user badge if authenticated
-    tryInjectUserBadge(header, info);
 
     const body = document.body;
     if (!body) {
@@ -386,6 +384,8 @@ async function loadHeader() {
     }
     body.insertBefore(header, body.firstChild);
     setupMobileNavigation(header);
+    // attempt to render user badge after header is in the DOM and navigation is initialized
+    tryInjectUserBadge(header, info);
 
     window.dispatchEvent(
       new CustomEvent('hm:header-ready', {
