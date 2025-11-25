@@ -685,6 +685,7 @@ button {
     text-decoration: none;
     box-shadow: 0 12px 28px rgba(0, 123, 255, 0.35);
     transition: transform 0.2s ease, filter 0.2s ease;
+    white-space: nowrap;
 }
 
 .btn-login:hover {
