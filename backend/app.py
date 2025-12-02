@@ -378,7 +378,7 @@ CONTACT_MIN_DURATION_MS = int(os.getenv('CONTACT_MIN_DURATION_MS', 3000))
 CONTACT_MIN_MESSAGE_LENGTH = int(os.getenv('CONTACT_MIN_MESSAGE_LENGTH', 20))
 CONTACT_USER_COOLDOWN = {}
 CONTACT_USER_COOLDOWN_SECONDS = int(os.getenv('CONTACT_USER_COOLDOWN_SECONDS', 120))
-CONTACT_TARGET_ADDRESS = os.getenv('CONTACT_TARGET_ADDRESS', 'timowigger8@gmail.com')
+CONTACT_TARGET_ADDRESS = os.getenv('CONTACT_TARGET_ADDRESS', 'support@akzuwo.ch')
 
 PRIMARY_TEST_BASE_URL = os.getenv('PRIMARY_TEST_BASE_URL', 'https://hwm-beta.akzuwo.ch')
 LOGIN_RATE_LIMIT = {}
@@ -3265,6 +3265,149 @@ def assign_user_to_class(user_id: int):
             cursor.close()
 
     return jsonify({'status': 'ok'})
+
+
+# --- Current user profile endpoints ---
+@app.route('/api/me', methods=['GET', 'PUT', 'DELETE', 'OPTIONS'])
+@require_role()
+def current_user_profile():
+    if request.method == 'OPTIONS':
+        return _cors_preflight()
+
+    user_id = session.get('user_id')
+    try:
+        user_id = int(user_id)
+    except (TypeError, ValueError):
+        return jsonify(status='error', message='not_authenticated'), 401
+
+    try:
+        conn = get_connection()
+    except Exception:
+        return jsonify(status='error', message='database_unavailable'), 503
+
+    with closing(conn):
+        cursor = conn.cursor(dictionary=True)
+        try:
+            if request.method == 'GET':
+                cursor.execute(
+                    "SELECT id, email, role, class_id, created_at, updated_at, IFNULL(last_class_change, NULL) AS last_class_change FROM users WHERE id=%s LIMIT 1",
+                    (user_id,),
+                )
+                row = cursor.fetchone()
+                if not row:
+                    return jsonify(status='error', message='user_not_found'), 404
+                # compute account age in days
+                created_at = row.get('created_at')
+                account_age_days = None
+                if created_at:
+                    try:
+                        delta = datetime.datetime.utcnow() - created_at
+                        account_age_days = max(0, int(delta.total_seconds() // 86400))
+                    except Exception:
+                        account_age_days = None
+
+                return jsonify(status='ok', data={
+                    'id': row.get('id'),
+                    'email': row.get('email'),
+                    'role': row.get('role'),
+                    'class_id': row.get('class_id'),
+                    'created_at': row.get('created_at').isoformat() if row.get('created_at') else None,
+                    'account_age_days': account_age_days,
+                    'last_class_change': row.get('last_class_change').isoformat() if row.get('last_class_change') else None,
+                })
+
+            if request.method == 'DELETE':
+                # Soft-delete: mark account as inactive and record deletion time
+                cursor.close()
+                cursor = conn.cursor()
+                deleted_at = datetime.datetime.utcnow()
+                try:
+                    cursor.execute(
+                        "UPDATE users SET is_active=0, deleted_at=%s, updated_at=%s WHERE id=%s",
+                        (deleted_at, deleted_at, user_id),
+                    )
+                except mysql.connector.Error:
+                    return jsonify(status='error', message='database_unavailable'), 503
+
+                if cursor.rowcount == 0:
+                    return jsonify(status='error', message='user_not_found'), 404
+                _log_user_event('account_soft_delete', user_id=user_id)
+                conn.commit()
+                # clear session
+                session_keys = list(session.keys())
+                for k in session_keys:
+                    session.pop(k, None)
+                return jsonify(status='ok')
+
+            # PUT: update profile (only class change supported for now)
+            if request.method == 'PUT':
+                data = request.json or {}
+                target_class = data.get('class_id')
+                try:
+                    target_class = int(target_class) if target_class is not None else None
+                except (TypeError, ValueError):
+                    return jsonify(status='error', message='invalid_class_id'), 400
+
+                if target_class is None:
+                    return jsonify(status='error', message='no_changes'), 400
+
+                # ensure class exists
+                cursor.execute("SELECT id FROM classes WHERE id=%s", (target_class,))
+                if cursor.fetchone() is None:
+                    return jsonify(status='error', message='class_not_found'), 404
+
+                # ensure users table has last_class_change column; do NOT ALTER TABLE at runtime
+                try:
+                    cursor.execute("SELECT last_class_change FROM users WHERE id=%s LIMIT 1", (user_id,))
+                except mysql.connector.Error:
+                    # Column missing or other DB error — inform client to run migration
+                    return jsonify(status='error', message='migration_required', detail='last_class_change_missing'), 500
+
+                # re-query last_class_change
+                cursor.execute("SELECT last_class_change, class_id FROM users WHERE id=%s LIMIT 1", (user_id,))
+                row = cursor.fetchone()
+                if not row:
+                    return jsonify(status='error', message='user_not_found'), 404
+
+                last_change = row.get('last_class_change')
+                now = datetime.datetime.utcnow()
+                cooldown_days = 30
+                if last_change:
+                    try:
+                        delta = now - last_change
+                        if delta.total_seconds() < cooldown_days * 86400:
+                            remaining = int((cooldown_days * 86400 - delta.total_seconds()) // 86400) + 1
+                            return jsonify(status='error', message='class_change_cooldown', remaining_days=remaining), 400
+                    except Exception:
+                        pass
+
+                # perform update
+                try:
+                    cursor.close()
+                    cursor = conn.cursor()
+                    cursor.execute(
+                        "UPDATE users SET class_id=%s, last_class_change=%s, updated_at=%s WHERE id=%s",
+                        (target_class, now, now, user_id),
+                    )
+                    if cursor.rowcount == 0:
+                        return jsonify(status='error', message='user_not_found'), 404
+                    _log_user_event('class_change', user_id=user_id, new_class=target_class)
+                    conn.commit()
+                    # update session
+                    session['class_id'] = target_class
+                except mysql.connector.Error:
+                    conn.rollback()
+                    return jsonify(status='error', message='database_unavailable'), 503
+
+                return jsonify(status='ok')
+
+        except mysql.connector.Error:
+            return jsonify(status='error', message='database_unavailable'), 503
+        finally:
+            cursor.close()
+
+    # fallback
+    return jsonify(status='error', message='unknown'), 500
 
 
 # --- UPDATE ENTRY ---

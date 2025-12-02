@@ -559,6 +559,33 @@ function getAuthMode(form) {
     if (mode === 'register' || mode === 'verification' || mode === 'password-reset') {
         return mode;
     }
+    // Fallback: infer mode from visible DOM sections so stale dataset doesn't mislead
+    try {
+        const resetStep = form.querySelector('[data-auth-reset-step]');
+        if (resetStep && !resetStep.hidden) {
+            return 'password-reset';
+        }
+        const verificationStep = form.querySelector('[data-auth-code-step]');
+        if (verificationStep && !verificationStep.hidden) {
+            return 'verification';
+        }
+        const credentials = form.querySelector('[data-auth-credentials]');
+        if (credentials && !credentials.hidden) {
+            return 'login';
+        }
+        // As another fallback, check classes toggled by setAuthMode
+        if (form.classList.contains('is-password-reset-mode')) {
+            return 'password-reset';
+        }
+        if (form.classList.contains('is-verification-mode')) {
+            return 'verification';
+        }
+        if (form.classList.contains('is-register-mode')) {
+            return 'register';
+        }
+    } catch (e) {
+        // ignore and fall through
+    }
     return 'login';
 }
 

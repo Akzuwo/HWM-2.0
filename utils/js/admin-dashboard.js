@@ -502,7 +502,7 @@ function createLogsSection(translations) {
   const status = document.createElement('div');
   status.className = 'admin-dashboard__logs-status';
 
-  const content = document.createElement('pre');
+  const content = document.createElement('div');
   content.className = 'admin-dashboard__logs-content';
   content.setAttribute('role', 'log');
   content.setAttribute('aria-live', 'polite');
@@ -992,7 +992,107 @@ function buildDashboard(root) {
       logsStatus.textContent = messages.join(' ');
     }
 
-    logsContent.textContent = logs.missing ? '' : (logs.content || '');
+    if (logs.missing) {
+      logsContent.innerHTML = '';
+    } else if (!logs.content) {
+      logsContent.innerHTML = '';
+    } else {
+      renderLogs(logs.content);
+    }
+  }
+
+  function renderLogs(text) {
+    // clear
+    logsContent.innerHTML = '';
+    // split into lines and render each as a row with optional metadata
+    const lines = String(text).split(/\r?\n/).filter((l) => l.length > 0);
+    if (lines.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'admin-dashboard__log-empty';
+      empty.textContent = t.logs.empty;
+      logsContent.appendChild(empty);
+      return;
+    }
+
+    const list = document.createElement('div');
+    list.className = 'admin-dashboard__logs-list';
+
+    const timeRegex = /^(\d{4}-\d{2}-\d{2}T[\d:.+\-Z]+)/; // ISO-ish
+    const levelRegex = /\b(INFO|WARN|WARNING|ERROR|DEBUG)\b/;
+
+    lines.forEach((line) => {
+      const row = document.createElement('div');
+      row.className = 'admin-dashboard__log-line';
+
+      // try to extract timestamp
+      let ts = '';
+      const tsMatch = line.match(timeRegex);
+      if (tsMatch) {
+        ts = tsMatch[1];
+      }
+
+      // try to extract level
+      let level = '';
+      const lvlMatch = line.match(levelRegex);
+      if (lvlMatch) {
+        level = lvlMatch[1];
+      }
+
+      const meta = document.createElement('div');
+      meta.className = 'admin-dashboard__log-meta';
+      if (ts) {
+        const tsEl = document.createElement('time');
+        tsEl.className = 'admin-dashboard__log-timestamp';
+        tsEl.dateTime = ts;
+        try {
+          tsEl.textContent = new Date(ts).toLocaleString(locale, { dateStyle: 'short', timeStyle: 'short' });
+        } catch (e) {
+          tsEl.textContent = ts;
+        }
+        meta.appendChild(tsEl);
+      }
+      if (level) {
+        const lvlEl = document.createElement('span');
+        lvlEl.className = `admin-dashboard__log-level admin-dashboard__log-level--${level.toLowerCase()}`;
+        lvlEl.textContent = level;
+        meta.appendChild(lvlEl);
+      }
+
+      const message = document.createElement('div');
+      message.className = 'admin-dashboard__log-message';
+      // highlight common parts like HTTP method / path
+      const methodPathMatch = line.match(/\b(POST|GET|PUT|DELETE|PATCH)\b\s+(\/[^\s]*)/i);
+      if (methodPathMatch) {
+        const method = methodPathMatch[1].toUpperCase();
+        const path = methodPathMatch[2];
+        const mp = document.createElement('div');
+        mp.className = 'admin-dashboard__log-request';
+        const mEl = document.createElement('span');
+        mEl.className = 'admin-dashboard__log-request-method';
+        mEl.textContent = method;
+        const pEl = document.createElement('span');
+        pEl.className = 'admin-dashboard__log-request-path';
+        pEl.textContent = path;
+        mp.appendChild(mEl);
+        mp.appendChild(pEl);
+        message.appendChild(mp);
+
+        // rest of message
+        const rest = line.replace(timeRegex, '').replace(methodPathMatch[0], '').trim();
+        const restEl = document.createElement('div');
+        restEl.className = 'admin-dashboard__log-rest';
+        restEl.textContent = rest;
+        message.appendChild(restEl);
+      } else {
+        message.textContent = line;
+      }
+
+      row.appendChild(meta);
+      row.appendChild(message);
+      list.appendChild(row);
+    });
+
+    logsContent.appendChild(list);
   }
 
   function setLogsVisibility(visible) {
@@ -1263,7 +1363,170 @@ function buildDashboard(root) {
       table.setRows([]);
       return;
     }
-    loadData();
+    if (resource.key === 'schedules') {
+      loadSchedulesView().catch((err) => {
+        showMessage('error', err?.message || t.messages.loadFailed);
+        table.setRows([]);
+      });
+    } else {
+      loadData();
+    }
+  }
+
+  async function loadSchedulesView() {
+    // Load classes and schedules, then present a per-class view indicating presence
+    await ensureClassesLoaded();
+    // fetch schedules (fetch a large page to include most schedules)
+    let schedulesResp;
+    try {
+      schedulesResp = await fetchJson('/api/admin/schedules?page_size=1000');
+    } catch (error) {
+      if (error.status === 401 || error.status === 403) {
+        handleUnauthorized();
+        return;
+      }
+      throw error;
+    }
+
+    const scheduleRows = Array.isArray(schedulesResp.data) ? schedulesResp.data : [];
+    const scheduleMap = new Map();
+    scheduleRows.forEach((s) => {
+      if (s && s.class_id) {
+        scheduleMap.set(Number(s.class_id), s);
+      }
+    });
+
+    const classRows = state.classes.map((klass) => ({
+      id: klass.id,
+      class_slug: klass.slug,
+      class_title: klass.title,
+      has_schedule: scheduleMap.has(klass.id),
+      schedule: scheduleMap.get(klass.id) || null,
+    }));
+
+    // configure columns for class-centric schedule view
+    const cols = [
+      { key: 'class_slug', label: t.table.classSlug, render: (row) => buildClassLabel({ id: row.id, slug: row.class_slug, title: row.class_title }) },
+      { key: 'has_schedule', label: t.table.status, render: (row) => {
+        const badge = document.createElement('span');
+        badge.textContent = row.has_schedule ? t.status.active : t.status.inactive;
+        badge.className = row.has_schedule ? 'admin-badge admin-badge--ok' : 'admin-badge admin-badge--muted';
+        return badge;
+      }},
+      { key: 'source', label: t.table.source, render: (row) => (row.schedule ? (row.schedule.source || '–') : '–') },
+      { key: 'imported_at', label: t.table.importedAt, render: (row) => (row.schedule ? formatDate(row.schedule.imported_at, locale) : '–') },
+      { label: '', render: (row) => {
+        const actions = document.createElement('div');
+        actions.className = 'admin-table__actions';
+
+        const viewBtn = createActionButton('View', 'ghost');
+        viewBtn.addEventListener('click', () => openScheduleEntriesDialog(row.id));
+        actions.appendChild(viewBtn);
+
+        if (row.has_schedule && row.schedule) {
+          const editBtn = createActionButton(t.buttons.edit, 'ghost');
+          editBtn.addEventListener('click', () => openScheduleEditDialog(row.schedule));
+          actions.appendChild(editBtn);
+
+          const delBtn = createActionButton(t.buttons.delete, 'ghost');
+          delBtn.addEventListener('click', async () => {
+            if (!confirm('Delete schedule for this class?')) return;
+            try {
+              await fetchJson(`/api/admin/classes/${row.id}/schedule`, { method: 'DELETE' });
+              showMessage('success', 'Schedule deleted.');
+              // refresh view
+              loadSchedulesView().catch(() => {});
+            } catch (error) {
+              showMessage('error', error.message || 'Failed to delete schedule');
+            }
+          });
+          actions.appendChild(delBtn);
+        } else {
+          const addBtn = createActionButton(t.buttons.import, 'ghost');
+          addBtn.addEventListener('click', () => openScheduleCreateDialog(row.id));
+          actions.appendChild(addBtn);
+        }
+
+        return actions;
+      }},
+    ];
+
+    table.setColumns(cols);
+    table.setRows(classRows);
+  }
+
+  function openScheduleEntriesDialog(classId) {
+    const dialog = createDialog({ title: `Schedule entries — class #${classId}`, confirmLabel: t.buttons.cancel, cancelLabel: t.buttons.cancel });
+    const container = document.createElement('div');
+    container.textContent = 'Loading entries…';
+    dialog.setContent(container);
+    dialog.open();
+    (async () => {
+      try {
+        const resp = await fetchJson(`/api/admin/schedule-entries?class_id=${classId}`);
+        const rows = Array.isArray(resp.data) ? resp.data : [];
+        container.innerHTML = '';
+        if (!rows.length) {
+          container.textContent = 'No entries.';
+          return;
+        }
+        const list = document.createElement('ul');
+        rows.forEach((r) => {
+          const li = document.createElement('li');
+          li.textContent = `${r.tag} ${r.start}–${r.end} ${r.fach || ''} ${r.raum || ''}`;
+          list.appendChild(li);
+        });
+        container.appendChild(list);
+      } catch (error) {
+        container.textContent = error.message || 'Failed to load entries.';
+      }
+    })();
+  }
+
+  function openScheduleCreateDialog(classId) {
+    const fields = [
+      { name: 'class_id', type: 'select', label: t.fields.classIdentifier, options: [{ value: classId, label: `#${classId}` }], required: true },
+      { name: 'source', label: t.fields.source },
+      { name: 'import_hash', label: t.table.importHash },
+      { name: 'imported_at', type: 'datetime-local', label: t.table.importedAt },
+    ];
+    const dialog = createDialog({ title: t.create.schedules, confirmLabel: t.buttons.import, cancelLabel: t.buttons.cancel });
+    const form = createForm(fields, { initialValues: { class_id: classId } });
+    dialog.setContent(form.element);
+    dialog.onConfirm(async () => {
+      const values = form.getValues();
+      try {
+        await fetchJson('/api/admin/schedules', { method: 'POST', body: JSON.stringify(values) });
+        showMessage('success', 'Schedule added.');
+        loadSchedulesView().catch(() => {});
+      } catch (error) {
+        throw error;
+      }
+    });
+    dialog.open();
+  }
+
+  function openScheduleEditDialog(schedule) {
+    const fields = [
+      { name: 'class_id', type: 'select', label: t.fields.classIdentifier, options: [{ value: schedule.class_id, label: buildClassLabel({ id: schedule.class_id, slug: schedule.class_slug, title: schedule.class_title }) }], required: true },
+      { name: 'source', label: t.fields.source },
+      { name: 'import_hash', label: t.table.importHash },
+      { name: 'imported_at', type: 'datetime-local', label: t.table.importedAt },
+    ];
+    const dialog = createDialog({ title: t.buttons.edit + ' ' + buildClassLabel({ slug: schedule.class_slug, title: schedule.class_title }), confirmLabel: t.buttons.save, cancelLabel: t.buttons.cancel });
+    const form = createForm(fields, { initialValues: { class_id: schedule.class_id, source: schedule.source || '', import_hash: schedule.import_hash || '', imported_at: schedule.imported_at || null } });
+    dialog.setContent(form.element);
+    dialog.onConfirm(async () => {
+      const values = form.getValues();
+      try {
+        await fetchJson(`/api/admin/schedules/${schedule.id}`, { method: 'PUT', body: JSON.stringify(values) });
+        showMessage('success', 'Schedule updated.');
+        loadSchedulesView().catch(() => {});
+      } catch (error) {
+        throw error;
+      }
+    });
+    dialog.open();
   }
 
   function openFormDialog(resourceKey, mode, initialData = {}) {
