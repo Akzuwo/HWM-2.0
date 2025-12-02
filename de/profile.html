@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Profil</title>
+  <link rel="icon" type="image/png" href="../media/logo.png" />
+  <link rel="stylesheet" href="../utils/css/style.css" />
+</head>
+</body>
+<body class="profile-page">
+  <script type="module" src="../utils/js/header.js"></script>
+  <main id="main" class="page">
+    <div class="page__inner">
+      <div class="container">
+        <article class="card card--center">
+          <header class="card__header">
+            <h1 data-i18n="profile.title">Profil</h1>
+          </header>
+          <section class="card__body">
+            <dl class="profile-list">
+              <div class="profile-row">
+                <dt data-i18n="profile.email">E‑Mail</dt>
+                <dd id="profile-email">–</dd>
+              </div>
+              <div class="profile-row">
+                <dt data-i18n="profile.accountAge">Accountalter</dt>
+                <dd id="profile-age">–</dd>
+              </div>
+              <div class="profile-row">
+                <dt data-i18n="profile.class">Klasse</dt>
+                <dd>
+                  <input id="profile-class-input" class="input" type="text" placeholder="L23a" />
+                  <div id="class-cooldown-msg" class="muted"></div>
+                  <div style="margin-top:0.5rem">
+                    <button id="change-class-btn" class="button ripple"> <span data-i18n="profile.changeClass">Klasse ändern</span></button>
+                  </div>
+                </dd>
+              </div>
+            </dl>
+
+            <hr />
+
+            <section>
+              <h2 data-i18n="profile.deleteTitle">Account löschen</h2>
+              <p class="muted" data-i18n="profile.deleteWarning">Diese Aktion löscht Ihr Benutzerkonto unwiderruflich.</p>
+              <button id="delete-account-btn" class="button button--danger ripple" data-i18n="profile.deleteButton">Account löschen</button>
+            </section>
+          </section>
+        </article>
+      </div>
+    </div>
+  </main>
+
+  <script src="../utils/js/i18n.js" defer></script>
+  <script src="../utils/js/overlay.js" defer></script>
+  <script src="../utils/js/toast.js" defer></script>
+  <script src="../utils/js/footer.js" defer></script>
+  <script src="../utils/js/profile.js" defer></script>
+</body>
+</html>

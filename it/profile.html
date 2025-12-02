@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Profilo</title>
+  <link rel="icon" type="image/png" href="../media/logo.png" />
+  <link rel="stylesheet" href="../utils/css/style.css" />
+</head>
+<body class="profile-page">
+</main>
+  <script type="module" src="../utils/js/header.js"></script>
+  <main id="main" class="page">
+    <div class="page__inner">
+      <div class="container">
+        <article class="card card--center">
+          <header class="card__header">
+            <h1 data-i18n="profile.title">Profilo</h1>
+          </header>
+          <section class="card__body">
+            <dl class="profile-list">
+              <div class="profile-row">
+                <dt data-i18n="profile.email">E‑mail</dt>
+                <dd id="profile-email">–</dd>
+              </div>
+              <div class="profile-row">
+                <dt data-i18n="profile.accountAge">Età dell'account</dt>
+                <dd id="profile-age">–</dd>
+              </div>
+              <div class="profile-row">
+                <dt data-i18n="profile.class">Classe</dt>
+                <dd>
+                  <input id="profile-class-input" class="input" type="text" placeholder="L23a" />
+                  <div id="class-cooldown-msg" class="muted"></div>
+                  <div style="margin-top:0.5rem">
+                    <button id="change-class-btn" class="button ripple"> <span data-i18n="profile.changeClass">Cambia classe</span></button>
+                  </div>
+                </dd>
+              </div>
+            </dl>
+
+            <hr />
+
+            <section>
+              <h2 data-i18n="profile.deleteTitle">Elimina account</h2>
+              <p class="muted" data-i18n="profile.deleteWarning">Questa azione rimuoverà definitivamente il tuo account.</p>
+              <button id="delete-account-btn" class="button button--danger ripple" data-i18n="profile.deleteButton">Elimina account</button>
+            </section>
+          </section>
+        </article>
+      </div>
+    </div>
+  </main>
+
+  <script src="../utils/js/i18n.js" defer></script>
+  <script src="../utils/js/overlay.js" defer></script>
+  <script src="../utils/js/toast.js" defer></script>
+  <script src="../utils/js/footer.js" defer></script>
+  <script src="../utils/js/profile.js" defer></script>
+</body>
+</html>
