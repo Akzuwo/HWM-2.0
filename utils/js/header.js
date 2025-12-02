@@ -356,3 +356,52 @@ async function loadHeader() {
 }
 
 document.addEventListener('DOMContentLoaded', loadHeader);
+
+// Inject a small stylesheet to prevent collapsed/hidden sidebars from widening the page.
+// This is a defensive fix: it forces the viewport to not grow beyond 100vw and hides horizontal overflow.
+// It is intentionally lightweight and applied once on DOMContentLoaded.
+(function injectSidebarWidthFix() {
+  if (typeof document === 'undefined') return;
+  if (document.getElementById('hm-sidebar-width-fix')) return;
+
+  const css = `
+/* Prevent off-canvas / collapsed sidebars from increasing document width */
+html, body {
+  max-width: 100vw !important;
+  overflow-x: hidden !important;
+}
+
+/* Defensive rules for common sidebar patterns */
+.sidebar,
+.primary-nav,
+.nav-sidebar,
+.offcanvas,
+.aside {
+  box-sizing: border-box;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* If a sidebar is shifted off-screen with transform, ensure it doesn't affect layout */
+.sidebar[aria-hidden="true"],
+.primary-nav[aria-hidden="true"],
+.offcanvas[aria-hidden="true"],
+.sidebar.collapsed,
+.primary-nav.collapsed,
+.offcanvas.collapsed {
+  position: fixed !important;
+  left: 0 !important;
+  top: 0 !important;
+  transform: translateX(-100%) !important;
+  width: auto !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+`;
+
+  const style = document.createElement('style');
+  style.id = 'hm-sidebar-width-fix';
+  style.type = 'text/css';
+  style.appendChild(document.createTextNode(css));
+  const head = document.head || document.getElementsByTagName('head')[0];
+  if (head) head.appendChild(style);
+})();
