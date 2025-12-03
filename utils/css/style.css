@@ -177,7 +177,10 @@ button {
     transition: color 0.2s ease, transform 0.2s ease;
     box-shadow: none;
     flex-shrink: 0;
-    margin-left: 0;
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
 }
 
 .hm-navbar__toggle:hover {
@@ -240,6 +243,10 @@ button {
 .hm-navbar.is-condensed .hm-navbar__toggle {
     display: inline-flex;
     margin-left: auto;
+    position: static;
+    transform: none;
+    right: auto;
+    top: auto;
 }
 
 .hm-navbar.is-condensed .hm-navbar__inner {
