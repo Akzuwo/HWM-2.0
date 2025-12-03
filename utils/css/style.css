@@ -174,7 +174,10 @@ button {
     cursor: pointer;
     transition: color 0.2s ease, transform 0.2s ease;
     box-shadow: none;
-    margin-left: auto;
+    position: absolute;
+    right: clamp(1rem, 4vw, 2.5rem);
+    top: 50%;
+    transform: translateY(-50%);
 }
 
 .hm-navbar__toggle:hover {
