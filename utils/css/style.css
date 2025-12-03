@@ -177,6 +177,7 @@ button {
     transition: color 0.2s ease, transform 0.2s ease;
     box-shadow: none;
     flex-shrink: 0;
+    margin-left: 0;
 }
 
 .hm-navbar__toggle:hover {
