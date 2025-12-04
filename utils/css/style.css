@@ -161,9 +161,9 @@ button {
     position: relative;
 }
 
-/* DESKTOP: Button versteckt */
+/* MOBILE-FIRST: Button sichtbar, Desktop blendet per Media Query aus */
 .hm-navbar__toggle {
-    display: none;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     padding: 0;
@@ -214,11 +214,26 @@ button {
 }
 
 .hm-navbar__drawer {
+    position: fixed;
+    inset: 0 0 0 auto;
+    width: min(calc(100vw - 3rem), max-content);
+    max-width: calc(100vw - 2rem);
+    height: 100vh;
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    align-items: stretch;
     justify-content: flex-start;
-    gap: clamp(0.75rem, 3vw, 2rem);
-    flex: 1 1 auto;
+    gap: 0.35rem;
+    padding: clamp(1rem, 4vw, 1.35rem);
+    background: rgba(15, 15, 18, 0.98);
+    backdrop-filter: blur(14px);
+    box-shadow: -32px 0 64px rgba(0, 0, 0, 0.55);
+    transform: translateX(100%);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: transform 0.32s ease, opacity 0.32s ease, visibility 0.32s ease;
+    z-index: 1100;
 }
 
 .hm-navbar__overlay {
@@ -270,14 +285,19 @@ button {
     z-index: 1100;
 }
 
-.hm-navbar.is-condensed .hm-navbar__drawer.is-open {
+.hm-navbar__drawer.is-open {
     transform: translateX(0);
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
 }
 
-.hm-navbar.is-condensed .hm-navbar__drawer .nav-links {
+.hm-navbar__drawer.is-open .nav-links,
+.hm-navbar__drawer.is-open .nav-right {
+    display: flex;
+}
+
+.hm-navbar__drawer .nav-links {
     width: 100%;
     flex: 0 0 auto;
     flex-direction: column;
@@ -288,14 +308,14 @@ button {
     order: 0;
 }
 
-.hm-navbar.is-condensed .hm-navbar__drawer .nav-link {
+.hm-navbar__drawer .nav-link {
     width: auto;
     justify-content: flex-start;
     padding: 0.45rem 0.85rem;
     min-height: 40px;
 }
 
-.hm-navbar.is-condensed .hm-navbar__drawer .nav-right {
+.hm-navbar__drawer .nav-right {
     width: 100%;
     flex-direction: column;
     align-items: stretch;
@@ -304,16 +324,16 @@ button {
     padding-top: 0;
 }
 
-.hm-navbar.is-condensed .hm-navbar__drawer .language-switcher {
+.hm-navbar__drawer .language-switcher {
     width: 100%;
 }
 
-.hm-navbar.is-condensed .hm-navbar__drawer .lang-switch {
+.hm-navbar__drawer .lang-switch {
     justify-content: space-between;
     width: 100%;
 }
 
-.hm-navbar.is-condensed .hm-navbar__drawer .language-menu {
+.hm-navbar__drawer .language-menu {
     position: static;
     width: 100%;
     max-height: 280px;
@@ -324,48 +344,18 @@ button {
     transform: none;
 }
 
-.hm-navbar.is-condensed .hm-navbar__drawer .language-switcher:not(.is-open) .language-menu {
+.hm-navbar__drawer .language-switcher:not(.is-open) .language-menu {
     display: none;
 }
 
-.hm-navbar.is-condensed .hm-navbar__drawer .language-menu li + li {
+.hm-navbar__drawer .language-menu li + li {
     margin-top: 0.35rem;
 }
 
-.hm-navbar.is-condensed .hm-navbar__drawer .btn-login {
+.hm-navbar__drawer .btn-login {
     width: 100%;
 }
 
-.hm-navbar.is-condensed .hm-navbar__overlay {
-    z-index: 1000;
-}
-
-.hm-navbar.is-measuring .hm-navbar__drawer,
-.hm-navbar.is-measuring .nav-links,
-.hm-navbar.is-measuring .nav-right {
-    visibility: hidden;
-}
-
-.hm-navbar.is-measuring .hm-navbar__drawer {
-    position: static;
-    width: auto;
-    min-width: 0;
-    max-width: none;
-    height: auto;
-    transform: none;
-    opacity: 1;
-    visibility: visible;
-    pointer-events: none;
-    box-shadow: none;
-    padding: 0;
-    gap: clamp(0.75rem, 3vw, 2rem);
-    background: transparent;
-    backdrop-filter: none;
-}
-
-.hm-navbar.is-measuring .hm-navbar__overlay {
-    display: none;
-}
 
 .logo {
     display: inline-flex;
@@ -398,14 +388,15 @@ button {
 }
 
 .nav-links {
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: flex-start;
-    gap: calc(var(--header-gap) * 0.85);
-    flex: 1 1 auto;
-    min-height: 44px;
-    margin-left: clamp(0.75rem, 2.5vw, 1.25rem);
-    min-width: 0;
+    gap: 0.35rem;
+    flex: 0 0 auto;
+    flex-direction: column;
+    align-items: flex-start;
+    align-self: stretch;
+    margin-left: 0;
 }
 
 .nav-link {
@@ -550,10 +541,12 @@ button {
 
 .nav-right {
     display: flex;
-    align-items: center;
-    gap: clamp(0.5rem, 1.5vw, 0.85rem);
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.35rem;
     flex: 0 0 auto;
-    margin-left: auto;
+    width: 100%;
+    margin-left: 0;
 }
 
 .language-switcher {
@@ -752,48 +745,55 @@ button {
     font-weight: 600;
 }
 
-@media (max-width: 900px) {
-    /* MOBILE: Button wird sichtbar */
+@media (min-width: 768px) {
     .hm-navbar__toggle {
+        display: none;
+    }
+
+    .hm-navbar__drawer {
+        position: static;
+        width: auto;
+        max-width: none;
+        height: auto;
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-start;
+        gap: clamp(0.75rem, 3vw, 2rem);
+        padding: 0;
+        background: transparent;
+        backdrop-filter: none;
+        box-shadow: none;
+        transform: none;
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+    }
+
+    .hm-navbar__drawer .nav-links,
+    .hm-navbar__drawer .nav-right {
         display: flex;
     }
 
-    .hm-navbar__inner {
-        flex-wrap: wrap;
-        align-items: flex-start;
-        row-gap: 0.75rem;
-    }
-
     .nav-links {
-        order: 2;
-        width: 100%;
-        justify-content: flex-start;
-        margin-left: 0;
-        overflow-x: auto;
-        padding-bottom: 0.25rem;
-        scrollbar-width: thin;
-        scroll-snap-type: x proximity;
-    }
-
-    .nav-links::-webkit-scrollbar {
-        height: 6px;
-    }
-
-    .nav-links::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 999px;
+        flex-direction: row;
+        align-items: center;
+        gap: calc(var(--header-gap) * 0.85);
+        flex: 1 1 auto;
+        min-height: 44px;
+        margin-left: clamp(0.75rem, 2.5vw, 1.25rem);
     }
 
     .nav-right {
-        order: 3;
-        width: 100%;
-        justify-content: flex-end;
+        flex-direction: row;
+        align-items: center;
+        width: auto;
+        margin-left: auto;
+        gap: clamp(0.5rem, 1.5vw, 0.85rem);
     }
-}
 
-/* Wenn .is-condensed aktiv: Menü wird zum Drawer */
-.hm-navbar.is-condensed .hm-navbar__toggle {
-    display: flex;
+    .hm-navbar__overlay {
+        display: none !important;
+    }
 }
 
 .content {
