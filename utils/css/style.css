@@ -161,7 +161,7 @@ button {
     position: relative;
 }
 
-/* DESKTOP: Button versteckt */
+/* DESKTOP: Button versteckt und absolute positioned für mobile */
 .hm-navbar__toggle {
     display: none;
     align-items: center;
@@ -178,6 +178,10 @@ button {
     transition: color 0.2s ease, transform 0.2s ease;
     box-shadow: none;
     flex-shrink: 0;
+    position: absolute;
+    top: 50%;
+    right: 1rem;
+    transform: translateY(-50%);
 }
 
 .hm-navbar__toggle:hover {
