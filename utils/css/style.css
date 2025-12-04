@@ -142,6 +142,7 @@ button {
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
 }
 
 .hm-navbar__inner {
@@ -161,7 +162,7 @@ button {
 
 
 .hm-navbar__toggle {
-    display: none;
+    display: none !important;
     align-items: center;
     justify-content: center;
     padding: 0;
@@ -237,10 +238,6 @@ button {
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
-}
-
-.hm-navbar.is-condensed .hm-navbar__toggle {
-    display: flex;
 }
 
 .hm-navbar.is-condensed .hm-navbar__inner {
@@ -790,6 +787,10 @@ button {
         width: 100%;
         justify-content: flex-end;
     }
+}
+
+.hm-navbar.is-condensed .hm-navbar__toggle {
+    display: flex !important;
 }
 
 .content {
