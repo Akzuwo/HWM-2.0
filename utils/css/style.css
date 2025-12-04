@@ -163,6 +163,8 @@ button {
 
 .hm-navbar__toggle {
     display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
     align-items: center;
     justify-content: center;
     padding: 0;
@@ -791,6 +793,8 @@ button {
 
 .hm-navbar.is-condensed .hm-navbar__toggle {
     display: flex !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
 }
 
 .content {
