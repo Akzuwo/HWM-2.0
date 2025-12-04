@@ -162,7 +162,7 @@ button {
 
 
 .hm-navbar__toggle {
-    display: none !important;
+    display: none;
     align-items: center;
     justify-content: center;
     padding: 0;
@@ -179,8 +179,7 @@ button {
     transition: color 0.2s ease, transform 0.2s ease;
     box-shadow: none;
     flex-shrink: 0;
-    position: absolute;
-    right: clamp(1rem, 4vw, 2.5rem);
+    order: -1;
 }
 
 .hm-navbar__toggle:hover {
@@ -790,7 +789,7 @@ button {
 }
 
 .hm-navbar.is-condensed .hm-navbar__toggle {
-    display: flex !important;
+    display: flex;
 }
 
 .content {
