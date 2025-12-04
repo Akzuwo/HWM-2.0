@@ -247,23 +247,6 @@ function setupMobileNavigation(header) {
     }
   };
 
-  const detectWrap = () => {
-    const children = Array.from(inner.children).filter(
-      (child) => child instanceof HTMLElement && child.offsetParent !== null
-    );
-    if (!children.length) {
-      return false;
-    }
-
-    const tops = new Set(children.map((child) => Math.round(child.getBoundingClientRect().top)));
-    if (tops.size > 1) {
-      return true;
-    }
-
-    const scrollDelta = inner.scrollHeight - inner.clientHeight;
-    return scrollDelta > 1;
-  };
-
   const setCondensed = (nextCondensed) => {
     const previous = isCondensed;
     isCondensed = nextCondensed;
@@ -286,10 +269,7 @@ function setupMobileNavigation(header) {
   };
 
   const evaluateLayout = () => {
-    header.classList.add('is-measuring');
-    header.classList.remove('is-condensed');
-    const shouldCondense = detectWrap();
-    header.classList.remove('is-measuring');
+    const shouldCondense = window.matchMedia('(max-width: 767px)').matches;
     setCondensed(shouldCondense);
   };
 
