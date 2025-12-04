@@ -243,7 +243,7 @@ button {
 }
 
 .hm-navbar.is-condensed .hm-navbar__toggle {
-    display: inline-flex;
+    display: inline-flex !important;
     margin-left: auto;
     position: static;
     transform: none;
@@ -769,6 +769,12 @@ button {
 }
 
 @media (max-width: 900px) {
+    .hm-navbar__toggle {
+        display: none !important;
+        pointer-events: none;
+        opacity: 0;
+    }
+
     .hm-navbar__inner {
         flex-wrap: wrap;
         align-items: flex-start;
