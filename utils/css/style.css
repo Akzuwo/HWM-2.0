@@ -179,8 +179,7 @@ button {
     transition: color 0.2s ease, transform 0.2s ease;
     box-shadow: none;
     flex-shrink: 0;
-    position: absolute;
-    right: 1rem;
+    margin-left: auto;
 }
 
 .hm-navbar__toggle:hover {
