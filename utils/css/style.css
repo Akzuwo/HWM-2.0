@@ -178,9 +178,11 @@ button {
     box-shadow: none;
     flex-shrink: 0;
     position: absolute;
-    right: 0;
+    right: -9999px;
     top: 50%;
     transform: translateY(-50%);
+    pointer-events: none;
+    opacity: 0;
 }
 
 .hm-navbar__toggle:hover {
@@ -247,6 +249,8 @@ button {
     transform: none;
     right: auto;
     top: auto;
+    pointer-events: auto;
+    opacity: 1;
 }
 
 .hm-navbar.is-condensed .hm-navbar__inner {
