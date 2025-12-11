@@ -161,9 +161,9 @@ button {
     position: relative;
 }
 
-/* DESKTOP: Button versteckt und absolute positioned für mobile */
+/* DESKTOP: Hidden by default, shown on mobile */
 .hm-navbar__toggle {
-    display: none;
+    display: flex;
     align-items: center;
     justify-content: center;
     padding: 0;
@@ -178,10 +178,8 @@ button {
     transition: color 0.2s ease, transform 0.2s ease;
     box-shadow: none;
     flex-shrink: 0;
-    position: absolute;
-    top: 50%;
-    right: 1rem;
-    transform: translateY(-50%);
+    position: relative;
+    margin-left: auto;
 }
 
 .hm-navbar__toggle:hover {
@@ -218,7 +216,7 @@ button {
 }
 
 .hm-navbar__drawer {
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: flex-start;
     gap: clamp(0.75rem, 3vw, 2rem);
@@ -250,9 +248,18 @@ button {
 
 .hm-navbar.is-condensed .logo {
     gap: 0.25rem;
+    flex: 0 0 auto;
+    order: 1;
+}
+
+.hm-navbar.is-condensed .hm-navbar__toggle {
+    display: flex !important;
+    margin-left: auto;
+    order: 2;
 }
 
 .hm-navbar.is-condensed .hm-navbar__drawer {
+    display: flex;
     position: fixed;
     inset: 0 0 0 auto;
     width: min(calc(100vw - 3rem), max-content);
