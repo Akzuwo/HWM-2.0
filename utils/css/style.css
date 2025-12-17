@@ -824,7 +824,36 @@ button {
     font-weight: 600;
 }
 
-@media (max-width: 900px) {
+/* Desktop-first defaults */
+@media (min-width: 700px) {
+    .hm-navbar__toggle {
+        display: none;
+    }
+
+    .hm-navbar__drawer {
+        display: flex;
+    }
+
+    .hm-navbar__overlay {
+        display: none;
+    }
+}
+
+@media (max-width: 699px) {
+    .hm-navbar__drawer {
+        display: none;
+    }
+
+    .hm-navbar.is-condensed .hm-navbar__drawer {
+        display: flex;
+    }
+
+    .hm-navbar__overlay {
+        display: block;
+    }
+}
+
+@media (max-width: 699px) {
     /* MOBILE: Button wird sichtbar */
     .hm-navbar__toggle {
         display: flex;
