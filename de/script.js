@@ -61,6 +61,8 @@ const LOGIN_TEXT = {
     guestInfo: 'Fortfahren ohne Konto',
     loginButton: 'Anmelden',
     logoutButton: 'Abmelden',
+    accountButton: 'Account',
+    accountProfile: 'Profil',
     adminNavButton: 'Adminbereich',
     authStatusGuest: 'Nicht angemeldet',
     authStatusSignedIn: (roleLabel) => `Angemeldet als ${roleLabel}`,
@@ -396,20 +398,6 @@ function updateAuthStatus() {
     });
 }
 
-function ensureRoleHintElement(button) {
-    if (!button) {
-        return null;
-    }
-    let hint = button.nextElementSibling;
-    if (!hint || !hint.hasAttribute('data-auth-role-hint')) {
-        hint = document.createElement('span');
-        hint.className = 'auth-role-hint';
-        hint.setAttribute('data-auth-role-hint', 'true');
-        button.insertAdjacentElement('afterend', hint);
-    }
-    return hint;
-}
-
 function getAdminNavButton() {
     const links = document.querySelector('.nav-links');
     if (!links) {
@@ -452,38 +440,79 @@ function updateAdminNavButton() {
 }
 
 function updateRoleHint() {
-    const buttons = document.querySelectorAll('[data-auth-button]');
-    if (!buttons.length) {
-        return;
-    }
-    buttons.forEach((button) => {
-        const hint = ensureRoleHintElement(button);
-        if (!hint) {
-            return;
+    document.querySelectorAll('[data-auth-role-hint]').forEach((hint) => hint.remove());
+}
+
+function closeAccountMenus() {
+    document.querySelectorAll('[data-account-control].is-open').forEach((control) => {
+        const toggle = control.querySelector('[data-account-toggle]');
+        const menu = control.querySelector('[data-account-menu]');
+        control.classList.remove('is-open');
+        if (toggle) {
+            toggle.setAttribute('aria-expanded', 'false');
         }
-        if (!isAuthenticated()) {
-            hint.textContent = '';
-            hint.classList.add('is-hidden');
-            hint.classList.remove('is-authenticated');
-            hint.removeAttribute('data-role');
-            return;
+        if (menu) {
+            menu.classList.remove('is-open');
         }
-        const text = getAuthStatusText();
-        hint.textContent = text;
-        hint.dataset.role = sessionState.role;
-        hint.classList.toggle('is-hidden', !text);
-        hint.classList.add('is-authenticated');
+    });
+}
+
+function syncAccountControls() {
+    const authenticated = isAuthenticated();
+    const accountLabel = LOGIN_TEXT.accountButton || 'Account';
+    const profileLabel = LOGIN_TEXT.accountProfile || 'Profil';
+    const logoutLabel = LOGIN_TEXT.logoutButton || 'Abmelden';
+
+    document.querySelectorAll('[data-account-control]').forEach((control) => {
+        const toggle = control.querySelector('[data-account-toggle]');
+        const label = control.querySelector('[data-account-label]');
+        const menu = control.querySelector('[data-account-menu]');
+        const profileLink = control.querySelector('[data-account-profile]');
+        const logoutButton = control.querySelector('[data-account-logout]');
+
+        control.classList.toggle('is-hidden', !authenticated);
+        control.setAttribute('aria-hidden', authenticated ? 'false' : 'true');
+
+        if (label) {
+            label.textContent = accountLabel;
+        }
+        if (toggle) {
+            toggle.setAttribute('aria-label', accountLabel);
+        }
+        if (profileLink) {
+            profileLink.textContent = profileLabel;
+        }
+        if (logoutButton) {
+            logoutButton.textContent = logoutLabel;
+        }
+
+        control.classList.remove('is-open');
+        if (toggle) {
+            toggle.setAttribute('aria-expanded', 'false');
+        }
+        if (menu) {
+            menu.classList.remove('is-open');
+        }
     });
 }
 
 function updateAuthButton() {
     const buttons = document.querySelectorAll('[data-auth-button]');
-    if (!buttons.length) {
-        return;
-    }
+    const authenticated = isAuthenticated();
+    const loginLabel = LOGIN_TEXT.loginButton || 'Anmelden';
+
     buttons.forEach((button) => {
-        button.textContent = isAuthenticated() ? LOGIN_TEXT.logoutButton : LOGIN_TEXT.loginButton;
+        button.textContent = loginLabel;
+        button.classList.toggle('is-hidden', authenticated);
+        button.setAttribute('aria-hidden', authenticated ? 'true' : 'false');
+        if (authenticated) {
+            button.setAttribute('tabindex', '-1');
+        } else {
+            button.removeAttribute('tabindex');
+        }
     });
+
+    syncAccountControls();
 }
 
 function setupAuthButton() {
@@ -498,9 +527,7 @@ function setupAuthButton() {
         }
 
         button.addEventListener('click', () => {
-            if (isAuthenticated()) {
-                logout();
-            } else {
+            if (!isAuthenticated()) {
                 openAuthOverlay(button);
             }
         });
@@ -509,6 +536,85 @@ function setupAuthButton() {
     });
 
     updateAuthButton();
+}
+
+function setupAccountControls() {
+    const controls = document.querySelectorAll('[data-account-control]');
+    if (!controls.length) {
+        return;
+    }
+
+    controls.forEach((control) => {
+        if (control.dataset.accountBound === 'true') {
+            return;
+        }
+
+        const toggle = control.querySelector('[data-account-toggle]');
+        const menu = control.querySelector('[data-account-menu]');
+        const profileLink = control.querySelector('[data-account-profile]');
+        const logoutButton = control.querySelector('[data-account-logout]');
+
+        const closeMenu = () => {
+            control.classList.remove('is-open');
+            if (toggle) {
+                toggle.setAttribute('aria-expanded', 'false');
+            }
+            if (menu) {
+                menu.classList.remove('is-open');
+            }
+        };
+
+        const openMenu = () => {
+            closeAccountMenus();
+            control.classList.add('is-open');
+            if (menu) {
+                menu.classList.add('is-open');
+            }
+            if (toggle) {
+                toggle.setAttribute('aria-expanded', 'true');
+            }
+        };
+
+        const handleToggle = (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            if (control.classList.contains('is-hidden')) {
+                return;
+            }
+            if (control.classList.contains('is-open')) {
+                closeMenu();
+            } else {
+                openMenu();
+            }
+        };
+
+        const handleDocumentClick = (event) => {
+            if (!control.contains(event.target)) {
+                closeMenu();
+            }
+        };
+
+        const handleKeyDown = (event) => {
+            if (event.key === 'Escape' && control.classList.contains('is-open')) {
+                event.preventDefault();
+                closeMenu();
+                toggle?.focus();
+            }
+        };
+
+        toggle?.addEventListener('click', handleToggle);
+        document.addEventListener('click', handleDocumentClick);
+        document.addEventListener('keydown', handleKeyDown);
+
+        profileLink?.addEventListener('click', closeMenu);
+        logoutButton?.addEventListener('click', (event) => {
+            event.preventDefault();
+            closeMenu();
+            logout();
+        });
+
+        control.dataset.accountBound = 'true';
+    });
 }
 
 function updateFeatureVisibility() {
@@ -3274,5 +3380,6 @@ window.addEventListener('DOMContentLoaded', () => {
 window.addEventListener('hm:header-ready', () => {
     initLanguageSelector();
     setupAuthButton();
+    setupAccountControls();
     updateAuthUI();
 });
