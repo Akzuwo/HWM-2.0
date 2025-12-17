@@ -107,52 +107,6 @@ function populateRoutes(header, info) {
   });
 }
 
-function localizedLoggedInPrefix(lang) {
-  switch ((lang || '').toLowerCase()) {
-    case 'de':
-      return 'Angemeldet als';
-    case 'fr':
-      return 'Connecté en tant que';
-    case 'it':
-      return 'Connesso come';
-    default:
-      return 'Signed in as';
-  }
-}
-
-async function tryInjectUserBadge(header, info) {
-  const userAreas = header.querySelectorAll('[data-user-area]');
-  if (!userAreas.length) return;
-  const prefix = info.languagePrefix || '';
-  try {
-    const res = await fetch('/api/me', { credentials: 'include' });
-    if (!res.ok) return; // not logged in or error
-    const payload = await res.json().catch(() => null);
-    if (!payload || payload.status !== 'ok' || !payload.data) return;
-    const data = payload.data;
-
-    const labelPrefix = localizedLoggedInPrefix(info.language);
-    const display = data.role ? `${labelPrefix} ${data.role}` : `${labelPrefix} ${data.email || ''}`;
-
-    const a = document.createElement('a');
-    a.className = 'user-badge nav-link';
-    const profileHref = info.language ? `/${info.language}/profile.html` : '/profile.html';
-    a.setAttribute('href', profileHref);
-    a.setAttribute('title', display);
-    a.textContent = display;
-
-    const areas = Array.from(userAreas);
-    areas.forEach((area, index) => {
-      const link = index === 0 ? a : a.cloneNode(true);
-      area.innerHTML = '';
-      area.appendChild(link);
-    });
-  } catch (err) {
-    // ignore: keep login button
-    return;
-  }
-}
-
 function setupMobileNavigation(header) {
   const toggle = header.querySelector('[data-nav-toggle]');
   const drawer = header.querySelector('[data-nav-drawer]');
@@ -389,8 +343,6 @@ async function loadHeader() {
     }
     body.insertBefore(header, body.firstChild);
     setupMobileNavigation(header);
-    // attempt to render user badge after header is in the DOM and navigation is initialized
-    tryInjectUserBadge(header, info);
 
     window.dispatchEvent(
       new CustomEvent('hm:header-ready', {
