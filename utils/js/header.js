@@ -157,6 +157,7 @@ function setupMobileNavigation(header) {
   const drawer = header.querySelector('[data-nav-drawer]');
   const overlay = header.querySelector('[data-nav-overlay]');
   const inner = header.querySelector('.hm-navbar__inner');
+  const navMobile = header.querySelector('.nav-mobile');
 
   if (!toggle || !drawer || !overlay || !inner) {
     return;
@@ -288,7 +289,10 @@ function setupMobileNavigation(header) {
   const evaluateLayout = () => {
     header.classList.add('is-measuring');
     header.classList.remove('is-condensed');
-    const shouldCondense = detectWrap();
+
+    const mobileVisible = navMobile ? window.getComputedStyle(navMobile).display !== 'none' : false;
+    const shouldCondense = mobileVisible ? true : detectWrap();
+
     header.classList.remove('is-measuring');
     setCondensed(shouldCondense);
   };
