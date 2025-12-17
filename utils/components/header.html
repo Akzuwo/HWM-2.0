@@ -16,62 +16,68 @@
         <a class="nav-link" data-route="notenrechner.html" data-i18n="common.nav.grades">Grade Calculator</a>
       </nav>
 
-        <div class="nav-right">
-            <div class="language-switcher" data-language>
-              <button class="lang-switch" type="button" data-language-toggle aria-haspopup="true" aria-expanded="false" data-i18n-attr="aria-label:common.nav.language">
-                <span class="lang-switch__icon" aria-hidden="true">🌐</span>
-                <span class="lang-switch__code">EN</span>
-                <svg class="lang-switch__caret" viewBox="0 0 12 12" focusable="false" aria-hidden="true">
-                  <path d="M2.47 4.47a.75.75 0 0 1 1.06 0L6 6.94l2.47-2.47a.75.75 0 1 1 1.06 1.06L6.53 9.47a.75.75 0 0 1-1.06 0L2.47 5.53a.75.75 0 0 1 0-1.06z" />
-                </svg>
-              </button>
-              <ul class="language-menu" data-language-menu>
-                <li>
-                  <button type="button" class="language-option" data-lang="de">
-                    <span class="language-option__flag" aria-hidden="true">🇩🇪</span>
-                    <span class="language-option__text">
-                      <span class="language-option__code">DE</span>
-                      <span class="language-option__separator" aria-hidden="true">–</span>
-                      <span class="language-option__name">Deutsch</span>
-                    </span>
-                  </button>
-                </li>
-                <li>
-                  <button type="button" class="language-option" data-lang="en">
-                    <span class="language-option__flag" aria-hidden="true">🇬🇧</span>
-                    <span class="language-option__text">
-                      <span class="language-option__code">EN</span>
-                      <span class="language-option__separator" aria-hidden="true">–</span>
-                      <span class="language-option__name">English</span>
-                    </span>
-                  </button>
-                </li>
-                <li>
-                  <button type="button" class="language-option" data-lang="it">
-                    <span class="language-option__flag" aria-hidden="true">🇮🇹</span>
-                    <span class="language-option__text">
-                      <span class="language-option__code">IT</span>
-                      <span class="language-option__separator" aria-hidden="true">–</span>
-                      <span class="language-option__name">Italiano</span>
-                    </span>
-                  </button>
-                </li>
-                <li>
-                  <button type="button" class="language-option" data-lang="fr">
-                    <span class="language-option__flag" aria-hidden="true">🇫🇷</span>
-                    <span class="language-option__text">
-                      <span class="language-option__code">FR</span>
-                      <span class="language-option__separator" aria-hidden="true">–</span>
-                      <span class="language-option__name">Français</span>
-                    </span>
-                  </button>
-                </li>
-              </ul>
-            </div>
-        <div class="user-area" data-user-area>
-          <button class="btn-login" type="button" data-auth-button aria-label="Login">Log in</button>
-          <!-- when logged in this area will be replaced with a profile link -->
+      <div class="nav-right">
+        <div class="nav-right__actions">
+          <div class="language-switcher" data-language>
+            <button class="lang-switch" type="button" data-language-toggle aria-haspopup="true" aria-expanded="false" data-i18n-attr="aria-label:common.nav.language">
+              <span class="lang-switch__icon" aria-hidden="true">🌐</span>
+              <span class="lang-switch__code">EN</span>
+              <svg class="lang-switch__caret" viewBox="0 0 12 12" focusable="false" aria-hidden="true">
+                <path d="M2.47 4.47a.75.75 0 0 1 1.06 0L6 6.94l2.47-2.47a.75.75 0 1 1 1.06 1.06L6.53 9.47a.75.75 0 0 1-1.06 0L2.47 5.53a.75.75 0 0 1 0-1.06z" />
+              </svg>
+            </button>
+            <ul class="language-menu" data-language-menu>
+              <li>
+                <button type="button" class="language-option" data-lang="de">
+                  <span class="language-option__flag" aria-hidden="true">🇩🇪</span>
+                  <span class="language-option__text">
+                    <span class="language-option__code">DE</span>
+                    <span class="language-option__separator" aria-hidden="true">–</span>
+                    <span class="language-option__name">Deutsch</span>
+                  </span>
+                </button>
+              </li>
+              <li>
+                <button type="button" class="language-option" data-lang="en">
+                  <span class="language-option__flag" aria-hidden="true">🇬🇧</span>
+                  <span class="language-option__text">
+                    <span class="language-option__code">EN</span>
+                    <span class="language-option__separator" aria-hidden="true">–</span>
+                    <span class="language-option__name">English</span>
+                  </span>
+                </button>
+              </li>
+              <li>
+                <button type="button" class="language-option" data-lang="it">
+                  <span class="language-option__flag" aria-hidden="true">🇮🇹</span>
+                  <span class="language-option__text">
+                    <span class="language-option__code">IT</span>
+                    <span class="language-option__separator" aria-hidden="true">–</span>
+                    <span class="language-option__name">Italiano</span>
+                  </span>
+                </button>
+              </li>
+              <li>
+                <button type="button" class="language-option" data-lang="fr">
+                  <span class="language-option__flag" aria-hidden="true">🇫🇷</span>
+                  <span class="language-option__text">
+                    <span class="language-option__code">FR</span>
+                    <span class="language-option__separator" aria-hidden="true">–</span>
+                    <span class="language-option__name">Français</span>
+                  </span>
+                </button>
+              </li>
+            </ul>
+          </div>
+          <div class="user-area" data-user-area>
+            <button class="btn-login" type="button" data-auth-button aria-label="Login">
+              <span class="btn-login__icon" aria-hidden="true">👤</span>
+              <span class="btn-login__label">Log in</span>
+            </button>
+            <!-- when logged in this area will be replaced with a profile link -->
+          </div>
         </div>
+        <div class="nav-right__note" data-i18n="common.nav.mobileNotice">📱 Mobile edition is in development and may still have a few bugs.</div>
       </div>
     </div>
 

@@ -13,6 +13,7 @@
           primary: 'Hauptnavigation',
           toggle: 'Navigationsmenü umschalten',
           language: 'Sprache ändern',
+          mobileNotice: 'Mobile-Version noch in Entwicklung – es können noch Fehler auftreten.',
         },
         footer: {
           copyright: '©️ Timo Wigger 2025',
@@ -274,6 +275,7 @@
           primary: 'Main navigation',
           toggle: 'Toggle navigation menu',
           language: 'Change language',
+          mobileNotice: 'Mobile edition is in development and may still have a few bugs.',
         },
         footer: {
           copyright: '©️ Timo Wigger 2025',
@@ -534,6 +536,7 @@
           primary: 'Navigazione principale',
           toggle: 'Apri il menu di navigazione',
           language: 'Cambia lingua',
+          mobileNotice: 'La versione mobile è in sviluppo e potrebbe contenere alcuni bug.',
         },
         footer: {
           copyright: '©️ Timo Wigger 2025',
@@ -797,6 +800,7 @@
           primary: 'Navigation principale',
           toggle: 'Basculer le menu de navigation',
           language: 'Changer de langue',
+          mobileNotice: 'L’édition mobile est en développement et peut encore contenir quelques bugs.',
         },
         footer: {
           copyright: '©️ Timo Wigger 2025',
