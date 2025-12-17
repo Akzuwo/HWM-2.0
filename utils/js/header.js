@@ -76,10 +76,9 @@ function markActiveLink(header, info) {
 }
 
 function applyLanguageCode(header, languageCode) {
-  const codeEl = header.querySelector('.lang-switch__code');
-  if (codeEl) {
+  header.querySelectorAll('.lang-switch__code').forEach((codeEl) => {
     codeEl.textContent = languageCode.toUpperCase();
-  }
+  });
 }
 
 function populateRoutes(header, info) {
@@ -103,10 +102,9 @@ function populateRoutes(header, info) {
     brandLink.setAttribute('href', `${prefix}index.html`);
     brandLink.setAttribute('aria-label', label || 'Homework Manager');
   }
-  const loginButton = header.querySelector('[data-auth-button]');
-  if (loginButton) {
+  header.querySelectorAll('[data-auth-button]').forEach((loginButton) => {
     loginButton.setAttribute('data-lang', language);
-  }
+  });
 }
 
 function localizedLoggedInPrefix(lang) {
@@ -123,8 +121,8 @@ function localizedLoggedInPrefix(lang) {
 }
 
 async function tryInjectUserBadge(header, info) {
-  const userArea = header.querySelector('[data-user-area]');
-  if (!userArea) return;
+  const userAreas = header.querySelectorAll('[data-user-area]');
+  if (!userAreas.length) return;
   const prefix = info.languagePrefix || '';
   try {
     const res = await fetch('/api/me', { credentials: 'include' });
@@ -143,9 +141,12 @@ async function tryInjectUserBadge(header, info) {
     a.setAttribute('title', display);
     a.textContent = display;
 
-    // replace contents of userArea
-    userArea.innerHTML = '';
-    userArea.appendChild(a);
+    const areas = Array.from(userAreas);
+    areas.forEach((area, index) => {
+      const link = index === 0 ? a : a.cloneNode(true);
+      area.innerHTML = '';
+      area.appendChild(link);
+    });
   } catch (err) {
     // ignore: keep login button
     return;
