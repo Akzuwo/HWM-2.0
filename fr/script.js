@@ -440,53 +440,62 @@ function updateAdminNavButton() {
 }
 
 function updateRoleHint() {
-    const button = document.querySelector('[data-auth-button]');
-    const hint = ensureRoleHintElement(button);
-    if (!hint) {
+    const buttons = document.querySelectorAll('[data-auth-button]');
+    if (!buttons.length) {
         return;
     }
-    if (!isAuthenticated()) {
-        hint.textContent = '';
-        hint.classList.add('is-hidden');
-        hint.classList.remove('is-authenticated');
-        hint.removeAttribute('data-role');
-        return;
-    }
-    const text = getAuthStatusText();
-    hint.textContent = text;
-    hint.dataset.role = sessionState.role;
-    hint.classList.toggle('is-hidden', !text);
-    hint.classList.add('is-authenticated');
+    buttons.forEach((button) => {
+        const hint = ensureRoleHintElement(button);
+        if (!hint) {
+            return;
+        }
+        if (!isAuthenticated()) {
+            hint.textContent = '';
+            hint.classList.add('is-hidden');
+            hint.classList.remove('is-authenticated');
+            hint.removeAttribute('data-role');
+            return;
+        }
+        const text = getAuthStatusText();
+        hint.textContent = text;
+        hint.dataset.role = sessionState.role;
+        hint.classList.toggle('is-hidden', !text);
+        hint.classList.add('is-authenticated');
+    });
 }
 
 function updateAuthButton() {
-    const button = document.querySelector('[data-auth-button]');
-    if (!button) {
+    const buttons = document.querySelectorAll('[data-auth-button]');
+    if (!buttons.length) {
         return;
     }
-    button.textContent = isAuthenticated() ? LOGIN_TEXT.logoutButton : LOGIN_TEXT.loginButton;
+    buttons.forEach((button) => {
+        button.textContent = isAuthenticated() ? LOGIN_TEXT.logoutButton : LOGIN_TEXT.loginButton;
+    });
 }
 
 function setupAuthButton() {
-    const button = document.querySelector('[data-auth-button]');
-    if (!button) {
+    const buttons = document.querySelectorAll('[data-auth-button]');
+    if (!buttons.length) {
         return;
     }
 
-    if (button.dataset.authBound === 'true') {
-        updateAuthButton();
-        return;
-    }
-
-    button.addEventListener('click', () => {
-        if (isAuthenticated()) {
-            logout();
-        } else {
-            openAuthOverlay(button);
+    buttons.forEach((button) => {
+        if (button.dataset.authBound === 'true') {
+            return;
         }
+
+        button.addEventListener('click', () => {
+            if (isAuthenticated()) {
+                logout();
+            } else {
+                openAuthOverlay(button);
+            }
+        });
+
+        button.dataset.authBound = 'true';
     });
 
-    button.dataset.authBound = 'true';
     updateAuthButton();
 }
 
