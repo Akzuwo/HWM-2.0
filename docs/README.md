@@ -25,6 +25,42 @@ Homework Manager 2.0 bündelt Stundenpläne, Hausaufgabenverwaltung, Mitteilunge
 | `docs/` | Projekt- und Betriebshandbücher (diese Datei). |
 | `utils/` | Deployment-Helfer und Verwaltungs-Skripte. |
 
+## Wichtige API-Endpunkte
+
+| Pfad | Methode(n) | Zweck | Berechtigungen |
+| --- | --- | --- | --- |
+| `/api/auth/register` | `POST` | Registriert Schüler:innen mit optionalem Klassen-Slug und triggert E-Mail-Verifizierung. | Öffentlich, Domain-Whitelist beachten. |
+| `/api/auth/login`, `/api/login` | `POST` | Startet eine Session per Cookie. | Öffentlich, Rate-Limiting aktiv. |
+| `/api/auth/logout`, `/api/logout` | `POST` | Beendet die aktuelle Session. | Angemeldete Nutzer:innen. |
+| `/api/auth/verify` | `POST` | Bestätigt einen Verifizierungscode und setzt `email_verified_at`. | Öffentlich (per Code), Rate-Limiting aktiv. |
+| `/api/auth/resend` | `POST` | Fordert einen neuen Verifizierungscode an. | Öffentlich (per E-Mail). |
+| `/api/auth/password-reset` | `POST` | `action=request`/`create`: erzeugt Reset-Code; `action=confirm`/`reset`: setzt neues Passwort. | Öffentlich, getrennte Rate-Limits pro IP/User. |
+| `/api/contact` | `POST` | Sendet eine Kontaktanfrage mit optionalem Anhang. | Angemeldet und aktiv. |
+| `/api/classes` | `GET` | Listet Klassen (Admin/Teacher sehen alle, Class-Admin nur eigene). | Admin, Teacher, Class-Admin. |
+| `/api/session/class` | `GET`, `PUT` | Liest oder setzt den Klassenkontext für weitere Requests. | Lesen: alle Rollen außer Gast; Setzen: Admin, Teacher. |
+| `/api/users/<id>/class` | `PUT` | Ordnet einem Nutzer eine Klasse zu. | Admin. |
+| `/api/me` | `GET`, `PUT`, `DELETE` | Liefert Profil, erlaubt Klassenwechsel (30-Tage-Cooldown) oder Soft-Delete des Kontos. | Angemeldet. |
+| `/api/admin/logs` | `GET` | Liefert den aktuellen Logtail mit Begrenzung. | Admin. |
+| `/api/admin/schedule-import` | `POST` | Importiert Stundenplan-JSON für eine Klasse (Upload oder Payload). | Admin. |
+| `/api/admin/resend-verification` | `POST` | Schickt den Verifizierungscode erneut an das Admin-Konto. | Admin. |
+| `/api/admin/users` | `GET`, `POST` | Paginierte Userliste bzw. Nutzer anlegen. | Admin. |
+| `/api/admin/users/<id>` | `GET`, `PUT`, `DELETE` | Liest, aktualisiert oder löscht einen Nutzer. | Admin. |
+| `/api/admin/classes` | `GET`, `POST` | Klassen auflisten oder neu anlegen. | Admin. |
+| `/api/admin/classes/<id>` | `GET`, `PUT`, `DELETE` | Klassen lesen, ändern oder entfernen. | Admin. |
+| `/api/admin/schedules` | `GET`, `POST` | Importhistorie/Metadaten lesen oder neuen Schedule-Eintrag anlegen. | Admin. |
+| `/api/admin/schedules/<id>` | `GET`, `PUT`, `DELETE` | Schedule-Metadaten lesen, ändern oder löschen. | Admin. |
+| `/api/admin/classes/<id>/schedule` | `DELETE` | Entfernt alle Stundenplan-Einträge einer Klasse. | Admin. |
+| `/api/admin/schedule-entries` | `GET`, `POST` | Stundenplan-Einträge je Klasse abrufen oder neu anlegen. | Admin. |
+| `/api/admin/schedule-entries/<id>` | `GET`, `PUT`, `DELETE` | Einzelnen Stundenplan-Eintrag lesen, ändern oder löschen. | Admin. |
+| `/entries` | `GET` | Listet alle Hausaufgaben/Termine einer Klasse, sortiert nach Datum. | Session mit Klassenkontext erforderlich. |
+| `/add_entry` | `POST` | Legt Einträge für eine oder mehrere Klassen an (IDs optional verknüpft). | Entry-Manager-Rollen (Admin/Teacher/Class-Admin). |
+| `/update_entry` | `PUT` | Aktualisiert einen vorhandenen Eintrag inkl. Zeit- und Klassenfeldern. | Entry-Manager-Rollen (Admin/Teacher/Class-Admin). |
+| `/delete_entry/<id>` | `DELETE` | Entfernt einen Eintrag für die gewählte Klasse. | Entry-Manager-Rollen (Admin/Teacher/Class-Admin). |
+| `/stundenplan` | `GET` | Liefert den Stundenplan der aktuellen Klasse. | Session mit Klassenkontext erforderlich. |
+| `/aktuelles_fach` | `GET` | Gibt aktuelles und nächstes Fach inkl. Restzeit zurück. | Session mit Klassenkontext erforderlich. |
+| `/tagesuebersicht` | `GET` | Stundenplanübersicht für heute und morgen. | Session mit Klassenkontext erforderlich. |
+| `/calendar.ics` | `GET` | Exportiert zukünftige Einträge als iCalendar-Datei. | Session mit Klassenkontext erforderlich. |
+
 ## Lokale Entwicklung
 
 ### Voraussetzungen
@@ -169,4 +205,3 @@ Technische Rückfragen, Bugreports und allgemeine Hinweise laufen zentral über 
 ## Internationalisierung & Inhalte
 
 Die statischen Seiten (z. B. `de/index.html`, `fr/login.html`) werden direkt vom Backend ausgeliefert. Sprachspezifische Anpassungen erfolgen in den jeweiligen Ordnern. Übersetzungen für dynamische Inhalte der modernen Oberfläche liegen in `frontend/locales/` als JSON-Dateien. Neue Sprachen werden hinzugefügt, indem sowohl ein Sprachordner mit HTML/JS-Dateien als auch ein Übersetzungspaket angelegt und im Backend registriert wird.
-
