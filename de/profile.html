@@ -7,48 +7,114 @@
   <link rel="icon" type="image/png" href="../media/logo.png" />
   <link rel="stylesheet" href="../utils/css/style.css" />
 </head>
-</body>
 <body class="profile-page">
   <script type="module" src="../utils/js/header.js"></script>
-  <main id="main" class="page">
-    <div class="page__inner">
-      <div class="container">
-        <article class="card card--center">
-          <header class="card__header">
-            <h1 data-i18n="profile.title">Profil</h1>
-          </header>
-          <section class="card__body">
-            <dl class="profile-list">
-              <div class="profile-row">
-                <dt data-i18n="profile.email">E‑Mail</dt>
-                <dd id="profile-email">–</dd>
-              </div>
-              <div class="profile-row">
-                <dt data-i18n="profile.accountAge">Accountalter</dt>
-                <dd id="profile-age">–</dd>
-              </div>
-              <div class="profile-row">
-                <dt data-i18n="profile.class">Klasse</dt>
-                <dd>
-                  <input id="profile-class-input" class="input" type="text" placeholder="L23a" />
-                  <div id="class-cooldown-msg" class="muted"></div>
-                  <div style="margin-top:0.5rem">
-                    <button id="change-class-btn" class="button ripple"> <span data-i18n="profile.changeClass">Klasse ändern</span></button>
-                  </div>
-                </dd>
-              </div>
-            </dl>
+  <main id="main" class="profile">
+    <div class="profile__container">
+      <header class="profile__header">
+        <p class="profile__eyebrow" data-i18n="profile.eyebrow">Account</p>
+        <h1 data-i18n="profile.title">Profil</h1>
+        <p class="profile__subtitle" data-i18n="profile.subtitle">Verwalte deine persönlichen Daten, Klassen­zuordnung und Sicherheit.</p>
+      </header>
 
-            <hr />
-
-            <section>
-              <h2 data-i18n="profile.deleteTitle">Account löschen</h2>
-              <p class="muted" data-i18n="profile.deleteWarning">Diese Aktion löscht Ihr Benutzerkonto unwiderruflich.</p>
-              <button id="delete-account-btn" class="button button--danger ripple" data-i18n="profile.deleteButton">Account löschen</button>
-            </section>
-          </section>
+      <section class="profile__grid">
+        <article class="profile-card profile-card--wide">
+          <div class="profile-card__header">
+            <div>
+              <p class="profile__eyebrow" data-i18n="profile.overviewLabel">Übersicht</p>
+              <h2 data-i18n="profile.overviewTitle">Account-Übersicht</h2>
+            </div>
+            <p class="muted" data-i18n="profile.overviewDescription">Deine wichtigsten Profildaten auf einen Blick.</p>
+          </div>
+          <dl class="profile-meta">
+            <div class="profile-meta__item">
+              <dt data-i18n="profile.userId">User-ID</dt>
+              <dd id="profile-id">–</dd>
+            </div>
+            <div class="profile-meta__item">
+              <dt data-i18n="profile.email">E‑Mail</dt>
+              <dd id="profile-email">–</dd>
+            </div>
+            <div class="profile-meta__item">
+              <dt data-i18n="profile.class">Klasse</dt>
+              <dd id="profile-class">–</dd>
+            </div>
+            <div class="profile-meta__item">
+              <dt data-i18n="profile.classId">Klassen-ID</dt>
+              <dd id="profile-class-id">–</dd>
+            </div>
+            <div class="profile-meta__item">
+              <dt data-i18n="profile.accountAge">Accountalter</dt>
+              <dd id="profile-age">–</dd>
+            </div>
+            <div class="profile-meta__item">
+              <dt data-i18n="profile.accountCreated">Erstellt am</dt>
+              <dd id="profile-created">–</dd>
+            </div>
+            <div class="profile-meta__item">
+              <dt data-i18n="profile.lastClassChange">Letzter Klassenwechsel</dt>
+              <dd id="profile-last-change">–</dd>
+            </div>
+          </dl>
         </article>
-      </div>
+
+        <article class="profile-card">
+          <header class="profile-card__header">
+            <div>
+              <p class="profile__eyebrow" data-i18n="profile.classLabel">Klasse</p>
+              <h2 data-i18n="profile.classTitle">Klasse ändern</h2>
+            </div>
+            <p class="muted" data-i18n="profile.classHint">Klassenwechsel sind nur einmal pro Monat möglich.</p>
+          </header>
+          <form class="profile-form" id="class-form">
+            <label class="profile-form__label" for="profile-class-input" data-i18n="profile.classInputLabel">Klassen-ID</label>
+            <input id="profile-class-input" class="profile-input" type="number" inputmode="numeric" pattern="[0-9]*" data-i18n-attr="placeholder:profile.classPlaceholder" placeholder="12" />
+            <div id="class-cooldown-msg" class="profile-help"></div>
+            <div class="profile-actions">
+              <button type="submit" id="change-class-btn" class="button ripple"><span data-i18n="profile.changeClass">Klasse ändern</span></button>
+            </div>
+          </form>
+        </article>
+
+        <article class="profile-card">
+          <header class="profile-card__header">
+            <div>
+              <p class="profile__eyebrow" data-i18n="profile.securityLabel">Sicherheit</p>
+              <h2 data-i18n="profile.passwordTitle">Passwort ändern</h2>
+            </div>
+            <p class="muted" data-i18n="profile.passwordDescription">Aktualisiere dein Passwort. Nach erfolgreicher Änderung senden wir eine Bestätigungs-Mail.</p>
+          </header>
+          <form class="profile-form" id="password-form">
+            <label class="profile-form__label" for="current-password" data-i18n="profile.currentPassword">Aktuelles Passwort</label>
+            <input id="current-password" class="profile-input" type="password" autocomplete="current-password" />
+
+            <label class="profile-form__label" for="new-password" data-i18n="profile.newPassword">Neues Passwort</label>
+            <input id="new-password" class="profile-input" type="password" autocomplete="new-password" />
+
+            <label class="profile-form__label" for="confirm-password" data-i18n="profile.confirmPassword">Passwort bestätigen</label>
+            <input id="confirm-password" class="profile-input" type="password" autocomplete="new-password" />
+
+            <p class="profile-help" data-i18n="profile.passwordHint">Mindestens 8 Zeichen.</p>
+            <div class="profile-actions">
+              <button type="submit" id="change-password-btn" class="button ripple"><span data-i18n="profile.passwordChangeButton">Passwort aktualisieren</span></button>
+            </div>
+            <p id="password-email-status" class="profile-help"></p>
+          </form>
+        </article>
+
+        <article class="profile-card profile-card--danger">
+          <header class="profile-card__header">
+            <div>
+              <p class="profile__eyebrow" data-i18n="profile.dangerZone">Gefahrenzone</p>
+              <h2 data-i18n="profile.deleteTitle">Account löschen</h2>
+            </div>
+            <p class="muted" data-i18n="profile.deleteWarning">Diese Aktion löscht dein Benutzerkonto unwiderruflich.</p>
+          </header>
+          <div class="profile-actions">
+            <button id="delete-account-btn" class="button button--danger ripple" type="button" data-i18n="profile.deleteButton">Account löschen</button>
+          </div>
+        </article>
+      </section>
     </div>
   </main>
 
