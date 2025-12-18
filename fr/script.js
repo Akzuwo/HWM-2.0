@@ -3172,6 +3172,21 @@ async function showEntryForm(defaults = null) {
     }
 }
 
+async function refreshCalendarEntries() {
+    try {
+        if (typeof window !== 'undefined' && typeof window.loadCalendar === 'function') {
+            await window.loadCalendar();
+            return;
+        }
+    } catch (error) {
+        console.error('Impossible de rafraîchir le calendrier après enregistrement :', error);
+    }
+
+    if (typeof window !== 'undefined' && window.location && typeof window.location.reload === 'function') {
+        window.location.reload();
+    }
+}
+
 async function saveEntry(event) {
     if (event) {
         event.preventDefault();
@@ -3333,8 +3348,7 @@ async function saveEntry(event) {
                 success = true;
                 showOverlay(CALENDAR_MODAL_MESSAGES.saveSuccess, 'success');
                 closeEntryModal();
-                document.getElementById('overlay-close')
-                    .addEventListener('click', () => location.reload(), { once: true });
+                await refreshCalendarEntries();
                 if (form) {
                     form.reset();
                     controller?.setType('event');
