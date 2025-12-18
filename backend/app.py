@@ -398,6 +398,8 @@ PASSWORD_RESET_CODE_LENGTH = int(os.getenv('PASSWORD_RESET_CODE_LENGTH', 8))
 PASSWORD_RESET_CODE_LIFETIME_SECONDS = int(os.getenv('PASSWORD_RESET_CODE_LIFETIME_SECONDS', 15 * 60))
 PASSWORD_RESET_FROM_ADDRESS = os.getenv('PASSWORD_RESET_FROM_ADDRESS', CONTACT_FROM_ADDRESS or CONTACT_SMTP_USER or CONTACT_RECIPIENT)
 PASSWORD_RESET_SUBJECT = os.getenv('PASSWORD_RESET_SUBJECT', 'Passwort zurücksetzen')
+PASSWORD_CHANGE_FROM_ADDRESS = os.getenv('PASSWORD_CHANGE_FROM_ADDRESS', CONTACT_FROM_ADDRESS or CONTACT_SMTP_USER or CONTACT_RECIPIENT)
+PASSWORD_CHANGE_SUBJECT = os.getenv('PASSWORD_CHANGE_SUBJECT', 'Passwort geändert')
 
 EMAIL_VERIFICATION_CODE_LIFETIME_SECONDS = int(os.getenv('EMAIL_VERIFICATION_CODE_LIFETIME_SECONDS', 8 * 60))
 EMAIL_VERIFICATION_FROM_ADDRESS = os.getenv('EMAIL_VERIFICATION_FROM_ADDRESS', CONTACT_FROM_ADDRESS or CONTACT_SMTP_USER or CONTACT_RECIPIENT)
@@ -776,6 +778,43 @@ def _send_password_reset_email(email_address: str, code: str, expires_at: dateti
     _deliver_email(
         email_address,
         PASSWORD_RESET_SUBJECT,
+        body,
+        sender=sender,
+        html_body=html_body,
+    )
+
+
+def _send_password_change_email(email_address: str) -> None:
+    if not email_address:
+        raise ValueError('email_address is required')
+
+    body = (
+        "Hallo,\n\n"
+        "dies ist eine Bestätigung: Dein Passwort für den Homework Manager wurde soeben geändert."
+        " Falls du diese Änderung nicht selbst vorgenommen hast, sichere deinen Account bitte sofort "
+        "und kontaktiere das Support-Team.\n"
+    )
+
+    html_body = (
+        '<html><body>'
+        '<p>Hallo,</p>'
+        '<p>dies ist eine Bestätigung: Dein Passwort für den Homework Manager wurde soeben geändert.</p>'
+        '<p>Falls du diese Änderung nicht selbst vorgenommen hast, sichere deinen Account bitte umgehend '
+        'und kontaktiere das Support-Team.</p>'
+        '</body></html>'
+    )
+
+    contact_settings = _get_runtime_contact_settings()
+    sender = (
+        PASSWORD_CHANGE_FROM_ADDRESS
+        or contact_settings["from_address"]
+        or contact_settings["user"]
+        or contact_settings["recipient"]
+    )
+
+    _deliver_email(
+        email_address,
+        PASSWORD_CHANGE_SUBJECT,
         body,
         sender=sender,
         html_body=html_body,
@@ -3290,7 +3329,15 @@ def current_user_profile():
         try:
             if request.method == 'GET':
                 cursor.execute(
-                    "SELECT id, email, role, class_id, created_at, updated_at, IFNULL(last_class_change, NULL) AS last_class_change FROM users WHERE id=%s LIMIT 1",
+                    """
+                    SELECT u.id, u.email, u.role, u.class_id, u.created_at, u.updated_at,
+                           IFNULL(u.last_class_change, NULL) AS last_class_change,
+                           c.slug AS class_slug, c.title AS class_title
+                    FROM users u
+                    LEFT JOIN classes c ON c.id = u.class_id
+                    WHERE u.id=%s
+                    LIMIT 1
+                    """,
                     (user_id,),
                 )
                 row = cursor.fetchone()
@@ -3299,21 +3346,39 @@ def current_user_profile():
                 # compute account age in days
                 created_at = row.get('created_at')
                 account_age_days = None
+                now = datetime.datetime.utcnow()
                 if created_at:
                     try:
-                        delta = datetime.datetime.utcnow() - created_at
+                        delta = now - created_at
                         account_age_days = max(0, int(delta.total_seconds() // 86400))
                     except Exception:
                         account_age_days = None
+
+                class_change_remaining_days = None
+                class_change_available_at = None
+                last_change = row.get('last_class_change')
+                if last_change:
+                    try:
+                        next_allowed = last_change + datetime.timedelta(days=30)
+                        class_change_available_at = next_allowed.isoformat()
+                        remaining_seconds = (next_allowed - now).total_seconds()
+                        if remaining_seconds > 0:
+                            class_change_remaining_days = int((remaining_seconds + 86399) // 86400)
+                    except Exception:
+                        class_change_available_at = None
 
                 return jsonify(status='ok', data={
                     'id': row.get('id'),
                     'email': row.get('email'),
                     'role': row.get('role'),
                     'class_id': row.get('class_id'),
+                    'class_slug': row.get('class_slug'),
+                    'class_title': row.get('class_title'),
                     'created_at': row.get('created_at').isoformat() if row.get('created_at') else None,
                     'account_age_days': account_age_days,
                     'last_class_change': row.get('last_class_change').isoformat() if row.get('last_class_change') else None,
+                    'class_change_remaining_days': class_change_remaining_days,
+                    'class_change_available_at': class_change_available_at,
                 })
 
             if request.method == 'DELETE':
@@ -3408,6 +3473,90 @@ def current_user_profile():
 
     # fallback
     return jsonify(status='error', message='unknown'), 500
+
+
+@app.route('/api/me/password', methods=['POST', 'OPTIONS'])
+@require_role()
+def change_current_user_password():
+    if request.method == 'OPTIONS':
+        return _cors_preflight()
+
+    user_id = session.get('user_id')
+    try:
+        user_id = int(user_id)
+    except (TypeError, ValueError):
+        return jsonify(status='error', message='not_authenticated'), 401
+
+    data = request.get_json(silent=True) or {}
+    current_password = (data.get('current_password') or '').strip()
+    new_password = (data.get('new_password') or '').strip()
+
+    if not current_password:
+        return jsonify(status='error', message='current_password_required'), 400
+    if not new_password:
+        return jsonify(status='error', message='password_required'), 400
+    if len(new_password) < 8:
+        return jsonify(status='error', message='weak_password'), 400
+
+    try:
+        conn = get_connection()
+    except Exception:
+        return jsonify(status='error', message='database_unavailable'), 503
+
+    email_address: Optional[str] = None
+    with closing(conn):
+        cursor = conn.cursor(dictionary=True)
+        try:
+            cursor.execute(
+                "SELECT password_hash, email FROM users WHERE id=%s LIMIT 1",
+                (user_id,),
+            )
+            user_row = cursor.fetchone()
+        except mysql.connector.Error:
+            return jsonify(status='error', message='database_unavailable'), 503
+        finally:
+            cursor.close()
+
+        if not user_row:
+            return jsonify(status='error', message='user_not_found'), 404
+
+        email_address = user_row.get('email')
+        stored_hash = user_row.get('password_hash') or ''
+        if not verify_password(stored_hash, current_password):
+            return jsonify(status='error', message='invalid_current_password'), 400
+        if verify_password(stored_hash, new_password):
+            return jsonify(status='error', message='password_unchanged'), 400
+
+        try:
+            new_password_hash = hash_password(new_password)
+        except ValueError:
+            return jsonify(status='error', message='weak_password'), 400
+
+        update_cursor = conn.cursor()
+        now = datetime.datetime.utcnow()
+        try:
+            update_cursor.execute(
+                "UPDATE users SET password_hash=%s, updated_at=%s WHERE id=%s",
+                (new_password_hash, now, user_id),
+            )
+            if update_cursor.rowcount == 0:
+                return jsonify(status='error', message='user_not_found'), 404
+            _log_user_event('password_changed', user_id=user_id)
+            conn.commit()
+        except mysql.connector.Error:
+            conn.rollback()
+            return jsonify(status='error', message='database_unavailable'), 503
+        finally:
+            update_cursor.close()
+
+    email_sent = True
+    try:
+        _send_password_change_email(email_address)
+    except Exception as exc:  # pragma: no cover - depends on SMTP availability
+        email_sent = False
+        app.logger.warning('Failed to send password change email for user %s: %s', user_id, exc)
+
+    return jsonify(status='ok', email_sent=email_sent)
 
 
 # --- UPDATE ENTRY ---
@@ -3840,9 +3989,6 @@ def add_cors_headers(response):
 # ---------- SERVER START ----------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=False)
-
-
-
 
 
 

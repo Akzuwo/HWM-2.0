@@ -1,6 +1,13 @@
-/* Profile page logic: load /api/me, allow class change and account deletion */
+/* Profile page logic: load /api/me, allow class change, password updates, and account deletion */
 (function () {
   'use strict'
+
+  const i18nScope = window.hmI18n ? window.hmI18n.scope('profile') : null
+  const locale = (window.hmI18n && typeof window.hmI18n.getLocale === 'function'
+    ? window.hmI18n.getLocale()
+    : document.documentElement.lang || 'en')
+
+  const t = (key, fallback) => (i18nScope ? i18nScope(key, fallback) : fallback)
 
   async function apiFetch(path, method = 'GET', body = null) {
     const opts = { method, credentials: 'include', headers: {} }
@@ -18,78 +25,256 @@
     return res.json()
   }
 
-  function el(id) { return document.getElementById(id) }
+  const el = (id) => document.getElementById(id)
+
+  const elements = {
+    id: () => el('profile-id'),
+    email: () => el('profile-email'),
+    classLabel: () => el('profile-class'),
+    classId: () => el('profile-class-id'),
+    age: () => el('profile-age'),
+    created: () => el('profile-created'),
+    lastChange: () => el('profile-last-change'),
+    classInput: () => el('profile-class-input'),
+    classCooldown: () => el('class-cooldown-msg'),
+    classButton: () => el('change-class-btn'),
+    classForm: () => document.getElementById('class-form'),
+    passwordForm: () => document.getElementById('password-form'),
+    deleteButton: () => el('delete-account-btn'),
+    passwordButton: () => el('change-password-btn'),
+    passwordEmailStatus: () => el('password-email-status'),
+    currentPassword: () => el('current-password'),
+    newPassword: () => el('new-password'),
+    confirmPassword: () => el('confirm-password'),
+  }
+
+  function safeText(value) {
+    return value === undefined || value === null || value === ''
+      ? t('unknownValue', '–')
+      : String(value)
+  }
+
+  function setText(node, value) {
+    if (!node) return
+    node.textContent = safeText(value)
+  }
+
+  function formatDate(value) {
+    if (!value) return t('unknownValue', '–')
+    try {
+      const date = new Date(value)
+      if (Number.isNaN(date.getTime())) return t('unknownValue', '–')
+      return new Intl.DateTimeFormat(locale || undefined, { dateStyle: 'medium' }).format(date)
+    } catch (err) {
+      return t('unknownValue', '–')
+    }
+  }
+
+  function formatDays(count) {
+    if (count === undefined || count === null || Number.isNaN(count)) {
+      return t('unknownValue', '–')
+    }
+    const days = Math.max(0, Math.round(count))
+    if (days === 1) return t('ageDay', '1 day')
+    return t('ageDays', '{count} days').replace('{count}', days)
+  }
+
+  function formatClass(data) {
+    if (!data) return t('unknownValue', '–')
+    return data.class_slug || data.class_title || (data.class_id != null ? `#${data.class_id}` : t('unknownValue', '–'))
+  }
+
+  function applyClassCooldown(data) {
+    const cooldownNode = elements.classCooldown()
+    const button = elements.classButton()
+    if (!cooldownNode || !button) return
+
+    let remaining = typeof data.class_change_remaining_days === 'number'
+      ? data.class_change_remaining_days
+      : null
+
+    if (remaining === null && data.last_class_change) {
+      const lastChange = new Date(data.last_class_change)
+      if (!Number.isNaN(lastChange.getTime())) {
+        const nextAllowed = new Date(lastChange.getTime() + 30 * 24 * 3600 * 1000)
+        const now = new Date()
+        if (now < nextAllowed) {
+          remaining = Math.ceil((nextAllowed - now) / (24 * 3600 * 1000))
+        }
+      }
+    }
+
+    if (remaining && remaining > 0) {
+      const template = remaining === 1
+        ? t('classCooldownOne', 'Class can be changed again in 1 day.')
+        : t('classCooldown', 'Class can be changed again in {days} days.').replace('{days}', remaining)
+      cooldownNode.textContent = template
+      button.disabled = true
+    } else {
+      cooldownNode.textContent = t('classChangeReady', 'You can change your class now.')
+      button.disabled = false
+    }
+  }
 
   async function loadProfile() {
     try {
       const resp = await apiFetch('/api/me')
       if (resp.status !== 'ok') throw new Error(resp.message || 'failed')
-      const data = resp.data
-      el('profile-email').textContent = data.email || '—'
-      if (data.account_age_days != null) {
-        el('profile-age').textContent = `${data.account_age_days} Tage`
-      } else {
-        el('profile-age').textContent = '–'
-      }
-      el('profile-class-input').value = data.class_id || ''
+      const data = resp.data || {}
 
-      if (data.last_class_change) {
-        const last = new Date(data.last_class_change)
-        const nextAllowed = new Date(last.getTime() + 30 * 24 * 3600 * 1000)
-        const now = new Date()
-        if (now < nextAllowed) {
-          const days = Math.ceil((nextAllowed - now) / (24 * 3600 * 1000))
-          el('class-cooldown-msg').textContent = `Klasse kann erst in ${days} Tagen erneut geändert werden.`
-          el('change-class-btn').disabled = true
-        } else {
-          el('class-cooldown-msg').textContent = ''
-          el('change-class-btn').disabled = false
-        }
-      } else {
-        el('class-cooldown-msg').textContent = ''
-        el('change-class-btn').disabled = false
+      setText(elements.id(), data.id)
+      setText(elements.email(), data.email)
+      setText(elements.classLabel(), formatClass(data))
+      setText(elements.classId(), data.class_id)
+      setText(elements.age(), formatDays(data.account_age_days))
+      setText(elements.created(), formatDate(data.created_at))
+      setText(elements.lastChange(), formatDate(data.last_class_change))
+
+      const classInput = elements.classInput()
+      if (classInput) {
+        classInput.value = data.class_id != null ? data.class_id : ''
       }
+
+      applyClassCooldown(data)
     } catch (err) {
       console.error('Failed to load profile', err)
-      window.showToast && window.showToast('Fehler beim Laden des Profils')
+      window.showToast && window.showToast(t('loadError', 'Could not load your profile.'))
     }
   }
 
-  async function changeClass() {
-    const val = el('profile-class-input').value.trim() || null
-    if (!val) {
-      window.showToast && window.showToast('Bitte eine Klasse angeben')
+  function withButtonState(button, callback) {
+    if (!button) return callback()
+    const originalContent = button.innerHTML
+    button.disabled = true
+    return Promise.resolve()
+      .then(callback)
+      .finally(() => {
+        button.disabled = false
+        button.innerHTML = originalContent
+      })
+  }
+
+  async function changeClass(event) {
+    if (event) event.preventDefault()
+    const button = elements.classButton()
+    const classInput = elements.classInput()
+    const raw = (classInput && classInput.value || '').trim()
+
+    if (!raw) {
+      window.showToast && window.showToast(t('classChangeMissing', 'Please enter a class ID.'))
       return
     }
-    try {
-      await apiFetch('/api/me', 'PUT', { class_id: val })
-      window.showToast && window.showToast('Klasse erfolgreich geändert')
-      setTimeout(() => loadProfile(), 400)
-    } catch (err) {
-      console.error('Failed to change class', err)
-      const msg = err.info && err.info.message ? err.info.message : err.message
-      window.showToast && window.showToast(`Fehler: ${msg}`)
+
+    const parsed = Number.parseInt(raw, 10)
+    if (!Number.isFinite(parsed)) {
+      window.showToast && window.showToast(t('classChangeInvalid', 'Please enter a valid class ID.'))
+      return
     }
+
+    await withButtonState(button, async () => {
+      try {
+        await apiFetch('/api/me', 'PUT', { class_id: parsed })
+        window.showToast && window.showToast(t('classChangeSuccess', 'Class updated successfully.'))
+        setTimeout(() => loadProfile(), 350)
+      } catch (err) {
+        console.error('Failed to change class', err)
+        const code = err.info && err.info.message
+        let message = t('classChangeError', 'Could not update the class.')
+        if (code === 'class_not_found') {
+          message = t('classChangeNotFound', 'Class not found.')
+        } else if (code === 'invalid_class_id') {
+          message = t('classChangeInvalid', 'Please enter a valid class ID.')
+        } else if (code === 'class_change_cooldown') {
+          const remaining = err.info && err.info.remaining_days
+          message = t('classChangeCooldownError', 'You can change your class again in {days} days.').replace('{days}', remaining || '–')
+        }
+        window.showToast && window.showToast(message)
+      }
+    })
+  }
+
+  async function changePassword(event) {
+    if (event) event.preventDefault()
+    const current = elements.currentPassword() && elements.currentPassword().value.trim()
+    const next = elements.newPassword() && elements.newPassword().value.trim()
+    const confirm = elements.confirmPassword() && elements.confirmPassword().value.trim()
+    const button = elements.passwordButton()
+    const status = elements.passwordEmailStatus()
+    if (status) status.textContent = ''
+
+    if (!current || !next || !confirm) {
+      window.showToast && window.showToast(t('passwordMissing', 'Please fill in all password fields.'))
+      return
+    }
+    if (next !== confirm) {
+      window.showToast && window.showToast(t('passwordMismatch', 'The new passwords do not match.'))
+      return
+    }
+    if (next.length < 8) {
+      window.showToast && window.showToast(t('passwordChangeWeak', 'The password is too weak.'))
+      return
+    }
+
+    await withButtonState(button, async () => {
+      try {
+        const resp = await apiFetch('/api/me/password', 'POST', { current_password: current, new_password: next })
+        const emailSent = resp && resp.email_sent !== false
+        window.showToast && window.showToast(t('passwordChangeSuccess', 'Password updated successfully.'))
+        if (status) {
+          status.textContent = emailSent
+            ? t('passwordEmailSuccess', 'We sent you a confirmation email.')
+            : t('passwordEmailFailure', 'Password updated, but the confirmation email could not be sent.')
+        }
+        const form = elements.passwordForm()
+        form && form.reset()
+      } catch (err) {
+        console.error('Failed to change password', err)
+        const code = err.info && err.info.message
+        let message = t('passwordChangeError', 'Could not change the password.')
+        if (code === 'invalid_current_password') {
+          message = t('passwordChangeInvalidCurrent', 'Current password is incorrect.')
+        } else if (code === 'weak_password') {
+          message = t('passwordChangeWeak', 'The password is too weak.')
+        } else if (code === 'password_unchanged') {
+          message = t('passwordChangeUnchanged', 'Please choose a different password.')
+        } else if (code === 'password_required' || code === 'current_password_required') {
+          message = t('passwordMissing', 'Please fill in all password fields.')
+        }
+        window.showToast && window.showToast(message)
+      }
+    })
   }
 
   async function deleteAccount() {
-    if (!confirm('Möchten Sie Ihr Konto wirklich dauerhaft löschen?')) return
-    try {
-      await apiFetch('/api/me', 'DELETE')
-      window.showToast && window.showToast('Account gelöscht')
-      // redirect to home
-      setTimeout(() => { window.location.href = '/' }, 800)
-    } catch (err) {
-      console.error('Failed to delete account', err)
-      window.showToast && window.showToast('Fehler beim Löschen des Accounts')
-    }
+    const confirmation = t('deleteConfirm', 'Do you really want to permanently delete your account?')
+    if (!confirm(confirmation)) return
+    const button = elements.deleteButton()
+
+    await withButtonState(button, async () => {
+      try {
+        await apiFetch('/api/me', 'DELETE')
+        window.showToast && window.showToast(t('deleteSuccess', 'Account deleted.'))
+        setTimeout(() => { window.location.href = '/' }, 800)
+      } catch (err) {
+        console.error('Failed to delete account', err)
+        window.showToast && window.showToast(t('deleteError', 'Could not delete the account.'))
+      }
+    })
   }
 
   document.addEventListener('DOMContentLoaded', function () {
-    const changeBtn = el('change-class-btn')
-    const deleteBtn = el('delete-account-btn')
-    changeBtn && changeBtn.addEventListener('click', changeClass)
+    const classForm = elements.classForm()
+    const passwordForm = elements.passwordForm()
+    const deleteBtn = elements.deleteButton()
+
+    classForm && classForm.addEventListener('submit', changeClass)
+    passwordForm && passwordForm.addEventListener('submit', changePassword)
+    if (!classForm) {
+      const changeBtn = elements.classButton()
+      changeBtn && changeBtn.addEventListener('click', changeClass)
+    }
     deleteBtn && deleteBtn.addEventListener('click', deleteAccount)
+
     loadProfile()
   })
 
