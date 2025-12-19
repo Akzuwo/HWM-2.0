@@ -3,7 +3,7 @@
   const API_BASE =
     typeof root.hmResolveApiBase === 'function'
       ? root.hmResolveApiBase()
-      : 'https://homework-manager-2-5-backend.onrender.com';
+      : 'https://hwm-api.akzuwo.ch';
 
   function fetchWithSession(url, options = {}) {
     const { headers, ...rest } = options || {};

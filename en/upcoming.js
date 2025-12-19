@@ -1,7 +1,7 @@
 const API_BASE_URL =
   (typeof window !== 'undefined' && typeof window.hmResolveApiBase === 'function')
     ? window.hmResolveApiBase()
-    : 'https://homework-manager-2-5-backend.onrender.com';
+    : 'https://hwm-api.akzuwo.ch';
 
 const unauthorizedMessage =
   'Please sign in and make sure you are assigned to a class to view upcoming events.';

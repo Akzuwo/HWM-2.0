@@ -90,7 +90,7 @@ const LOGIN_TEXT = {
 };
 
 const API_BASE = (() => {
-    const base = 'https://homework-manager-2-5-backend.onrender.com';
+    const base = 'https://hwm-api.akzuwo.ch';
     if (typeof window !== 'undefined') {
         window.__HM_RESOLVED_API_BASE__ = base;
         window.hmResolveApiBase = () => base;
