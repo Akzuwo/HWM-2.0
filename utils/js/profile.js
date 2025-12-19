@@ -2,6 +2,17 @@
 (function () {
   'use strict'
 
+  const API_BASE = (() => {
+    if (typeof window !== 'undefined' && typeof window.hmResolveApiBase === 'function') {
+      return window.hmResolveApiBase()
+    }
+    const fallback = 'https://homework-manager-2-5-backend.onrender.com'
+    if (typeof window !== 'undefined' && typeof window.hmResolveApiBase !== 'function') {
+      window.hmResolveApiBase = () => fallback
+    }
+    return fallback
+  })()
+
   const i18nScope = window.hmI18n ? window.hmI18n.scope('profile') : null
   const locale = (window.hmI18n && typeof window.hmI18n.getLocale === 'function'
     ? window.hmI18n.getLocale()
@@ -9,20 +20,35 @@
 
   const t = (key, fallback) => (i18nScope ? i18nScope(key, fallback) : fallback)
 
+  function resolveApiUrl(path) {
+    if (!path) return API_BASE
+    if (/^https?:\/\//i.test(path)) return path
+    if (path.startsWith('/')) return `${API_BASE}${path}`
+    return `${API_BASE}/${path}`
+  }
+
   async function apiFetch(path, method = 'GET', body = null) {
     const opts = { method, credentials: 'include', headers: {} }
     if (body !== null) {
       opts.headers['Content-Type'] = 'application/json'
       opts.body = JSON.stringify(body)
     }
-    const res = await fetch(path, opts)
-    if (!res.ok) {
-      const j = await res.json().catch(() => ({}))
-      const err = new Error(j.message || 'Request failed')
-      err.info = j
+    const res = await fetch(resolveApiUrl(path), opts)
+    const rawText = await res.text().catch(() => '')
+    let parsed = null
+    try {
+      parsed = rawText ? JSON.parse(rawText) : null
+    } catch (err) {
+      parsed = null
+    }
+
+    if (!res.ok || !parsed) {
+      const message = (parsed && parsed.message) || 'Request failed'
+      const err = new Error(message)
+      err.info = parsed || { raw: rawText, status: res.status }
       throw err
     }
-    return res.json()
+    return parsed
   }
 
   const el = (id) => document.getElementById(id)
