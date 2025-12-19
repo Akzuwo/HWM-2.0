@@ -73,6 +73,28 @@ body.legal-page.legal-loaded {
   font-weight: 600;
 }
 
+.legal-section--rights {
+  text-align: left;
+}
+
+.legal-section--rights .legal-card {
+  text-align: left;
+}
+
+.legal-section--rights ul {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+.legal-section--rights ul li {
+  padding-left: 0;
+}
+
+.legal-section--rights ul li::before {
+  content: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   body.legal-page {
     opacity: 1 !important;
