@@ -6,7 +6,7 @@
     if (typeof window !== 'undefined' && typeof window.hmResolveApiBase === 'function') {
       return window.hmResolveApiBase()
     }
-    const fallback = 'https://homework-manager-2-5-backend.onrender.com'
+    const fallback = 'https://hwm-api.akzuwo.ch'
     if (typeof window !== 'undefined' && typeof window.hmResolveApiBase !== 'function') {
       window.hmResolveApiBase = () => fallback
     }
