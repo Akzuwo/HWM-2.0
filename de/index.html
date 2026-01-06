@@ -1,105 +1,14 @@
 <!DOCTYPE html>
-<html lang="de">
+<html>
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title data-i18n="home.pageTitle">Homework Manager</title>
-  <link rel="icon" type="image/png" href="../media/logo.png" />
-  <link rel="stylesheet" href="../utils/css/style.css" />
-  <link rel="stylesheet" href="../utils/css/home.css" />
+  <meta http-equiv="refresh" content="0; url=../index.html" />
+  <script>window.location.replace('../index.html');</script>
+  <title>Redirecting…</title>
 </head>
-<body class="home-page">
-<main class="home-main" id="main">
-    <aside class="home-callout" role="status">
-      <div class="home-callout__icon" aria-hidden="true">🛠️</div>
-      <div class="home-callout__content">
-        <h2 class="home-callout__title" data-i18n="home.status.title">Work in Progress</h2>
-        <p data-i18n="home.status.body">
-          Homework Manager 2.0 wird noch aktiv entwickelt. Manche Bereiche funktionieren daher noch nicht immer wie erwartet.
-        </p>
-      </div>
-    </aside>
-    <aside class="home-callout home-callout--milestone" role="note">
-      <div class="home-callout__icon" aria-hidden="true">🎯</div>
-      <div class="home-callout__content">
-        <h2 class="home-callout__title">Release-Ziel</h2>
-        <p>Ziel ist es HWM 2.0 am 31.12.2025 als Stable zu veröffentlichen.</p>
-      </div>
-    </aside>
-    <section class="home-grid">
-      <article class="home-card home-card--intro">
-        <header class="home-card__header">
-          <span class="home-card__icon" aria-hidden="true">📚</span>
-          <h1 data-i18n="home.heroTitle">Homework Manager 2.0</h1>
-        </header>
-        <p data-i18n="home.description.lead">
-          Der Homework Manager entstand, um Hausaufgaben, Prüfungen und Projekte transparent für die ganze Klasse bereitzustellen.
-        </p>
-        <p data-i18n="home.description.body">
-          Statt verstreuter Chats und vergessener Notizen bündelt die Plattform Termine, Erinnerungen und praktische Werkzeuge in einer klaren Oberfläche – jederzeit verfügbar und gemeinsam nutzbar.
-        </p>
-      </article>
-
-      <article class="home-card home-card--release">
-        <header class="home-card__header">
-          <span class="home-card__icon" aria-hidden="true">🚀</span>
-          <h2 data-i18n="home.release.title">Release 2.0</h2>
-        </header>
-        <p class="home-card__meta" data-i18n="home.release.date">Oktober 2025</p>
-        <p data-i18n="home.release.summary">
-          Release 2.0 bündelt alles, was den Schulalltag leichter macht – von der neuen Oberfläche über Events bis hin zu Rollen, Datenschutz und frischen Übersichten.
-        </p>
-        <ul>
-          <li data-i18n="home.release.highlights.design">Rundum neu gestaltetes Dark-Theme mit präziser Typografie.</li>
-          <li data-i18n="home.release.highlights.animations">Sanfte Animationen sorgen für flüssige Übergänge.</li>
-          <li data-i18n="home.release.highlights.events">Event-Feature für spontane Termine, AGs und Aktionen.</li>
-          <li data-i18n="home.release.highlights.upcoming">Neue Seite für anstehende Ereignisse schafft Überblick.</li>
-          <li data-i18n="home.release.highlights.privacy">Datenschutzhinweis direkt integriert.</li>
-          <li data-i18n="home.release.highlights.accounts">Account-System mit Rollen, Rechten und E-Mail-Verifikation.</li>
-          <li data-i18n="home.release.highlights.imprint">Impressum ergänzt die rechtlichen Infos.</li>
-          <li data-i18n="home.release.highlights.holidays">Ferien und Feiertage erscheinen im Kalender.</li>
-          <li data-i18n="home.release.highlights.multiClass">Events und Ferien für mehrere Klassen planbar.</li>
-          <li data-i18n="home.release.highlights.contact">Direkter Support per E-Mail an support@akzuwo.ch.</li>
-          <li data-i18n="home.release.highlights.dayView">Tagesübersicht vereint Aufgaben, Prüfungen und Events.</li>
-        </ul>
-        <a class="home-button" href="changelog.html">
-          <span aria-hidden="true">📄</span>
-          <span data-i18n="home.release.cta">Mehr erfahren</span>
-        </a>
-      </article>
-
-      <article class="home-card home-card--guide">
-        <header class="home-card__header">
-          <span class="home-card__icon" aria-hidden="true">🧭</span>
-          <h2 data-i18n="home.guide.title">Bedienungsanleitung</h2>
-        </header>
-        <p data-i18n="home.guide.summary">Die wichtigsten Schritte für Lehrkräfte, Schüler:innen und Klassen-Admins auf einen Blick.</p>
-        <ul>
-          <li data-i18n="home.guide.points.teachers">Unterricht vorbereiten, Aufgaben posten und Events teilen.</li>
-          <li data-i18n="home.guide.points.students">Aufgaben finden, Termine merken und Tagesfeed nutzen.</li>
-          <li data-i18n="home.guide.points.admins">Rollen verwalten, Klassen koppeln und Ferien planen.</li>
-        </ul>
-        <a class="home-button" href="help.html">
-          <span aria-hidden="true">📘</span>
-          <span data-i18n="home.guide.cta">Zur Anleitung</span>
-        </a>
-      </article>
-    </section>
-  </main>
-
-  <footer class="site-footer">
-    <span data-i18n="common.footer.copyright">©️ Timo Wigger 2025</span>
-    <span aria-hidden="true">|</span>
-    <a href="mailto:support@akzuwo.ch" data-i18n="common.footer.contact">support@akzuwo.ch</a>
-    <span aria-hidden="true">|</span>
-    <a href="changelog.html" data-i18n="common.footer.changelog">Changelog</a>
-  </footer>
-<script type="module" src="../utils/js/header.js"></script>
-<script src="../utils/js/i18n.js" defer></script>
-  <script src="../utils/js/overlay.js" defer></script>
-  <script src="../utils/js/toast.js" defer></script>
-  <script src="../utils/js/footer.js" defer></script>
-  <script src="../utils/js/home.js" defer></script>
-  <script src="script.js" defer></script>
+<body>
+  <noscript>
+    <p>Redirecting… <a href="../index.html">Continue</a></p>
+  </noscript>
 </body>
 </html>

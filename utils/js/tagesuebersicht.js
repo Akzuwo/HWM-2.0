@@ -15,9 +15,14 @@ function fetchWithSession(url, options = {}) {
   return fetch(url, init);
 }
 
-const unauthorizedMessage =
-  'Please sign in and make sure you are assigned to a class to view the daily overview.';
-const featureUnavailableMessage = 'This feature is not yet available for your class.';
+const t = window.hmI18n ? window.hmI18n.scope('dayOverview') : (key, fallback) => fallback;
+const locale = window.hmI18n ? window.hmI18n.getLocale() : 'en-GB';
+
+const unauthorizedMessage = t(
+  'unauthorized',
+  'Please sign in and make sure you are assigned to a class to view the daily overview.'
+);
+const featureUnavailableMessage = t('featureUnavailable', 'This feature is not yet available for your class.');
 
 async function responseRequiresClassContext(response) {
   if (!response) return false;
@@ -47,18 +52,18 @@ function setPageDate() {
   const dateTarget = document.getElementById('pageDate');
   if (dateTarget) {
     const today = new Date();
-    dateTarget.textContent = new Intl.DateTimeFormat('en-GB', { dateStyle: 'full' }).format(today);
+    dateTarget.textContent = new Intl.DateTimeFormat(locale, { dateStyle: 'full' }).format(today);
   }
 }
 
 function normalizeDay(value) {
-  return value ? value.toLocaleLowerCase('en-GB') : '';
+  return value ? value.toLocaleLowerCase(locale) : '';
 }
 
 function renderOverview(container, data) {
   container.innerHTML = '';
 
-  const todayKey = normalizeDay(new Intl.DateTimeFormat('en-GB', { weekday: 'long' }).format(new Date()));
+  const todayKey = normalizeDay(new Intl.DateTimeFormat(locale, { weekday: 'long' }).format(new Date()));
 
   for (const [tag, entries] of Object.entries(data)) {
     const card = document.createElement('section');
@@ -73,14 +78,14 @@ function renderOverview(container, data) {
 
     const table = document.createElement('table');
     table.className = 'schedule-table';
-    table.innerHTML = '<thead><tr><th>Time</th><th>Subject</th><th>Room</th></tr></thead>';
+    table.innerHTML = `<thead><tr><th>${t('table.time', 'Time')}</th><th>${t('table.subject', 'Subject')}</th><th>${t('table.room', 'Room')}</th></tr></thead>`;
     const tbody = document.createElement('tbody');
 
     if (!entries.length) {
       const row = document.createElement('tr');
       const cell = document.createElement('td');
       cell.colSpan = 3;
-      cell.textContent = 'No entries';
+      cell.textContent = t('table.empty', 'No entries');
       cell.classList.add('no-entry');
       row.appendChild(cell);
       tbody.appendChild(row);
@@ -109,7 +114,7 @@ async function loadOverview(container, { showLoading = false } = {}) {
     return;
   }
   if (showLoading) {
-    container.textContent = 'Loading data…';
+    container.textContent = t('loading', 'Loading data…');
   }
 
   try {
@@ -137,7 +142,7 @@ async function loadOverview(container, { showLoading = false } = {}) {
     renderOverview(container, data);
   } catch (err) {
     console.error('Error loading daily overview:', err);
-    container.textContent = 'Error loading data.';
+    container.textContent = t('error', 'Error loading data.');
   }
 }
 
@@ -152,12 +157,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       select: '[data-class-select]',
       permissions,
       text: {
-        label: 'Class',
-        placeholder: 'Select class',
-        loading: 'Loading classes…',
-        error: 'Unable to load classes.',
-        changeError: 'Unable to change class.',
-        required: 'Please choose a class to use this feature.'
+        label: t('classLabel', 'Class'),
+        placeholder: t('classPlaceholder', 'Select class'),
+        loading: t('classLoading', 'Loading classes…'),
+        error: t('classError', 'Unable to load classes.'),
+        changeError: t('classChangeError', 'Unable to change class.'),
+        required: t('classRequired', 'Please choose a class to use this feature.')
       },
       onError: (message) => {
         if (typeof window.showOverlay === 'function') {

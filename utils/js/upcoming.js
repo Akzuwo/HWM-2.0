@@ -3,8 +3,13 @@ const API_BASE_URL =
     ? window.hmResolveApiBase()
     : 'https://hwm-api.akzuwo.ch';
 
-const unauthorizedMessage =
-  'Please sign in and make sure you are assigned to a class to view upcoming events.';
+const t = window.hmI18n ? window.hmI18n.scope('upcoming') : (key, fallback) => fallback;
+const locale = window.hmI18n ? window.hmI18n.getLocale() : 'en-GB';
+
+const unauthorizedMessage = t(
+  'unauthorized',
+  'Please sign in and make sure you are assigned to a class to view upcoming events.'
+);
 
 async function responseRequiresClassContext(response) {
   if (!response) return false;
@@ -55,16 +60,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     listEl.appendChild(status);
   };
 
-  setStatus('Loading data…', 'loading');
+  setStatus(t('loading', 'Loading data…'), 'loading');
   listEl.setAttribute('aria-busy', 'true');
 
-  const dateFormatter = new Intl.DateTimeFormat('en-GB', {
+  const dateFormatter = new Intl.DateTimeFormat(locale, {
     weekday: 'short',
     day: '2-digit',
     month: '2-digit',
     year: 'numeric'
   });
-  const timeFormatter = new Intl.DateTimeFormat('en-GB', {
+  const timeFormatter = new Intl.DateTimeFormat(locale, {
     hour: '2-digit',
     minute: '2-digit'
   });
@@ -114,7 +119,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     listEl.innerHTML = '';
 
     if (events.length === 0) {
-      setStatus('No upcoming events found.');
+      setStatus(t('empty', 'No upcoming events found.'));
       listEl.setAttribute('aria-busy', 'false');
       return;
     }
@@ -137,14 +142,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       const typeBadge = document.createElement('span');
       typeBadge.className = 'upcoming-card__badge upcoming-card__badge--event';
-      typeBadge.textContent = 'EVENT';
+      typeBadge.textContent = t('eventBadge', 'EVENT');
       typeBadge.setAttribute('aria-hidden', 'true');
 
       const subjectBadge = document.createElement('span');
       subjectBadge.className = 'upcoming-card__badge upcoming-card__badge--subject';
       const subject = (event.fach || '—').toUpperCase();
       subjectBadge.textContent = subject;
-      subjectBadge.setAttribute('aria-label', event.fach ? `Subject ${event.fach}` : 'No subject provided');
+      subjectBadge.setAttribute(
+        'aria-label',
+        event.fach
+          ? t('subjectLabel', 'Subject {subject}').replace('{subject}', event.fach)
+          : t('subjectMissing', 'No subject provided')
+      );
 
       badges.append(typeBadge, subjectBadge);
 
@@ -152,7 +162,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       datetime.className = 'upcoming-card__datetime';
 
       const dateText = dateFormatter.format(event.dateObj);
-      const timeText = event.hasTime ? timeFormatter.format(event.dateObj) : 'All day';
+      const timeText = event.hasTime ? timeFormatter.format(event.dateObj) : t('allDay', 'All day');
 
       const dateLine = document.createElement('p');
       dateLine.className = 'upcoming-card__date';
@@ -172,14 +182,21 @@ document.addEventListener('DOMContentLoaded', async () => {
       desc.className = 'upcoming-card__description';
       if (!hasDescription) {
         desc.classList.add('upcoming-card__description--empty');
-        desc.textContent = '– No description –';
+        desc.textContent = t('noDescription', '– No description –');
       } else {
         desc.textContent = rawDescription;
       }
 
       const subjectLabel = event.fach ? `${event.fach} ` : '';
       const timeLabel = event.hasTime ? ` at ${timeText}` : '';
-      card.setAttribute('aria-label', `Event ${subjectLabel}on ${dateText}${timeLabel}`.trim());
+      card.setAttribute(
+        'aria-label',
+        t('cardLabel', 'Event {subject}on {date}{time}')
+          .replace('{subject}', subjectLabel)
+          .replace('{date}', dateText)
+          .replace('{time}', timeLabel)
+          .trim()
+      );
       card.setAttribute('aria-describedby', descId);
 
       card.append(badges, datetime, desc);
@@ -189,7 +206,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     listEl.setAttribute('aria-busy', 'false');
   } catch (err) {
     console.error('Error loading data:', err);
-    setStatus('Error loading data.');
+    setStatus(t('error', 'Error loading data.'));
     listEl.setAttribute('aria-busy', 'false');
   }
 });

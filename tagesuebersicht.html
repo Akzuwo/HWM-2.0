@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-i18n="dayOverview.pageTitle">Daily Overview</title>
+  <link rel="icon" type="image/png" href="media/logo.png">
+  <link rel="stylesheet" href="utils/css/style.css">
+  <link rel="stylesheet" href="utils/css/kalender.css">
+</head>
+<body>
+<main class="page-container" id="main">
+    <header class="page-header">
+      <div>
+        <h1 data-i18n="dayOverview.title">📅 Daily Overview</h1>
+        <p id="pageDate" class="page-date"></p>
+      </div>
+      <div class="calendar-class-selector" data-class-selector hidden>
+        <label for="overview-class-select" data-i18n="dayOverview.classLabel">Class</label>
+        <select id="overview-class-select" data-class-select>
+          <option value="" disabled selected data-i18n="dayOverview.classPlaceholder">Select class</option>
+        </select>
+      </div>
+      <a class="hm-back-link" href="stundenplan.html" data-i18n="dayOverview.back">◀️ Back</a>
+    </header>
+
+    <div id="overview" class="overview-grid" data-i18n="dayOverview.loading">Loading data…</div>
+  </main>
+
+  <script type="module" src="utils/js/header.js"></script>
+  <script src="utils/js/i18n.js" defer></script>
+  <script src="utils/js/auth.js" defer></script>
+  <script src="utils/js/calendar-permissions.js" defer></script>
+  <script src="utils/js/class-selector.js" defer></script>
+  <script src="utils/js/tagesuebersicht.js" defer></script>
+</body>
+</html>

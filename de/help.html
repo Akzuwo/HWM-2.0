@@ -1,94 +1,14 @@
 <!DOCTYPE html>
-<html lang="de">
+<html>
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title data-i18n="help.pageTitle">Bedienungsanleitung</title>
-  <link rel="icon" type="image/png" href="../media/logo.png" />
-  <link rel="stylesheet" href="../utils/css/style.css" />
-  <link rel="stylesheet" href="../utils/css/home.css" />
+  <meta http-equiv="refresh" content="0; url=../help.html" />
+  <script>window.location.replace('../help.html');</script>
+  <title>Redirecting…</title>
 </head>
-<body class="help-page">
-  <header class="changelog-topbar">
-    <a class="changelog-back" href="index.html" data-i18n="help.back">← Zurück zur Startseite</a>
-  </header>
-
-  <main class="help-main" id="main">
-    <section class="help-hero">
-      <h1 data-i18n="help.title">Bedienungsanleitung</h1>
-      <p data-i18n="help.subtitle">Praktische Hinweise, damit jede Rolle den Homework Manager sofort einsetzen kann.</p>
-      <p data-i18n="help.note">Die Anleitung nutzt das neue Dark-Theme samt Scroll-Animationen.</p>
-    </section>
-
-    <section class="help-grid">
-      <article class="help-section">
-        <header class="help-section__header">
-          <span class="help-section__icon" aria-hidden="true">👩‍🏫</span>
-          <h2 data-i18n="help.teacher.title">Für Lehrkräfte</h2>
-        </header>
-        <p data-i18n="help.teacher.summary">Plane Einträge und halte deine Klasse zuverlässig informiert.</p>
-        <ul>
-          <li data-i18n="help.teacher.steps.create">Klicke im Kalender auf den gewünschten Tag, wähle Typ und Zeiten und speichere den neuen Eintrag.</li>
-          <li data-i18n="help.teacher.steps.format">Nutze *TEXT* in der Beschreibung, um wichtige Hinweise fett hervorzuheben.</li>
-          <li data-i18n="help.teacher.steps.attachments">Dateianhänge werden nicht unterstützt – verlinke Materialien direkt im Beschreibungstext.</li>
-          <li data-i18n="help.teacher.steps.overview">Mit der Tagesübersicht behältst du Aufgaben und Prüfungen im Blick, sobald ein Stundenplan als .json eingereicht wurde.</li>
-        </ul>
-      </article>
-
-      <article class="help-section">
-        <header class="help-section__header">
-          <span class="help-section__icon" aria-hidden="true">🎒</span>
-          <h2 data-i18n="help.students.title">Für Schüler:innen</h2>
-        </header>
-        <p data-i18n="help.students.summary">Behalte Termine, Räume und Aufgaben auf jedem Gerät im Blick.</p>
-        <ul>
-          <li data-i18n="help.students.steps.dayView">Die Tagesübersicht zeigt dir anstehende Aufgaben, Prüfungen und Events, sobald euer Stundenplan als .json hinterlegt ist.</li>
-          <li data-i18n="help.students.steps.currentSubject">Die Seite „Aktuelles Fach“ verrät dir, wo deine nächste Lektion stattfindet.</li>
-          <li data-i18n="help.students.steps.calendar">Tippe im Kalender auf einen Tag, um Details zu Terminen zu sehen und Einträge schneller zu finden.</li>
-          <li data-i18n="help.students.steps.questions">Bei offenen Fragen hilft dir das Support-Team per E-Mail an support@akzuwo.ch weiter.</li>
-        </ul>
-      </article>
-
-      <article class="help-section">
-        <header class="help-section__header">
-          <span class="help-section__icon" aria-hidden="true">🛡️</span>
-          <h2 data-i18n="help.admins.title">Für Klassen-Admins</h2>
-        </header>
-        <p data-i18n="help.admins.summary">Sorge dafür, dass Rollen, Stundenpläne und Einträge gepflegt bleiben.</p>
-        <ul>
-          <li data-i18n="help.admins.steps.schedule">Stelle sicher, dass ein Mitglied eurer Klasse den Stundenplan als .json-Datei einreicht, damit Tagesübersicht und Aktuelles Fach freigeschaltet werden.</li>
-          <li data-i18n="help.admins.steps.create">Lege bei Bedarf selbst Einträge an, indem du im Kalender auf den entsprechenden Tag klickst.</li>
-          <li data-i18n="help.admins.steps.privacy">Verweise für ausführliche Datenschutzinformationen auf die entsprechende Seite.</li>
-          <li data-i18n="help.admins.steps.support">Nutze bei Rückfragen die Support-Adresse support@akzuwo.ch – sie ist ausschließlich für Support-Anfragen gedacht.</li>
-        </ul>
-      </article>
-    </section>
-
-    <section class="help-callout">
-      <h2 data-i18n="help.callout.title">Gut zu wissen</h2>
-      <ul>
-        <li data-i18n="help.callout.schedule">Tagesübersicht und Aktuelles Fach stehen erst zur Verfügung, wenn ein Stundenplan im .json-Format eingereicht wurde.</li>
-        <li data-i18n="help.callout.contactForm">Support erreichst du ausschließlich per E-Mail an support@akzuwo.ch.</li>
-        <li data-i18n="help.callout.privacy">Für weiterführende Informationen zum Datenschutz lies bitte die Datenschutz-Seite.</li>
-        <li data-i18n="help.callout.support">Wenn Fragen offenbleiben, kontaktiere jederzeit den Support.</li>
-      </ul>
-    </section>
-  </main>
-
-  <footer class="site-footer">
-    <span data-i18n="common.footer.copyright">©️ Timo Wigger 2025</span>
-    <span aria-hidden="true">|</span>
-    <a href="mailto:support@akzuwo.ch" data-i18n="common.footer.contact">support@akzuwo.ch</a>
-    <span aria-hidden="true">|</span>
-    <a href="changelog.html" data-i18n="common.footer.changelog">Changelog</a>
-  </footer>
-
-  <script type="module" src="../utils/js/header.js"></script>
-  <script src="../utils/js/i18n.js" defer></script>
-  <script src="../utils/js/overlay.js" defer></script>
-  <script src="../utils/js/toast.js" defer></script>
-  <script src="../utils/js/footer.js" defer></script>
-  <script src="../utils/js/home.js" defer></script>
-  <script src="script.js" defer></script>
+<body>
+  <noscript>
+    <p>Redirecting… <a href="../help.html">Continue</a></p>
+  </noscript>
 </body>
 </html>

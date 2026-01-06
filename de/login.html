@@ -1,67 +1,14 @@
 <!DOCTYPE html>
-<html lang="de">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login - Homework Manager</title>
-  <link rel="icon" type="image/png" href="../media/logo.png">
-  <link rel="stylesheet" href="../utils/css/style.css">
+  <meta charset="UTF-8" />
+  <meta http-equiv="refresh" content="0; url=../login.html" />
+  <script>window.location.replace('../login.html');</script>
+  <title>Redirecting…</title>
 </head>
 <body>
-  <div class="login-container">
-    <header class="login-header">
-      <img src="../media/logo.png" alt="Logo" class="login-logo">
-      <div class="login-heading">
-        <h2 class="login-title" data-auth-title>🔒 Login</h2>
-        <span class="login-badge" data-auth-register-only data-auth-display="inline-flex" aria-hidden="true" hidden>NEU</span>
-      </div>
-      <p class="login-description" data-auth-description hidden>Registriere dich mit deiner Schul-E-Mail-Adresse.</p>
-      <p class="login-status" data-auth-status>Nicht angemeldet</p>
-    </header>
-    <form class="login-form" data-auth-form novalidate>
-      <div class="login-banner" data-auth-verification hidden>
-        <strong>E-Mail-Bestätigung erforderlich</strong>
-        <p>Bitte bestätige deine E-Mail-Adresse über den Link in deiner Nachricht. Der Versand kann ein paar Minuten dauern. Du kannst hier eine neue E-Mail anfordern.</p>
-        <button type="button" class="login-link" data-auth-resend>Bestätigungsmail erneut senden</button>
-      </div>
-      <div class="form-group">
-        <label for="login-email">E-Mail-Adresse</label>
-        <input type="email" id="login-email" class="form-control" placeholder="name@example.com" autocomplete="email" data-auth-email required>
-      </div>
-      <div class="form-group">
-        <label for="login-password">Passwort</label>
-        <div class="password-field">
-          <input type="password" id="login-password" class="form-control" placeholder="Passwort" autocomplete="current-password" data-auth-password>
-          <button type="button" class="toggle-password" data-auth-toggle aria-label="Passwort anzeigen">
-            <span class="eye-icon" aria-hidden="true"></span>
-          </button>
-        </div>
-        <div class="login-feedback" data-auth-feedback role="alert" aria-live="polite" hidden></div>
-      </div>
-      <div class="form-group" data-auth-register-only data-auth-display="flex">
-        <label for="login-password-confirm">Passwort bestätigen</label>
-        <input type="password" id="login-password-confirm" class="form-control" placeholder="Passwort" autocomplete="new-password" data-auth-password-confirm>
-      </div>
-      <div class="form-group form-group--optional" data-auth-register-only data-auth-display="flex">
-        <label for="login-class">Klasse (optional)</label>
-        <input type="text" id="login-class" class="form-control" placeholder="z.B. L23a/ Lehrpersonen dieses Feld bitte leer lassen" autocomplete="organization" data-auth-class>
-      </div>
-      <div class="login-links">
-        <button type="button" class="login-link" data-auth-forgot data-auth-login-only>Passwort vergessen?</button>
-        <button type="button" class="login-link" data-auth-switch="register">Neu hier? Konto erstellen</button>
-        <button type="button" class="login-link" data-auth-switch="login" hidden>Schon registriert? Anmelden</button>
-      </div>
-      <div class="login-actions">
-        <button type="submit" class="login-button" data-auth-submit>Anmelden</button>
-        <button type="button" class="guest-button" data-auth-guest>Als Gast fortfahren</button>
-        <p class="guest-info">Fortfahren ohne Konto</p>
-      </div>
-    </form>
-  </div>
-
-  <script src="../utils/js/overlay.js" defer></script>
-  <script src="../utils/js/toast.js" defer></script>
-  <script src="../utils/js/footer.js" defer></script>
-  <script src="script.js" defer></script>
+  <noscript>
+    <p>Redirecting… <a href="../login.html">Continue</a></p>
+  </noscript>
 </body>
 </html>
