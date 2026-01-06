@@ -1282,6 +1282,7 @@
   };
 
   const FALLBACK_LOCALE = 'de';
+  const LOCALE_STORAGE_KEY = 'hm.locale';
   let currentLocale = null;
 
   function normaliseLocale(locale) {
@@ -1298,6 +1299,15 @@
       normaliseLocale(navigator.language) ||
       FALLBACK_LOCALE
     );
+  }
+
+  function readStoredLocale() {
+    try {
+      if (!global.localStorage) return '';
+      return global.localStorage.getItem(LOCALE_STORAGE_KEY) || '';
+    } catch (error) {
+      return '';
+    }
   }
 
   function getFromLocale(locale, pathParts) {
@@ -1384,6 +1394,11 @@
     scope,
     translations,
   };
+
+  const storedLocale = readStoredLocale();
+  if (storedLocale) {
+    global.hmI18n.setLocale(storedLocale);
+  }
 
   if (document.readyState !== 'loading') {
     apply();

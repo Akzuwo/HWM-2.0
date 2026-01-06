@@ -2110,16 +2110,47 @@ function initLanguageSelector() {
         map[entry.code] = entry;
         return map;
     }, {});
+    const LOCALE_STORAGE_KEY = 'hm.locale';
 
     const dropdowns = Array.from(document.querySelectorAll('[data-language]'));
     if (!dropdowns.length) {
         return;
     }
 
+    const normalizeLanguage = (value) => {
+        if (!value) return '';
+        const lower = value.toLowerCase();
+        if (langMap[lower]) return lower;
+        const base = lower.split('-')[0];
+        return langMap[base] ? base : '';
+    };
+
+    const getStoredLocale = () => {
+        try {
+            if (!window.localStorage) return '';
+            return window.localStorage.getItem(LOCALE_STORAGE_KEY) || '';
+        } catch (error) {
+            return '';
+        }
+    };
+
+    const setStoredLocale = (value) => {
+        try {
+            if (!window.localStorage) return;
+            if (!value) {
+                window.localStorage.removeItem(LOCALE_STORAGE_KEY);
+            } else {
+                window.localStorage.setItem(LOCALE_STORAGE_KEY, value);
+            }
+        } catch (error) {
+            /* ignore storage errors */
+        }
+    };
+
     const getCurrentLanguage = () => {
-        const parts = window.location.pathname.split('/');
-        const candidate = (parts[1] || '').toLowerCase();
-        return langMap[candidate] ? candidate : 'de';
+        const fromI18n = window.hmI18n?.getLocale?.();
+        const candidate = normalizeLanguage(fromI18n || getStoredLocale() || document.documentElement.getAttribute('lang'));
+        return candidate || 'de';
     };
 
     const updateButtonLabel = (button, langCode) => {
@@ -2157,6 +2188,26 @@ function initLanguageSelector() {
         });
     };
 
+    const syncDropdownState = (dropdown, currentLang) => {
+        dropdown.querySelectorAll('[data-lang]').forEach((item) => {
+            const lang = item.dataset.lang;
+            const data = langMap[lang] || langMap.en;
+            const code = item.querySelector('.language-option__code');
+            if (code) code.textContent = data.short;
+            const name = item.querySelector('.language-option__name');
+            if (name) name.textContent = data.name;
+            const flag = item.querySelector('.language-option__flag');
+            if (flag) flag.textContent = data.flag;
+            item.setAttribute('role', 'menuitem');
+            item.setAttribute('tabindex', '-1');
+            if (lang === currentLang) {
+                item.setAttribute('aria-current', 'true');
+            } else {
+                item.removeAttribute('aria-current');
+            }
+        });
+    };
+
     dropdowns.forEach((dropdown, index) => {
         const button = dropdown.querySelector('[data-language-toggle]');
         const menu = dropdown.querySelector('[data-language-menu]');
@@ -2173,23 +2224,7 @@ function initLanguageSelector() {
         const items = Array.from(menu.querySelectorAll('[data-lang]'));
 
         const syncOptionState = (currentLang) => {
-            items.forEach((item) => {
-                const lang = item.dataset.lang;
-                const data = langMap[lang] || langMap.en;
-                const code = item.querySelector('.language-option__code');
-                if (code) code.textContent = data.short;
-                const name = item.querySelector('.language-option__name');
-                if (name) name.textContent = data.name;
-                const flag = item.querySelector('.language-option__flag');
-                if (flag) flag.textContent = data.flag;
-                item.setAttribute('role', 'menuitem');
-                item.setAttribute('tabindex', '-1');
-                if (lang === currentLang) {
-                    item.setAttribute('aria-current', 'true');
-                } else {
-                    item.removeAttribute('aria-current');
-                }
-            });
+            syncDropdownState(dropdown, currentLang);
         };
 
         const focusItem = (indexToFocus) => {
@@ -2215,15 +2250,18 @@ function initLanguageSelector() {
             if (!langMap[lang]) {
                 return;
             }
-            closeDropdown(dropdown);
-            const parts = window.location.pathname.split('/');
-            if (parts.length > 1) {
-                parts[1] = lang;
-            } else {
-                parts.push(lang);
+            setStoredLocale(lang);
+            if (window.hmI18n && typeof window.hmI18n.setLocale === 'function') {
+                window.hmI18n.setLocale(lang);
             }
-            const nextPath = parts.join('/').replace(/\/{2,}/g, '/');
-            window.location.pathname = nextPath;
+            dropdowns.forEach((dropdownEl) => {
+                const toggle = dropdownEl.querySelector('[data-language-toggle]');
+                if (toggle) {
+                    updateButtonLabel(toggle, lang);
+                }
+                syncDropdownState(dropdownEl, lang);
+            });
+            closeDropdown(dropdown);
         };
 
         button.addEventListener('click', (event) => {

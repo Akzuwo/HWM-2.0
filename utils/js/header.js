@@ -17,22 +17,16 @@ function computePathInfo() {
     languageIndex = directories.findIndex((segment) => segment.toLowerCase() === docLanguageBase);
   }
 
-  const languageSegment = languageIndex >= 0 ? directories[languageIndex] : '';
-  const language = languageSegment || docLanguageBase || directories[0] || 'en';
-
-  const directoriesAfterLanguageRaw = languageIndex >= 0 ? directories.slice(languageIndex + 1) : directories.slice(1);
-  const directoriesAfterLanguage =
-    !hasFile && directoriesAfterLanguageRaw.length
-      ? directoriesAfterLanguageRaw.slice(0, -1)
-      : directoriesAfterLanguageRaw;
-  const languagePrefix = directoriesAfterLanguage.length ? '../'.repeat(directoriesAfterLanguage.length) : '';
-
-  const rootDepth = languageIndex >= 0 ? directories.length - languageIndex : Math.max(directories.length - 1, 0);
-  const rootPrefix = rootDepth > 0 ? '../'.repeat(rootDepth) : '';
+  const language = docLanguageBase || docLanguage || 'en';
+  const baseSegments = languageIndex >= 0 ? directories.slice(0, languageIndex + 1) : [];
+  const routeDepth = directories.length - baseSegments.length;
+  const routePrefix = routeDepth > 0 ? '../'.repeat(routeDepth) : '';
+  const rootPrefix = directories.length > 0 ? '../'.repeat(directories.length) : '';
   return {
     language,
-    languagePrefix,
+    routePrefix,
     rootPrefix,
+    baseSegments,
     directories,
     hasFile,
     rawPath,
@@ -48,23 +42,25 @@ function normalizePathname(path) {
 }
 
 function markActiveLink(header, info) {
-  const { language } = info;
+  const { baseSegments } = info;
   const navLinks = header.querySelectorAll('.nav-link[data-route]');
   if (!navLinks.length) return;
 
-  let currentPath = normalizePathname(window.location.pathname);
+  const normalizedCurrent = normalizePathname(window.location.pathname);
+  let currentPath = normalizedCurrent;
   if (currentPath.endsWith('/')) {
     currentPath = `${currentPath}index.html`;
   }
   if (!currentPath.endsWith('.html')) {
     currentPath = `${currentPath.replace(/\/?$/, '/')}index.html`;
   }
+  const basePath = baseSegments.length ? `/${baseSegments.join('/')}` : '';
 
   navLinks.forEach((link) => {
     const route = link.getAttribute('data-route');
-    const expected = language ? `/${language}/${route}`.replace('//', '/') : `/${route}`;
-    const alt = route === 'index.html' && language ? `/${language}/` : route === 'index.html' ? '/' : null;
-    const matches = currentPath === expected.toLowerCase() || (alt && normalizePathname(window.location.pathname) === alt.toLowerCase());
+    const expected = normalizePathname(`${basePath}/${route}`.replace(/\/{2,}/g, '/'));
+    const alt = route === 'index.html' ? (basePath || '/') : null;
+    const matches = currentPath === expected || (alt && normalizedCurrent === normalizePathname(alt));
     if (matches) {
       link.classList.add('active');
       link.setAttribute('aria-current', 'page');
@@ -82,10 +78,10 @@ function applyLanguageCode(header, languageCode) {
 }
 
 function populateRoutes(header, info) {
-  const { languagePrefix, rootPrefix, language } = info;
+  const { routePrefix, rootPrefix, language } = info;
   header.querySelectorAll('.nav-link[data-route]').forEach((link) => {
     const route = link.getAttribute('data-route');
-    const prefix = languagePrefix || '';
+    const prefix = routePrefix || '';
     link.setAttribute('href', `${prefix}${route}`);
   });
   const logo = header.querySelector('[data-logo]');
@@ -96,7 +92,7 @@ function populateRoutes(header, info) {
   }
   const brandLink = header.querySelector('[data-brand-link]');
   if (brandLink) {
-    const prefix = languagePrefix || '';
+    const prefix = routePrefix || '';
     const brandText = header.querySelector('.brand');
     const label = brandText ? brandText.textContent.trim() : '';
     brandLink.setAttribute('href', `${prefix}index.html`);
