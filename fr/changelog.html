@@ -1,97 +1,14 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html>
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title data-i18n="changelog.pageTitle">Journal des modifications</title>
-  <link rel="icon" type="image/png" href="../media/logo.png" />
-  <link rel="stylesheet" href="../utils/css/style.css" />
-  <link rel="stylesheet" href="../utils/css/home.css" />
+  <meta http-equiv="refresh" content="0; url=../changelog.html" />
+  <script>window.location.replace('../changelog.html');</script>
+  <title>Redirecting…</title>
 </head>
-<body class="changelog-page">
-  <header class="changelog-topbar">
-    <a class="changelog-back" href="index.html" data-i18n="changelog.back">← Retour à l’aperçu</a>
-  </header>
-
-  <main class="changelog-main" id="main">
-    <header class="changelog-header">
-      <h1 data-i18n="changelog.title">Journal des modifications</h1>
-      <p data-i18n="changelog.subtitle">Découvrez les notes de version de Homework Manager – avec les temps forts de la version 2.0 et des mises à jour précédentes.</p>
-    </header>
-
-    <section class="changelog-timeline">
-      <article class="changelog-entry">
-        <div class="changelog-entry__meta">
-          <h2 data-i18n="changelog.release.title">Version 2.0</h2>
-          <time datetime="2025-10-01" data-i18n="changelog.release.date">Octobre 2025</time>
-        </div>
-        <p data-i18n="changelog.release.summary">Homework Manager 2.0 propose une expérience entièrement repensée et riche en nouveautés. Voici les éléments clés du lancement.</p>
-        <ul>
-          <li data-i18n="changelog.release.items.design">Interface entièrement réinventée avec un thème sombre cohérent et une typographie soignée.</li>
-          <li data-i18n="changelog.release.items.animations">Micro-animations fluides pour une navigation encore plus douce.</li>
-          <li data-i18n="changelog.release.items.events">Nouveau module « Événement » pour planifier sorties, clubs et rendez-vous spéciaux.</li>
-          <li data-i18n="changelog.release.items.upcoming">Page des événements à venir pour une vue d’ensemble plus claire.</li>
-          <li data-i18n="changelog.release.items.privacy">Notice de confidentialité intégrée directement.</li>
-          <li data-i18n="changelog.release.items.accounts">Nouveau système de comptes avec rôles, droits et vérification par e-mail.</li>
-          <li data-i18n="changelog.release.items.imprint">Mentions légales désormais incluses dans la plateforme.</li>
-          <li data-i18n="changelog.release.items.holidays">Vacances et jours fériés visibles directement dans le calendrier.</li>
-          <li data-i18n="changelog.release.items.multiClass">Création d’événements et de vacances pour plusieurs classes en même temps.</li>
-          <li data-i18n="changelog.release.items.contact">Besoin d’aide ? Écrivez à support@akzuwo.ch.</li>
-          <li data-i18n="changelog.release.items.dayView">Vue quotidienne regroupant devoirs, examens et événements dans un flux focalisé.</li>
-        </ul>
-      </article>
-
-      <article class="changelog-entry">
-        <div class="changelog-entry__meta">
-          <h2 data-i18n="changelog.archive.title">Versions précédentes</h2>
-        </div>
-        <div class="changelog-subentry">
-          <h3 data-i18n="changelog.archive.release171.title">Version 1.7.1</h3>
-          <p data-i18n="changelog.archive.release171.summary">La version 1.7.1 dynamise le calendrier et apporte un polissage bienvenu à l’interface.</p>
-          <ul>
-            <li data-i18n="changelog.archive.release171.items.calendar">Les admins peuvent désormais créer des entrées directement dans le calendrier et les modifier aussitôt.</li>
-            <li data-i18n="changelog.archive.release171.items.uiFixes">Plusieurs problèmes d’affichage ont été corrigés.</li>
-            <li data-i18n="changelog.archive.release171.items.formatting">Les descriptions de tâches prennent en charge le gras et l’italique pour mieux mettre en avant les informations.</li>
-          </ul>
-        </div>
-        <div class="changelog-subentry">
-          <h4 data-i18n="changelog.archive.release171.patch01.title">Patch 0x01</h4>
-          <ul>
-            <li data-i18n="changelog.archive.release171.patch01.items.overlayButton">Correction de l’affichage du bouton de fermeture dans les fenêtres du calendrier.</li>
-            <li data-i18n="changelog.archive.release171.patch01.items.uiTweaks">Autres ajustements visuels mineurs sans impact sur les fonctionnalités.</li>
-          </ul>
-        </div>
-        <div class="changelog-subentry">
-          <h4 data-i18n="changelog.archive.release171.patch02.title">Patch 0x02</h4>
-          <ul>
-            <li data-i18n="changelog.archive.release171.patch02.items.scheduleUi">Interface de l’emploi du temps rafraîchie.</li>
-          </ul>
-        </div>
-      </article>
-    </section>
-  </main>
-
-  <footer class="site-footer">
-    <span data-i18n="common.footer.copyright">©️ Timo Wigger 2025</span>
-    <span aria-hidden="true">|</span>
-    <a href="mailto:support@akzuwo.ch" data-i18n="common.footer.contact">support@akzuwo.ch</a>
-    <span aria-hidden="true">|</span>
-    <a href="changelog.html" aria-current="page" data-i18n="common.footer.changelog">Journal des modifications</a>
-    <div class="changelog-language-switch">
-      <span class="changelog-language-switch__label" data-i18n="common.language.menuLabel">Sélectionner la langue</span>
-      <a href="../de/changelog.html">DE</a>
-      <a href="../en/changelog.html">EN</a>
-      <a href="../it/changelog.html">IT</a>
-      <a href="changelog.html" aria-current="page">FR</a>
-    </div>
-  </footer>
-
-  <script type="module" src="../utils/js/header.js"></script>
-<script src="../utils/js/i18n.js" defer></script>
-  <script src="../utils/js/overlay.js" defer></script>
-  <script src="../utils/js/toast.js" defer></script>
-  <script src="../utils/js/footer.js" defer></script>
-  <script src="../utils/js/changelog.js" defer></script>
-  <script src="script.js" defer></script>
+<body>
+  <noscript>
+    <p>Redirecting… <a href="../changelog.html">Continue</a></p>
+  </noscript>
 </body>
 </html>

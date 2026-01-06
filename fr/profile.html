@@ -1,127 +1,14 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html>
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Profil</title>
-  <link rel="icon" type="image/png" href="../media/logo.png" />
-  <link rel="stylesheet" href="../utils/css/style.css" />
+  <meta http-equiv="refresh" content="0; url=../profile.html" />
+  <script>window.location.replace('../profile.html');</script>
+  <title>Redirecting…</title>
 </head>
-<body class="profile-page">
-  <script type="module" src="../utils/js/header.js"></script>
-  <main id="main" class="profile">
-    <div class="profile__container">
-      <header class="profile__header">
-        <p class="profile__eyebrow" data-i18n="profile.eyebrow">Compte</p>
-        <h1 data-i18n="profile.title">Profil</h1>
-        <p class="profile__subtitle" data-i18n="profile.subtitle">Gérez vos informations, votre classe et la sécurité du compte.</p>
-      </header>
-
-      <section class="profile__grid">
-        <article class="profile-card profile-card--wide">
-          <div class="profile-card__header">
-            <div>
-              <p class="profile__eyebrow" data-i18n="profile.overviewLabel">Vue d'ensemble</p>
-              <h2 data-i18n="profile.overviewTitle">Résumé du compte</h2>
-            </div>
-            <p class="muted" data-i18n="profile.overviewDescription">Toutes les informations importantes sur votre profil.</p>
-          </div>
-          <dl class="profile-meta">
-            <div class="profile-meta__item">
-              <dt data-i18n="profile.userId">ID utilisateur</dt>
-              <dd id="profile-id">–</dd>
-            </div>
-            <div class="profile-meta__item">
-              <dt data-i18n="profile.email">E‑mail</dt>
-              <dd id="profile-email">–</dd>
-            </div>
-            <div class="profile-meta__item">
-              <dt data-i18n="profile.class">Classe</dt>
-              <dd id="profile-class">–</dd>
-            </div>
-            <div class="profile-meta__item">
-              <dt data-i18n="profile.classId">ID de classe</dt>
-              <dd id="profile-class-id">–</dd>
-            </div>
-            <div class="profile-meta__item">
-              <dt data-i18n="profile.accountAge">Âge du compte</dt>
-              <dd id="profile-age">–</dd>
-            </div>
-            <div class="profile-meta__item">
-              <dt data-i18n="profile.accountCreated">Créé le</dt>
-              <dd id="profile-created">–</dd>
-            </div>
-            <div class="profile-meta__item">
-              <dt data-i18n="profile.lastClassChange">Dernier changement de classe</dt>
-              <dd id="profile-last-change">–</dd>
-            </div>
-          </dl>
-        </article>
-
-        <article class="profile-card">
-          <header class="profile-card__header">
-            <div>
-              <p class="profile__eyebrow" data-i18n="profile.classLabel">Classe</p>
-              <h2 data-i18n="profile.classTitle">Modifier la classe</h2>
-            </div>
-            <p class="muted" data-i18n="profile.classHint">Vous pouvez changer de classe une fois par mois.</p>
-          </header>
-          <form class="profile-form" id="class-form">
-            <label class="profile-form__label" for="profile-class-input" data-i18n="profile.classInputLabel">ID de classe</label>
-            <input id="profile-class-input" class="profile-input" type="number" inputmode="numeric" pattern="[0-9]*" data-i18n-attr="placeholder:profile.classPlaceholder" placeholder="12" />
-            <div id="class-cooldown-msg" class="profile-help"></div>
-            <div class="profile-actions">
-              <button type="submit" id="change-class-btn" class="button ripple"><span data-i18n="profile.changeClass">Changer de classe</span></button>
-            </div>
-          </form>
-        </article>
-
-        <article class="profile-card">
-          <header class="profile-card__header">
-            <div>
-              <p class="profile__eyebrow" data-i18n="profile.securityLabel">Sécurité</p>
-              <h2 data-i18n="profile.passwordTitle">Modifier le mot de passe</h2>
-            </div>
-            <p class="muted" data-i18n="profile.passwordDescription">Mettez à jour votre mot de passe et recevez un e-mail de confirmation dès que le changement est effectif.</p>
-          </header>
-          <form class="profile-form" id="password-form">
-            <label class="profile-form__label" for="current-password" data-i18n="profile.currentPassword">Mot de passe actuel</label>
-            <input id="current-password" class="profile-input" type="password" autocomplete="current-password" />
-
-            <label class="profile-form__label" for="new-password" data-i18n="profile.newPassword">Nouveau mot de passe</label>
-            <input id="new-password" class="profile-input" type="password" autocomplete="new-password" />
-
-            <label class="profile-form__label" for="confirm-password" data-i18n="profile.confirmPassword">Confirmer le mot de passe</label>
-            <input id="confirm-password" class="profile-input" type="password" autocomplete="new-password" />
-
-            <p class="profile-help" data-i18n="profile.passwordHint">Au moins 8 caractères.</p>
-            <div class="profile-actions">
-              <button type="submit" id="change-password-btn" class="button ripple"><span data-i18n="profile.passwordChangeButton">Mettre à jour le mot de passe</span></button>
-            </div>
-            <p id="password-email-status" class="profile-help"></p>
-          </form>
-        </article>
-
-        <article class="profile-card profile-card--danger">
-          <header class="profile-card__header">
-            <div>
-              <p class="profile__eyebrow" data-i18n="profile.dangerZone">Zone sensible</p>
-              <h2 data-i18n="profile.deleteTitle">Supprimer le compte</h2>
-            </div>
-            <p class="muted" data-i18n="profile.deleteWarning">Cette action supprimera définitivement votre compte.</p>
-          </header>
-          <div class="profile-actions">
-            <button id="delete-account-btn" class="button button--danger ripple" type="button" data-i18n="profile.deleteButton">Supprimer le compte</button>
-          </div>
-        </article>
-      </section>
-    </div>
-  </main>
-
-  <script src="../utils/js/i18n.js" defer></script>
-  <script src="../utils/js/overlay.js" defer></script>
-  <script src="../utils/js/toast.js" defer></script>
-  <script src="../utils/js/footer.js" defer></script>
-  <script src="../utils/js/profile.js" defer></script>
+<body>
+  <noscript>
+    <p>Redirecting… <a href="../profile.html">Continue</a></p>
+  </noscript>
 </body>
 </html>

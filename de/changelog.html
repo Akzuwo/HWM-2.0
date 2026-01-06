@@ -1,97 +1,14 @@
 <!DOCTYPE html>
-<html lang="de">
+<html>
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title data-i18n="changelog.pageTitle">Changelog</title>
-  <link rel="icon" type="image/png" href="../media/logo.png" />
-  <link rel="stylesheet" href="../utils/css/style.css" />
-  <link rel="stylesheet" href="../utils/css/home.css" />
+  <meta http-equiv="refresh" content="0; url=../changelog.html" />
+  <script>window.location.replace('../changelog.html');</script>
+  <title>Redirecting…</title>
 </head>
-<body class="changelog-page">
-  <header class="changelog-topbar">
-    <a class="changelog-back" href="index.html" data-i18n="changelog.back">← Zurück zur Übersicht</a>
-  </header>
-
-  <main class="changelog-main" id="main">
-    <header class="changelog-header">
-      <h1 data-i18n="changelog.title">Changelog</h1>
-      <p data-i18n="changelog.subtitle">Hier findest du die Release-Notizen zum Homework Manager – inklusive der Highlights aus Version 2.0 und früheren Updates.</p>
-    </header>
-
-    <section class="changelog-timeline">
-      <article class="changelog-entry">
-        <div class="changelog-entry__meta">
-          <h2 data-i18n="changelog.release.title">Release 2.0</h2>
-          <time datetime="2025-10-01" data-i18n="changelog.release.date">Oktober 2025</time>
-        </div>
-        <p data-i18n="changelog.release.summary">Homework Manager 2.0 liefert ein vollständig erneuertes Erlebnis mit frischen Funktionen. Das sind die Highlights des Releases.</p>
-        <ul>
-          <li data-i18n="changelog.release.items.design">Rundum neu gestaltete Benutzeroberfläche mit harmonischem Dark-Theme und präziser Typografie.</li>
-          <li data-i18n="changelog.release.items.animations">Flüssige Mikro-Animationen lassen Seiten und Panels noch weicher wirken.</li>
-          <li data-i18n="changelog.release.items.events">Frisches „Event“-Feature für spontane Veranstaltungen, AGs und besondere Termine.</li>
-          <li data-i18n="changelog.release.items.upcoming">Neue Seite für anstehende Ereignisse bringt Klarheit in die Planung.</li>
-          <li data-i18n="changelog.release.items.privacy">Datenschutzhinweis direkt integriert.</li>
-          <li data-i18n="changelog.release.items.accounts">Neues Account-System mit Rollen, Rechten und E-Mail-Verifikation.</li>
-          <li data-i18n="changelog.release.items.imprint">Impressum nahtlos in die Plattform eingebettet.</li>
-          <li data-i18n="changelog.release.items.holidays">Ferien und Feiertage erscheinen jetzt direkt im Kalender.</li>
-          <li data-i18n="changelog.release.items.multiClass">Events und Ferien lassen sich für mehrere Klassen gleichzeitig planen.</li>
-          <li data-i18n="changelog.release.items.contact">Support-Anfragen erreichen uns per E-Mail an support@akzuwo.ch.</li>
-          <li data-i18n="changelog.release.items.dayView">Neue Tagesübersicht bündelt Aufgaben, Prüfungen und Events in einem fokussierten Feed.</li>
-        </ul>
-      </article>
-
-      <article class="changelog-entry">
-        <div class="changelog-entry__meta">
-          <h2 data-i18n="changelog.archive.title">Frühere Versionen</h2>
-        </div>
-        <div class="changelog-subentry">
-          <h3 data-i18n="changelog.archive.release171.title">Release 1.7.1</h3>
-          <p data-i18n="changelog.archive.release171.summary">Release 1.7.1 sorgt für mehr Tempo im Kalender und poliert das Interface mit gezielten Verbesserungen.</p>
-          <ul>
-            <li data-i18n="changelog.archive.release171.items.calendar">Admins können Kalendereinträge direkt anlegen und bei Bedarf sofort bearbeiten.</li>
-            <li data-i18n="changelog.archive.release171.items.uiFixes">Mehrere Darstellungsfehler im UI wurden behoben.</li>
-            <li data-i18n="changelog.archive.release171.items.formatting">Aufgabenbeschreibungen unterstützen jetzt Fett- und Kursivformatierungen.</li>
-          </ul>
-        </div>
-        <div class="changelog-subentry">
-          <h4 data-i18n="changelog.archive.release171.patch01.title">Patch 0x01</h4>
-          <ul>
-            <li data-i18n="changelog.archive.release171.patch01.items.overlayButton">Der Schließen-Button der Kalender-Overlays wird wieder korrekt dargestellt.</li>
-            <li data-i18n="changelog.archive.release171.patch01.items.uiTweaks">Weitere visuelle Feinschliffe an UI-Elementen – ohne Änderungen an ihren Funktionen.</li>
-          </ul>
-        </div>
-        <div class="changelog-subentry">
-          <h4 data-i18n="changelog.archive.release171.patch02.title">Patch 0x02</h4>
-          <ul>
-            <li data-i18n="changelog.archive.release171.patch02.items.scheduleUi">Stundenplan-Ansicht optisch überarbeitet.</li>
-          </ul>
-        </div>
-      </article>
-    </section>
-  </main>
-
-  <footer class="site-footer">
-    <span data-i18n="common.footer.copyright">©️ Timo Wigger 2025</span>
-    <span aria-hidden="true">|</span>
-    <a href="mailto:support@akzuwo.ch" data-i18n="common.footer.contact">support@akzuwo.ch</a>
-    <span aria-hidden="true">|</span>
-    <a href="changelog.html" aria-current="page" data-i18n="common.footer.changelog">Changelog</a>
-    <div class="changelog-language-switch">
-      <span class="changelog-language-switch__label" data-i18n="common.language.menuLabel">Sprache auswählen</span>
-      <a href="changelog.html" aria-current="page">DE</a>
-      <a href="../en/changelog.html">EN</a>
-      <a href="../it/changelog.html">IT</a>
-      <a href="../fr/changelog.html">FR</a>
-    </div>
-  </footer>
-
-  <script type="module" src="../utils/js/header.js"></script>
-<script src="../utils/js/i18n.js" defer></script>
-  <script src="../utils/js/overlay.js" defer></script>
-  <script src="../utils/js/toast.js" defer></script>
-  <script src="../utils/js/footer.js" defer></script>
-  <script src="../utils/js/changelog.js" defer></script>
-  <script src="script.js" defer></script>
+<body>
+  <noscript>
+    <p>Redirecting… <a href="../changelog.html">Continue</a></p>
+  </noscript>
 </body>
 </html>

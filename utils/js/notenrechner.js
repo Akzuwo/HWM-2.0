@@ -14,20 +14,22 @@ const addForm = document.getElementById('addForm');
 const targetForm = document.getElementById('targetForm');
 const tableBody = document.querySelector('#notenTabelle tbody');
 
+const t = window.hmI18n ? window.hmI18n.scope('gradeCalculator') : (key, fallback) => fallback;
+
 const messages = {
-  invalidNumber: 'Bitte gültige Zahlen eingeben.',
-  required: 'Bitte dieses Feld ausfüllen.',
-  gradeRange: 'Die Note muss zwischen 1 und 6 liegen.',
-  weightPositive: 'Die Gewichtung muss grösser als 0 sein.',
-  targetRange: 'Der Ziel-Schnitt muss zwischen 1 und 6 liegen.',
-  nextWeight: 'Die Gewichtung der nächsten Note muss grösser als 0 sein.',
-  requiredGradeLabel: 'Benötigte Note',
-  unachievable: 'Nicht erreichbar',
-  unachievableDetail: 'Ziel nicht erreichbar (max. {max})',
-  deleteAction: 'Note löschen',
-  editAction: 'Note bearbeiten',
-  saveAction: 'Änderungen speichern',
-  cancelAction: 'Bearbeitung abbrechen'
+  invalidNumber: t('messages.invalidNumber', 'Please enter valid numbers.'),
+  required: t('messages.required', 'Please fill in this field.'),
+  gradeRange: t('messages.gradeRange', 'Grades must be between 1 and 6.'),
+  weightPositive: t('messages.weightPositive', 'Weight must be greater than 0.'),
+  targetRange: t('messages.targetRange', 'The target average must be between 1 and 6.'),
+  nextWeight: t('messages.nextWeight', 'The next grade weight must be greater than 0.'),
+  requiredGradeLabel: t('messages.requiredGradeLabel', 'Required grade'),
+  unachievable: t('messages.unachievable', 'Not achievable'),
+  unachievableDetail: t('messages.unachievableDetail', 'Target not reachable (max. {max})'),
+  deleteAction: t('messages.deleteAction', 'Remove grade'),
+  editAction: t('messages.editAction', 'Edit grade'),
+  saveAction: t('messages.saveAction', 'Save changes'),
+  cancelAction: t('messages.cancelAction', 'Cancel editing')
 };
 
 const noten = [];
