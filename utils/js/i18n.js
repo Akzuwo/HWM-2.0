@@ -155,11 +155,19 @@
           week: 'Woche',
           day: 'Tag',
         },
+        viewSwitch: {
+          label: 'Kalenderansicht wechseln',
+        },
         monthNav: {
           label: 'Monatsnavigation',
           previous: 'Vorheriger Monat',
           next: 'Nächster Monat',
           current: 'Aktueller Monat',
+          today: 'Heute',
+        },
+        classSelector: {
+          label: 'Klasse',
+          placeholder: 'Klasse auswählen',
         },
         actions: {
           create: {
@@ -192,6 +200,7 @@
           homework: 'Hausaufgabe',
           exam: 'Prüfung',
           event: 'Event',
+          holiday: 'Ferien & Feiertage',
         },
         formMessages: {
           invalidDate: 'Bitte gib ein gültiges Datum im Format TT.MM.JJJJ ein.',
@@ -212,6 +221,7 @@
             dateWithFormat: 'Datum (TT.MM.JJJJ)',
             start: 'Startzeit',
             end: 'Endzeit',
+            endDate: 'Enddatum',
             description: 'Beschreibung',
             descriptionOptional: 'Beschreibung (optional)',
           },
@@ -234,6 +244,10 @@
             deleteLoading: 'Löschen …',
             add: 'Hinzufügen',
             addLoading: 'Hinzufügen …',
+          },
+          deleteConfirm: {
+            title: 'Eintrag löschen?',
+            message: 'Möchtest du diesen Eintrag wirklich löschen?',
           },
           confirmDelete: 'Möchtest du diesen Eintrag wirklich löschen?',
           messages: {
@@ -265,7 +279,55 @@
         fallbackCta: 'E-Mail schreiben',
         close: 'Schließen',
       },
+      help: {
+        pageTitle: 'Bedienungsanleitung',
+        back: '← Zurück zur Startseite',
+        title: 'Bedienungsanleitung',
+        subtitle: 'Praktische Tipps, damit jede Rolle sofort loslegen kann.',
+        note: 'Diese Anleitung folgt dem neuen Dark-Theme und den Scroll-Animationen.',
+        teacher: {
+          title: 'Für Lehrkräfte',
+          summary: 'Plane Einträge und halte deine Klasse informiert.',
+          steps: {
+            create: 'Klicke den gewünschten Tag im Kalender, wähle Typ und Zeiten, dann speichere den Eintrag.',
+            format: 'Verwende *TEXT* in der Beschreibung, um wichtige Details fett hervorzuheben.',
+            attachments: 'Anhänge werden nicht unterstützt – teile Links oder Hinweise direkt in der Beschreibung.',
+            overview: 'Sieh dir anstehende Aufgaben in der Tagesübersicht an, sobald ein Stundenplan-.json eingereicht wurde.',
+          },
+        },
+        students: {
+          title: 'Für Schüler:innen',
+          summary: 'Behalte Räume, Fristen und Aufgaben auf jedem Gerät im Blick.',
+          steps: {
+            dayView:
+              'Die Tagesübersicht listet Aufgaben, Prüfungen und Events, sobald eure Klasse den Stundenplan als .json eingereicht hat.',
+            currentSubject: 'Die Seite „Aktuelles Fach“ zeigt, wo die nächste Unterrichtsstunde stattfindet.',
+            calendar: 'Tippe im Kalender auf einen Tag, um Details zu lesen und Events schnell zu finden.',
+            questions: 'Wenn etwas unklar ist, schreibe an support@akzuwo.ch.',
+          },
+        },
+        admins: {
+          title: 'Für Klassen-Admins',
+          summary: 'Verwalte Rollen, Stundenpläne und Einträge.',
+          steps: {
+            schedule:
+              'Stelle sicher, dass jemand aus der Klasse den Stundenplan als .json einreicht, damit Tagesübersicht und aktuelles Fach freigeschaltet werden.',
+            create: 'Lege Einträge selbst an, indem du den passenden Tag im Kalender auswählst.',
+            privacy: 'Verweise auf die Datenschutzseite für Details.',
+            support:
+              'Du brauchst Hilfe? E-Mail an support@akzuwo.ch – diese Adresse ist nur für Supportanfragen.',
+          },
+        },
+        callout: {
+          title: 'Gut zu wissen',
+          schedule: 'Tagesübersicht und aktuelles Fach sind erst verfügbar, wenn ein Stundenplan als .json vorliegt.',
+          contactForm: 'Support läuft ausschließlich über support@akzuwo.ch.',
+          privacy: 'Mehr zum Datenschutz findest du auf der Datenschutzseite.',
+          support: 'Noch Fragen? Schreib an den Support.',
+        },
+      },
       profile: {
+        title: 'Profil',
         pageTitle: 'Profil',
         eyebrow: 'Account',
         subtitle: 'Verwalte deine persönlichen Daten, Klassenzuordnung und Sicherheit.',
@@ -877,11 +939,19 @@
           week: 'Week',
           day: 'Day',
         },
+        viewSwitch: {
+          label: 'Switch calendar view',
+        },
         monthNav: {
           label: 'Month navigation',
           previous: 'Previous month',
           next: 'Next month',
           current: 'Current month',
+          today: 'Today',
+        },
+        classSelector: {
+          label: 'Class',
+          placeholder: 'Select class',
         },
         actions: {
           create: {
@@ -914,6 +984,7 @@
           homework: 'Homework',
           exam: 'Exam',
           event: 'Event',
+          holiday: 'Holidays & breaks',
         },
         formMessages: {
           invalidDate: 'Please enter a valid date (DD.MM.YYYY).',
@@ -934,6 +1005,7 @@
             dateWithFormat: 'Date (DD.MM.YYYY)',
             start: 'Start time',
             end: 'End time',
+            endDate: 'End date',
             description: 'Description',
             descriptionOptional: 'Description (optional)',
           },
@@ -956,6 +1028,10 @@
             deleteLoading: 'Deleting …',
             add: 'Add entry',
             addLoading: 'Adding …',
+          },
+          deleteConfirm: {
+            title: 'Delete entry?',
+            message: 'Do you really want to delete this entry?',
           },
           confirmDelete: 'Do you really want to delete this entry?',
           messages: {
@@ -986,7 +1062,54 @@
         fallbackCta: 'Write an email',
         close: 'Close',
       },
+      help: {
+        pageTitle: 'User guide',
+        back: '← Back to the homepage',
+        title: 'User guide',
+        subtitle: 'Practical tips so every role can get started right away.',
+        note: 'This guide follows the refreshed dark theme and scroll animations.',
+        teacher: {
+          title: 'For teachers',
+          summary: 'Plan entries and keep your class informed.',
+          steps: {
+            create: 'Click the desired day in the calendar, choose the type and times, then save the entry.',
+            format: 'Use *TEXT* inside the description to highlight important details in bold.',
+            attachments: 'Attachments are not supported—share links or references directly in the description.',
+            overview: 'Review upcoming work in the day overview once a timetable .json has been submitted.',
+          },
+        },
+        students: {
+          title: 'For students',
+          summary: 'Track rooms, deadlines, and assignments on any device.',
+          steps: {
+            dayView:
+              'The day overview lists homework, exams, and events once your class has submitted its timetable .json.',
+            currentSubject: 'The “Current subject” page shows where your next lesson will take place.',
+            calendar: 'Tap a day in the calendar to read entry details and find events quickly.',
+            questions: 'If anything is unclear, email support@akzuwo.ch for help.',
+          },
+        },
+        admins: {
+          title: 'For class admins',
+          summary: 'Keep roles, timetables, and entries organised.',
+          steps: {
+            schedule:
+              'Make sure someone from your class submits the timetable .json so the day overview and current subject unlock.',
+            create: 'Create entries yourself by clicking the appropriate day in the calendar.',
+            privacy: 'Point people to the privacy page for detailed information.',
+            support: 'Need a hand? Email support@akzuwo.ch—this address is dedicated to support requests only.',
+          },
+        },
+        callout: {
+          title: 'Good to know',
+          schedule: 'Day overview and current subject become available only after a timetable has been provided in .json format.',
+          contactForm: 'Support is handled exclusively via support@akzuwo.ch.',
+          privacy: 'For more about privacy, read the dedicated privacy page.',
+          support: 'Still curious? Reach out to support.',
+        },
+      },
       profile: {
+        title: 'Profile',
         pageTitle: 'Profile',
         eyebrow: 'Account',
         subtitle: 'Manage your personal details, class assignment, and security.',
@@ -1601,11 +1724,19 @@
           week: 'Settimana',
           day: 'Giorno',
         },
+        viewSwitch: {
+          label: 'Cambia vista calendario',
+        },
         monthNav: {
           label: 'Navigazione mesi',
           previous: 'Mese precedente',
           next: 'Mese successivo',
           current: 'Mese corrente',
+          today: 'Oggi',
+        },
+        classSelector: {
+          label: 'Classe',
+          placeholder: 'Seleziona classe',
         },
         actions: {
           create: {
@@ -1638,6 +1769,7 @@
           homework: 'Compito',
           exam: 'Verifica',
           event: 'Evento',
+          holiday: 'Vacanze e pause',
         },
         formMessages: {
           invalidDate: 'Inserisci una data valida nel formato GG.MM.AAAA.',
@@ -1658,6 +1790,7 @@
             dateWithFormat: 'Data (GG.MM.AAAA)',
             start: 'Ora di inizio',
             end: 'Ora di fine',
+            endDate: 'Data di fine',
             description: 'Descrizione',
             descriptionOptional: 'Descrizione (facoltativa)',
           },
@@ -1680,6 +1813,10 @@
             deleteLoading: 'Eliminazione …',
             add: 'Aggiungi',
             addLoading: 'Aggiunta …',
+          },
+          deleteConfirm: {
+            title: 'Eliminare la voce?',
+            message: 'Vuoi davvero eliminare questa voce?',
           },
           confirmDelete: 'Vuoi davvero eliminare questa voce?',
           messages: {
@@ -1710,7 +1847,53 @@
         fallbackCta: 'Scrivi un’email',
         close: 'Chiudi',
       },
+      help: {
+        pageTitle: 'Guida utente',
+        back: '← Torna alla home',
+        title: 'Guida utente',
+        subtitle: 'Consigli pratici per iniziare subito con ogni ruolo.',
+        note: 'Questa guida segue il tema scuro aggiornato e le animazioni di scorrimento.',
+        teacher: {
+          title: 'Per docenti',
+          summary: 'Pianifica le voci e tieni informata la classe.',
+          steps: {
+            create: 'Clicca il giorno desiderato nel calendario, scegli tipo e orari, quindi salva la voce.',
+            format: 'Usa *TESTO* nella descrizione per evidenziare in grassetto i dettagli importanti.',
+            attachments: 'Gli allegati non sono supportati: condividi link o riferimenti nella descrizione.',
+            overview: 'Controlla i prossimi lavori nella panoramica giornaliera dopo l’invio del .json dell’orario.',
+          },
+        },
+        students: {
+          title: 'Per studenti',
+          summary: 'Tieni traccia di aule, scadenze e compiti su qualsiasi dispositivo.',
+          steps: {
+            dayView: 'La panoramica giornaliera elenca compiti, esami ed eventi dopo l’invio dell’orario .json.',
+            currentSubject: 'La pagina “Materia attuale” mostra dove si terrà la prossima lezione.',
+            calendar: 'Tocca un giorno nel calendario per leggere i dettagli e trovare rapidamente gli eventi.',
+            questions: 'Se qualcosa non è chiaro, scrivi a support@akzuwo.ch.',
+          },
+        },
+        admins: {
+          title: 'Per admin di classe',
+          summary: 'Gestisci ruoli, orari e voci.',
+          steps: {
+            schedule:
+              'Assicurati che qualcuno della classe invii l’orario .json per sbloccare panoramica giornaliera e materia attuale.',
+            create: 'Crea le voci selezionando il giorno appropriato nel calendario.',
+            privacy: 'Indirizza le persone alla pagina della privacy per i dettagli.',
+            support: 'Serve una mano? Scrivi a support@akzuwo.ch: questo indirizzo è dedicato al supporto.',
+          },
+        },
+        callout: {
+          title: 'Da sapere',
+          schedule: 'Panoramica giornaliera e materia attuale sono disponibili solo dopo l’invio dell’orario in formato .json.',
+          contactForm: 'Il supporto è gestito esclusivamente via support@akzuwo.ch.',
+          privacy: 'Per maggiori dettagli sulla privacy, leggi la pagina dedicata.',
+          support: 'Hai ancora domande? Contatta il supporto.',
+        },
+      },
       profile: {
+        title: 'Profilo',
         pageTitle: 'Profilo',
         eyebrow: 'Account',
         subtitle: 'Gestisci i tuoi dati personali, la classe assegnata e la sicurezza.',
@@ -2323,11 +2506,19 @@
           week: 'Semaine',
           day: 'Jour',
         },
+        viewSwitch: {
+          label: 'Changer la vue du calendrier',
+        },
         monthNav: {
           label: 'Navigation par mois',
           previous: 'Mois précédent',
           next: 'Mois suivant',
           current: 'Mois en cours',
+          today: "Aujourd'hui",
+        },
+        classSelector: {
+          label: 'Classe',
+          placeholder: 'Sélectionner une classe',
         },
         actions: {
           create: {
@@ -2360,6 +2551,7 @@
           homework: 'Devoir',
           exam: 'Évaluation',
           event: 'Événement',
+          holiday: 'Vacances et congés',
         },
         formMessages: {
           invalidDate: 'Veuillez saisir une date valide au format JJ.MM.AAAA.',
@@ -2380,6 +2572,7 @@
             dateWithFormat: 'Date (JJ.MM.AAAA)',
             start: 'Heure de début',
             end: 'Heure de fin',
+            endDate: 'Date de fin',
             description: 'Description',
             descriptionOptional: 'Description (facultatif)',
           },
@@ -2402,6 +2595,10 @@
             deleteLoading: 'Suppression…',
             add: 'Ajouter',
             addLoading: 'Ajout en cours…',
+          },
+          deleteConfirm: {
+            title: 'Supprimer l’entrée ?',
+            message: 'Voulez-vous vraiment supprimer cette entrée ?',
           },
           confirmDelete: 'Voulez-vous vraiment supprimer cette entrée ?',
           messages: {
@@ -2432,7 +2629,53 @@
         fallbackCta: 'Envoyer un e-mail',
         close: 'Fermer',
       },
+      help: {
+        pageTitle: 'Guide utilisateur',
+        back: '← Retour à la page d’accueil',
+        title: 'Guide utilisateur',
+        subtitle: 'Des conseils pratiques pour démarrer rapidement, quel que soit le rôle.',
+        note: 'Ce guide suit le thème sombre actualisé et les animations de défilement.',
+        teacher: {
+          title: 'Pour les enseignants',
+          summary: 'Planifiez les entrées et gardez votre classe informée.',
+          steps: {
+            create: 'Cliquez sur le jour souhaité dans le calendrier, choisissez le type et les horaires, puis enregistrez.',
+            format: 'Utilisez *TEXTE* dans la description pour mettre les détails importants en gras.',
+            attachments: 'Les pièces jointes ne sont pas prises en charge ; partagez des liens ou des références dans la description.',
+            overview: 'Consultez le travail à venir dans la vue du jour une fois le .json d’emploi du temps envoyé.',
+          },
+        },
+        students: {
+          title: 'Pour les élèves',
+          summary: 'Suivez les salles, échéances et devoirs sur n’importe quel appareil.',
+          steps: {
+            dayView: 'La vue du jour liste devoirs, examens et événements après l’envoi du .json de l’emploi du temps.',
+            currentSubject: 'La page « Matière actuelle » indique où se déroulera le prochain cours.',
+            calendar: 'Touchez un jour dans le calendrier pour lire les détails et repérer rapidement les événements.',
+            questions: 'Si quelque chose n’est pas clair, écrivez à support@akzuwo.ch.',
+          },
+        },
+        admins: {
+          title: 'Pour les admins de classe',
+          summary: 'Gérez les rôles, les emplois du temps et les entrées.',
+          steps: {
+            schedule:
+              'Assurez-vous qu’un membre de la classe envoie le .json de l’emploi du temps pour débloquer la vue du jour et la matière actuelle.',
+            create: 'Créez vous-même des entrées en cliquant sur le jour approprié dans le calendrier.',
+            privacy: 'Orientez les personnes vers la page confidentialité pour plus d’informations.',
+            support: 'Besoin d’aide ? Écrivez à support@akzuwo.ch — cette adresse est dédiée au support.',
+          },
+        },
+        callout: {
+          title: 'Bon à savoir',
+          schedule: 'La vue du jour et la matière actuelle ne sont disponibles qu’après l’envoi d’un emploi du temps en .json.',
+          contactForm: 'Le support est assuré exclusivement via support@akzuwo.ch.',
+          privacy: 'Pour en savoir plus sur la confidentialité, consultez la page dédiée.',
+          support: 'Encore des questions ? Contactez le support.',
+        },
+      },
       profile: {
+        title: 'Profil',
         pageTitle: 'Profil',
         eyebrow: 'Compte',
         subtitle: 'Gérez vos informations personnelles, votre classe et la sécurité du compte.',
