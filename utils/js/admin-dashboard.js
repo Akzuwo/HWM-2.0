@@ -452,7 +452,6 @@ function sanitizeLogLines(value) {
 function createLogsSection(translations) {
   const section = document.createElement('section');
   section.className = 'admin-dashboard__logs';
-  section.hidden = true;
 
   const header = document.createElement('div');
   header.className = 'admin-dashboard__logs-header';
@@ -514,6 +513,7 @@ function createLogsSection(translations) {
     element: section,
     linesInput,
     refreshButton,
+    controls,
     status,
     source,
     updated,
@@ -696,22 +696,48 @@ function buildDashboard(root) {
     </div>
   `;
 
+  const layout = document.createElement('div');
+  layout.className = 'admin-dashboard__layout';
+
+  const sidebar = document.createElement('aside');
+  sidebar.className = 'admin-dashboard__sidebar';
+
+  const sidebarTitle = document.createElement('h2');
+  sidebarTitle.className = 'admin-dashboard__sidebar-title';
+  sidebarTitle.textContent = 'Bereiche';
+
   const nav = document.createElement('nav');
   nav.className = 'admin-dashboard__nav';
   nav.setAttribute('role', 'tablist');
 
-  const actionsBar = document.createElement('div');
-  actionsBar.className = 'admin-dashboard__actions';
+  sidebar.append(sidebarTitle, nav);
 
-  const viewLogsButton = createActionButton(t.buttons.viewLogs);
-  const downloadLogsButton = createActionButton(t.buttons.downloadLogs);
-  const createButton = createActionButton(t.create.users);
-  actionsBar.append(viewLogsButton, downloadLogsButton, createButton);
+  const content = document.createElement('section');
+  content.className = 'admin-dashboard__content';
+
+  const mobileNav = document.createElement('nav');
+  mobileNav.className = 'admin-dashboard__mobile-nav';
+  mobileNav.setAttribute('role', 'tablist');
+
+  const sectionHeader = document.createElement('div');
+  sectionHeader.className = 'admin-dashboard__section-header';
+
+  const sectionTitle = document.createElement('h2');
+  sectionTitle.className = 'admin-dashboard__section-title';
+
+  const sectionActions = document.createElement('div');
+  sectionActions.className = 'admin-dashboard__section-actions';
+
+  sectionHeader.append(sectionTitle, sectionActions);
+
+  const sectionControls = document.createElement('div');
+  sectionControls.className = 'admin-dashboard__section-controls';
 
   const logsSection = createLogsSection(t);
   const logsPanel = logsSection.element;
   const logsLinesInput = logsSection.linesInput;
   const logsRefreshButton = logsSection.refreshButton;
+  const logsControls = logsSection.controls;
   const logsStatus = logsSection.status;
   const logsSource = logsSection.source;
   const logsUpdated = logsSection.updated;
@@ -722,7 +748,25 @@ function buildDashboard(root) {
 
   const pagination = createPaginationControls(t);
 
-  root.append(header, nav, actionsBar, logsPanel, tableWrapper, pagination.element, messageArea.element);
+  const downloadLogsButton = createActionButton(t.buttons.downloadLogs);
+  downloadLogsButton.classList.add('admin-dashboard__logs-download');
+  logsControls.append(downloadLogsButton);
+
+  const createButton = createActionButton(t.create.users);
+  sectionActions.append(createButton);
+
+  content.append(
+    mobileNav,
+    sectionHeader,
+    sectionControls,
+    logsPanel,
+    tableWrapper,
+    pagination.element,
+    messageArea.element,
+  );
+
+  layout.append(sidebar, content);
+  root.append(header, layout);
 
   const scheduleImportFields = [
     {
@@ -865,6 +909,13 @@ function buildDashboard(root) {
   ], { emptyMessage: t.empty });
   tableWrapper.appendChild(table.element);
 
+  const sections = [
+    { key: 'users', label: t.nav.users, type: 'resource' },
+    { key: 'classes', label: t.nav.classes, type: 'resource' },
+    { key: 'schedules', label: t.nav.schedules, type: 'resource' },
+    { key: 'logs', label: t.logs.title, type: 'logs' },
+  ];
+
   const state = {
     active: 'users',
     page: 1,
@@ -898,11 +949,13 @@ function buildDashboard(root) {
     createButton.setAttribute('aria-disabled', String(!allowed));
     downloadLogsButton.disabled = !allowed;
     downloadLogsButton.setAttribute('aria-disabled', String(!allowed));
-    viewLogsButton.disabled = !allowed;
-    viewLogsButton.setAttribute('aria-disabled', String(!allowed));
     logsRefreshButton.disabled = !allowed || state.logs.loading;
     logsLinesInput.disabled = !allowed || state.logs.loading;
     nav.querySelectorAll('button').forEach((button) => {
+      button.disabled = !allowed;
+      button.setAttribute('aria-disabled', String(!allowed));
+    });
+    mobileNav.querySelectorAll('button').forEach((button) => {
       button.disabled = !allowed;
       button.setAttribute('aria-disabled', String(!allowed));
     });
@@ -953,7 +1006,6 @@ function buildDashboard(root) {
     logsLinesInput.value = String(sanitizeLogLines(logs.lines));
     logsRefreshButton.disabled = !state.authorized || logs.loading;
     logsLinesInput.disabled = !state.authorized || logs.loading;
-    viewLogsButton.textContent = logs.visible ? t.buttons.hideLogs : t.buttons.viewLogs;
 
     if (logs.source) {
       logsSource.textContent = t.logs.source(logs.source);
@@ -1106,10 +1158,6 @@ function buildDashboard(root) {
     if (nextVisible) {
       loadLogs(true);
     }
-  }
-
-  function toggleLogsVisibility() {
-    setLogsVisibility(!state.logs.visible);
   }
 
   async function loadLogs(force = false) {
@@ -1291,27 +1339,49 @@ function buildDashboard(root) {
 
   function updateNav() {
     nav.innerHTML = '';
-    Object.values(resources).forEach((resource) => {
-      const button = createActionButton(resource.label, 'ghost');
-      button.classList.toggle('is-active', resource.key === state.active);
+    mobileNav.innerHTML = '';
+    sections.forEach((section) => {
+      const button = createActionButton(section.label, 'ghost');
+      button.classList.toggle('is-active', section.key === state.active);
       button.setAttribute('role', 'tab');
-      button.setAttribute('aria-selected', resource.key === state.active ? 'true' : 'false');
+      button.setAttribute('aria-selected', section.key === state.active ? 'true' : 'false');
       button.disabled = !state.authorized;
       button.setAttribute('aria-disabled', String(!state.authorized));
       button.addEventListener('click', () => {
-        if (state.active === resource.key) {
+        if (state.active === section.key) {
           return;
         }
         if (!state.authorized) {
           showMessage('error', t.messages.unauthorized);
           return;
         }
-        state.active = resource.key;
+        state.active = section.key;
         state.page = 1;
         updateNav();
         onResourceChanged();
       });
       nav.appendChild(button);
+
+      const mobileButton = createActionButton(section.label, 'ghost');
+      mobileButton.classList.toggle('is-active', section.key === state.active);
+      mobileButton.setAttribute('role', 'tab');
+      mobileButton.setAttribute('aria-selected', section.key === state.active ? 'true' : 'false');
+      mobileButton.disabled = !state.authorized;
+      mobileButton.setAttribute('aria-disabled', String(!state.authorized));
+      mobileButton.addEventListener('click', () => {
+        if (state.active === section.key) {
+          return;
+        }
+        if (!state.authorized) {
+          showMessage('error', t.messages.unauthorized);
+          return;
+        }
+        state.active = section.key;
+        state.page = 1;
+        updateNav();
+        onResourceChanged();
+      });
+      mobileNav.appendChild(mobileButton);
     });
   }
 
@@ -1353,8 +1423,35 @@ function buildDashboard(root) {
   }
 
   function onResourceChanged() {
-    const resource = resources[state.active];
-    createButton.textContent = t.create[state.active];
+    const section = sections.find((item) => item.key === state.active);
+    sectionTitle.textContent = section?.label || '';
+    sectionHeader.hidden = section?.type === 'logs';
+    sectionControls.hidden = true;
+    sectionActions.innerHTML = '';
+    logsPanel.hidden = true;
+    tableWrapper.hidden = true;
+    pagination.element.hidden = true;
+
+    if (!section) {
+      return;
+    }
+
+    if (section.type === 'logs') {
+      setLogsVisibility(true);
+      sectionActions.innerHTML = '';
+      if (state.authorized) {
+        loadLogs(true);
+      }
+      return;
+    }
+
+    setLogsVisibility(false);
+    const resource = resources[section.key];
+    createButton.textContent = t.create[section.key];
+    sectionActions.append(createButton);
+    sectionControls.hidden = false;
+    tableWrapper.hidden = false;
+    pagination.element.hidden = false;
     configureTableColumns(resource.key);
     if (resource.key === 'users') {
       ensureClassesLoaded().catch(() => {});
@@ -1626,14 +1723,6 @@ function buildDashboard(root) {
       ensureClassesLoaded().catch(() => {});
     }
   }
-
-  viewLogsButton.addEventListener('click', () => {
-    if (!state.authorized) {
-      showMessage('error', t.messages.unauthorized);
-      return;
-    }
-    toggleLogsVisibility();
-  });
 
   logsRefreshButton.addEventListener('click', () => {
     if (!state.authorized) {
