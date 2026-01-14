@@ -47,7 +47,8 @@
         },
         release: {
           title: 'Release 2.0',
-          date: 'Oktober 2025',
+          date:
+            'Hinweis: Der Release von 2.0 wurde aufgrund mangelnder Kapazitäten und Qualitätssicherung auf Juli 2026 verschoben.',
           summary:
             'Release 2.0 bündelt alles, was den Schulalltag leichter macht – von der neuen Oberfläche über Events bis hin zu Rollen, Datenschutz und frischen Übersichten.',
           highlights: {
@@ -831,7 +832,7 @@
         },
         release: {
           title: 'Release 2.0',
-          date: 'October 2025',
+          date: 'Notice: The 2.0 release has been moved to July 2026 due to limited capacity and quality assurance.',
           summary:
             'Release 2.0 focuses on classroom essentials – a redesigned interface, powerful event tools, smarter overviews, and role-aware accounts.',
           highlights: {
@@ -1613,7 +1614,8 @@
         },
         release: {
           title: 'Release 2.0',
-          date: 'Ottobre 2025',
+          date:
+            'Avviso: la release 2.0 è stata rimandata a luglio 2026 per carenza di capacità e di controllo qualità.',
           summary:
             'La release 2.0 porta tutto ciò che serve in classe: interfaccia rinnovata, gestione degli eventi, ruoli dedicati e maggiore attenzione a privacy e panoramiche.',
           highlights: {
@@ -2396,7 +2398,8 @@
         },
         release: {
           title: 'Version 2.0',
-          date: 'Octobre 2025',
+          date:
+            'Information : la sortie de la version 2.0 est reportée à juillet 2026 en raison de capacités limitées et de l’assurance qualité.',
           summary:
             'La version 2.0 met l’accent sur l’essentiel en classe : interface repensée, gestion des événements, nouveaux rôles et contrôles de confidentialité.',
           highlights: {
