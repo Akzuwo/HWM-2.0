@@ -43,7 +43,7 @@
         },
         releaseGoal: {
           title: 'Release-Ziel',
-          body: 'Ziel ist es HWM 2.0 am 31.12.2025 als Stable zu veröffentlichen.',
+          body: 'Hinweis: Der Release von 2.0 wurde aufgrund mangelnder Kapazitäten und Qualitätssicherung auf Juli 2026 verschoben.',
         },
         release: {
           title: 'Release 2.0',
@@ -828,7 +828,7 @@
         },
         releaseGoal: {
           title: 'Release goal',
-          body: 'The goal is to ship HWM 2.0 as a stable release on 31.12.2025.',
+          body: 'Notice: The 2.0 release has been moved to July 2026 due to limited capacity and quality assurance.',
         },
         release: {
           title: 'Release 2.0',
@@ -1610,7 +1610,7 @@
         },
         releaseGoal: {
           title: 'Obiettivo di rilascio',
-          body: 'L’obiettivo è pubblicare HWM 2.0 come release stabile il 31.12.2025.',
+          body: 'Avviso: la release 2.0 è stata rimandata a luglio 2026 per carenza di capacità e di controllo qualità.',
         },
         release: {
           title: 'Release 2.0',
@@ -2394,7 +2394,7 @@
         },
         releaseGoal: {
           title: 'Objectif de sortie',
-          body: 'L’objectif est de publier HWM 2.0 en version stable le 31.12.2025.',
+          body: 'Information : la sortie de la version 2.0 est reportée à juillet 2026 en raison de capacités limitées et de l’assurance qualité.',
         },
         release: {
           title: 'Version 2.0',
