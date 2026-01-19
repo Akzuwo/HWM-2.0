@@ -1761,11 +1761,45 @@ body.has-auth-overlay {
 
 .page-header {
     display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: flex-start;
     gap: 12px;
     text-align: left;
+}
+
+.page-title {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.page-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    width: 100%;
+    justify-content: flex-start;
+}
+
+.class-select {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.class-select label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #b5b5b5;
+    letter-spacing: 0.02em;
+}
+
+.class-select select {
+    width: clamp(180px, 22vw, 320px);
+    max-width: 100%;
+    min-width: 0;
 }
 
 .page-header h1,
@@ -1782,6 +1816,41 @@ body.has-auth-overlay {
     display: grid;
     gap: 18px;
     margin-top: 24px;
+}
+
+@media (min-width: 900px) {
+    .page-header {
+        flex-direction: row;
+        align-items: baseline;
+        justify-content: space-between;
+    }
+
+    .page-controls {
+        width: auto;
+        justify-content: flex-end;
+        align-items: baseline;
+    }
+}
+
+@media (min-width: 600px) and (max-width: 899px) {
+    .page-controls {
+        justify-content: flex-end;
+    }
+}
+
+@media (max-width: 599px) {
+    .page-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .page-controls .hm-back-link {
+        align-self: flex-start;
+    }
+
+    .class-select select {
+        width: 100%;
+    }
 }
 
 @media (min-width: 700px) {
