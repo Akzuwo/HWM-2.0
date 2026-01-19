@@ -11,17 +11,19 @@
 <body>
 <main class="page-container" id="main">
     <header class="page-header">
-      <div>
+      <div class="page-title">
         <h1 data-i18n="dayOverview.title">📅 Daily Overview</h1>
         <p id="pageDate" class="page-date"></p>
       </div>
-      <div class="calendar-class-selector" data-class-selector hidden>
-        <label for="overview-class-select" data-i18n="dayOverview.classLabel">Class</label>
-        <select id="overview-class-select" data-class-select>
-          <option value="" disabled selected data-i18n="dayOverview.classPlaceholder">Select class</option>
-        </select>
+      <div class="page-controls">
+        <div class="calendar-class-selector class-select" data-class-selector hidden>
+          <label for="overview-class-select" data-i18n="dayOverview.classLabel">Class</label>
+          <select id="overview-class-select" data-class-select>
+            <option value="" disabled selected data-i18n="dayOverview.classPlaceholder">Select class</option>
+          </select>
+        </div>
+        <a class="hm-back-link" href="stundenplan.html" data-i18n="dayOverview.back">◀️ Back</a>
       </div>
-      <a class="hm-back-link" href="stundenplan.html" data-i18n="dayOverview.back">◀️ Back</a>
     </header>
 
     <div id="overview" class="overview-grid" data-i18n="dayOverview.loading">Loading data…</div>

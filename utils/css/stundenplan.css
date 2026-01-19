@@ -37,9 +37,23 @@ main.current-subject {
 
 .current-subject__header {
   display: flex;
-  align-items: baseline;
+  flex-direction: column;
+  align-items: flex-start;
   gap: var(--space-sm);
   flex-wrap: wrap;
+}
+
+.current-subject__header-main {
+  min-width: 0;
+}
+
+.current-subject__header-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  width: 100%;
+  justify-content: flex-start;
 }
 
 .current-subject__title {
@@ -62,6 +76,37 @@ main.current-subject {
 .current-subject__title-subject.is-inactive {
   color: var(--text-subtle);
   font-style: italic;
+}
+
+@media (min-width: 900px) {
+  .current-subject__header {
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+
+  .current-subject__header-controls {
+    width: auto;
+    justify-content: flex-end;
+    align-items: baseline;
+  }
+}
+
+@media (min-width: 600px) and (max-width: 899px) {
+  .current-subject__header-controls {
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 599px) {
+  .current-subject__header-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .current-subject__header-controls .class-select select {
+    width: 100%;
+  }
 }
 
 .current-subject__status {

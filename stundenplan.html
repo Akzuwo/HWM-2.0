@@ -13,16 +13,20 @@
 <body>
 <main class="current-subject" data-current-subject id="main">
     <header class="current-subject__header">
-      <h1 class="current-subject__title">
-        <span class="current-subject__title-icon" aria-hidden="true">🕒</span>
-        <span data-i18n="currentSubject.title">Current Subject</span>
-        <span class="current-subject__title-subject" data-subject-name>· —</span>
-      </h1>
-      <div class="calendar-class-selector" data-class-selector hidden>
-        <label for="current-class-select" data-i18n="currentSubject.classLabel">Class</label>
-        <select id="current-class-select" data-class-select>
-          <option value="" disabled selected data-i18n="currentSubject.classPlaceholder">Select class</option>
-        </select>
+      <div class="current-subject__header-main">
+        <h1 class="current-subject__title">
+          <span class="current-subject__title-icon" aria-hidden="true">🕒</span>
+          <span data-i18n="currentSubject.title">Current Subject</span>
+          <span class="current-subject__title-subject" data-subject-name>· —</span>
+        </h1>
+      </div>
+      <div class="current-subject__header-controls">
+        <div class="calendar-class-selector class-select" data-class-selector hidden>
+          <label for="current-class-select" data-i18n="currentSubject.classLabel">Class</label>
+          <select id="current-class-select" data-class-select>
+            <option value="" disabled selected data-i18n="currentSubject.classPlaceholder">Select class</option>
+          </select>
+        </div>
       </div>
     </header>
     <section class="current-subject__status">
