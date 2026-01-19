@@ -9,10 +9,12 @@
   <link rel="stylesheet" href="utils/css/style.css">
   <link rel="stylesheet" href="utils/css/stundenplan.css">
   <link rel="stylesheet" href="utils/css/kalender.css">
+  <link rel="stylesheet" href="assets/page-transitions.css" />
 </head>
 <body>
-<main class="current-subject" data-current-subject id="main">
-    <header class="current-subject__header">
+  <div id="pageContent">
+    <main class="current-subject" data-current-subject id="main">
+      <header class="current-subject__header">
       <div class="current-subject__header-main">
         <h1 class="current-subject__title">
           <span class="current-subject__title-icon" aria-hidden="true">🕒</span>
@@ -107,9 +109,11 @@
       <span aria-hidden="true"> | </span>
       <a href="mailto:support@akzuwo.ch" data-i18n="common.footer.contact">support@akzuwo.ch</a>
     </footer>
-  </main>
+    </main>
+  </div>
 
   <script type="module" src="utils/js/header.js"></script>
+  <script src="assets/page-transitions.js" defer></script>
   <script src="utils/js/i18n.js" defer></script>
   <script src="utils/js/auth.js" defer></script>
   <script src="utils/js/overlay.js" defer></script>

@@ -7,9 +7,11 @@
   <link rel="icon" type="image/png" href="media/logo.png" />
   <link rel="stylesheet" href="utils/css/style.css" />
   <link rel="stylesheet" href="utils/css/home.css" />
+  <link rel="stylesheet" href="assets/page-transitions.css" />
 </head>
 <body class="home-page">
-<main class="home-main" id="main">
+  <div id="pageContent">
+    <main class="home-main" id="main">
     <aside class="home-callout" role="status">
       <div class="home-callout__icon" aria-hidden="true">🛠️</div>
       <div class="home-callout__content">
@@ -95,9 +97,11 @@
     <a href="mailto:support@akzuwo.ch" data-i18n="common.footer.contact">support@akzuwo.ch</a>
     <span aria-hidden="true">|</span>
     <a href="changelog.html" data-i18n="common.footer.changelog">Changelog</a>
-  </footer>
-<script type="module" src="utils/js/header.js"></script>
-<script src="utils/js/i18n.js" defer></script>
+    </footer>
+  </div>
+  <script type="module" src="utils/js/header.js"></script>
+  <script src="assets/page-transitions.js" defer></script>
+  <script src="utils/js/i18n.js" defer></script>
   <script src="utils/js/overlay.js" defer></script>
   <script src="utils/js/toast.js" defer></script>
   <script src="utils/js/footer.js" defer></script>

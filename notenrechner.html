@@ -8,10 +8,12 @@
   <link rel="icon" type="image/png" href="media/logo.png">
   <link rel="stylesheet" href="utils/css/style.css">
   <link rel="stylesheet" href="utils/css/notenrechner.css">
+  <link rel="stylesheet" href="assets/page-transitions.css" />
 </head>
 <body>
-<main class="grade-calculator" id="main" data-grade-calculator>
-    <header class="grade-calculator__header">
+  <div id="pageContent">
+    <main class="grade-calculator" id="main" data-grade-calculator>
+      <header class="grade-calculator__header">
       <h1 class="grade-calculator__title">
         <span class="grade-calculator__title-icon" aria-hidden="true">📊</span>
         <span data-i18n="gradeCalculator.title">Grade Calculator</span>
@@ -136,8 +138,10 @@
       </a>
     </div>
 
-  </main>
+    </main>
+  </div>
   <script type="module" src="utils/js/header.js"></script>
+  <script src="assets/page-transitions.js" defer></script>
   <script src="utils/js/i18n.js" defer></script>
   <script src="utils/js/auth.js" defer></script>
   <script src="utils/js/overlay.js" defer></script>

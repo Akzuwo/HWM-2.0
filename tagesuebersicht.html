@@ -7,29 +7,33 @@
   <link rel="icon" type="image/png" href="media/logo.png">
   <link rel="stylesheet" href="utils/css/style.css">
   <link rel="stylesheet" href="utils/css/kalender.css">
+  <link rel="stylesheet" href="assets/page-transitions.css" />
 </head>
 <body>
-<main class="page-container" id="main">
-    <header class="page-header">
-      <div class="page-title">
-        <h1 data-i18n="dayOverview.title">📅 Daily Overview</h1>
-        <p id="pageDate" class="page-date"></p>
-      </div>
-      <div class="page-controls">
-        <div class="calendar-class-selector class-select" data-class-selector hidden>
-          <label for="overview-class-select" data-i18n="dayOverview.classLabel">Class</label>
-          <select id="overview-class-select" data-class-select>
-            <option value="" disabled selected data-i18n="dayOverview.classPlaceholder">Select class</option>
-          </select>
+  <div id="pageContent">
+    <main class="page-container" id="main">
+      <header class="page-header">
+        <div class="page-title">
+          <h1 data-i18n="dayOverview.title">📅 Daily Overview</h1>
+          <p id="pageDate" class="page-date"></p>
         </div>
-        <a class="hm-back-link" href="stundenplan.html" data-i18n="dayOverview.back">◀️ Back</a>
-      </div>
-    </header>
+        <div class="page-controls">
+          <div class="calendar-class-selector class-select" data-class-selector hidden>
+            <label for="overview-class-select" data-i18n="dayOverview.classLabel">Class</label>
+            <select id="overview-class-select" data-class-select>
+              <option value="" disabled selected data-i18n="dayOverview.classPlaceholder">Select class</option>
+            </select>
+          </div>
+          <a class="hm-back-link" href="stundenplan.html" data-i18n="dayOverview.back">◀️ Back</a>
+        </div>
+      </header>
 
-    <div id="overview" class="overview-grid" data-i18n="dayOverview.loading">Loading data…</div>
-  </main>
+      <div id="overview" class="overview-grid" data-i18n="dayOverview.loading">Loading data…</div>
+    </main>
+  </div>
 
   <script type="module" src="utils/js/header.js"></script>
+  <script src="assets/page-transitions.js" defer></script>
   <script src="utils/js/i18n.js" defer></script>
   <script src="utils/js/auth.js" defer></script>
   <script src="utils/js/calendar-permissions.js" defer></script>

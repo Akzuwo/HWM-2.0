@@ -7,13 +7,15 @@
   <link rel="icon" type="image/png" href="media/logo.png" />
   <link rel="stylesheet" href="utils/css/style.css" />
   <link rel="stylesheet" href="utils/css/home.css" />
+  <link rel="stylesheet" href="assets/page-transitions.css" />
 </head>
 <body class="changelog-page">
-  <header class="changelog-topbar">
-    <a class="changelog-back" href="index.html" data-i18n="changelog.back">← Back to overview</a>
-  </header>
+  <div id="pageContent">
+    <header class="changelog-topbar">
+      <a class="changelog-back" href="index.html" data-i18n="changelog.back">← Back to overview</a>
+    </header>
 
-  <main class="changelog-main" id="main">
+    <main class="changelog-main" id="main">
     <header class="changelog-header">
       <h1 data-i18n="changelog.title">Changelog</h1>
       <p data-i18n="changelog.subtitle">Explore the Homework Manager release notes featuring the highlights of version 2.0 and earlier updates.</p>
@@ -84,10 +86,12 @@
       <a href="../it/changelog.html">IT</a>
       <a href="../fr/changelog.html">FR</a>
     </div>
-  </footer>
+    </footer>
+  </div>
 
   <script type="module" src="utils/js/header.js"></script>
-<script src="utils/js/i18n.js" defer></script>
+  <script src="assets/page-transitions.js" defer></script>
+  <script src="utils/js/i18n.js" defer></script>
   <script src="utils/js/overlay.js" defer></script>
   <script src="utils/js/toast.js" defer></script>
   <script src="utils/js/footer.js" defer></script>
