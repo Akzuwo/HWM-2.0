@@ -6,18 +6,20 @@
   <title data-i18n="profile.pageTitle">Profile</title>
   <link rel="icon" type="image/png" href="media/logo.png" />
   <link rel="stylesheet" href="utils/css/style.css" />
+  <link rel="stylesheet" href="assets/page-transitions.css" />
 </head>
 <body class="profile-page">
   <script type="module" src="utils/js/header.js"></script>
-  <main id="main" class="profile">
-    <div class="profile__container">
-      <header class="profile__header">
-        <p class="profile__eyebrow" data-i18n="profile.eyebrow">Account</p>
-        <h1 data-i18n="profile.title">Profile</h1>
-        <p class="profile__subtitle" data-i18n="profile.subtitle">Manage your personal details, class assignment, and security.</p>
-      </header>
+  <div id="pageContent">
+    <main id="main" class="profile">
+      <div class="profile__container">
+        <header class="profile__header">
+          <p class="profile__eyebrow" data-i18n="profile.eyebrow">Account</p>
+          <h1 data-i18n="profile.title">Profile</h1>
+          <p class="profile__subtitle" data-i18n="profile.subtitle">Manage your personal details, class assignment, and security.</p>
+        </header>
 
-      <section class="profile__grid">
+        <section class="profile__grid">
         <article class="profile-card profile-card--wide">
           <div class="profile-card__header">
             <div>
@@ -116,8 +118,10 @@
         </article>
       </section>
     </div>
-  </main>
+    </main>
+  </div>
 
+  <script src="assets/page-transitions.js" defer></script>
   <script src="utils/js/i18n.js" defer></script>
   <script src="utils/js/overlay.js" defer></script>
   <script src="utils/js/toast.js" defer></script>

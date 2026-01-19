@@ -7,9 +7,11 @@
   <link rel="icon" type="image/png" href="media/logo.png">
   <link rel="stylesheet" href="utils/css/style.css">
   <link rel="stylesheet" href="utils/css/upcoming.css">
+  <link rel="stylesheet" href="assets/page-transitions.css" />
 </head>
 <body class="upcoming-page">
-<main class="upcoming" id="main">
+  <div id="pageContent">
+    <main class="upcoming" id="main">
     <header class="upcoming__header">
       <h1 class="upcoming__title" data-i18n="upcoming.title">🔔 Upcoming Events</h1>
       <p class="upcoming__lead" data-i18n="upcoming.lead">Stay on top of upcoming school events and plan ahead with ease.</p>
@@ -36,9 +38,11 @@
         <span data-i18n="upcoming.back">◀️ Back to overview</span>
       </button>
     </div>
-  </main>
+    </main>
+  </div>
 
   <script type="module" src="utils/js/header.js"></script>
+  <script src="assets/page-transitions.js" defer></script>
   <script src="utils/js/i18n.js" defer></script>
   <script src="utils/js/auth.js" defer></script>
   <script src="utils/js/upcoming.js" defer></script>

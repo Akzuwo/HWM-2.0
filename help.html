@@ -7,13 +7,15 @@
   <link rel="icon" type="image/png" href="media/logo.png" />
   <link rel="stylesheet" href="utils/css/style.css" />
   <link rel="stylesheet" href="utils/css/home.css" />
+  <link rel="stylesheet" href="assets/page-transitions.css" />
 </head>
 <body class="help-page">
-  <header class="changelog-topbar">
-    <a class="changelog-back" href="index.html" data-i18n="help.back">← Back to the homepage</a>
-  </header>
+  <div id="pageContent">
+    <header class="changelog-topbar">
+      <a class="changelog-back" href="index.html" data-i18n="help.back">← Back to the homepage</a>
+    </header>
 
-  <main class="help-main" id="main">
+    <main class="help-main" id="main">
     <section class="help-hero">
       <h1 data-i18n="help.title">User guide</h1>
       <p data-i18n="help.subtitle">Practical tips so every role can get started right away.</p>
@@ -81,9 +83,11 @@
     <a href="mailto:support@akzuwo.ch" data-i18n="common.footer.contact">support@akzuwo.ch</a>
     <span aria-hidden="true">|</span>
     <a href="changelog.html" data-i18n="common.footer.changelog">Changelog</a>
-  </footer>
+    </footer>
+  </div>
 
   <script type="module" src="utils/js/header.js"></script>
+  <script src="assets/page-transitions.js" defer></script>
   <script src="utils/js/i18n.js" defer></script>
   <script src="utils/js/overlay.js" defer></script>
   <script src="utils/js/toast.js" defer></script>

@@ -1,0 +1,30 @@
+#pageContent {
+  transform: translateX(0);
+  opacity: 1;
+  transition: transform 380ms ease, opacity 380ms ease;
+  will-change: transform, opacity;
+}
+
+#pageContent.pt-exit-right {
+  transform: translateX(100%);
+  opacity: 0;
+}
+
+#pageContent.pt-enter-from-left {
+  transform: translateX(-100%);
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #pageContent {
+    transition: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+
+  #pageContent.pt-exit-right,
+  #pageContent.pt-enter-from-left {
+    transform: none !important;
+    opacity: 1 !important;
+  }
+}

@@ -6,9 +6,11 @@
   <title data-i18n="auth.pageTitle">Login - Homework Manager</title>
   <link rel="icon" type="image/png" href="media/logo.png">
   <link rel="stylesheet" href="utils/css/style.css">
+  <link rel="stylesheet" href="assets/page-transitions.css" />
 </head>
 <body>
-  <div class="login-container">
+  <div id="pageContent">
+    <div class="login-container">
     <header class="login-header">
       <img src="media/logo.png" alt="Logo" class="login-logo" data-i18n-attr="alt:auth.logoAlt">
       <div class="login-heading">
@@ -59,8 +61,11 @@
         <p class="guest-info" data-i18n="auth.guestInfo">Continue without an account</p>
       </div>
     </form>
+    </div>
   </div>
 
+  <script type="module" src="utils/js/header.js"></script>
+  <script src="assets/page-transitions.js" defer></script>
   <script src="utils/js/i18n.js" defer></script>
   <script src="utils/js/overlay.js" defer></script>
   <script src="utils/js/toast.js" defer></script>

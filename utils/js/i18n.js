@@ -3196,8 +3196,9 @@
     scope.querySelectorAll('[data-i18n]').forEach((element) => {
       const key = element.getAttribute('data-i18n');
       if (!key) return;
-      const value = get(key);
-      if (value !== undefined && value !== null) {
+      const fallbackText = element.hasAttribute('data-i18n-html') ? element.innerHTML : element.textContent;
+      const value = get(key, fallbackText);
+      if (value !== undefined && value !== null && value !== '') {
         if (element.hasAttribute('data-i18n-html')) {
           element.innerHTML = value;
         } else {
@@ -3212,8 +3213,9 @@
       map.split(',').forEach((pair) => {
         const [attr, key] = pair.split(':').map((item) => item && item.trim());
         if (!attr || !key) return;
-        const value = get(key);
-        if (value !== undefined && value !== null) {
+        const fallbackValue = element.getAttribute(attr);
+        const value = get(key, fallbackValue);
+        if (value !== undefined && value !== null && value !== '') {
           element.setAttribute(attr, value);
         }
       });
@@ -3256,9 +3258,20 @@
     global.hmI18n.setLocale(storedLocale);
   }
 
+  const applyTranslations = () => apply();
+
   if (document.readyState !== 'loading') {
-    apply();
+    applyTranslations();
   } else {
-    document.addEventListener('DOMContentLoaded', () => apply());
+    document.addEventListener('DOMContentLoaded', applyTranslations);
   }
+
+  window.addEventListener('hm:header-ready', (event) => {
+    const header = event.detail && event.detail.header;
+    if (header) {
+      apply(header);
+    } else {
+      applyTranslations();
+    }
+  });
 })(window);

@@ -11,9 +11,11 @@
   />
   <link rel="stylesheet" href="utils/css/style.css" />
   <link rel="stylesheet" href="utils/css/kalender.css" />
+  <link rel="stylesheet" href="assets/page-transitions.css" />
 </head>
 <body class="calendar-theme">
-  <header class="calendar-header" data-calendar-header>
+  <div id="pageContent">
+    <header class="calendar-header" data-calendar-header>
     <div class="calendar-header__inner">
       <div class="calendar-header__row">
         <a class="calendar-header__brand" href="index.html">
@@ -644,8 +646,11 @@
     </div>
   </div>
 
-  <div id="calendar-toast-container" class="calendar-toast-container" aria-live="polite" aria-atomic="true"></div>
+    <div id="calendar-toast-container" class="calendar-toast-container" aria-live="polite" aria-atomic="true"></div>
+  </div>
 
+  <script type="module" src="utils/js/header.js"></script>
+  <script src="assets/page-transitions.js" defer></script>
   <script src="utils/js/calendar-header.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js" defer></script>
 <script src="utils/js/i18n.js" defer></script>
