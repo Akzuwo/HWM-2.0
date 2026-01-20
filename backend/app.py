@@ -3307,7 +3307,7 @@ def assign_user_to_class(user_id: int):
 
 
 # --- Current user profile endpoints ---
-@app.route('/api/me', methods=['GET', 'PUT', 'DELETE', 'OPTIONS'])
+@app.route('/api/me', methods=['GET', 'DELETE', 'OPTIONS'])
 @require_role()
 def current_user_profile():
     if request.method == 'OPTIONS':
@@ -3402,68 +3402,6 @@ def current_user_profile():
                 session_keys = list(session.keys())
                 for k in session_keys:
                     session.pop(k, None)
-                return jsonify(status='ok')
-
-            # PUT: update profile (only class change supported for now)
-            if request.method == 'PUT':
-                data = request.json or {}
-                target_class = data.get('class_id')
-                try:
-                    target_class = int(target_class) if target_class is not None else None
-                except (TypeError, ValueError):
-                    return jsonify(status='error', message='invalid_class_id'), 400
-
-                if target_class is None:
-                    return jsonify(status='error', message='no_changes'), 400
-
-                # ensure class exists
-                cursor.execute("SELECT id FROM classes WHERE id=%s", (target_class,))
-                if cursor.fetchone() is None:
-                    return jsonify(status='error', message='class_not_found'), 404
-
-                # ensure users table has last_class_change column; do NOT ALTER TABLE at runtime
-                try:
-                    cursor.execute("SELECT last_class_change FROM users WHERE id=%s LIMIT 1", (user_id,))
-                except mysql.connector.Error:
-                    # Column missing or other DB error — inform client to run migration
-                    return jsonify(status='error', message='migration_required', detail='last_class_change_missing'), 500
-
-                # re-query last_class_change
-                cursor.execute("SELECT last_class_change, class_id FROM users WHERE id=%s LIMIT 1", (user_id,))
-                row = cursor.fetchone()
-                if not row:
-                    return jsonify(status='error', message='user_not_found'), 404
-
-                last_change = row.get('last_class_change')
-                now = datetime.datetime.utcnow()
-                cooldown_days = 30
-                if last_change:
-                    try:
-                        delta = now - last_change
-                        if delta.total_seconds() < cooldown_days * 86400:
-                            remaining = int((cooldown_days * 86400 - delta.total_seconds()) // 86400) + 1
-                            return jsonify(status='error', message='class_change_cooldown', remaining_days=remaining), 400
-                    except Exception:
-                        pass
-
-                # perform update
-                try:
-                    cursor.close()
-                    cursor = conn.cursor()
-                    cursor.execute(
-                        "UPDATE users SET class_id=%s, last_class_change=%s, updated_at=%s WHERE id=%s",
-                        (target_class, now, now, user_id),
-                    )
-                    if cursor.rowcount == 0:
-                        return jsonify(status='error', message='user_not_found'), 404
-                    _log_user_event('class_change', user_id=user_id, new_class=target_class)
-                    conn.commit()
-                    # update session
-                    session['class_id'] = target_class
-                except mysql.connector.Error:
-                    conn.rollback()
-                    return jsonify(status='error', message='database_unavailable'), 503
-
                 return jsonify(status='ok')
 
         except mysql.connector.Error:
@@ -3989,7 +3927,6 @@ def add_cors_headers(response):
 # ---------- SERVER START ----------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=False)
-
 
 
 

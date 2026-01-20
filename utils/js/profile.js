@@ -1,4 +1,4 @@
-/* Profile page logic: load /api/me, allow class change, password updates, and account deletion */
+/* Profile page logic: load /api/me, allow password updates, and account deletion */
 (function () {
   'use strict'
 
@@ -61,10 +61,6 @@
     age: () => el('profile-age'),
     created: () => el('profile-created'),
     lastChange: () => el('profile-last-change'),
-    classInput: () => el('profile-class-input'),
-    classCooldown: () => el('class-cooldown-msg'),
-    classButton: () => el('change-class-btn'),
-    classForm: () => document.getElementById('class-form'),
     passwordForm: () => document.getElementById('password-form'),
     deleteButton: () => el('delete-account-btn'),
     passwordButton: () => el('change-password-btn'),
@@ -110,38 +106,6 @@
     return data.class_slug || data.class_title || (data.class_id != null ? `#${data.class_id}` : t('unknownValue', '–'))
   }
 
-  function applyClassCooldown(data) {
-    const cooldownNode = elements.classCooldown()
-    const button = elements.classButton()
-    if (!cooldownNode || !button) return
-
-    let remaining = typeof data.class_change_remaining_days === 'number'
-      ? data.class_change_remaining_days
-      : null
-
-    if (remaining === null && data.last_class_change) {
-      const lastChange = new Date(data.last_class_change)
-      if (!Number.isNaN(lastChange.getTime())) {
-        const nextAllowed = new Date(lastChange.getTime() + 30 * 24 * 3600 * 1000)
-        const now = new Date()
-        if (now < nextAllowed) {
-          remaining = Math.ceil((nextAllowed - now) / (24 * 3600 * 1000))
-        }
-      }
-    }
-
-    if (remaining && remaining > 0) {
-      const template = remaining === 1
-        ? t('classCooldownOne', 'Class can be changed again in 1 day.')
-        : t('classCooldown', 'Class can be changed again in {days} days.').replace('{days}', remaining)
-      cooldownNode.textContent = template
-      button.disabled = true
-    } else {
-      cooldownNode.textContent = t('classChangeReady', 'You can change your class now.')
-      button.disabled = false
-    }
-  }
-
   async function loadProfile() {
     try {
       const resp = await apiFetch('/api/me')
@@ -155,13 +119,6 @@
       setText(elements.age(), formatDays(data.account_age_days))
       setText(elements.created(), formatDate(data.created_at))
       setText(elements.lastChange(), formatDate(data.last_class_change))
-
-      const classInput = elements.classInput()
-      if (classInput) {
-        classInput.value = data.class_id != null ? data.class_id : ''
-      }
-
-      applyClassCooldown(data)
     } catch (err) {
       console.error('Failed to load profile', err)
       window.showToast && window.showToast(t('loadError', 'Could not load your profile.'))
@@ -178,45 +135,6 @@
         button.disabled = false
         button.innerHTML = originalContent
       })
-  }
-
-  async function changeClass(event) {
-    if (event) event.preventDefault()
-    const button = elements.classButton()
-    const classInput = elements.classInput()
-    const raw = (classInput && classInput.value || '').trim()
-
-    if (!raw) {
-      window.showToast && window.showToast(t('classChangeMissing', 'Please enter a class ID.'))
-      return
-    }
-
-    const parsed = Number.parseInt(raw, 10)
-    if (!Number.isFinite(parsed)) {
-      window.showToast && window.showToast(t('classChangeInvalid', 'Please enter a valid class ID.'))
-      return
-    }
-
-    await withButtonState(button, async () => {
-      try {
-        await apiFetch('/api/me', 'PUT', { class_id: parsed })
-        window.showToast && window.showToast(t('classChangeSuccess', 'Class updated successfully.'))
-        setTimeout(() => loadProfile(), 350)
-      } catch (err) {
-        console.error('Failed to change class', err)
-        const code = err.info && err.info.message
-        let message = t('classChangeError', 'Could not update the class.')
-        if (code === 'class_not_found') {
-          message = t('classChangeNotFound', 'Class not found.')
-        } else if (code === 'invalid_class_id') {
-          message = t('classChangeInvalid', 'Please enter a valid class ID.')
-        } else if (code === 'class_change_cooldown') {
-          const remaining = err.info && err.info.remaining_days
-          message = t('classChangeCooldownError', 'You can change your class again in {days} days.').replace('{days}', remaining || '–')
-        }
-        window.showToast && window.showToast(message)
-      }
-    })
   }
 
   async function changePassword(event) {
@@ -289,16 +207,10 @@
   }
 
   document.addEventListener('DOMContentLoaded', function () {
-    const classForm = elements.classForm()
     const passwordForm = elements.passwordForm()
     const deleteBtn = elements.deleteButton()
 
-    classForm && classForm.addEventListener('submit', changeClass)
     passwordForm && passwordForm.addEventListener('submit', changePassword)
-    if (!classForm) {
-      const changeBtn = elements.classButton()
-      changeBtn && changeBtn.addEventListener('click', changeClass)
-    }
     deleteBtn && deleteBtn.addEventListener('click', deleteAccount)
 
     loadProfile()
