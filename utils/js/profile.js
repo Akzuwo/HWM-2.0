@@ -120,6 +120,13 @@
       setText(elements.created(), formatDate(data.created_at))
       setText(elements.lastChange(), formatDate(data.last_class_change))
     } catch (err) {
+      const info = err && err.info ? err.info : {}
+      const status = info.status
+      const code = info.message
+      if (status === 503 || code === 'database_unavailable') {
+        window.showToast && window.showToast(t('loadUnavailable', 'Profile service is temporarily unavailable.'))
+        return
+      }
       console.error('Failed to load profile', err)
       window.showToast && window.showToast(t('loadError', 'Could not load your profile.'))
     }
