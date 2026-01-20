@@ -63,24 +63,6 @@
         <article class="profile-card">
           <header class="profile-card__header">
             <div>
-              <p class="profile__eyebrow" data-i18n="profile.classLabel">Class</p>
-              <h2 data-i18n="profile.classTitle">Class assignment</h2>
-            </div>
-            <p class="muted" data-i18n="profile.classHint">You can change your class once per month.</p>
-          </header>
-          <form class="profile-form" id="class-form">
-            <label class="profile-form__label" for="profile-class-input" data-i18n="profile.classInputLabel">Class ID</label>
-            <input id="profile-class-input" class="profile-input" type="number" inputmode="numeric" pattern="[0-9]*" data-i18n-attr="placeholder:profile.classPlaceholder" placeholder="12" />
-            <div id="class-cooldown-msg" class="profile-help"></div>
-            <div class="profile-actions">
-              <button type="submit" id="change-class-btn" class="button ripple"><span data-i18n="profile.changeClass">Change class</span></button>
-            </div>
-          </form>
-        </article>
-
-        <article class="profile-card">
-          <header class="profile-card__header">
-            <div>
               <p class="profile__eyebrow" data-i18n="profile.securityLabel">Security</p>
               <h2 data-i18n="profile.passwordTitle">Change password</h2>
             </div>
@@ -123,6 +105,7 @@
 
   <script src="assets/page-transitions.js" defer></script>
   <script src="utils/js/i18n.js" defer></script>
+  <script src="utils/js/auth.js" defer></script>
   <script src="utils/js/overlay.js" defer></script>
   <script src="utils/js/toast.js" defer></script>
   <script src="utils/js/footer.js" defer></script>
