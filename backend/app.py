@@ -3442,7 +3442,6 @@ def current_user_profile():
                 cursor.execute(
                     """
                     SELECT u.id, u.email, u.role, u.class_id, u.created_at, u.updated_at,
-                           IFNULL(u.last_class_change, NULL) AS last_class_change,
                            c.slug AS class_slug, c.title AS class_title
                     FROM users u
                     LEFT JOIN classes c ON c.id = u.class_id
@@ -3467,16 +3466,6 @@ def current_user_profile():
 
                 class_change_remaining_days = None
                 class_change_available_at = None
-                last_change = row.get('last_class_change')
-                if last_change:
-                    try:
-                        next_allowed = last_change + datetime.timedelta(days=30)
-                        class_change_available_at = next_allowed.isoformat()
-                        remaining_seconds = (next_allowed - now).total_seconds()
-                        if remaining_seconds > 0:
-                            class_change_remaining_days = int((remaining_seconds + 86399) // 86400)
-                    except Exception:
-                        class_change_available_at = None
 
                 return jsonify(status='ok', data={
                     'id': row.get('id'),
@@ -3487,7 +3476,6 @@ def current_user_profile():
                     'class_title': row.get('class_title'),
                     'created_at': row.get('created_at').isoformat() if row.get('created_at') else None,
                     'account_age_days': account_age_days,
-                    'last_class_change': row.get('last_class_change').isoformat() if row.get('last_class_change') else None,
                     'class_change_remaining_days': class_change_remaining_days,
                     'class_change_available_at': class_change_available_at,
                 })
