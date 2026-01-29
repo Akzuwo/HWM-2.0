@@ -748,6 +748,32 @@ button {
     color: rgba(255, 255, 255, 0.75);
 }
 
+.i18n-anim-out,
+.i18n-anim-in {
+    will-change: opacity, transform, filter;
+    transform-origin: center;
+    backface-visibility: hidden;
+}
+
+.i18n-anim-out.i18n-placeholder-animating::placeholder {
+    opacity: 0;
+    transform: translateY(-2px);
+    transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.i18n-anim-in.i18n-placeholder-animating::placeholder {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 200ms ease, transform 200ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .i18n-anim-out,
+    .i18n-anim-in {
+        will-change: opacity;
+    }
+}
+
 .account-control {
     position: relative;
     display: inline-flex;
