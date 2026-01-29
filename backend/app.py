@@ -6,6 +6,8 @@ import time
 import logging
 import smtplib
 import html
+import traceback
+import uuid
 from collections import OrderedDict, deque
 from contextlib import closing
 from email.message import EmailMessage
@@ -190,6 +192,71 @@ def _log_user_event(event: str, user_id: Optional[int] = None, **details: object
 
     app.logger.info('AUDIT event=%s user_id=%s details=%s', event, user_id, encoded_details)
 
+
+def get_bearer_token() -> Optional[str]:
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header:
+        return None
+    if not auth_header.lower().startswith("bearer "):
+        return None
+    token = auth_header[7:].strip()
+    return token or None
+
+
+def _decode_bearer_token(token: str) -> Dict[str, Any]:
+    raise ValueError("Invalid or expired token")
+
+
+def _log_request_error(status: int, message: str, *, exc: Optional[BaseException] = None) -> str:
+    error_id = uuid.uuid4().hex[:12]
+    log_line = "Request error path=%s method=%s status=%s error_id=%s message=%s"
+    if exc is not None:
+        app.logger.error(
+            log_line + " traceback=%s",
+            request.path,
+            request.method,
+            status,
+            error_id,
+            message,
+            traceback.format_exc(),
+        )
+    else:
+        app.logger.warning(
+            log_line,
+            request.path,
+            request.method,
+            status,
+            error_id,
+            message,
+        )
+    return error_id
+
+
+def _authenticate_request() -> Tuple[Optional[Dict[str, Any]], Optional[Tuple[int, Dict[str, str], Optional[BaseException]]]]:
+    user_id = session.get('user_id')
+    role = session.get('role')
+    if user_id is not None and role is not None:
+        try:
+            user_id = int(user_id)
+        except (TypeError, ValueError):
+            pass
+        g.user = {'id': user_id, 'role': role}
+        return g.user, None
+
+    token = get_bearer_token()
+    if not token:
+        payload = {"error": "unauthorized", "message": "Missing bearer token"}
+        return None, (401, payload, None)
+
+    try:
+        user = _decode_bearer_token(token)
+    except Exception as exc:
+        payload = {"error": "unauthorized", "message": "Invalid or expired token"}
+        return None, (401, payload, exc)
+
+    g.user = user
+    return user, None
+
 def _resolve_cors_origin() -> Optional[str]:
     origin = request.headers.get("Origin")
     if not origin:
@@ -210,7 +277,7 @@ CORS(
     supports_credentials=True,
     resources={r"/*": {"origins": ALLOWED_CORS_ORIGINS + ALLOWED_CORS_ORIGIN_PATTERNS}},
     methods=["GET","HEAD","POST","OPTIONS","PUT","DELETE"],
-    allow_headers=["Content-Type"]
+    allow_headers=["Content-Type", "Authorization"]
 )
 # ---------- DATABASE POOL ----------
 DB_CONFIG = get_db_config()
@@ -416,12 +483,19 @@ def require_role(*roles):
         def wrapper(*args, **kwargs):
             if request.method == 'OPTIONS':
                 return fn(*args, **kwargs)
+            _, auth_error = _authenticate_request()
+            if auth_error:
+                status, payload, exc = auth_error
+                _log_request_error(status, payload.get('message', 'unauthorized'), exc=exc)
+                return jsonify(payload), status
+
             current_role = session.get('role')
             if roles:
                 allowed = current_role in roles
             else:
                 allowed = current_role is not None
             if not allowed:
+                _log_request_error(403, 'Forbidden')
                 return jsonify(status='error', message='Forbidden'), 403
             return fn(*args, **kwargs)
 
@@ -501,7 +575,13 @@ def require_admin(fn):
     def wrapper(*args, **kwargs):
         if request.method == 'OPTIONS':
             return fn(*args, **kwargs)
+        _, auth_error = _authenticate_request()
+        if auth_error:
+            status, payload, exc = auth_error
+            _log_request_error(status, payload.get('message', 'unauthorized'), exc=exc)
+            return jsonify(payload), status
         if not session.get('is_admin'):
+            _log_request_error(403, 'Forbidden')
             return jsonify(status='error', message='Forbidden'), 403
         return fn(*args, **kwargs)
 
@@ -513,8 +593,14 @@ def require_class_admin(fn):
     def wrapper(*args, **kwargs):
         if request.method == 'OPTIONS':
             return fn(*args, **kwargs)
+        _, auth_error = _authenticate_request()
+        if auth_error:
+            status, payload, exc = auth_error
+            _log_request_error(status, payload.get('message', 'unauthorized'), exc=exc)
+            return jsonify(payload), status
         role = session.get('role')
         if role not in CLASS_ADMIN_ROLES:
+            _log_request_error(403, 'Forbidden')
             return jsonify(status='error', message='Forbidden'), 403
         return fn(*args, **kwargs)
 
@@ -526,8 +612,14 @@ def require_entry_manager(fn):
     def wrapper(*args, **kwargs):
         if request.method == 'OPTIONS':
             return fn(*args, **kwargs)
+        _, auth_error = _authenticate_request()
+        if auth_error:
+            status, payload, exc = auth_error
+            _log_request_error(status, payload.get('message', 'unauthorized'), exc=exc)
+            return jsonify(payload), status
         role = session.get('role')
         if role not in ENTRY_MANAGER_ROLES:
+            _log_request_error(403, 'Forbidden')
             return jsonify(status='error', message='Forbidden'), 403
         return fn(*args, **kwargs)
 
@@ -539,8 +631,14 @@ def require_class_context(fn):
     def wrapper(*args, **kwargs):
         if request.method == 'OPTIONS':
             return fn(*args, **kwargs)
+        _, auth_error = _authenticate_request()
+        if auth_error:
+            status, payload, exc = auth_error
+            _log_request_error(status, payload.get('message', 'unauthorized'), exc=exc)
+            return jsonify(payload), status
         class_id = _get_session_class_id()
         if class_id is None:
+            _log_request_error(403, 'class_required')
             return jsonify(status='error', message='class_required'), 403
         g.active_class_id = class_id
         return fn(*args, **kwargs)
@@ -1500,38 +1598,49 @@ def export_ics():
         headers={'Content-Disposition': 'attachment; filename="homework.ics"'}
     )
 
-@app.route('/entries')
+@app.route('/entries', methods=['GET'])
+@app.route('/api/entries', methods=['GET'])
 @require_class_context
-def entries():
+def entries_collection():
     """Gibt alle Einträge zurück."""
     class_id = _get_session_entry_class_id()
     if not class_id:
+        _log_request_error(403, 'class_required')
         return jsonify(status='error', message='class_required'), 403
-    conn = get_connection()
-    cursor = conn.cursor(dictionary=True)
-    cursor.execute(
-        """
-        SELECT id, beschreibung, datum, enddatum, startzeit, endzeit, typ, fach
-        FROM eintraege
-        WHERE class_id=%s
-        ORDER BY datum ASC, startzeit ASC
-        """,
-        (class_id,),
-    )
-    rows = cursor.fetchall()
-    for r in rows:
-        r['datum'] = r['datum'].strftime('%Y-%m-%d')
-        r['startzeit'] = _format_time_value(r.get('startzeit'))
-        r['endzeit'] = _format_time_value(r.get('endzeit'))
-        end_date = r.get('enddatum')
-        if isinstance(end_date, datetime.date):
-            r['enddatum'] = end_date.strftime('%Y-%m-%d')
-        elif not end_date:
-            r['enddatum'] = r['datum']
-        else:
-            r['enddatum'] = str(end_date)
-    cursor.close()
-    conn.close()
+    try:
+        conn = get_connection()
+    except Exception as exc:
+        _log_request_error(500, 'Could not load entries', exc=exc)
+        return jsonify(error='server_error', message='Could not load entries'), 500
+    with closing(conn):
+        cursor = conn.cursor(dictionary=True)
+        try:
+            cursor.execute(
+                """
+                SELECT id, beschreibung, datum, enddatum, startzeit, endzeit, typ, fach
+                FROM eintraege
+                WHERE class_id=%s
+                ORDER BY datum ASC, startzeit ASC
+                """,
+                (class_id,),
+            )
+            rows = cursor.fetchall()
+            for r in rows:
+                r['datum'] = r['datum'].strftime('%Y-%m-%d')
+                r['startzeit'] = _format_time_value(r.get('startzeit'))
+                r['endzeit'] = _format_time_value(r.get('endzeit'))
+                end_date = r.get('enddatum')
+                if isinstance(end_date, datetime.date):
+                    r['enddatum'] = end_date.strftime('%Y-%m-%d')
+                elif not end_date:
+                    r['enddatum'] = r['datum']
+                else:
+                    r['enddatum'] = str(end_date)
+        except mysql.connector.Error as exc:
+            _log_request_error(500, 'Could not load entries', exc=exc)
+            return jsonify(error='server_error', message='Could not load entries'), 500
+        finally:
+            cursor.close()
     return jsonify(rows)
 
 
@@ -3313,16 +3422,18 @@ def current_user_profile():
     if request.method == 'OPTIONS':
         return _cors_preflight()
 
-    user_id = session.get('user_id')
+    user_id = g.get('user', {}).get('id')
     try:
         user_id = int(user_id)
     except (TypeError, ValueError):
-        return jsonify(status='error', message='not_authenticated'), 401
+        _log_request_error(401, 'Invalid or expired token')
+        return jsonify(error='unauthorized', message='Invalid or expired token'), 401
 
     try:
         conn = get_connection()
-    except Exception:
-        return jsonify(status='error', message='database_unavailable'), 503
+    except Exception as exc:
+        _log_request_error(500, 'Could not load profile', exc=exc)
+        return jsonify(error='server_error', message='Could not load profile'), 500
 
     with closing(conn):
         cursor = conn.cursor(dictionary=True)
@@ -3331,7 +3442,6 @@ def current_user_profile():
                 cursor.execute(
                     """
                     SELECT u.id, u.email, u.role, u.class_id, u.created_at, u.updated_at,
-                           IFNULL(u.last_class_change, NULL) AS last_class_change,
                            c.slug AS class_slug, c.title AS class_title
                     FROM users u
                     LEFT JOIN classes c ON c.id = u.class_id
@@ -3356,16 +3466,6 @@ def current_user_profile():
 
                 class_change_remaining_days = None
                 class_change_available_at = None
-                last_change = row.get('last_class_change')
-                if last_change:
-                    try:
-                        next_allowed = last_change + datetime.timedelta(days=30)
-                        class_change_available_at = next_allowed.isoformat()
-                        remaining_seconds = (next_allowed - now).total_seconds()
-                        if remaining_seconds > 0:
-                            class_change_remaining_days = int((remaining_seconds + 86399) // 86400)
-                    except Exception:
-                        class_change_available_at = None
 
                 return jsonify(status='ok', data={
                     'id': row.get('id'),
@@ -3376,7 +3476,6 @@ def current_user_profile():
                     'class_title': row.get('class_title'),
                     'created_at': row.get('created_at').isoformat() if row.get('created_at') else None,
                     'account_age_days': account_age_days,
-                    'last_class_change': row.get('last_class_change').isoformat() if row.get('last_class_change') else None,
                     'class_change_remaining_days': class_change_remaining_days,
                     'class_change_available_at': class_change_available_at,
                 })
@@ -3391,8 +3490,9 @@ def current_user_profile():
                         "UPDATE users SET is_active=0, deleted_at=%s, updated_at=%s WHERE id=%s",
                         (deleted_at, deleted_at, user_id),
                     )
-                except mysql.connector.Error:
-                    return jsonify(status='error', message='database_unavailable'), 503
+                except mysql.connector.Error as exc:
+                    _log_request_error(500, 'Could not load profile', exc=exc)
+                    return jsonify(error='server_error', message='Could not load profile'), 500
 
                 if cursor.rowcount == 0:
                     return jsonify(status='error', message='user_not_found'), 404
@@ -3404,8 +3504,12 @@ def current_user_profile():
                     session.pop(k, None)
                 return jsonify(status='ok')
 
-        except mysql.connector.Error:
-            return jsonify(status='error', message='database_unavailable'), 503
+        except mysql.connector.Error as exc:
+            _log_request_error(500, 'Could not load profile', exc=exc)
+            return jsonify(error='server_error', message='Could not load profile'), 500
+        except Exception as exc:
+            _log_request_error(500, 'Could not load profile', exc=exc)
+            return jsonify(error='server_error', message='Could not load profile'), 500
         finally:
             cursor.close()
 
@@ -3670,7 +3774,7 @@ def _cors_preflight():
     resp.headers.update({
         'Access-Control-Allow-Origin': origin,
         'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, X-Role',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Role',
         'Access-Control-Allow-Credentials': 'true',
         'Vary': 'Origin',
     })
@@ -3927,6 +4031,3 @@ def add_cors_headers(response):
 # ---------- SERVER START ----------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=False)
-
-
-
