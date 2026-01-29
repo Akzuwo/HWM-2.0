@@ -630,6 +630,13 @@ main.help-main {
 }
 
 @media (max-width: 720px) {
+  main.home-main,
+  main.changelog-main,
+  main.help-main,
+  .changelog-topbar {
+    box-sizing: border-box;
+    padding-inline: clamp(1.5rem, 5vw, 3rem);
+  }
 
 
 
