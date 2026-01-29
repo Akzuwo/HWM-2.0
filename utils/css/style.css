@@ -863,6 +863,7 @@ button {
     background: rgba(255, 255, 255, 0.1);
     color: #fff;
     outline: none;
+    filter: brightness(1.05);
 }
 
 .btn-login {
