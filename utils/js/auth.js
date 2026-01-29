@@ -2254,8 +2254,17 @@ function initLanguageSelector() {
                 return;
             }
             setStoredLocale(lang);
-            if (window.hmI18n && typeof window.hmI18n.setLocale === 'function') {
-                window.hmI18n.setLocale(lang);
+            const applyLocale = () => {
+                if (window.hmI18n && typeof window.hmI18n.setLocale === 'function') {
+                    window.hmI18n.setLocale(lang);
+                }
+            };
+            const animateSwap =
+                window.hmI18nAnimate?.animateLanguageSwap || window.hmI18n?.animateLanguageSwap;
+            if (typeof animateSwap === 'function') {
+                animateSwap(document, applyLocale);
+            } else {
+                applyLocale();
             }
             dropdowns.forEach((dropdownEl) => {
                 const toggle = dropdownEl.querySelector('[data-language-toggle]');
