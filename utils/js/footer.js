@@ -61,9 +61,9 @@
 
     const locale = currentLocale();
     const base = `/${locale}/`;
-    const imprint = `${base}impressum.html`;
-    const privacy = `${base}datenschutz.html`;
-    const changelog = `${base}changelog.html`;
+    const imprint = `impressum.html`;
+    const privacy = `datenschutz.html`;
+    const changelog = `changelog.html`;
 
     const createAnchor = (href, label) => {
       const anchor = document.createElement('a');
