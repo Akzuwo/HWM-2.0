@@ -25,6 +25,49 @@
         </p>
       </div>
     </section>
+    <!-- Mobile-only calendar UI -->
+    <div class="calendar-mobile-bar" data-calendar-mobile-bar>
+      <div class="calendar-mobile-bar__date" data-calendar-mobile-date>Mo, 29. Jan</div>
+      <div class="calendar-mobile-bar__class">
+        <label class="visually-hidden" for="calendar-class-select-mobile">Class</label>
+        <select id="calendar-class-select-mobile" data-calendar-mobile-class-select></select>
+      </div>
+      <button
+        type="button"
+        class="calendar-mobile-bar__filter"
+        data-calendar-filter-toggle
+        aria-label="Filter calendar entries"
+      >
+        <span aria-hidden="true">⚙️</span>
+      </button>
+    </div>
+    <div class="calendar-mobile-controls" data-calendar-mobile-controls>
+      <div class="calendar-mobile-view-switch" role="group" aria-label="Select calendar view">
+        <button type="button" class="calendar-mobile-view-switch__button" data-mobile-view="day">
+          <span aria-hidden="true">📋</span>
+          <span>Day</span>
+        </button>
+        <button type="button" class="calendar-mobile-view-switch__button" data-mobile-view="week">
+          <span aria-hidden="true">🗓️</span>
+          <span>Week</span>
+        </button>
+        <button type="button" class="calendar-mobile-view-switch__button" data-mobile-view="month">
+          <span aria-hidden="true">📆</span>
+          <span>Month</span>
+        </button>
+      </div>
+      <div class="calendar-mobile-nav" role="group" aria-label="Calendar navigation">
+        <button type="button" class="calendar-mobile-nav__button" data-mobile-nav="prev" aria-label="Previous">
+          <span aria-hidden="true">◀</span>
+        </button>
+        <span class="calendar-mobile-nav__label" data-calendar-mobile-label>Current</span>
+        <button type="button" class="calendar-mobile-nav__button" data-mobile-nav="next" aria-label="Next">
+          <span aria-hidden="true">▶</span>
+        </button>
+        <button type="button" class="calendar-mobile-nav__button" data-mobile-nav="today">Today</button>
+      </div>
+      <div class="calendar-mobile-carousel" data-calendar-mobile-carousel></div>
+    </div>
     <section class="calendar-shell" aria-live="polite">
       <div class="calendar-weekstrip" data-week-strip>
         <span class="calendar-weekstrip__label" data-i18n="calendar.weekStrip.label">Calendar weeks</span>
@@ -145,8 +188,45 @@
       >
         Loading calendar …
       </div>
+      <!-- Mobile-only agenda and month views -->
+      <div class="calendar-agenda-view" data-calendar-agenda></div>
+      <div class="calendar-month-mobile" data-calendar-month></div>
     </section>
   </main>
+
+  <!-- Mobile-only filter bottom sheet -->
+  <div class="calendar-filter-sheet hm-modal-overlay" data-calendar-filter-sheet>
+    <div class="calendar-filter-sheet__panel" role="dialog" aria-modal="true" aria-label="Calendar filters">
+      <div class="calendar-filter-sheet__header">
+        <h2 class="calendar-filter-sheet__title">Filter &amp; legend</h2>
+        <button type="button" class="calendar-filter-sheet__close" data-calendar-filter-close aria-label="Close">
+          ✕
+        </button>
+      </div>
+      <div class="calendar-filter-sheet__body">
+        <label class="calendar-filter-toggle" data-filter-type="hausaufgabe">
+          <input type="checkbox" checked />
+          <span class="calendar-filter-toggle__dot calendar-filter-toggle__dot--hausaufgabe"></span>
+          <span>Homework</span>
+        </label>
+        <label class="calendar-filter-toggle" data-filter-type="pruefung">
+          <input type="checkbox" checked />
+          <span class="calendar-filter-toggle__dot calendar-filter-toggle__dot--pruefung"></span>
+          <span>Exam</span>
+        </label>
+        <label class="calendar-filter-toggle" data-filter-type="event">
+          <input type="checkbox" checked />
+          <span class="calendar-filter-toggle__dot calendar-filter-toggle__dot--event"></span>
+          <span>Event</span>
+        </label>
+        <label class="calendar-filter-toggle" data-filter-type="ferien">
+          <input type="checkbox" checked />
+          <span class="calendar-filter-toggle__dot calendar-filter-toggle__dot--ferien"></span>
+          <span>Holidays &amp; Breaks</span>
+        </label>
+      </div>
+    </div>
+  </div>
 
   <footer
     class="calendar-action-bar"
@@ -620,5 +700,6 @@
   <script src="utils/js/auth.js" defer></script>
   <script src="utils/js/calendar-permissions.js" defer></script>
   <script src="utils/js/kalender.js" defer></script>
+  <script src="utils/js/calendar-mobile.js" defer></script>
 </body>
 </html>
