@@ -149,6 +149,24 @@ let currentClassSlug = typeof CLASS_STORAGE.getSlug === 'function' ? (CLASS_STOR
 const t = window.hmI18n ? window.hmI18n.scope('calendar') : (key, fallback) => fallback;
 const modalT = window.hmI18n ? window.hmI18n.scope('calendar.modal') : (key, fallback) => fallback;
 
+const MOBILE_DATA_EVENT = 'hm-calendar-events';
+let lastCalendarEvents = [];
+
+function publishMobileCalendarState({ events = lastCalendarEvents, classId = currentClassId, classSlug = currentClassSlug, error = '' } = {}) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  lastCalendarEvents = events || [];
+  const detail = {
+    events: lastCalendarEvents,
+    classId,
+    classSlug,
+    error
+  };
+  window.hmCalendarData = detail;
+  window.dispatchEvent(new CustomEvent(MOBILE_DATA_EVENT, { detail }));
+}
+
 const classSelectorText = {
   label: t('classSelector.label', 'Class'),
   placeholder: t('classSelector.placeholder', 'Select class'),
@@ -1351,6 +1369,7 @@ async function loadCalendar() {
   const classId = context?.classId || currentClassId;
   if (!classId) {
     const message = classSelectorEnabled ? classSelectorText.required : unauthorizedMessage;
+    publishMobileCalendarState({ events: [], classId, classSlug: currentClassSlug, error: message });
     showCalendarError(calendarEl, message);
     return;
   }
@@ -1363,6 +1382,7 @@ async function loadCalendar() {
     if (await responseRequiresClassContext(res)) {
       setCurrentClassContext('', '');
       const message = classSelectorEnabled ? classSelectorText.required : unauthorizedMessage;
+      publishMobileCalendarState({ events: [], classId: '', classSlug: '', error: message });
       showCalendarError(calendarEl, message);
       return;
     }
@@ -1372,9 +1392,16 @@ async function loadCalendar() {
 
     const entries = await res.json();
     const events = entries.map(normaliseEvent);
+    publishMobileCalendarState({ events, classId, classSlug: currentClassSlug, error: '' });
     initialiseCalendar(events);
   } catch (err) {
     console.error('Failed to load calendar:', err);
+    publishMobileCalendarState({
+      events: [],
+      classId: currentClassId,
+      classSlug: currentClassSlug,
+      error: t('status.error', 'Unable to load calendar entries!')
+    });
     showCalendarError(calendarEl, t('status.error', 'Unable to load calendar entries!'));
   }
 }
