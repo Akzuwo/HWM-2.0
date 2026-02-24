@@ -2584,6 +2584,20 @@ const entryClassPicker = (() => {
         return Boolean(sessionState.isAdmin || sessionState.isClassAdmin);
     }
 
+    function setFieldVisibility(container, options, visible) {
+        if (!container) {
+            return;
+        }
+        const show = Boolean(visible) && shouldAllowSelection();
+        container.hidden = !show;
+        if (options) {
+            options.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
+                checkbox.disabled = !show;
+            });
+        }
+        updateHint(container, show && currentMultipleAllowed);
+    }
+
     function updateHint(container, shouldShow) {
         if (!container) {
             return;
@@ -2866,6 +2880,10 @@ const entryClassPicker = (() => {
             const allowMultiple = resolveEffectiveMultiple();
             applyMultipleState(options, container, allowMultiple);
         },
+        setVisible(visible) {
+            const { container, options } = resolveEntryClassElements();
+            setFieldVisibility(container, options, visible);
+        },
         isMultipleAllowed() {
             return currentMultipleAllowed;
         },
@@ -2955,7 +2973,7 @@ function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES)
         const isHoliday = typeSelect && typeSelect.value === 'ferien';
         const isTodo = typeSelect && typeSelect.value === 'todo';
         const allowEmptySubject = form.dataset.allowEmptySubject === 'true';
-        const requireStart = !isHoliday && form.id === 'entry-form';
+        const requireStart = !isHoliday && !isTodo && form.id === 'entry-form';
 
         if (dateInput) {
             const iso = parseSwissDate(dateInput.value);
@@ -3006,7 +3024,7 @@ function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES)
         }
 
         if (startInput) {
-            if (isHoliday) {
+            if (isHoliday || isTodo) {
                 startInput.value = '';
                 startInput.disabled = true;
                 startInput.required = false;
@@ -3023,7 +3041,7 @@ function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES)
         }
 
         if (endInput) {
-            if (isHoliday || !startInput || !startInput.value) {
+            if (isHoliday || isTodo || !startInput || !startInput.value) {
                 endInput.value = '';
                 endInput.disabled = true;
                 endInput.setCustomValidity('');
@@ -3063,6 +3081,9 @@ function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES)
         if (entryClassPickerController && typeof entryClassPickerController.setMultipleAllowed === 'function') {
             entryClassPickerController.setMultipleAllowed(isTodo ? false : allowMultipleClasses);
         }
+        if (entryClassPickerController && typeof entryClassPickerController.setVisible === 'function') {
+            entryClassPickerController.setVisible(!isTodo);
+        }
 
         if (eventTitleGroup) {
             eventTitleGroup.classList.toggle('is-hidden', !isEvent);
@@ -3076,10 +3097,10 @@ function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES)
         }
 
         if (startGroup) {
-            startGroup.classList.toggle('is-hidden', isHoliday);
+            startGroup.classList.toggle('is-hidden', isHoliday || isTodo);
         }
         if (endGroup) {
-            endGroup.classList.toggle('is-hidden', isHoliday);
+            endGroup.classList.toggle('is-hidden', isHoliday || isTodo);
         }
         if (endDateGroup) {
             endDateGroup.classList.toggle('is-hidden', !isHoliday);

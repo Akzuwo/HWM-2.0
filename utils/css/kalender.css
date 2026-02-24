@@ -1770,6 +1770,34 @@ body.hm-modal-open {
   --_select-option-text: var(--select-subject-option-text);
 }
 
+.hm-modal__field[data-field='type'],
+.hm-modal__field[data-field='subject'] {
+  padding: 0.72rem 0.78rem 0.78rem;
+  border-radius: calc(var(--radius-sm) + 4px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.015));
+}
+
+.hm-modal__field[data-field='type'] label,
+.hm-modal__field[data-field='subject'] label {
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+}
+
+.hm-select--type,
+.hm-select--subject {
+  min-height: 2.62rem;
+  border-width: 1.5px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.hm-select--type:hover,
+.hm-select--subject:hover {
+  transform: translateY(-1px);
+}
+
 .hm-select--classes {
   --_select-bg: var(--select-class-bg);
   --_select-hover-bg: var(--select-class-hover-bg);

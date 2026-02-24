@@ -1861,6 +1861,8 @@ def todos_collection():
     datum = start_date.isoformat()
     enddatum = end_date.isoformat() if end_date is not None else datum
 
+    entry_class_id = _get_session_entry_class_id() or DEFAULT_ENTRY_CLASS_ID
+
     conn = get_connection()
     cur = conn.cursor()
     try:
@@ -1869,7 +1871,7 @@ def todos_collection():
             INSERT INTO eintraege (class_id, beschreibung, datum, enddatum, startzeit, endzeit, typ, fach, owner_user_id, is_private)
             VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
             """,
-            (DEFAULT_ENTRY_CLASS_ID, beschreibung, datum, enddatum, startzeit, endzeit, 'todo', '', int(user_id), 1),
+            (entry_class_id, beschreibung, datum, enddatum, startzeit, endzeit, 'todo', '', int(user_id), 1),
         )
         entry_id = cur.lastrowid
         conn.commit()
