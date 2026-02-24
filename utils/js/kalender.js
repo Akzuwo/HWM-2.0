@@ -208,6 +208,13 @@ const unauthorizedMessage = t(
 );
 const exportUnauthorizedMessage = actionText.exportUnauthorized || unauthorizedMessage;
 
+function redirectToLogin() {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  window.location.href = 'login.html';
+}
+
 const modalText = {
   noDescription: modalT('noDescription', '<em>No description provided.</em>'),
   subjectLabel: modalT('labels.subject', 'Subject'),
@@ -421,6 +428,10 @@ function debounce(fn, wait = 160) {
 async function fetchSessionClassContext() {
   try {
     const res = await fetchWithSession(`${API_BASE_URL}/api/session/class`);
+    if (res.status === 401) {
+      redirectToLogin();
+      return null;
+    }
     if (!res.ok) {
       return null;
     }
@@ -970,6 +981,11 @@ async function handleExportClick(event) {
     }
 
     const response = await fetchWithSession(exportUrl.toString());
+    if (response.status === 401) {
+      showOverlay(exportUnauthorizedMessage, 'error');
+      redirectToLogin();
+      return;
+    }
     if (await responseRequiresClassContext(response)) {
       setCurrentClassContext('', '');
       showOverlay(classSelectorText.required, 'error');
@@ -1386,6 +1402,16 @@ async function loadCalendar() {
     }
 
     const res = await fetchWithSession(entriesUrl.toString());
+    if (res.status === 401) {
+      publishMobileCalendarState({
+        events: [],
+        classId: '',
+        classSlug: '',
+        error: unauthorizedMessage
+      });
+      redirectToLogin();
+      return;
+    }
     if (await responseRequiresClassContext(res)) {
       setCurrentClassContext('', '');
       const message = classSelectorEnabled ? classSelectorText.required : unauthorizedMessage;
