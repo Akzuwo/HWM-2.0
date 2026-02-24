@@ -19,10 +19,11 @@ function fetchWithSession(url, options = {}) {
 const CALENDAR_PERMISSIONS = window.hmCalendar?.permissions || null;
 const FALLBACK_PERMISSION_STATE = CALENDAR_PERMISSIONS
   ? CALENDAR_PERMISSIONS.getState()
-  : { role: 'guest', canManageEntries: false, classSelectorEnabled: false };
+  : { role: 'guest', canManageEntries: false, canCreatePersonalTodos: false, classSelectorEnabled: false };
 
 let role = FALLBACK_PERMISSION_STATE.role;
 let userCanManageEntries = FALLBACK_PERMISSION_STATE.canManageEntries;
+let canCreatePersonalTodos = FALLBACK_PERMISSION_STATE.canCreatePersonalTodos;
 let classSelectorEnabled = FALLBACK_PERMISSION_STATE.classSelectorEnabled;
 
 function applyPermissionSnapshot(nextState) {
@@ -31,6 +32,7 @@ function applyPermissionSnapshot(nextState) {
   }
   role = nextState.role;
   userCanManageEntries = nextState.canManageEntries;
+  canCreatePersonalTodos = Boolean(nextState.canCreatePersonalTodos);
   classSelectorEnabled = nextState.classSelectorEnabled;
 }
 
@@ -48,7 +50,8 @@ function applyActionBarPermissions() {
   if (CALENDAR_PERMISSIONS) {
     CALENDAR_PERMISSIONS.updateActionBarPermissions({
       onCreate: () => showEntryForm(),
-      canManageEntries: userCanManageEntries
+      canManageEntries: userCanManageEntries,
+      canCreatePersonalTodos
     });
     return;
   }
@@ -67,7 +70,7 @@ function applyActionBarPermissions() {
     return;
   }
 
-  if (!userCanManageEntries) {
+  if (!userCanManageEntries && !canCreatePersonalTodos) {
     createBtn.disabled = true;
     createBtn.setAttribute('aria-disabled', 'true');
   } else {
@@ -103,6 +106,7 @@ if (CALENDAR_PERMISSIONS) {
       : {
           role,
           canManageEntries: userCanManageEntries,
+          canCreatePersonalTodos,
           classSelectorEnabled
         };
 
@@ -180,7 +184,8 @@ const TYPE_LABELS = {
   hausaufgabe: t('legend.homework', 'Homework'),
   pruefung: t('legend.exam', 'Exam'),
   event: t('legend.event', 'Event'),
-  ferien: t('legend.holiday', 'Holidays & Breaks')
+  ferien: t('legend.holiday', 'Holidays & Breaks'),
+  todo: t('legend.todo', 'ToDo')
 };
 
 const actionText = {
@@ -587,11 +592,11 @@ async function initialiseClassSelector() {
   container.dataset.hmInitialised = 'true';
 }
 
-function toggleViewMode(canManage) {
+function toggleViewMode(canEdit) {
   const viewMode = document.getElementById('fc-view-mode');
   const editForm = document.getElementById('fc-edit-form');
   if (!viewMode || !editForm) return;
-  if (canManage) {
+  if (canEdit) {
     viewMode.classList.add('is-hidden');
     editForm.classList.remove('is-hidden');
   } else {
@@ -609,7 +614,7 @@ function setModalDescription(html) {
 
 function openModal(event) {
   const { id } = event;
-  const { type, typeLabel, description, fach, datum, enddatum, startzeit, endzeit } = event.extendedProps;
+  const { type, typeLabel, description, fach, datum, enddatum, startzeit, endzeit, canEdit } = event.extendedProps;
 
   const overlay = document.getElementById('fc-modal-overlay');
   const editForm = document.getElementById('fc-edit-form');
@@ -699,9 +704,10 @@ function openModal(event) {
     editFormController.evaluate();
   }
 
-  toggleViewMode(userCanManageEntries);
+  const canEditEvent = Boolean(canEdit);
+  toggleViewMode(canEditEvent);
 
-  const initialFocusTarget = userCanManageEntries
+  const initialFocusTarget = canEditEvent
     ? document.querySelector('#fc-edit-form [data-hm-modal-initial-focus]')
     : overlay.querySelector('.hm-modal__close');
 
@@ -776,6 +782,7 @@ async function saveEdit(evt) {
   const submitButton = form.querySelector('[data-role="submit"]');
 
   const type = typeSelect ? typeSelect.value : '';
+  const isTodo = type === 'todo';
   const isoDate = dateInput ? parseSwissDate(dateInput.value.trim()) : null;
   if (!isoDate) {
     showOverlay(ENTRY_FORM_MESSAGES.invalidDate, 'error');
@@ -818,36 +825,38 @@ async function saveEdit(evt) {
 
   const resolvedEndDate = endDateIso || isoDate;
 
-  const context = await ensureSessionClassContext();
-  const classId = context?.classId || currentClassId;
-  if (!classId) {
-    showOverlay(ENTRY_FORM_MESSAGES.missingClass || unauthorizedMessage, 'error');
-    return;
-  }
-
   if (submitButton) {
     submitButton.disabled = true;
     submitButton.textContent = modalButtons.saveLoading;
   }
 
   try {
-    const res = await fetchWithSession(`${API_BASE_URL}/update_entry`, {
+    const targetUrl = isTodo ? `${API_BASE_URL}/api/todos/${id}` : `${API_BASE_URL}/update_entry`;
+    const payload = isTodo
+      ? {
+          datum: isoDate,
+          beschreibung: payloadDescription,
+          startzeit: startValue ? `${startValue}:00` : null,
+          endzeit: endValue ? `${endValue}:00` : null,
+          enddatum: resolvedEndDate
+        }
+      : {
+          id,
+          type,
+          date: isoDate,
+          description: payloadDescription,
+          startzeit: startValue ? `${startValue}:00` : null,
+          endzeit: endValue ? `${endValue}:00` : null,
+          enddatum: resolvedEndDate,
+          fach: subject
+        };
+    const res = await fetchWithSession(targetUrl, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
         'X-Role': role
       },
-      body: JSON.stringify({
-        id,
-        type,
-        date: isoDate,
-        description: payloadDescription,
-        startzeit: startValue ? `${startValue}:00` : null,
-        endzeit: endValue ? `${endValue}:00` : null,
-        enddatum: resolvedEndDate,
-        fach: subject,
-        class_id: classId
-      })
+      body: JSON.stringify(payload)
     });
     if (await responseRequiresClassContext(res)) {
       setCurrentClassContext('', '');
@@ -883,19 +892,11 @@ async function deleteEntry() {
     deleteButton.textContent = modalButtons.deleteLoading;
   }
 
-  const context = await ensureSessionClassContext();
-  const classId = context?.classId || currentClassId;
-  if (!classId) {
-    showOverlay(ENTRY_FORM_MESSAGES.missingClass || unauthorizedMessage, 'error');
-    if (deleteButton) {
-      deleteButton.disabled = false;
-      deleteButton.textContent = modalButtons.delete;
-    }
-    return;
-  }
-
-  const deleteUrl = new URL(`${API_BASE_URL}/delete_entry/${id}`);
-  deleteUrl.searchParams.set('class_id', classId);
+  const typeSelect = document.getElementById('fc-edit-type');
+  const isTodo = typeSelect ? typeSelect.value === 'todo' : false;
+  const deleteUrl = isTodo
+    ? new URL(`${API_BASE_URL}/api/todos/${id}`)
+    : new URL(`${API_BASE_URL}/delete_entry/${id}`);
 
   try {
     const res = await fetchWithSession(deleteUrl.toString(), {
@@ -962,13 +963,11 @@ async function handleExportClick(event) {
   try {
     const context = await ensureSessionClassContext();
     const classId = context?.classId || currentClassId;
-    if (!classId) {
-      showOverlay(classSelectorText.required, 'error');
-      return;
-    }
 
     const exportUrl = new URL(`${API_BASE_URL}/calendar.ics`);
-    exportUrl.searchParams.set('class_id', classId);
+    if (classId) {
+      exportUrl.searchParams.set('class_id', classId);
+    }
 
     const response = await fetchWithSession(exportUrl.toString());
     if (await responseRequiresClassContext(response)) {
@@ -1107,13 +1106,22 @@ function normaliseEvent(entry) {
   const typeLabel = TYPE_LABELS[entry.typ] || entry.typ;
   const subject = entry.fach || '';
   const { eventTitle, description: descriptionBody } = splitEventDescription(entry.typ, entry.beschreibung || '');
-  const displaySubject = entry.typ === 'event' ? (eventTitle || typeLabel) : (subject || typeLabel);
+  const todoTitle = (entry.beschreibung || '').split('\n')[0].trim();
+  const displaySubject = entry.typ === 'event'
+    ? (eventTitle || typeLabel)
+    : entry.typ === 'todo'
+      ? (todoTitle || typeLabel)
+      : (subject || typeLabel);
   const startTime = entry.startzeit ? entry.startzeit.trim() : '';
   const endTime = entry.endzeit ? entry.endzeit.trim() : '';
   const endDate = entry.enddatum ? entry.enddatum.trim() : '';
   const startLabel = parseTimeLabel(startTime);
   const endLabel = parseTimeLabel(endTime);
   const hasDateRange = Boolean(endDate && endDate !== entry.datum);
+
+  const isPrivate = Boolean(entry.is_private);
+  const isOwned = Boolean(entry.is_owned);
+  const canEdit = isPrivate ? isOwned : userCanManageEntries;
 
   const eventConfig = {
     id: String(entry.id),
@@ -1132,7 +1140,10 @@ function normaliseEvent(entry) {
       eventTitle,
       descriptionBody,
       startLabel,
-      endLabel
+      endLabel,
+      isPrivate,
+      isOwned,
+      canEdit
     }
   };
 
@@ -1367,16 +1378,12 @@ async function loadCalendar() {
 
   const context = await ensureSessionClassContext();
   const classId = context?.classId || currentClassId;
-  if (!classId) {
-    const message = classSelectorEnabled ? classSelectorText.required : unauthorizedMessage;
-    publishMobileCalendarState({ events: [], classId, classSlug: currentClassSlug, error: message });
-    showCalendarError(calendarEl, message);
-    return;
-  }
 
   try {
     const entriesUrl = new URL(`${API_BASE_URL}/entries`);
-    entriesUrl.searchParams.set('class_id', classId);
+    if (classId) {
+      entriesUrl.searchParams.set('class_id', classId);
+    }
 
     const res = await fetchWithSession(entriesUrl.toString());
     if (await responseRequiresClassContext(res)) {

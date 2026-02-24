@@ -18,7 +18,8 @@ const defaultFilters = {
   hausaufgabe: true,
   pruefung: true,
   event: true,
-  ferien: true
+  ferien: true,
+  todo: true
 };
 
 const state = {

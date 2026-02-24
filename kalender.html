@@ -176,6 +176,10 @@
             <span class="calendar-legend__dot" aria-hidden="true"></span>
             <span data-i18n="calendar.legend.holiday">Holidays &amp; Breaks</span>
           </span>
+          <span class="calendar-legend__item" data-type="todo" role="listitem">
+            <span class="calendar-legend__dot" aria-hidden="true"></span>
+            <span data-i18n="calendar.legend.todo">ToDo</span>
+          </span>
         </div>
       </div>
       <div
@@ -223,6 +227,11 @@
           <input type="checkbox" checked />
           <span class="calendar-filter-toggle__dot calendar-filter-toggle__dot--ferien"></span>
           <span>Holidays &amp; Breaks</span>
+        </label>
+        <label class="calendar-filter-toggle" data-filter-type="todo">
+          <input type="checkbox" checked />
+          <span class="calendar-filter-toggle__dot calendar-filter-toggle__dot--todo"></span>
+          <span data-i18n="calendar.legend.todo">ToDo</span>
         </label>
       </div>
     </div>
@@ -340,6 +349,7 @@
               <option value="pruefung" data-i18n="calendar.legend.exam">Exam</option>
               <option value="event" data-i18n="calendar.legend.event">Event</option>
               <option value="ferien" data-i18n="calendar.legend.holiday">Holidays &amp; Breaks</option>
+              <option value="todo" data-i18n="calendar.legend.todo">ToDo</option>
             </select>
           </div>
 
@@ -488,6 +498,7 @@
               <option value="pruefung" data-i18n="calendar.legend.exam">Exam</option>
               <option value="event" data-i18n="calendar.legend.event">Event</option>
               <option value="ferien" data-i18n="calendar.legend.holiday">Holidays &amp; Breaks</option>
+              <option value="todo" data-i18n="calendar.legend.todo">ToDo</option>
             </select>
           </div>
 
@@ -542,13 +553,13 @@
             class="hm-modal__field"
             data-field="classes"
             data-entry-class-field
-            data-entry-class-hint="Hold Ctrl (Windows) or Cmd (Mac) to select multiple classes."
+            data-entry-class-hint="Select one or more classes."
             hidden
           >
-            <label for="entry-class-ids">Classes</label>
-            <select id="entry-class-ids" class="hm-select hm-select--classes" data-entry-class-select>
-              <option value="" disabled>Loading classes…</option>
-            </select>
+            <label>Classes</label>
+            <div class="entry-class-checkboxes" data-entry-class-options>
+              <p class="field-hint">Loading classes…</p>
+            </div>
           </div>
 
           <div class="hm-modal__field" data-field="date">

@@ -174,7 +174,7 @@
           create: {
             label: 'Neuer Eintrag',
             tooltip: 'Neuen Kalendereintrag erstellen',
-            disabled: 'Nur Admins können Einträge erstellen',
+            disabled: 'Bitte melde dich an, um persönliche ToDos zu erstellen.',
           },
           export: {
             label: 'Exportieren',
@@ -202,6 +202,7 @@
           exam: 'Prüfung',
           event: 'Event',
           holiday: 'Ferien & Feiertage',
+          todo: 'ToDo',
         },
         formMessages: {
           invalidDate: 'Bitte gib ein gültiges Datum im Format TT.MM.JJJJ ein.',
@@ -960,7 +961,7 @@
           create: {
             label: 'New entry',
             tooltip: 'Create a new calendar entry',
-            disabled: 'Only admins can create entries',
+            disabled: 'Please sign in to create personal todos.',
           },
           export: {
             label: 'Export',
@@ -988,6 +989,7 @@
           exam: 'Exam',
           event: 'Event',
           holiday: 'Holidays & breaks',
+          todo: 'ToDo',
         },
         formMessages: {
           invalidDate: 'Please enter a valid date (DD.MM.YYYY).',
@@ -1748,7 +1750,7 @@
           create: {
             label: 'Nuova voce',
             tooltip: 'Crea una nuova voce di calendario',
-            disabled: 'Solo gli admin possono creare voci',
+            disabled: 'Accedi per creare ToDo personali.',
           },
           export: {
             label: 'Esporta',
@@ -1776,6 +1778,7 @@
           exam: 'Verifica',
           event: 'Evento',
           holiday: 'Vacanze e pause',
+          todo: 'ToDo',
         },
         formMessages: {
           invalidDate: 'Inserisci una data valida nel formato GG.MM.AAAA.',
@@ -2533,7 +2536,7 @@
           create: {
             label: 'Nouvelle entrée',
             tooltip: 'Créer une nouvelle entrée de calendrier',
-            disabled: 'Seuls les administrateurs peuvent créer des entrées',
+            disabled: 'Connecte-toi pour créer des ToDos personnels.',
           },
           export: {
             label: 'Exporter',
@@ -2561,6 +2564,7 @@
           exam: 'Évaluation',
           event: 'Événement',
           holiday: 'Vacances et congés',
+          todo: 'ToDo',
         },
         formMessages: {
           invalidDate: 'Veuillez saisir une date valide au format JJ.MM.AAAA.',

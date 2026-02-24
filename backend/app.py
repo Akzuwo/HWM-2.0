@@ -626,6 +626,21 @@ def require_entry_manager(fn):
     return wrapper
 
 
+def require_authenticated(fn):
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        if request.method == 'OPTIONS':
+            return fn(*args, **kwargs)
+        _, auth_error = _authenticate_request()
+        if auth_error:
+            status, payload, exc = auth_error
+            _log_request_error(status, payload.get('message', 'unauthorized'), exc=exc)
+            return jsonify(payload), status
+        return fn(*args, **kwargs)
+
+    return wrapper
+
+
 def require_class_context(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
@@ -1258,6 +1273,18 @@ def _validate_columns(table_name, columns, requirements):
                 f"Column '{column}' in table '{table_name}' has type '{columns.get(column)}', expected prefix one of: {prefixes}."
             )
 
+def _enum_values_from_column_definition(definition: str) -> List[str]:
+    text = (definition or '').strip()
+    if not text.lower().startswith('enum(') or not text.endswith(')'):
+        return []
+    inner = text[text.find('(') + 1 : -1]
+    values = []
+    for part in inner.split(','):
+        candidate = part.strip().strip("'").strip('"')
+        if candidate:
+            values.append(candidate)
+    return values
+
 
 # Tabelle für den Stundenplan sicherstellen
 def ensure_stundenplan_table():
@@ -1316,8 +1343,13 @@ def ensure_entries_table():
                 "endzeit": ("time",),
                 "typ": ("enum",),
                 "fach": ("varchar",),
+                "owner_user_id": ("int",),
+                "is_private": ("tinyint",),
             },
         )
+        typ_values = _enum_values_from_column_definition(columns.get('typ', ''))
+        if 'todo' not in typ_values:
+            raise RuntimeError("Column 'typ' in table 'eintraege' must contain enum value 'todo'. Run database migrations.")
     finally:
         cur.close()
         conn.close()
@@ -1536,24 +1568,42 @@ def root():
     return send_from_directory(app.static_folder, "login.html")
 
 @app.route('/calendar.ics')
-@require_class_context
+@require_authenticated
 def export_ics():
     """Erzeugt eine iCalendar-Datei mit allen zukünftigen Einträgen."""
     class_id = _get_session_entry_class_id()
-    if not class_id:
-        return jsonify(status='error', message='class_required'), 403
+    user_id = session.get('user_id')
+    include_todos = request.args.get('include_todos', '1') != '0'
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute(
-        """
-        SELECT id, typ, beschreibung, datum, enddatum, fach
-        FROM eintraege
-        WHERE class_id=%s AND datum >= CURDATE()
-        ORDER BY datum ASC
-        """,
-        (class_id,),
-    )
-    entries = cursor.fetchall()
+    entries = []
+    if class_id:
+        cursor.execute(
+            """
+            SELECT id, typ, beschreibung, datum, enddatum, fach
+            FROM eintraege
+            WHERE class_id=%s
+              AND COALESCE(is_private, 0)=0
+              AND datum >= CURDATE()
+            ORDER BY datum ASC
+            """,
+            (class_id,),
+        )
+        entries.extend(cursor.fetchall() or [])
+    if include_todos and user_id is not None:
+        cursor.execute(
+            """
+            SELECT id, typ, beschreibung, datum, enddatum, fach
+            FROM eintraege
+            WHERE COALESCE(is_private, 0)=1
+              AND owner_user_id=%s
+              AND typ='todo'
+              AND datum >= CURDATE()
+            ORDER BY datum ASC
+            """,
+            (int(user_id),),
+        )
+        entries.extend(cursor.fetchall() or [])
     cursor.close()
     conn.close()
 
@@ -1588,7 +1638,8 @@ def export_ics():
         ev.begin = due
         ev.make_all_day()
         ev.end = end_due + datetime.timedelta(days=1)
-        ev.uid = f"eintrag-{e['id']}@homework-manager.akzuwo.ch"
+        uid_prefix = 'todo' if str(e.get('typ') or '').lower() == 'todo' else 'eintrag'
+        ev.uid = f"{uid_prefix}-{e['id']}@homework-manager.akzuwo.ch"
         cal.events.add(ev)
 
     ics_text = str(cal)
@@ -1600,13 +1651,14 @@ def export_ics():
 
 @app.route('/entries', methods=['GET'])
 @app.route('/api/entries', methods=['GET'])
-@require_class_context
+@require_authenticated
 def entries_collection():
     """Gibt alle Einträge zurück."""
     class_id = _get_session_entry_class_id()
-    if not class_id:
-        _log_request_error(403, 'class_required')
-        return jsonify(status='error', message='class_required'), 403
+    user_id = session.get('user_id')
+    if user_id is None:
+        _log_request_error(401, 'unauthorized')
+        return jsonify(error='unauthorized', message='Missing session'), 401
     try:
         conn = get_connection()
     except Exception as exc:
@@ -1615,18 +1667,45 @@ def entries_collection():
     with closing(conn):
         cursor = conn.cursor(dictionary=True)
         try:
+            rows = []
+            if class_id:
+                cursor.execute(
+                    """
+                    SELECT id, beschreibung, datum, enddatum, startzeit, endzeit, typ, fach
+                    FROM eintraege
+                    WHERE class_id=%s
+                      AND COALESCE(is_private, 0)=0
+                    ORDER BY datum ASC, startzeit ASC
+                    """,
+                    (class_id,),
+                )
+                for row in (cursor.fetchall() or []):
+                    row['is_private'] = False
+                    row['is_owned'] = False
+                    rows.append(row)
+
             cursor.execute(
                 """
                 SELECT id, beschreibung, datum, enddatum, startzeit, endzeit, typ, fach
                 FROM eintraege
-                WHERE class_id=%s
+                WHERE COALESCE(is_private, 0)=1
+                  AND owner_user_id=%s
+                  AND typ='todo'
                 ORDER BY datum ASC, startzeit ASC
                 """,
-                (class_id,),
+                (int(user_id),),
             )
-            rows = cursor.fetchall()
+            for row in (cursor.fetchall() or []):
+                row['is_private'] = True
+                row['is_owned'] = True
+                rows.append(row)
+
+            rows.sort(key=lambda item: (str(item.get('datum') or ''), str(item.get('startzeit') or '')))
             for r in rows:
-                r['datum'] = r['datum'].strftime('%Y-%m-%d')
+                if isinstance(r.get('datum'), datetime.date):
+                    r['datum'] = r['datum'].strftime('%Y-%m-%d')
+                else:
+                    r['datum'] = str(r.get('datum') or '')
                 r['startzeit'] = _format_time_value(r.get('startzeit'))
                 r['endzeit'] = _format_time_value(r.get('endzeit'))
                 end_date = r.get('enddatum')
@@ -1642,6 +1721,186 @@ def entries_collection():
         finally:
             cursor.close()
     return jsonify(rows)
+
+
+@app.route('/api/todos', methods=['POST', 'OPTIONS'])
+@require_authenticated
+def todos_collection():
+    if request.method == 'OPTIONS':
+        return _cors_preflight()
+
+    data = request.json or {}
+    user_id = session.get('user_id')
+    if user_id is None:
+        return jsonify(error='unauthorized', message='Missing session'), 401
+
+    beschreibung = (data.get("beschreibung") or '').strip()
+    datum_input = data.get("datum")
+    startzeit = data.get("startzeit")
+    endzeit = data.get("endzeit")
+    enddatum_input = data.get("enddatum")
+
+    if startzeit == '':
+        startzeit = None
+    if endzeit == '':
+        endzeit = None
+
+    if startzeit:
+        startzeit = startzeit.strip()
+        if len(startzeit) == 5:
+            startzeit = f"{startzeit}:00"
+        startzeit = startzeit[:8]
+    if endzeit:
+        endzeit = endzeit.strip()
+        if len(endzeit) == 5:
+            endzeit = f"{endzeit}:00"
+        endzeit = endzeit[:8]
+
+    if not datum_input:
+        return jsonify(status="error", message="datum ist erforderlich"), 400
+
+    start_date = _parse_iso_date(datum_input)
+    if start_date is None:
+        return jsonify(status="error", message="ungültiges datum"), 400
+
+    end_date = _parse_iso_date(enddatum_input) if enddatum_input not in (None, '') else None
+    if enddatum_input not in (None, '') and end_date is None:
+        return jsonify(status="error", message="ungültiges enddatum"), 400
+    if end_date is not None and end_date < start_date:
+        return jsonify(status="error", message="enddatum vor datum"), 400
+
+    datum = start_date.isoformat()
+    enddatum = end_date.isoformat() if end_date is not None else datum
+
+    conn = get_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            """
+            INSERT INTO eintraege (class_id, beschreibung, datum, enddatum, startzeit, endzeit, typ, fach, owner_user_id, is_private)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            """,
+            (DEFAULT_ENTRY_CLASS_ID, beschreibung, datum, enddatum, startzeit, endzeit, 'todo', '', int(user_id), 1),
+        )
+        entry_id = cur.lastrowid
+        conn.commit()
+        _log_user_event(
+            'todo_create',
+            user_id=int(user_id),
+            entry_id=entry_id,
+            datum=datum,
+            enddatum=enddatum,
+        )
+        return jsonify(status="ok", id=entry_id)
+    except Exception as exc:
+        conn.rollback()
+        return jsonify(status="error", message=str(exc)), 500
+    finally:
+        cur.close()
+        conn.close()
+
+
+@app.route('/api/todos/<int:entry_id>', methods=['PUT', 'DELETE', 'OPTIONS'])
+@require_authenticated
+def todo_resource(entry_id: int):
+    if request.method == 'OPTIONS':
+        return _cors_preflight()
+
+    user_id = session.get('user_id')
+    if user_id is None:
+        return jsonify(error='unauthorized', message='Missing session'), 401
+    user_id = int(user_id)
+
+    conn = get_connection()
+    lookup_cursor = conn.cursor(dictionary=True)
+    try:
+        lookup_cursor.execute(
+            """
+            SELECT id, owner_user_id, is_private, typ
+            FROM eintraege
+            WHERE id=%s
+              AND COALESCE(is_private, 0)=1
+              AND typ='todo'
+              AND owner_user_id=%s
+            LIMIT 1
+            """,
+            (entry_id, user_id),
+        )
+        existing = lookup_cursor.fetchone()
+        if not existing:
+            return jsonify(status='error', message='not_found'), 404
+
+        if request.method == 'DELETE':
+            write_cursor = conn.cursor()
+            write_cursor.execute(
+                "DELETE FROM eintraege WHERE id=%s AND owner_user_id=%s AND COALESCE(is_private, 0)=1 AND typ='todo'",
+                (entry_id, user_id),
+            )
+            write_cursor.close()
+            conn.commit()
+            _log_user_event('todo_delete', user_id=user_id, entry_id=entry_id)
+            return jsonify(status='ok')
+
+        data = request.json or {}
+        beschreibung = (data.get("beschreibung") or '').strip()
+        datum_input = data.get("datum")
+        startzeit = data.get("startzeit")
+        endzeit = data.get("endzeit")
+        enddatum_input = data.get("enddatum")
+
+        if startzeit == '':
+            startzeit = None
+        if endzeit == '':
+            endzeit = None
+
+        if startzeit:
+            startzeit = startzeit.strip()
+            if len(startzeit) == 5:
+                startzeit = f"{startzeit}:00"
+            startzeit = startzeit[:8]
+        if endzeit:
+            endzeit = endzeit.strip()
+            if len(endzeit) == 5:
+                endzeit = f"{endzeit}:00"
+            endzeit = endzeit[:8]
+
+        if not datum_input:
+            return jsonify(status="error", message="datum ist erforderlich"), 400
+        start_date = _parse_iso_date(datum_input)
+        if start_date is None:
+            return jsonify(status="error", message="ungültiges datum"), 400
+
+        end_date = _parse_iso_date(enddatum_input) if enddatum_input not in (None, '') else None
+        if enddatum_input not in (None, '') and end_date is None:
+            return jsonify(status="error", message="ungültiges enddatum"), 400
+        if end_date is not None and end_date < start_date:
+            return jsonify(status="error", message="enddatum vor datum"), 400
+
+        datum = start_date.isoformat()
+        enddatum = end_date.isoformat() if end_date is not None else datum
+
+        write_cursor = conn.cursor()
+        write_cursor.execute(
+            """
+            UPDATE eintraege
+            SET beschreibung=%s, datum=%s, enddatum=%s, startzeit=%s, endzeit=%s, fach=%s
+            WHERE id=%s
+              AND owner_user_id=%s
+              AND COALESCE(is_private, 0)=1
+              AND typ='todo'
+            """,
+            (beschreibung, datum, enddatum, startzeit, endzeit, '', entry_id, user_id),
+        )
+        write_cursor.close()
+        conn.commit()
+        _log_user_event('todo_update', user_id=user_id, entry_id=entry_id, datum=datum, enddatum=enddatum)
+        return jsonify(status='ok')
+    except Exception as exc:
+        conn.rollback()
+        return jsonify(status='error', message=str(exc)), 500
+    finally:
+        lookup_cursor.close()
+        conn.close()
 
 
 @app.route('/api/contact', methods=['POST'])
@@ -3609,16 +3868,6 @@ def update_entry():
         return _cors_preflight()
 
     data = request.json or {}
-    try:
-        class_ids = _normalize_entry_class_id_list(data.get('class_ids'))
-    except ValueError:
-        return jsonify(status='error', message='invalid_class_id'), 400
-
-    if not class_ids:
-        try:
-            class_ids = [_normalize_entry_class_id(data.get('class_id'))]
-        except ValueError:
-            return jsonify(status='error', message='invalid_class_id'), 400
 
     try:
         entry_id = int(data.get('id'))
@@ -3651,6 +3900,8 @@ def update_entry():
     parsed_date = _parse_iso_date(date_input)
     if parsed_date is None:
         return jsonify(status='error', message='ungültiges datum'), 400
+    if typ == 'todo':
+        return jsonify(status='error', message='todo_type_not_allowed_here'), 400
 
     parsed_end_date = _parse_iso_date(enddatum_input) if enddatum_input not in (None, '') else None
     if enddatum_input not in (None, '') and parsed_end_date is None:
@@ -3670,20 +3921,43 @@ def update_entry():
 
 
     role = session.get('role')
-    if role == 'class_admin':
-        allowed_class = _get_session_entry_class_id() or ''
-        if not allowed_class:
-            return jsonify(status='error', message='class_required'), 403
-        if any(class_id != allowed_class for class_id in class_ids):
-            return jsonify(status='error', message='forbidden'), 403
-        class_ids = [allowed_class]
-
     conn = get_connection()
     cur = conn.cursor()
     try:
+        class_ids = []
+        if role == 'class_admin':
+            allowed_class = _get_session_entry_class_id() or ''
+            if not allowed_class:
+                return jsonify(status='error', message='class_required'), 403
+            class_ids = [allowed_class]
+        else:
+            try:
+                class_ids = _normalize_entry_class_id_list(data.get('class_ids'))
+            except ValueError:
+                return jsonify(status='error', message='invalid_class_id'), 400
+
+            if not class_ids:
+                raw_class_id = data.get('class_id')
+                if raw_class_id not in (None, ''):
+                    try:
+                        class_ids = [_normalize_entry_class_id(raw_class_id)]
+                    except ValueError:
+                        return jsonify(status='error', message='invalid_class_id'), 400
+                else:
+                    # coupled entries: if no class_id(s) is provided, update all class rows that share this entry id
+                    cur.execute(
+                        "SELECT class_id FROM eintraege WHERE id=%s AND COALESCE(is_private, 0)=0",
+                        (entry_id,),
+                    )
+                    class_ids = [row[0] for row in (cur.fetchall() or []) if row and row[0]]
+
+        class_ids = list(OrderedDict.fromkeys(class_ids))
+        if not class_ids:
+            return jsonify(status='error', message='Eintrag nicht gefunden'), 404
+
         for class_id in class_ids:
             cur.execute(
-                "SELECT 1 FROM eintraege WHERE id=%s AND class_id=%s",
+                "SELECT 1 FROM eintraege WHERE id=%s AND class_id=%s AND COALESCE(is_private, 0)=0",
                 (entry_id, class_id),
             )
             row = cur.fetchone()
@@ -3696,7 +3970,7 @@ def update_entry():
                 """
                 UPDATE eintraege
                 SET beschreibung=%s, datum=%s, enddatum=%s, startzeit=%s, endzeit=%s, typ=%s, fach=%s
-                WHERE id=%s AND class_id=%s
+                WHERE id=%s AND class_id=%s AND COALESCE(is_private, 0)=0
                 """,
                 (desc, date, enddatum, start, end, typ, fach, entry_id, class_id),
             )
@@ -3729,18 +4003,17 @@ def delete_entry(id):
     if request.method == 'OPTIONS':
         return _cors_preflight()
 
-    raw_class_id = request.args.get('class_id')
-    if raw_class_id is None:
-        raw_class_id = _get_session_entry_class_id()
-        if raw_class_id is None:
-            return jsonify(status='error', message='class_required'), 403
-    try:
-        class_id = _normalize_entry_class_id(raw_class_id)
-    except ValueError:
-        return jsonify(status='error', message='invalid_class_id'), 400
-
     role = session.get('role')
     if role == 'class_admin':
+        raw_class_id = request.args.get('class_id')
+        if raw_class_id is None:
+            raw_class_id = _get_session_entry_class_id()
+            if raw_class_id is None:
+                return jsonify(status='error', message='class_required'), 403
+        try:
+            class_id = _normalize_entry_class_id(raw_class_id)
+        except ValueError:
+            return jsonify(status='error', message='invalid_class_id'), 400
         allowed_class = _get_session_entry_class_id() or ''
         if not allowed_class:
             return jsonify(status='error', message='class_required'), 403
@@ -3749,14 +4022,24 @@ def delete_entry(id):
     conn = get_connection()
     cur = conn.cursor()
     try:
-        cur.execute(
-            "DELETE FROM eintraege WHERE id=%s AND class_id=%s",
-            (id, class_id),
-        )
+        if role == 'class_admin':
+            cur.execute(
+                "DELETE FROM eintraege WHERE id=%s AND class_id=%s AND COALESCE(is_private, 0)=0",
+                (id, class_id),
+            )
+        else:
+            # coupled entries: delete all class rows that share this id
+            cur.execute(
+                "DELETE FROM eintraege WHERE id=%s AND COALESCE(is_private, 0)=0",
+                (id,),
+            )
         deleted = cur.rowcount or 0
         conn.commit()
         if deleted:
-            _log_user_event('entry_delete', entry_id=id, class_id=class_id, deleted=deleted)
+            if role == 'class_admin':
+                _log_user_event('entry_delete', entry_id=id, class_id=class_id, deleted=deleted)
+            else:
+                _log_user_event('entry_delete', entry_id=id, deleted=deleted, coupled=True)
         return jsonify(status='ok')
     except Exception as e:
         return jsonify(status='error', message=str(e)), 500
@@ -3938,6 +4221,8 @@ def add_entry():
 
     if not typ or not datum_input:
         return jsonify(status="error", message="typ und datum sind erforderlich"), 400
+    if typ == 'todo':
+        return jsonify(status='error', message='todo_type_not_allowed_here'), 400
 
     start_date = _parse_iso_date(datum_input)
     if start_date is None:
@@ -3973,20 +4258,20 @@ def add_entry():
         first_class = class_ids[0]
         cur.execute(
             """
-            INSERT INTO eintraege (class_id, beschreibung, datum, enddatum, startzeit, endzeit, typ, fach)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+            INSERT INTO eintraege (class_id, beschreibung, datum, enddatum, startzeit, endzeit, typ, fach, owner_user_id, is_private)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
             """,
-            (first_class, beschreibung, datum, enddatum, startzeit, endzeit, typ, fach),
+            (first_class, beschreibung, datum, enddatum, startzeit, endzeit, typ, fach, None, 0),
         )
         entry_id = cur.lastrowid
 
         for extra_class in class_ids[1:]:
             cur.execute(
                 """
-                INSERT INTO eintraege (id, class_id, beschreibung, datum, enddatum, startzeit, endzeit, typ, fach)
-                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                INSERT INTO eintraege (id, class_id, beschreibung, datum, enddatum, startzeit, endzeit, typ, fach, owner_user_id, is_private)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                 """,
-                (entry_id, extra_class, beschreibung, datum, enddatum, startzeit, endzeit, typ, fach),
+                (entry_id, extra_class, beschreibung, datum, enddatum, startzeit, endzeit, typ, fach, None, 0),
             )
 
         conn.commit()

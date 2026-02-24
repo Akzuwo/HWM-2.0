@@ -2322,8 +2322,13 @@ body.hm-contact-modal-open {
 }
 
 /* Admin dashboard */
+.admin-dashboard [hidden] {
+    display: none !important;
+}
+
 .admin-dashboard {
-    max-width: 1100px;
+    width: min(1320px, calc(100vw - clamp(1.5rem, 4vw, 4rem)));
+    max-width: none;
     margin: clamp(1.5rem, 4vw, 3rem) auto;
     padding: clamp(1.5rem, 3vw, 2.5rem);
     background: rgba(12, 16, 26, 0.92);
@@ -2358,7 +2363,7 @@ body.hm-contact-modal-open {
 
 .admin-dashboard__layout {
     display: grid;
-    grid-template-columns: minmax(220px, 32%) minmax(0, 1fr);
+    grid-template-columns: minmax(230px, 290px) minmax(0, 1fr);
     gap: clamp(1.25rem, 3vw, 2rem);
     align-items: start;
 }
@@ -2386,6 +2391,7 @@ body.hm-contact-modal-open {
     display: flex;
     flex-direction: column;
     gap: 1rem;
+    min-width: 0;
 }
 
 .admin-dashboard__mobile-nav {
@@ -2947,8 +2953,11 @@ body.profile-page {
 }
 
 @media (max-width: 1023px) {
+    .admin-dashboard {
+        width: min(1180px, calc(100vw - 2rem));
+    }
     .admin-dashboard__layout {
-        grid-template-columns: minmax(200px, 38%) minmax(0, 1fr);
+        grid-template-columns: minmax(210px, 260px) minmax(0, 1fr);
     }
 }
 

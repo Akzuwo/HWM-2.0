@@ -5,6 +5,7 @@ from class_ids import DEFAULT_ENTRY_CLASS_ID
 
 def _authenticate(client):
     with client.session_transaction() as sess:
+        sess['user_id'] = 1
         sess['is_admin'] = True
         sess['role'] = 'admin'
         sess['class_id'] = 1
@@ -174,6 +175,7 @@ def test_add_entry_rejects_invalid_class_id_list(app_client):
 def test_class_admin_cannot_add_entry_for_other_class(app_client):
     client, storage, _ = app_client
     with client.session_transaction() as sess:
+        sess['user_id'] = 1
         sess['role'] = 'class_admin'
         sess['is_admin'] = False
         sess['entry_class_id'] = DEFAULT_ENTRY_CLASS_ID
@@ -193,6 +195,7 @@ def test_class_admin_cannot_add_entry_for_other_class(app_client):
 def test_class_admin_cannot_add_entry_for_other_class_in_list(app_client):
     client, storage, _ = app_client
     with client.session_transaction() as sess:
+        sess['user_id'] = 1
         sess['role'] = 'class_admin'
         sess['is_admin'] = False
         sess['entry_class_id'] = DEFAULT_ENTRY_CLASS_ID
@@ -214,6 +217,7 @@ def test_class_admin_cannot_add_entry_for_other_class_in_list(app_client):
 def test_teacher_can_add_entry_for_any_class(app_client):
     client, storage, _ = app_client
     with client.session_transaction() as sess:
+        sess['user_id'] = 1
         sess['role'] = 'teacher'
         sess['is_admin'] = False
 
@@ -257,6 +261,7 @@ def test_entries_filters_by_session_class_slug(app_client):
     ]
 
     with client.session_transaction() as sess:
+        sess['user_id'] = 1
         sess['role'] = 'student'
         sess['class_id'] = 1
         sess['class_slug'] = 'l23a'
@@ -459,6 +464,7 @@ def test_entries_filters_by_other_class_slug(app_client):
     ]
 
     with client.session_transaction() as sess:
+        sess['user_id'] = 1
         sess['role'] = 'student'
         sess['class_id'] = 2
         sess['class_slug'] = 'u24f'
@@ -469,3 +475,310 @@ def test_entries_filters_by_other_class_slug(app_client):
 
     data = resp.get_json()
     assert [entry['beschreibung'] for entry in data] == ['Other class homework']
+
+
+def test_create_personal_todo_for_student(app_client):
+    client, storage, _ = app_client
+    with client.session_transaction() as sess:
+        sess['user_id'] = 1
+        sess['role'] = 'student'
+        sess['class_id'] = 1
+
+    resp = client.post(
+        '/api/todos',
+        json={'datum': '2026-03-10', 'beschreibung': 'Private todo', 'startzeit': '08:00:00'},
+    )
+    assert resp.status_code == 200
+    payload = resp.get_json()
+    assert payload.get('status') == 'ok'
+
+    row = storage['eintraege'][-1]
+    assert row['typ'] == 'todo'
+    assert row['class_id'] == DEFAULT_ENTRY_CLASS_ID
+    assert row['owner_user_id'] == 1
+    assert int(row['is_private']) == 1
+
+
+def test_private_todo_visibility_is_owner_only(app_client):
+    client, storage, _ = app_client
+    storage['users'][2] = {
+        'id': 2,
+        'email': 'student2@example.com',
+        'password_hash': storage['users'][1]['password_hash'],
+        'role': 'student',
+        'class_id': 1,
+        'is_active': 1,
+        'created_at': datetime.datetime.utcnow(),
+        'updated_at': datetime.datetime.utcnow(),
+        'email_verified_at': datetime.datetime.utcnow(),
+        'last_login_updates': [],
+    }
+    storage['users_by_email']['student2@example.com'] = 2
+
+    storage['eintraege'] = [
+        {
+            'id': 1,
+            'class_id': 'L23a',
+            'beschreibung': 'Class entry',
+            'datum': datetime.date(2026, 3, 8),
+            'enddatum': datetime.date(2026, 3, 8),
+            'startzeit': None,
+            'endzeit': None,
+            'typ': 'event',
+            'fach': 'MA',
+            'owner_user_id': None,
+            'is_private': 0,
+        },
+        {
+            'id': 2,
+            'class_id': DEFAULT_ENTRY_CLASS_ID,
+            'beschreibung': 'Todo A',
+            'datum': datetime.date(2026, 3, 9),
+            'enddatum': datetime.date(2026, 3, 9),
+            'startzeit': None,
+            'endzeit': None,
+            'typ': 'todo',
+            'fach': '',
+            'owner_user_id': 1,
+            'is_private': 1,
+        },
+        {
+            'id': 3,
+            'class_id': DEFAULT_ENTRY_CLASS_ID,
+            'beschreibung': 'Todo B',
+            'datum': datetime.date(2026, 3, 10),
+            'enddatum': datetime.date(2026, 3, 10),
+            'startzeit': None,
+            'endzeit': None,
+            'typ': 'todo',
+            'fach': '',
+            'owner_user_id': 2,
+            'is_private': 1,
+        },
+    ]
+
+    with client.session_transaction() as sess:
+        sess['user_id'] = 1
+        sess['role'] = 'student'
+        sess['class_id'] = 1
+        sess['class_slug'] = 'l23a'
+        sess['entry_class_id'] = 'L23a'
+
+    resp = client.get('/entries')
+    assert resp.status_code == 200
+    data = resp.get_json()
+    descriptions = [item['beschreibung'] for item in data]
+    assert 'Class entry' in descriptions
+    assert 'Todo A' in descriptions
+    assert 'Todo B' not in descriptions
+
+
+def test_owner_can_update_and_delete_own_todo(app_client):
+    client, storage, _ = app_client
+    storage['eintraege'] = [
+        {
+            'id': 12,
+            'class_id': DEFAULT_ENTRY_CLASS_ID,
+            'beschreibung': 'Initial',
+            'datum': '2026-03-12',
+            'enddatum': '2026-03-12',
+            'startzeit': None,
+            'endzeit': None,
+            'typ': 'todo',
+            'fach': '',
+            'owner_user_id': 1,
+            'is_private': 1,
+        }
+    ]
+
+    with client.session_transaction() as sess:
+        sess['user_id'] = 1
+        sess['role'] = 'student'
+        sess['class_id'] = 1
+
+    update_resp = client.put(
+        '/api/todos/12',
+        json={'datum': '2026-03-13', 'enddatum': '2026-03-13', 'beschreibung': 'Updated'},
+    )
+    assert update_resp.status_code == 200
+    assert storage['eintraege'][0]['beschreibung'] == 'Updated'
+    assert storage['eintraege'][0]['datum'] == '2026-03-13'
+
+    delete_resp = client.delete('/api/todos/12')
+    assert delete_resp.status_code == 200
+    assert storage['eintraege'] == []
+
+
+def test_other_user_cannot_update_or_delete_foreign_todo(app_client):
+    client, storage, _ = app_client
+    storage['eintraege'] = [
+        {
+            'id': 44,
+            'class_id': DEFAULT_ENTRY_CLASS_ID,
+            'beschreibung': 'Foreign',
+            'datum': '2026-03-12',
+            'enddatum': '2026-03-12',
+            'startzeit': None,
+            'endzeit': None,
+            'typ': 'todo',
+            'fach': '',
+            'owner_user_id': 2,
+            'is_private': 1,
+        }
+    ]
+
+    with client.session_transaction() as sess:
+        sess['user_id'] = 1
+        sess['role'] = 'admin'
+        sess['class_id'] = 1
+
+    update_resp = client.put(
+        '/api/todos/44',
+        json={'datum': '2026-03-14', 'enddatum': '2026-03-14', 'beschreibung': 'Should fail'},
+    )
+    assert update_resp.status_code == 404
+
+    delete_resp = client.delete('/api/todos/44')
+    assert delete_resp.status_code == 404
+    assert len(storage['eintraege']) == 1
+
+
+def test_calendar_export_can_hide_todos(app_client):
+    client, storage, _ = app_client
+    today = datetime.date.today()
+    future_a = today + datetime.timedelta(days=1)
+    future_b = today + datetime.timedelta(days=2)
+
+    storage['eintraege'] = [
+        {
+            'id': 71,
+            'class_id': 'L23a',
+            'beschreibung': 'Class event',
+            'datum': future_a,
+            'enddatum': future_a,
+            'startzeit': None,
+            'endzeit': None,
+            'typ': 'event',
+            'fach': 'MA',
+            'owner_user_id': None,
+            'is_private': 0,
+        },
+        {
+            'id': 72,
+            'class_id': DEFAULT_ENTRY_CLASS_ID,
+            'beschreibung': 'My todo',
+            'datum': future_b,
+            'enddatum': future_b,
+            'startzeit': None,
+            'endzeit': None,
+            'typ': 'todo',
+            'fach': '',
+            'owner_user_id': 1,
+            'is_private': 1,
+        },
+    ]
+
+    with client.session_transaction() as sess:
+        sess['user_id'] = 1
+        sess['role'] = 'student'
+        sess['class_id'] = 1
+        sess['entry_class_id'] = 'L23a'
+
+    default_resp = client.get('/calendar.ics')
+    assert default_resp.status_code == 200
+    default_text = default_resp.get_data(as_text=True)
+    assert 'todo-72@homework-manager.akzuwo.ch' in default_text
+
+    no_todo_resp = client.get('/calendar.ics?include_todos=0')
+    assert no_todo_resp.status_code == 200
+    no_todo_text = no_todo_resp.get_data(as_text=True)
+    assert 'todo-72@homework-manager.akzuwo.ch' not in no_todo_text
+
+
+def test_update_entry_without_class_ids_updates_all_linked_classes(app_client):
+    client, storage, _ = app_client
+    _authenticate(client)
+
+    storage['eintraege'] = [
+        {
+            'id': 91,
+            'class_id': 'L23a',
+            'beschreibung': 'Original',
+            'datum': '2026-04-01',
+            'enddatum': '2026-04-01',
+            'startzeit': None,
+            'endzeit': None,
+            'typ': 'event',
+            'fach': 'MA',
+            'owner_user_id': None,
+            'is_private': 0,
+        },
+        {
+            'id': 91,
+            'class_id': 'U24f',
+            'beschreibung': 'Original',
+            'datum': '2026-04-01',
+            'enddatum': '2026-04-01',
+            'startzeit': None,
+            'endzeit': None,
+            'typ': 'event',
+            'fach': 'MA',
+            'owner_user_id': None,
+            'is_private': 0,
+        },
+    ]
+
+    resp = client.put(
+        '/update_entry',
+        json={
+            'id': 91,
+            'type': 'event',
+            'date': '2026-04-03',
+            'description': 'Coupled update',
+            'fach': 'DE',
+        },
+    )
+    assert resp.status_code == 200
+    changed = [entry for entry in storage['eintraege'] if entry['id'] == 91]
+    assert {entry['beschreibung'] for entry in changed} == {'Coupled update'}
+    assert {entry['datum'] for entry in changed} == {'2026-04-03'}
+
+
+def test_delete_entry_removes_all_linked_classes_for_manager(app_client):
+    client, storage, _ = app_client
+    with client.session_transaction() as sess:
+        sess['user_id'] = 1
+        sess['role'] = 'teacher'
+
+    storage['eintraege'] = [
+        {
+            'id': 92,
+            'class_id': 'L23a',
+            'beschreibung': 'Linked A',
+            'datum': '2026-04-01',
+            'enddatum': '2026-04-01',
+            'startzeit': None,
+            'endzeit': None,
+            'typ': 'event',
+            'fach': 'MA',
+            'owner_user_id': None,
+            'is_private': 0,
+        },
+        {
+            'id': 92,
+            'class_id': 'U24f',
+            'beschreibung': 'Linked B',
+            'datum': '2026-04-01',
+            'enddatum': '2026-04-01',
+            'startzeit': None,
+            'endzeit': None,
+            'typ': 'event',
+            'fach': 'MA',
+            'owner_user_id': None,
+            'is_private': 0,
+        },
+    ]
+
+    resp = client.delete('/delete_entry/92')
+    assert resp.status_code == 200
+    assert not any(entry['id'] == 92 for entry in storage['eintraege'])

@@ -850,7 +850,43 @@ class FakeCursor:
                     'fach': entry.get('fach'),
                 }
                 for entry in entries
-                if entry.get('class_id') == class_id
+                if entry.get('class_id') == class_id and int(entry.get('is_private') or 0) == 0
+            ]
+            filtered.sort(
+                key=lambda row: (
+                    row.get('datum') or datetime.date.min,
+                    row.get('startzeit') or '',
+                )
+            )
+            self._prepare_rows(
+                filtered,
+                ['id', 'beschreibung', 'datum', 'enddatum', 'startzeit', 'endzeit', 'typ', 'fach'],
+            )
+            return
+
+        if (
+            normalized.startswith(
+                "select id, beschreibung, datum, enddatum, startzeit, endzeit, typ, fach from eintraege"
+            )
+            and "owner_user_id=%s" in normalized
+            and "typ='todo'" in normalized
+        ):
+            owner_user_id = params[0]
+            filtered = [
+                {
+                    'id': entry['id'],
+                    'beschreibung': entry.get('beschreibung'),
+                    'datum': entry.get('datum'),
+                    'enddatum': entry.get('enddatum'),
+                    'startzeit': entry.get('startzeit'),
+                    'endzeit': entry.get('endzeit'),
+                    'typ': entry.get('typ'),
+                    'fach': entry.get('fach'),
+                }
+                for entry in entries
+                if int(entry.get('is_private') or 0) == 1
+                and int(entry.get('owner_user_id') or 0) == int(owner_user_id)
+                and entry.get('typ') == 'todo'
             ]
             filtered.sort(
                 key=lambda row: (
@@ -868,6 +904,7 @@ class FakeCursor:
             normalized.startswith(
                 "select id, typ, beschreibung, datum, enddatum, fach from eintraege"
             )
+            and "where class_id=%s" in normalized
             and "datum >= curdate()" in normalized
         ):
             class_id = params[0]
@@ -875,6 +912,55 @@ class FakeCursor:
             filtered = []
             for entry in entries:
                 if entry.get('class_id') != class_id:
+                    continue
+                if int(entry.get('is_private') or 0) != 0:
+                    continue
+                due = entry.get('datum')
+                if isinstance(due, datetime.date):
+                    if due < today:
+                        continue
+                elif isinstance(due, str):
+                    try:
+                        parsed = datetime.date.fromisoformat(due)
+                    except ValueError:
+                        parsed = today
+                    if parsed < today:
+                        continue
+                    due = parsed
+                filtered.append(
+                    {
+                        'id': entry['id'],
+                        'typ': entry.get('typ'),
+                        'beschreibung': entry.get('beschreibung'),
+                        'datum': due,
+                        'enddatum': entry.get('enddatum'),
+                        'fach': entry.get('fach'),
+                    }
+                )
+            filtered.sort(key=lambda row: row.get('datum') or today)
+            self._prepare_rows(
+                filtered,
+                ['id', 'typ', 'beschreibung', 'datum', 'enddatum', 'fach'],
+            )
+            return
+
+        if (
+            normalized.startswith(
+                "select id, typ, beschreibung, datum, enddatum, fach from eintraege"
+            )
+            and "owner_user_id=%s" in normalized
+            and "typ='todo'" in normalized
+            and "datum >= curdate()" in normalized
+        ):
+            owner_user_id = params[0]
+            today = datetime.date.today()
+            filtered = []
+            for entry in entries:
+                if int(entry.get('is_private') or 0) != 1:
+                    continue
+                if int(entry.get('owner_user_id') or 0) != int(owner_user_id):
+                    continue
+                if entry.get('typ') != 'todo':
                     continue
                 due = entry.get('datum')
                 if isinstance(due, datetime.date):
@@ -908,7 +994,11 @@ class FakeCursor:
         if normalized.startswith("select 1 from eintraege where id=%s and class_id=%s"):
             entry_id, class_id = params
             for entry in entries:
-                if entry['id'] == entry_id and entry['class_id'] == class_id:
+                if (
+                    entry['id'] == entry_id
+                    and entry['class_id'] == class_id
+                    and int(entry.get('is_private') or 0) == 0
+                ):
                     if self.dictionary:
                         self._prepare_rows([{'1': 1}], ['1'])
                     else:
@@ -917,10 +1007,20 @@ class FakeCursor:
             self._rows = []
             return
 
+        if normalized.startswith("select class_id from eintraege where id=%s and coalesce(is_private, 0)=0"):
+            entry_id = params[0]
+            rows = [{'class_id': entry.get('class_id')} for entry in entries if entry.get('id') == entry_id and int(entry.get('is_private') or 0) == 0]
+            self._prepare_rows(rows, ['class_id'])
+            return
+
         if normalized.startswith("update eintraege set beschreibung=%s, datum=%s, enddatum=%s, startzeit=%s, endzeit=%s, typ=%s, fach=%s where id=%s and class_id=%s"):
             desc, date, enddate, start, end, typ, fach, entry_id, class_id = params
             for entry in entries:
-                if entry['id'] == entry_id and entry['class_id'] == class_id:
+                if (
+                    entry['id'] == entry_id
+                    and entry['class_id'] == class_id
+                    and int(entry.get('is_private') or 0) == 0
+                ):
                     entry.update(
                         {
                             'beschreibung': desc,
@@ -939,13 +1039,36 @@ class FakeCursor:
         if normalized.startswith("delete from eintraege where id=%s and class_id=%s"):
             entry_id, class_id = params
             before = len(entries)
-            remaining = [entry for entry in entries if not (entry['id'] == entry_id and entry['class_id'] == class_id)]
+            remaining = [
+                entry
+                for entry in entries
+                if not (
+                    entry['id'] == entry_id
+                    and entry['class_id'] == class_id
+                    and int(entry.get('is_private') or 0) == 0
+                )
+            ]
             self.storage['eintraege'] = remaining
             self.rowcount = before - len(remaining)
             return
 
-        if normalized.startswith("insert into eintraege (class_id, beschreibung, datum, enddatum, startzeit, endzeit, typ, fach)"):
-            class_id, desc, date, enddate, start, end, typ, fach = params
+        if normalized.startswith("delete from eintraege where id=%s and coalesce(is_private, 0)=0"):
+            entry_id = params[0]
+            before = len(entries)
+            remaining = [
+                entry
+                for entry in entries
+                if not (
+                    entry['id'] == entry_id
+                    and int(entry.get('is_private') or 0) == 0
+                )
+            ]
+            self.storage['eintraege'] = remaining
+            self.rowcount = before - len(remaining)
+            return
+
+        if normalized.startswith("insert into eintraege (class_id, beschreibung, datum, enddatum, startzeit, endzeit, typ, fach, owner_user_id, is_private)"):
+            class_id, desc, date, enddate, start, end, typ, fach, owner_user_id, is_private = params
             next_ids = self.storage.setdefault('next_ids', {})
             new_id = next_ids.setdefault('eintraege', 1)
             next_ids['eintraege'] = new_id + 1
@@ -959,14 +1082,16 @@ class FakeCursor:
                 'endzeit': end,
                 'typ': typ,
                 'fach': fach,
+                'owner_user_id': owner_user_id,
+                'is_private': is_private,
             }
             entries.append(entry)
             self.lastrowid = new_id
             self.rowcount = 1
             return
 
-        if normalized.startswith("insert into eintraege (id, class_id, beschreibung, datum, enddatum, startzeit, endzeit, typ, fach)"):
-            entry_id, class_id, desc, date, enddate, start, end, typ, fach = params
+        if normalized.startswith("insert into eintraege (id, class_id, beschreibung, datum, enddatum, startzeit, endzeit, typ, fach, owner_user_id, is_private)"):
+            entry_id, class_id, desc, date, enddate, start, end, typ, fach, owner_user_id, is_private = params
             entry = {
                 'id': entry_id,
                 'class_id': class_id,
@@ -977,6 +1102,8 @@ class FakeCursor:
                 'endzeit': end,
                 'typ': typ,
                 'fach': fach,
+                'owner_user_id': owner_user_id,
+                'is_private': is_private,
             }
             entries.append(entry)
             next_ids = self.storage.setdefault('next_ids', {})
@@ -985,6 +1112,79 @@ class FakeCursor:
                 next_ids['eintraege'] = entry_id + 1
             self.lastrowid = entry_id
             self.rowcount = 1
+            return
+
+        if (
+            normalized.startswith("select id, owner_user_id, is_private, typ from eintraege")
+            and "owner_user_id=%s" in normalized
+            and "typ='todo'" in normalized
+        ):
+            entry_id, owner_user_id = params
+            record = next(
+                (
+                    entry
+                    for entry in entries
+                    if int(entry.get('id') or 0) == int(entry_id)
+                    and int(entry.get('owner_user_id') or 0) == int(owner_user_id)
+                    and int(entry.get('is_private') or 0) == 1
+                    and entry.get('typ') == 'todo'
+                ),
+                None,
+            )
+            if record:
+                self._prepare_rows(
+                    [
+                        {
+                            'id': record.get('id'),
+                            'owner_user_id': record.get('owner_user_id'),
+                            'is_private': record.get('is_private'),
+                            'typ': record.get('typ'),
+                        }
+                    ],
+                    ['id', 'owner_user_id', 'is_private', 'typ'],
+                )
+            else:
+                self._rows = []
+            return
+
+        if normalized.startswith("update eintraege set beschreibung=%s, datum=%s, enddatum=%s, startzeit=%s, endzeit=%s, fach=%s"):
+            desc, date, enddate, start, end, fach, entry_id, owner_user_id = params
+            for entry in entries:
+                if (
+                    int(entry.get('id') or 0) == int(entry_id)
+                    and int(entry.get('owner_user_id') or 0) == int(owner_user_id)
+                    and int(entry.get('is_private') or 0) == 1
+                    and entry.get('typ') == 'todo'
+                ):
+                    entry.update(
+                        {
+                            'beschreibung': desc,
+                            'datum': date,
+                            'enddatum': enddate,
+                            'startzeit': start,
+                            'endzeit': end,
+                            'fach': fach,
+                        }
+                    )
+                    self.rowcount = 1
+                    break
+            return
+
+        if normalized.startswith("delete from eintraege where id=%s and owner_user_id=%s"):
+            entry_id, owner_user_id = params
+            before = len(entries)
+            remaining = [
+                entry
+                for entry in entries
+                if not (
+                    int(entry.get('id') or 0) == int(entry_id)
+                    and int(entry.get('owner_user_id') or 0) == int(owner_user_id)
+                    and int(entry.get('is_private') or 0) == 1
+                    and entry.get('typ') == 'todo'
+                )
+            ]
+            self.storage['eintraege'] = remaining
+            self.rowcount = before - len(remaining)
             return
 
         self._rows = []

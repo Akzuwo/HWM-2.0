@@ -8,6 +8,7 @@
   const state = {
     role: 'guest',
     canManageEntries: false,
+    canCreatePersonalTodos: false,
     classSelectorEnabled: false
   };
 
@@ -15,6 +16,7 @@
     return {
       role: state.role,
       canManageEntries: state.canManageEntries,
+      canCreatePersonalTodos: state.canCreatePersonalTodos,
       classSelectorEnabled: state.classSelectorEnabled
     };
   }
@@ -45,9 +47,14 @@
     return roleValue === 'admin' || roleValue === 'teacher';
   }
 
+  function computeCanCreatePersonalTodos(roleValue) {
+    return roleValue !== 'guest';
+  }
+
   function setStateFromRole(roleValue) {
     state.role = roleValue;
     state.canManageEntries = computeCanManageEntries(roleValue);
+    state.canCreatePersonalTodos = computeCanCreatePersonalTodos(roleValue);
     state.classSelectorEnabled = computeClassSelectorEnabled(roleValue);
   }
 
@@ -69,16 +76,19 @@
     const previousState = getStateSnapshot();
     const nextRole = resolveSessionRole();
     const nextCanManage = computeCanManageEntries(nextRole);
+    const nextCanCreatePersonalTodos = computeCanCreatePersonalTodos(nextRole);
     const nextClassSelectorEnabled = computeClassSelectorEnabled(nextRole);
 
     const hasChanged =
       previousState.role !== nextRole ||
       previousState.canManageEntries !== nextCanManage ||
+      previousState.canCreatePersonalTodos !== nextCanCreatePersonalTodos ||
       previousState.classSelectorEnabled !== nextClassSelectorEnabled;
 
     if (hasChanged) {
       state.role = nextRole;
       state.canManageEntries = nextCanManage;
+      state.canCreatePersonalTodos = nextCanCreatePersonalTodos;
       state.classSelectorEnabled = nextClassSelectorEnabled;
       notify(previousState);
     }
@@ -115,7 +125,8 @@
       actionBarSelector = '.calendar-action-bar',
       createButtonSelector = '[data-action="create"]',
       onCreate,
-      canManageEntries
+      canManageEntries,
+      canCreatePersonalTodos
     } = options;
 
     const actionBar = document.querySelector(actionBarSelector);
@@ -130,8 +141,10 @@
 
     const allowManage =
       typeof canManageEntries === 'boolean' ? canManageEntries : state.canManageEntries;
+    const allowPersonalTodos =
+      typeof canCreatePersonalTodos === 'boolean' ? canCreatePersonalTodos : state.canCreatePersonalTodos;
 
-    if (!allowManage) {
+    if (!allowManage && !allowPersonalTodos) {
       createBtn.disabled = true;
       createBtn.setAttribute('aria-disabled', 'true');
       return;
@@ -178,6 +191,7 @@
   namespace.permissions = {
     resolveSessionRole,
     computeCanManageEntries,
+    computeCanCreatePersonalTodos,
     computeClassSelectorEnabled,
     getState: getStateSnapshot,
     refresh,

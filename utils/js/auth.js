@@ -225,7 +225,8 @@ const DEFAULT_SESSION = {
     emailVerified: false,
     isAdmin: false,
     isClassAdmin: false,
-    canManageEntries: false
+    canManageEntries: false,
+    canCreatePersonalTodos: false
 };
 
 let sessionState = normalizeSession(loadStoredSession());
@@ -257,7 +258,8 @@ function normalizeSession(data = {}) {
         emailVerified: Boolean(data.emailVerified),
         isAdmin: role === 'admin',
         isClassAdmin: role === 'admin' || role === 'class_admin',
-        canManageEntries: role === 'admin' || role === 'teacher' || role === 'class_admin'
+        canManageEntries: role === 'admin' || role === 'teacher' || role === 'class_admin',
+        canCreatePersonalTodos: role !== 'guest'
     };
 }
 
@@ -315,6 +317,10 @@ function isClassAdmin() {
 
 function canManageEntries() {
     return sessionState.canManageEntries;
+}
+
+function canCreatePersonalTodos() {
+    return sessionState.canCreatePersonalTodos;
 }
 
 function isAuthenticated() {
@@ -622,8 +628,8 @@ function updateFeatureVisibility() {
         actionBar.classList.toggle('is-hidden', shouldHide);
     }
     document.querySelectorAll('[data-action="create"]').forEach((element) => {
-        const hideForNonAdmins = !canManageEntries();
-        element.classList.toggle('is-hidden', hideForNonAdmins);
+        const hideCreate = !canManageEntries() && !canCreatePersonalTodos();
+        element.classList.toggle('is-hidden', hideCreate);
     });
 }
 
@@ -2073,7 +2079,7 @@ async function logout() {
 }
 
 const CREATE_DISABLED_MESSAGE = (window.hmI18n && window.hmI18n.get('calendar.actions.create.disabled'))
-    || 'Only admins can create entries';
+    || 'Please sign in to create personal todos.';
 
 const CALENDAR_MODAL_SCOPE = window.hmI18n ? window.hmI18n.scope('calendar.modal') : (key, fallback) => fallback;
 
@@ -2533,18 +2539,18 @@ if (window.hmI18n) {
 
 const ENTRY_CLASS_FIELD_SELECTORS = {
     container: '[data-entry-class-field]',
-    select: '[data-entry-class-select]'
+    options: '[data-entry-class-options]'
 };
 
 function resolveEntryClassElements() {
     if (typeof document === 'undefined') {
-        return { container: null, select: null };
+        return { container: null, options: null };
     }
     const container = document.querySelector(ENTRY_CLASS_FIELD_SELECTORS.container);
-    const select = container
-        ? container.querySelector(ENTRY_CLASS_FIELD_SELECTORS.select)
-        : document.querySelector(ENTRY_CLASS_FIELD_SELECTORS.select);
-    return { container, select };
+    const options = container
+        ? container.querySelector(ENTRY_CLASS_FIELD_SELECTORS.options)
+        : document.querySelector(ENTRY_CLASS_FIELD_SELECTORS.options);
+    return { container, options };
 }
 
 function getStoredEntryClassId() {
@@ -2560,14 +2566,16 @@ const entryClassPicker = (() => {
     let multipleOverride = null;
     let currentMultipleAllowed = false;
 
-    function hideField(container, select) {
+    function hideField(container, options) {
         if (container) {
             container.hidden = true;
             updateHint(container, false);
         }
-        if (select) {
-            select.disabled = true;
-            select.multiple = false;
+        if (options) {
+            options.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
+                checkbox.disabled = true;
+                checkbox.checked = false;
+            });
         }
         currentMultipleAllowed = false;
     }
@@ -2601,40 +2609,56 @@ const entryClassPicker = (() => {
         hintElement.hidden = false;
     }
 
-    function setMultiple(select, allowMultiple) {
-        if (!select) {
+    function getCheckboxes(options) {
+        if (!options) {
+            return [];
+        }
+        return Array.from(options.querySelectorAll('input[type="checkbox"][data-entry-class-checkbox]'));
+    }
+
+    function setMultiple(options, allowMultiple) {
+        if (!options) {
             return;
         }
-        select.multiple = Boolean(allowMultiple);
-        if (!select.multiple) {
-            const selectedOptions = Array.from(select.options || []).filter((option) => option.selected);
-            selectedOptions.forEach((option, index) => {
-                option.selected = index === 0;
+        const boxes = getCheckboxes(options);
+        if (!allowMultiple) {
+            let keptOne = false;
+            boxes.forEach((box) => {
+                if (!keptOne && box.checked) {
+                    keptOne = true;
+                    return;
+                }
+                box.checked = false;
             });
         }
     }
 
-    function ensureSingleSelection(select) {
-        if (!select || select.multiple) {
+    function ensureSingleSelection(options) {
+        if (!options) {
             return;
         }
-        if (select.value) {
-            return;
-        }
-        const firstAvailable = Array.from(select.options || []).find((option) => option.value);
-        if (firstAvailable) {
-            firstAvailable.selected = true;
+        const boxes = getCheckboxes(options);
+        const checked = boxes.filter((box) => box.checked);
+        if (checked.length > 1) {
+            checked.slice(1).forEach((box) => {
+                box.checked = false;
+            });
+        } else if (checked.length === 0 && boxes.length > 0) {
+            boxes[0].checked = true;
         }
     }
 
-    function getSelectedValues(select) {
-        if (!select) {
+    function getSelectedValues(options) {
+        if (!options) {
             return [];
         }
         const seen = new Set();
         const values = [];
-        Array.from(select.selectedOptions || []).forEach((option) => {
-            const value = option.value;
+        getCheckboxes(options).forEach((box) => {
+            if (!box.checked) {
+                return;
+            }
+            const value = box.value;
             if (value && !seen.has(value)) {
                 seen.add(value);
                 values.push(value);
@@ -2643,31 +2667,45 @@ const entryClassPicker = (() => {
         return values;
     }
 
-    function populateSelect(select, classes, selectedValues) {
-        if (!select) {
+    function populateOptions(options, classes, selectedValues, allowMultiple) {
+        if (!options) {
             return;
         }
         const selectedSet = new Set(selectedValues || []);
-        const wasFocused = document.activeElement === select;
-        select.innerHTML = '';
+        options.innerHTML = '';
+        const fragment = document.createDocumentFragment();
         classes.forEach((cls) => {
             if (!cls || !cls.slug) {
                 return;
             }
-            const option = document.createElement('option');
-            option.value = cls.slug;
-            option.textContent = cls.title ? `${cls.title} (${cls.slug})` : cls.slug;
-            if (selectedSet.has(cls.slug)) {
-                option.selected = true;
-            }
-            select.appendChild(option);
+            const label = document.createElement('label');
+            label.className = 'entry-class-checkbox';
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.value = cls.slug;
+            checkbox.dataset.entryClassCheckbox = 'true';
+            checkbox.checked = selectedSet.has(cls.slug);
+            checkbox.disabled = false;
+            checkbox.addEventListener('change', () => {
+                if (!allowMultiple && checkbox.checked) {
+                    getCheckboxes(options).forEach((box) => {
+                        if (box !== checkbox) {
+                            box.checked = false;
+                        }
+                    });
+                }
+            });
+            const text = document.createElement('span');
+            text.textContent = cls.title ? `${cls.title} (${cls.slug})` : cls.slug;
+            label.append(checkbox, text);
+            fragment.appendChild(label);
         });
-        if (wasFocused && typeof select.focus === 'function') {
-            try {
-                select.focus({ preventScroll: true });
-            } catch (error) {
-                select.focus();
-            }
+        options.appendChild(fragment);
+        if (!classes.length) {
+            const empty = document.createElement('p');
+            empty.className = 'field-hint';
+            empty.textContent = ENTRY_FORM_MESSAGES.classLoadError || 'No classes available.';
+            options.appendChild(empty);
         }
     }
 
@@ -2711,128 +2749,113 @@ const entryClassPicker = (() => {
         return Boolean(multipleOverride);
     }
 
-    function applyMultipleState(select, container, allowMultiple) {
+    function applyMultipleState(options, container, allowMultiple) {
         const final = Boolean(allowMultiple);
-        if (select) {
-            setMultiple(select, final);
+        if (options) {
+            setMultiple(options, final);
             if (!final) {
-                ensureSingleSelection(select);
+                ensureSingleSelection(options);
             }
         }
         updateHint(container, final);
         currentMultipleAllowed = final;
     }
 
-    function syncSelection(select, classId) {
-        if (!select || !classId) {
+    function syncSelection(options, classId) {
+        if (!options || !classId) {
             return;
         }
-        const option = Array.from(select.options || []).find((opt) => opt.value === classId);
-        if (!option) {
+        const target = getCheckboxes(options).find((box) => box.value === classId);
+        if (!target) {
             return;
         }
-        if (select.multiple) {
-            option.selected = true;
+        if (currentMultipleAllowed) {
+            target.checked = true;
         } else {
-            select.value = classId;
-            if (!option.selected) {
-                option.selected = true;
-            }
+            getCheckboxes(options).forEach((box) => {
+                box.checked = box === target;
+            });
         }
     }
 
     return {
         async prepare() {
-            const { container, select } = resolveEntryClassElements();
-            if (!container || !select) {
+            const { container, options } = resolveEntryClassElements();
+            if (!container || !options) {
                 return [];
             }
             if (!shouldAllowSelection()) {
-                hideField(container, select);
+                hideField(container, options);
                 return [];
             }
             const allowMultiple = resolveEffectiveMultiple();
             container.hidden = false;
-            select.disabled = true;
+            options.innerHTML = '<p class="field-hint">Loading classes…</p>';
             updateHint(container, allowMultiple);
             try {
                 const classes = await ensureClasses();
-                const previousSelection = getSelectedValues(select);
-                populateSelect(select, classes, previousSelection);
-                applyMultipleState(select, container, allowMultiple);
-                select.disabled = false;
-                syncSelection(select, getStoredEntryClassId());
+                const previousSelection = getSelectedValues(options);
+                populateOptions(options, classes, previousSelection, allowMultiple);
+                applyMultipleState(options, container, allowMultiple);
+                syncSelection(options, getStoredEntryClassId());
                 if (!allowMultiple) {
-                    ensureSingleSelection(select);
+                    ensureSingleSelection(options);
                 }
                 return classes;
             } catch (error) {
                 console.error('Unable to load entry classes:', error);
                 showOverlay(ENTRY_FORM_MESSAGES.classLoadError || ENTRY_FORM_MESSAGES.missingClass, 'error');
-                hideField(container, select);
+                hideField(container, options);
                 return [];
             }
         },
         reset() {
-            const { container, select } = resolveEntryClassElements();
-            if (select) {
-                Array.from(select.options || []).forEach((option) => {
-                    option.selected = false;
+            const { container, options } = resolveEntryClassElements();
+            if (options) {
+                getCheckboxes(options).forEach((box) => {
+                    box.checked = false;
                 });
             }
             multipleOverride = null;
             if (!shouldAllowSelection()) {
-                hideField(container, select);
+                hideField(container, options);
             } else {
                 const allowMultiple = resolveEffectiveMultiple();
-                applyMultipleState(select, container, allowMultiple);
+                applyMultipleState(options, container, allowMultiple);
             }
         },
         getSelection() {
             if (!shouldAllowSelection()) {
                 return [];
             }
-            const { select } = resolveEntryClassElements();
-            if (!select) {
+            const { options } = resolveEntryClassElements();
+            if (!options) {
                 return [];
             }
-            if (select.multiple) {
-                return getSelectedValues(select);
+            const selected = getSelectedValues(options);
+            if (!currentMultipleAllowed && selected.length > 1) {
+                return selected.slice(0, 1);
             }
-            let value = select.value;
-            if (!value) {
-                const selectedOption = Array.from(select.options || []).find((option) => option.selected && option.value);
-                if (selectedOption) {
-                    value = selectedOption.value;
-                }
-            }
-            if (!value) {
-                const firstAvailable = Array.from(select.options || []).find((option) => option.value);
-                if (firstAvailable) {
-                    firstAvailable.selected = true;
-                    value = firstAvailable.value;
-                }
-            }
-            return value ? [value] : [];
+            return selected;
         },
         syncWithCurrentClass(classId) {
             if (!shouldAllowSelection()) {
                 return;
             }
-            const { select } = resolveEntryClassElements();
-            if (!select || !(select.options && select.options.length)) {
+            const { options } = resolveEntryClassElements();
+            if (!options || !getCheckboxes(options).length) {
                 return;
             }
-            syncSelection(select, classId);
-            if (!select.multiple) {
-                ensureSingleSelection(select);
+            syncSelection(options, classId);
+            if (!currentMultipleAllowed) {
+                ensureSingleSelection(options);
             }
         },
         setMultipleAllowed(allow) {
-            const { container, select } = resolveEntryClassElements();
+            const { container, options } = resolveEntryClassElements();
             if (!shouldAllowSelection()) {
                 multipleOverride = null;
-                hideField(container, select);
+                hideField(container, options);
                 return;
             }
             if (allow === null || typeof allow === 'undefined') {
@@ -2841,7 +2864,7 @@ const entryClassPicker = (() => {
                 multipleOverride = Boolean(allow);
             }
             const allowMultiple = resolveEffectiveMultiple();
-            applyMultipleState(select, container, allowMultiple);
+            applyMultipleState(options, container, allowMultiple);
         },
         isMultipleAllowed() {
             return currentMultipleAllowed;
@@ -2930,6 +2953,7 @@ function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES)
     const evaluate = () => {
         const isEvent = typeSelect && typeSelect.value === 'event';
         const isHoliday = typeSelect && typeSelect.value === 'ferien';
+        const isTodo = typeSelect && typeSelect.value === 'todo';
         const allowEmptySubject = form.dataset.allowEmptySubject === 'true';
         const requireStart = !isHoliday && form.id === 'entry-form';
 
@@ -2963,6 +2987,9 @@ function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES)
         if (subjectSelect) {
             subjectSelect.required = false;
             subjectSelect.setCustomValidity('');
+            if (isTodo) {
+                subjectSelect.value = '';
+            }
         }
 
         if (eventTitleInput) {
@@ -3020,20 +3047,21 @@ function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES)
     const toggleTypeFields = () => {
         const isEvent = typeSelect && typeSelect.value === 'event';
         const isHoliday = typeSelect && typeSelect.value === 'ferien';
+        const isTodo = typeSelect && typeSelect.value === 'todo';
         const typeValue = typeSelect ? typeSelect.value : '';
         const requiresSingleClass = typeValue === 'hausaufgabe' || typeValue === 'pruefung';
         const allowMultipleClasses = !requiresSingleClass;
 
         if (subjectGroup) {
-            subjectGroup.classList.toggle('is-hidden', isEvent || isHoliday);
+            subjectGroup.classList.toggle('is-hidden', isEvent || isHoliday || isTodo);
         }
-        if (subjectSelect && (isEvent || isHoliday)) {
+        if (subjectSelect && (isEvent || isHoliday || isTodo)) {
             subjectSelect.value = '';
             subjectSelect.setCustomValidity('');
         }
 
         if (entryClassPickerController && typeof entryClassPickerController.setMultipleAllowed === 'function') {
-            entryClassPickerController.setMultipleAllowed(allowMultipleClasses);
+            entryClassPickerController.setMultipleAllowed(isTodo ? false : allowMultipleClasses);
         }
 
         if (eventTitleGroup) {
@@ -3173,7 +3201,7 @@ function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES)
 }
 
 async function showEntryForm(defaults = null) {
-    if (!canManageEntries()) {
+    if (!canManageEntries() && !canCreatePersonalTodos()) {
         showOverlay(CREATE_DISABLED_MESSAGE, 'error');
         return;
     }
@@ -3190,14 +3218,34 @@ async function showEntryForm(defaults = null) {
     form.reset();
     if (controller) {
         if (!form._hmEntryDefaults || !Object.prototype.hasOwnProperty.call(form._hmEntryDefaults, 'type')) {
-            controller.setType('event');
+            controller.setType(canManageEntries() ? 'event' : 'todo');
         } else {
             controller.toggleTypeFields();
             controller.evaluate();
         }
     }
 
-    if (window.hmEntryClassPicker && typeof window.hmEntryClassPicker.prepare === 'function') {
+    const typeField = form.querySelector('#typ');
+    if (typeField) {
+        if (canManageEntries()) {
+            Array.from(typeField.options || []).forEach((option) => {
+                option.hidden = false;
+                option.disabled = false;
+            });
+            typeField.disabled = false;
+        } else {
+            Array.from(typeField.options || []).forEach((option) => {
+                const keep = option.value === 'todo';
+                option.hidden = !keep;
+                option.disabled = !keep;
+            });
+            typeField.value = 'todo';
+            typeField.disabled = true;
+            controller?.setType('todo');
+        }
+    }
+
+    if (canManageEntries() && window.hmEntryClassPicker && typeof window.hmEntryClassPicker.prepare === 'function') {
         try {
             await window.hmEntryClassPicker.prepare();
         } catch (error) {
@@ -3295,6 +3343,7 @@ async function saveEntry(event) {
 
     const endDateIso = enddatumInput ? parseSwissDate(enddatumInput) : null;
     const isHoliday = typ === 'ferien';
+    const isTodo = typ === 'todo';
 
     if (isHoliday && !endDateIso) {
         showOverlay(ENTRY_FORM_MESSAGES.missingEndDate || ENTRY_FORM_MESSAGES.invalidDate, 'error');
@@ -3320,7 +3369,7 @@ async function saveEntry(event) {
     const payloadBeschreibung = isEvent
         ? eventTitle + (beschreibung ? `\n\n${beschreibung}` : '')
         : beschreibung;
-    const payloadSubject = isEvent ? '' : fach;
+    const payloadSubject = (isEvent || isTodo) ? '' : fach;
     const resolvedEndDate = endDateIso || isoDate;
 
     const storedClassId = (typeof hmClassStorage.getId === 'function') ? hmClassStorage.getId() : '';
@@ -3332,7 +3381,7 @@ async function saveEntry(event) {
         ? entryClassPickerController.isMultipleAllowed()
         : Boolean(sessionState.isAdmin);
 
-    if (canChooseClasses && entryClassPickerController && typeof entryClassPickerController.getSelection === 'function') {
+    if (!isTodo && canChooseClasses && entryClassPickerController && typeof entryClassPickerController.getSelection === 'function') {
         selectedClassIds = entryClassPickerController.getSelection() || [];
         selectedClassIds = Array.from(new Set((selectedClassIds || []).filter(Boolean)));
         if (!multipleAllowedForSelection && selectedClassIds.length > 1) {
@@ -3348,9 +3397,9 @@ async function saveEntry(event) {
             showOverlay(message, 'error');
             return;
         }
-    } else if (storedClassId) {
+    } else if (!isTodo && storedClassId) {
         selectedClassIds = [storedClassId];
-    } else {
+    } else if (!isTodo) {
         showOverlay(ENTRY_FORM_MESSAGES.missingClass, 'error');
         return;
     }
@@ -3379,22 +3428,24 @@ async function saveEntry(event) {
                 enddatum: resolvedEndDate
             };
             const allowMultipleForPayload = Boolean(sessionState.isAdmin && multipleAllowedForSelection);
-            if (allowMultipleForPayload && selectedClassIds.length > 0) {
-                payload.class_ids = selectedClassIds;
-            } else if (selectedClassIds.length > 0) {
-                payload.class_id = selectedClassIds[0];
-            } else {
-                payload.class_id = storedClassId;
+            if (!isTodo) {
+                if (allowMultipleForPayload && selectedClassIds.length > 0) {
+                    payload.class_ids = selectedClassIds;
+                } else if (selectedClassIds.length > 0) {
+                    payload.class_id = selectedClassIds[0];
+                } else {
+                    payload.class_id = storedClassId;
+                }
             }
 
-            const response = await fetch(`${API_BASE}/add_entry`, {
+            const response = await fetch(isTodo ? `${API_BASE}/api/todos` : `${API_BASE}/add_entry`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
                 body: JSON.stringify(payload)
             });
             if (response.status === 403) {
-                showOverlay(ENTRY_FORM_MESSAGES.missingClass, 'error');
+                showOverlay(isTodo ? CREATE_DISABLED_MESSAGE : ENTRY_FORM_MESSAGES.missingClass, 'error');
                 aborted = true;
                 break;
             }
