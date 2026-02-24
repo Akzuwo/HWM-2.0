@@ -15,7 +15,6 @@ from typing import Dict, Optional, Tuple, Any, Iterable, List
 
 from logging.handlers import RotatingFileHandler
 
-from ics import Calendar, Event
 import pytz
 from flask import Flask, jsonify, request, session, make_response, send_from_directory, Response, g
 from functools import wraps
@@ -1561,6 +1560,76 @@ def _parse_iso_date(value: Optional[str]) -> Optional[datetime.date]:
     except ValueError:
         return None
 
+
+def _escape_ical_text(value: Optional[str]) -> str:
+    text = str(value or "")
+    text = text.replace("\\", "\\\\")
+    text = text.replace(";", r"\;")
+    text = text.replace(",", r"\,")
+    text = text.replace("\r\n", r"\n").replace("\r", r"\n").replace("\n", r"\n")
+    return text
+
+
+def _format_ical_date(value: datetime.date) -> str:
+    return value.strftime("%Y%m%d")
+
+
+def _build_ics_content(entries: Iterable[Dict[str, Any]]) -> str:
+    generated_utc = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    lines: List[str] = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//Homework Manager//Calendar Export//DE",
+        "CALSCALE:GREGORIAN",
+        "METHOD:PUBLISH",
+    ]
+
+    for entry in entries:
+        due = entry.get("datum")
+        end_due = entry.get("enddatum") or due
+        if isinstance(due, str):
+            try:
+                due = datetime.date.fromisoformat(due)
+            except ValueError:
+                due = datetime.date.today()
+        if isinstance(end_due, str):
+            try:
+                end_due = datetime.date.fromisoformat(end_due)
+            except ValueError:
+                end_due = due
+        if not isinstance(due, datetime.date):
+            due = datetime.date.today()
+        if not isinstance(end_due, datetime.date):
+            end_due = due
+        if end_due < due:
+            end_due = due
+
+        subject = str(entry.get("fach") or "").strip()
+        typ_label = str(entry.get("typ") or "").capitalize() or "Eintrag"
+        title_parts = [typ_label]
+        if subject:
+            title_parts.append(subject)
+        summary = " - ".join(title_parts)
+
+        uid_prefix = "todo" if str(entry.get("typ") or "").lower() == "todo" else "eintrag"
+        uid = f"{uid_prefix}-{entry.get('id')}@homework-manager.akzuwo.ch"
+
+        lines.extend(
+            [
+                "BEGIN:VEVENT",
+                f"UID:{_escape_ical_text(uid)}",
+                f"DTSTAMP:{generated_utc}",
+                f"SUMMARY:{_escape_ical_text(summary)}",
+                f"DESCRIPTION:{_escape_ical_text(entry.get('beschreibung'))}",
+                f"DTSTART;VALUE=DATE:{_format_ical_date(due)}",
+                f"DTEND;VALUE=DATE:{_format_ical_date(end_due + datetime.timedelta(days=1))}",
+                "END:VEVENT",
+            ]
+        )
+
+    lines.append("END:VCALENDAR")
+    return "\r\n".join(lines) + "\r\n"
+
 # ---------- ROUTES ----------
 
 @app.route("/")
@@ -1607,42 +1676,7 @@ def export_ics():
     cursor.close()
     conn.close()
 
-    cal = Calendar()
-    for e in entries:
-        due = e['datum']
-        end_due = e.get('enddatum') or due
-        if isinstance(due, str):
-            try:
-                due = datetime.date.fromisoformat(due)
-            except ValueError:
-                due = datetime.date.today()
-        if isinstance(end_due, str):
-            try:
-                end_due = datetime.date.fromisoformat(end_due)
-            except ValueError:
-                end_due = due
-        if not isinstance(due, datetime.date):
-            due = datetime.date.today()
-        if not isinstance(end_due, datetime.date):
-            end_due = due
-        if end_due < due:
-            end_due = due
-        ev = Event()
-        subject = e.get('fach', '').strip()
-        typ_label = e['typ'].capitalize()
-        title_parts = [typ_label]
-        if subject:
-            title_parts.append(subject)
-        ev.name = " - ".join(title_parts)
-        ev.description = e['beschreibung']
-        ev.begin = due
-        ev.make_all_day()
-        ev.end = end_due + datetime.timedelta(days=1)
-        uid_prefix = 'todo' if str(e.get('typ') or '').lower() == 'todo' else 'eintrag'
-        ev.uid = f"{uid_prefix}-{e['id']}@homework-manager.akzuwo.ch"
-        cal.events.add(ev)
-
-    ics_text = str(cal)
+    ics_text = _build_ics_content(entries)
     return Response(
         ics_text,
         mimetype='text/calendar',
