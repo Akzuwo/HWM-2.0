@@ -1689,7 +1689,12 @@ def _build_ics_content(entries: Iterable[Dict[str, Any]]) -> str:
 
 @app.route("/")
 def root():
-    return send_from_directory(app.static_folder, "login.html")
+    return jsonify(status='ok', service='hwm-api')
+
+
+@app.route('/healthz')
+def healthz():
+    return jsonify(status='ok')
 
 @app.route('/calendar.ics')
 @require_authenticated
