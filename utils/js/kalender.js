@@ -1,4 +1,10 @@
 // kalender.js
+if (typeof window !== 'undefined' && window.__hmKalenderLoaded) {
+  console.warn('kalender.js was loaded more than once. Skipping duplicate execution.');
+} else {
+  if (typeof window !== 'undefined') {
+    window.__hmKalenderLoaded = true;
+  }
 
 const API_BASE_URL =
   (typeof window !== 'undefined' && typeof window.hmResolveApiBase === 'function')
@@ -1450,3 +1456,4 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   })();
 });
+}
