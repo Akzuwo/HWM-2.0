@@ -1322,12 +1322,14 @@ def _ensure_entries_schema_compatibility(cur, conn, columns: Dict[str, str]) -> 
             schema_changed = True
 
         cur.execute("SHOW INDEX FROM eintraege WHERE Key_name = 'idx_eintraege_owner_private'")
-        if cur.fetchone() is None:
+        owner_private_index_rows = cur.fetchall()
+        if not owner_private_index_rows:
             cur.execute("CREATE INDEX idx_eintraege_owner_private ON eintraege (owner_user_id, is_private)")
             schema_changed = True
 
         cur.execute("SHOW INDEX FROM eintraege WHERE Key_name = 'idx_eintraege_private_date'")
-        if cur.fetchone() is None:
+        private_date_index_rows = cur.fetchall()
+        if not private_date_index_rows:
             cur.execute("CREATE INDEX idx_eintraege_private_date ON eintraege (is_private, datum)")
             schema_changed = True
 
