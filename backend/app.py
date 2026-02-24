@@ -1285,6 +1285,56 @@ def _enum_values_from_column_definition(definition: str) -> List[str]:
     return values
 
 
+def _ensure_entries_schema_compatibility(cur, conn, columns: Dict[str, str]) -> None:
+    schema_changed = False
+
+    cur.execute("SHOW COLUMNS FROM eintraege LIKE 'typ'")
+    typ_row = cur.fetchone()
+    if typ_row:
+        column_type = typ_row[1] or ""
+        if column_type.lower().startswith("enum("):
+            enum_values = _enum_values_from_column_definition(column_type)
+            if "todo" not in enum_values:
+                enum_values.append("todo")
+                enum_sql = ", ".join(f"'{value}'" for value in enum_values)
+                is_nullable = (typ_row[2] or "").upper() == "YES"
+                default_value = typ_row[4]
+                null_clause = " NULL" if is_nullable else " NOT NULL"
+                default_clause = f" DEFAULT '{default_value}'" if default_value is not None else ""
+                cur.execute(
+                    f"ALTER TABLE eintraege MODIFY COLUMN typ ENUM({enum_sql}){null_clause}{default_clause}"
+                )
+                schema_changed = True
+
+    if "owner_user_id" not in columns:
+        cur.execute("ALTER TABLE eintraege ADD COLUMN owner_user_id INT NULL AFTER fach")
+        schema_changed = True
+
+    if "is_private" not in columns:
+        cur.execute("ALTER TABLE eintraege ADD COLUMN is_private TINYINT(1) NOT NULL DEFAULT 0 AFTER owner_user_id")
+        schema_changed = True
+
+    cur.execute("SHOW COLUMNS FROM eintraege")
+    refreshed_columns = {row[0]: row[1] for row in cur.fetchall()}
+    if "is_private" in refreshed_columns:
+        cur.execute("UPDATE eintraege SET is_private = 0 WHERE is_private IS NULL")
+        if getattr(cur, "rowcount", 0) > 0:
+            schema_changed = True
+
+        cur.execute("SHOW INDEX FROM eintraege WHERE Key_name = 'idx_eintraege_owner_private'")
+        if cur.fetchone() is None:
+            cur.execute("CREATE INDEX idx_eintraege_owner_private ON eintraege (owner_user_id, is_private)")
+            schema_changed = True
+
+        cur.execute("SHOW INDEX FROM eintraege WHERE Key_name = 'idx_eintraege_private_date'")
+        if cur.fetchone() is None:
+            cur.execute("CREATE INDEX idx_eintraege_private_date ON eintraege (is_private, datum)")
+            schema_changed = True
+
+    if schema_changed:
+        conn.commit()
+
+
 # Tabelle für den Stundenplan sicherstellen
 def ensure_stundenplan_table():
     try:
@@ -1327,6 +1377,9 @@ def ensure_entries_table():
         cur.execute("SHOW TABLES LIKE 'eintraege'")
         if cur.fetchone() is None:
             raise RuntimeError("Table 'eintraege' is missing. Run database migrations.")
+        cur.execute("SHOW COLUMNS FROM eintraege")
+        columns = {row[0]: row[1] for row in cur.fetchall()}
+        _ensure_entries_schema_compatibility(cur, conn, columns)
         cur.execute("SHOW COLUMNS FROM eintraege")
         columns = {row[0]: row[1] for row in cur.fetchall()}
         _validate_columns(
