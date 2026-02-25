@@ -12,32 +12,37 @@
   let activeModal = null;
   let openCount = 0;
   let listenersAttached = false;
-  let scrollLockY = 0;
+  const ROOT_LOCK_ATTR = 'data-hm-modal-root-lock';
 
   function lockPageScroll() {
-    if (typeof document === 'undefined' || !document.body) {
+    if (typeof document === 'undefined' || !document.body || !document.documentElement) {
       return;
     }
-    scrollLockY = window.scrollY || window.pageYOffset || 0;
-    document.body.style.position = 'fixed';
-    document.body.style.top = `-${scrollLockY}px`;
-    document.body.style.left = '0';
-    document.body.style.right = '0';
-    document.body.style.width = '100%';
+    document.documentElement.setAttribute(ROOT_LOCK_ATTR, '1');
+    document.documentElement.style.overflow = 'hidden';
+    document.documentElement.style.overscrollBehavior = 'contain';
+    document.body.style.overflow = 'hidden';
+    document.body.style.overscrollBehavior = 'contain';
   }
 
   function unlockPageScroll() {
-    if (typeof document === 'undefined' || !document.body) {
+    if (typeof document === 'undefined' || !document.body || !document.documentElement) {
       return;
     }
-    const topValue = document.body.style.top || '';
-    document.body.style.position = '';
-    document.body.style.top = '';
-    document.body.style.left = '';
-    document.body.style.right = '';
-    document.body.style.width = '';
-    const previousY = topValue ? Math.abs(parseInt(topValue, 10)) : scrollLockY;
-    window.scrollTo(0, Number.isFinite(previousY) ? previousY : 0);
+    document.documentElement.removeAttribute(ROOT_LOCK_ATTR);
+    document.documentElement.style.overflow = '';
+    document.documentElement.style.overscrollBehavior = '';
+    document.body.style.overflow = '';
+    document.body.style.overscrollBehavior = '';
+  }
+
+  function ensureOverlayInBody(overlay) {
+    if (!overlay || !document.body) {
+      return;
+    }
+    if (overlay.parentElement !== document.body) {
+      document.body.appendChild(overlay);
+    }
   }
 
   function resolveElement(target) {
@@ -110,6 +115,7 @@
   function open(target, options = {}) {
     const overlay = resolveElement(target);
     if (!overlay) return;
+    ensureOverlayInBody(overlay);
 
     if (activeModal && activeModal.overlay === overlay) {
       return;
