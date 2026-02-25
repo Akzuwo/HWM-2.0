@@ -2502,6 +2502,7 @@ function closeEntryModal() {
             window.hmModal.close(overlay);
         } else {
             overlay.classList.remove('is-open');
+            document.body.classList.remove('hm-modal-open');
         }
     }
     const form = document.getElementById('entry-form');
@@ -2510,7 +2511,7 @@ function closeEntryModal() {
         form.reset();
         form.dataset.allowEmptySubject = 'true';
         const controller = setupModalFormInteractions(form);
-        controller?.setType('event');
+        controller?.setType(canManageEntries() ? 'event' : 'todo');
         controller?.evaluate();
         if (window.hmEntryClassPicker && typeof window.hmEntryClassPicker.reset === 'function') {
             window.hmEntryClassPicker.reset();
@@ -2962,6 +2963,12 @@ function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES)
     const saveButton = form.querySelector('[data-role="submit"]');
     const cancelButton = form.querySelector('[data-role="cancel"]');
     const entryClassPickerController = window.hmEntryClassPicker;
+    const resolveDefaultType = () => {
+        if (form && form.id === 'entry-form') {
+            return canManageEntries() ? 'event' : 'todo';
+        }
+        return 'event';
+    };
 
     const setInvalidState = (input) => {
         if (!input) return;
@@ -3154,9 +3161,10 @@ function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES)
         window.setTimeout(() => {
             const getDefault = (key, fallback = '') =>
                 defaults && Object.prototype.hasOwnProperty.call(defaults, key) ? defaults[key] : fallback;
+            const fallbackType = resolveDefaultType();
 
             if (typeSelect) {
-                typeSelect.value = getDefault('type', 'event');
+                typeSelect.value = getDefault('type', fallbackType);
             }
 
             if (dateInput) {
@@ -3167,8 +3175,8 @@ function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES)
             }
             if (endDateInput) {
                 endDateInput.value = getDefault('endDate', '');
-                endDateInput.disabled = (typeSelect?.value || 'event') !== 'ferien';
-                endDateInput.required = (typeSelect?.value || 'event') === 'ferien';
+                endDateInput.disabled = (typeSelect?.value || fallbackType) !== 'ferien';
+                endDateInput.required = (typeSelect?.value || fallbackType) === 'ferien';
                 endDateInput.setCustomValidity('');
             }
             if (startInput) {
@@ -3233,7 +3241,10 @@ async function showEntryForm(defaults = null) {
         return;
     }
 
-    form._hmEntryDefaults = defaults ? { ...defaults } : null;
+    form._hmEntryDefaults = defaults ? { ...defaults } : {};
+    if (!Object.prototype.hasOwnProperty.call(form._hmEntryDefaults, 'type')) {
+        form._hmEntryDefaults.type = canManageEntries() ? 'event' : 'todo';
+    }
     form.dataset.allowEmptySubject = 'true';
     const controller = setupModalFormInteractions(form);
     form.reset();
@@ -3279,6 +3290,8 @@ async function showEntryForm(defaults = null) {
         } catch (error) {
             console.error('Unable to prepare class picker:', error);
         }
+    } else if (window.hmEntryClassPicker && typeof window.hmEntryClassPicker.setVisible === 'function') {
+        window.hmEntryClassPicker.setVisible(false);
     }
     const saveButton = form.querySelector('#saveButton');
     if (saveButton) {
@@ -3294,6 +3307,7 @@ async function showEntryForm(defaults = null) {
         });
     } else {
         overlay.classList.add('is-open');
+        document.body.classList.add('hm-modal-open');
         if (initialFocus && typeof initialFocus.focus === 'function') {
             try {
                 initialFocus.focus({ preventScroll: true });
@@ -3486,7 +3500,7 @@ async function saveEntry(event) {
                 await refreshCalendarEntries();
                 if (form) {
                     form.reset();
-                    controller?.setType('event');
+                    controller?.setType(canManageEntries() ? 'event' : 'todo');
                 }
             } else {
                 console.error("Server error while saving:", result.message);
@@ -3509,7 +3523,7 @@ async function saveEntry(event) {
         // Reset input fields
         if (form) {
             form.reset();
-            controller?.setType('event');
+            controller?.setType(canManageEntries() ? 'event' : 'todo');
         }
     }
 

@@ -280,6 +280,7 @@ function openDeleteConfirmModal(event) {
   } else {
     overlay.classList.add('is-open');
     overlay.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('hm-modal-open');
   }
 }
 
@@ -294,6 +295,7 @@ function closeDeleteConfirmModal() {
   } else {
     overlay.classList.remove('is-open');
     overlay.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('hm-modal-open');
   }
 }
 
@@ -735,6 +737,7 @@ function openModal(event) {
     });
   } else {
     overlay.classList.add('is-open');
+    document.body.classList.add('hm-modal-open');
     if (initialFocusTarget && typeof initialFocusTarget.focus === 'function') {
       initialFocusTarget.focus();
     }
@@ -750,6 +753,7 @@ function closeModal() {
       window.hmModal.close(overlay);
     } else {
       overlay.classList.remove('is-open');
+      document.body.classList.remove('hm-modal-open');
     }
   }
   if (editForm) {

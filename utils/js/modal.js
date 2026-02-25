@@ -12,6 +12,33 @@
   let activeModal = null;
   let openCount = 0;
   let listenersAttached = false;
+  let scrollLockY = 0;
+
+  function lockPageScroll() {
+    if (typeof document === 'undefined' || !document.body) {
+      return;
+    }
+    scrollLockY = window.scrollY || window.pageYOffset || 0;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollLockY}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.width = '100%';
+  }
+
+  function unlockPageScroll() {
+    if (typeof document === 'undefined' || !document.body) {
+      return;
+    }
+    const topValue = document.body.style.top || '';
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.width = '';
+    const previousY = topValue ? Math.abs(parseInt(topValue, 10)) : scrollLockY;
+    window.scrollTo(0, Number.isFinite(previousY) ? previousY : 0);
+  }
 
   function resolveElement(target) {
     if (!target) return null;
@@ -106,6 +133,7 @@
 
     if (openCount === 0) {
       document.body.classList.add('hm-modal-open');
+      lockPageScroll();
       attachGlobalListeners();
     }
     openCount += 1;
@@ -138,6 +166,7 @@
     openCount = Math.max(0, openCount - 1);
     if (openCount === 0) {
       document.body.classList.remove('hm-modal-open');
+      unlockPageScroll();
       detachGlobalListeners();
     }
 
