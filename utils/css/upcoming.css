@@ -132,8 +132,17 @@ main.upcoming {
 
 .upcoming__header {
   display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: clamp(14px, 2.6vw, 24px);
+  flex-wrap: wrap;
+}
+
+.upcoming__heading {
+  display: flex;
   flex-direction: column;
   gap: 12px;
+  min-width: 0;
 }
 
 .upcoming__title {
@@ -147,6 +156,14 @@ main.upcoming {
   color: var(--upcoming-text-secondary);
   font-size: 1.02rem;
   line-height: 1.6;
+}
+
+.upcoming .class-select {
+  min-width: min(340px, 100%);
+}
+
+.upcoming .class-select select {
+  width: min(360px, 100%);
 }
 
 .upcoming__list {
@@ -347,6 +364,18 @@ main.upcoming {
 }
 
 @media (max-width: 767px) {
+  .upcoming__header {
+    align-items: stretch;
+  }
+
+  .upcoming .class-select {
+    min-width: 0;
+  }
+
+  .upcoming .class-select select {
+    width: 100%;
+  }
+
   .upcoming-card {
     min-height: 200px;
   }

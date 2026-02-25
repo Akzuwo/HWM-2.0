@@ -79,6 +79,15 @@
       }
       this.select = this.container.querySelector(selectSelector);
       this.label = this.container.querySelector('label');
+      if (this.container) {
+        this.container.classList.add('hm-class-selector');
+      }
+      if (this.select) {
+        this.select.classList.add('hm-class-selector__select');
+      }
+      if (this.label) {
+        this.label.classList.add('hm-class-selector__label');
+      }
       return Boolean(this.select);
     }
 
@@ -109,11 +118,13 @@
       if (!this.state.enabled) {
         this.container.hidden = true;
         this.container.classList.remove('is-visible');
+        this.container.classList.remove('is-enabled');
         this.select.disabled = true;
         return;
       }
       this.container.hidden = false;
       this.container.classList.add('is-visible');
+      this.container.classList.add('is-enabled');
       this.select.disabled = false;
     }
 
@@ -167,6 +178,9 @@
         return;
       }
       this.state.loading = true;
+      if (this.container) {
+        this.container.classList.add('is-loading');
+      }
       this.select.disabled = true;
       if (this.label) {
         this.label.textContent = this.text.label;
@@ -200,6 +214,9 @@
         this.resetOptions(this.text.error);
       } finally {
         this.state.loading = false;
+        if (this.container) {
+          this.container.classList.remove('is-loading');
+        }
         this.select.disabled = !this.state.enabled;
         if (this.state.enabled && !this.select.disabled) {
           this.select.disabled = false;
@@ -245,6 +262,9 @@
         return;
       }
       const previousSlug = this.state.classSlug;
+      if (this.container) {
+        this.container.classList.add('is-updating');
+      }
       this.select.disabled = true;
       try {
         const context = await this.ensureSessionSelection(nextSlug);
@@ -257,6 +277,9 @@
         }
         callHandler(this.config.onError, this.text.changeError, 'error', error);
       } finally {
+        if (this.container) {
+          this.container.classList.remove('is-updating');
+        }
         this.select.disabled = !this.state.enabled;
       }
     }

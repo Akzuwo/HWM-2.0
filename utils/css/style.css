@@ -1781,9 +1781,9 @@ body.has-auth-overlay {
 
 /* --------- Tagesübersicht --------- */
 .page-container {
-    max-width: 1000px;
-    margin: 40px auto;
-    padding: 0 5vw;
+    max-width: 1120px;
+    margin: clamp(28px, 6vh, 52px) auto;
+    padding: 0 clamp(18px, 4vw, 48px);
 }
 
 .page-header {
@@ -1804,7 +1804,7 @@ body.has-auth-overlay {
 .page-controls {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
     flex-wrap: wrap;
     width: 100%;
     justify-content: flex-start;
@@ -1813,20 +1813,73 @@ body.has-auth-overlay {
 .class-select {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 0.45rem;
+    min-width: min(340px, 100%);
 }
 
 .class-select label {
-    font-size: 0.75rem;
+    font-size: 0.76rem;
     font-weight: 600;
-    color: #b5b5b5;
-    letter-spacing: 0.02em;
+    color: rgba(226, 232, 240, 0.78);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
 }
 
 .class-select select {
-    width: clamp(180px, 22vw, 320px);
+    width: min(100%, 360px);
     max-width: 100%;
     min-width: 0;
+    appearance: none;
+    border-radius: 14px;
+    border: 1px solid rgba(124, 163, 255, 0.28);
+    background:
+        linear-gradient(140deg, rgba(91, 141, 239, 0.16), rgba(22, 28, 46, 0.12) 55%),
+        rgba(14, 18, 30, 0.92);
+    color: #e9eeff;
+    padding: 0.78rem 2.7rem 0.78rem 0.95rem;
+    line-height: 1.3;
+    font-weight: 600;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 10px 28px rgba(3, 8, 20, 0.42);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.class-select select:hover {
+    border-color: rgba(124, 163, 255, 0.5);
+}
+
+.class-select select:focus-visible {
+    outline: none;
+    border-color: rgba(124, 163, 255, 0.86);
+    box-shadow: 0 0 0 3px rgba(124, 163, 255, 0.24), 0 10px 30px rgba(3, 8, 20, 0.48);
+    transform: translateY(-1px);
+}
+
+.hm-class-selector {
+    position: relative;
+}
+
+.hm-class-selector::after {
+    content: "";
+    position: absolute;
+    right: 0.95rem;
+    top: calc(50% + 0.62rem);
+    width: 0.52rem;
+    height: 0.52rem;
+    border-right: 2px solid rgba(221, 231, 255, 0.78);
+    border-bottom: 2px solid rgba(221, 231, 255, 0.78);
+    transform: translateY(-50%) rotate(45deg);
+    pointer-events: none;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.hm-class-selector.is-loading::after,
+.hm-class-selector.is-updating::after {
+    opacity: 0.35;
+}
+
+.hm-class-selector.is-loading select,
+.hm-class-selector.is-updating select {
+    cursor: wait;
 }
 
 .page-header h1,
@@ -1835,14 +1888,15 @@ body.has-auth-overlay {
 }
 
 .page-date {
-    color: #b5b5b5;
-    font-size: 0.95rem;
+    color: rgba(203, 213, 225, 0.78);
+    font-size: 0.96rem;
+    letter-spacing: 0.01em;
 }
 
 .overview-grid {
     display: grid;
-    gap: 18px;
-    margin-top: 24px;
+    gap: clamp(16px, 2.5vw, 24px);
+    margin-top: clamp(18px, 3vw, 28px);
 }
 
 @media (min-width: 900px) {
@@ -1882,41 +1936,67 @@ body.has-auth-overlay {
 
 @media (min-width: 700px) {
     .overview-grid {
-        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     }
 }
 
 .day-card {
-    background: #1f1f1f;
-    border-radius: 12px;
-    padding: 16px;
+    background:
+        linear-gradient(165deg, rgba(91, 141, 239, 0.12), rgba(22, 28, 46, 0) 58%),
+        rgba(14, 18, 30, 0.88);
+    border-radius: 16px;
+    padding: clamp(14px, 2vw, 20px);
     text-align: left;
-    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
-    border: 1px solid #2a2a2a;
+    box-shadow: 0 16px 34px rgba(0, 0, 0, 0.34);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .day-card h2 {
     margin-top: 0;
     margin-bottom: 12px;
+    font-size: 1.05rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: rgba(226, 232, 240, 0.96);
+}
+
+.day-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(124, 163, 255, 0.42);
+    box-shadow: 0 22px 42px rgba(0, 0, 0, 0.42);
 }
 
 .day-card.current-day {
-    border-color: #1e90ff;
-    box-shadow: 0 0 18px rgba(30, 144, 255, 0.35);
-    background: rgba(30, 144, 255, 0.12);
+    border-color: rgba(96, 165, 250, 0.85);
+    box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.25), 0 24px 44px rgba(30, 64, 175, 0.32);
+    background:
+        linear-gradient(160deg, rgba(59, 130, 246, 0.24), rgba(14, 18, 30, 0.2) 62%),
+        rgba(14, 18, 30, 0.9);
 }
 
 .schedule-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.95rem;
+    font-size: 0.93rem;
 }
 
 .schedule-table th,
 .schedule-table td {
-    padding: 8px 12px;
-    border-bottom: 1px solid #2e2e2e;
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.14);
     text-align: left;
+}
+
+.schedule-table th {
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(203, 213, 225, 0.84);
+}
+
+.schedule-table tbody tr:nth-child(even):not(:last-child) td {
+    background: rgba(148, 163, 184, 0.04);
 }
 
 .schedule-table tbody tr:last-child td {

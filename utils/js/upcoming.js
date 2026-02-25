@@ -3,6 +3,18 @@ const API_BASE_URL =
     ? window.hmResolveApiBase()
     : 'https://hwm-api.akzuwo.ch';
 
+function fetchWithSession(url, options = {}) {
+  const { headers, ...rest } = options || {};
+  const init = {
+    ...rest,
+    credentials: 'include'
+  };
+  if (headers) {
+    init.headers = headers;
+  }
+  return fetch(url, init);
+}
+
 const t = window.hmI18n ? window.hmI18n.scope('upcoming') : (key, fallback) => fallback;
 const locale = window.hmI18n ? window.hmI18n.getLocale() : 'en-GB';
 
@@ -35,21 +47,8 @@ async function responseRequiresClassContext(response) {
   }
 }
 
-document.addEventListener('DOMContentLoaded', async () => {
-  const listEl = document.getElementById('upcoming-list');
-  const backButton = document.getElementById('back-button');
-
-  if (backButton) {
-    backButton.addEventListener('click', () => {
-      window.location.href = 'index.html';
-    });
-  }
-
-  if (!listEl) {
-    return;
-  }
-
-  const setStatus = (message, variant = 'default') => {
+function createStatusSetter(listEl) {
+  return function setStatus(message, variant = 'default') {
     listEl.innerHTML = '';
     const status = document.createElement('p');
     status.className = 'upcoming__status';
@@ -59,8 +58,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     status.textContent = message;
     listEl.appendChild(status);
   };
+}
 
-  setStatus(t('loading', 'Loading data…'), 'loading');
+async function loadUpcomingEvents(listEl, { showLoading = false } = {}) {
+  if (!listEl) {
+    return;
+  }
+
+  const setStatus = createStatusSetter(listEl);
+  if (showLoading) {
+    setStatus(t('loading', 'Loading data…'), 'loading');
+  }
+
   listEl.setAttribute('aria-busy', 'true');
 
   const dateFormatter = new Intl.DateTimeFormat(locale, {
@@ -80,7 +89,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   };
 
   try {
-    const res = await fetch(`${API_BASE_URL}/entries`);
+    const res = await fetchWithSession(`${API_BASE_URL}/entries`);
     if (await responseRequiresClassContext(res)) {
       setStatus(unauthorizedMessage);
       listEl.setAttribute('aria-busy', 'false');
@@ -209,4 +218,49 @@ document.addEventListener('DOMContentLoaded', async () => {
     setStatus(t('error', 'Error loading data.'));
     listEl.setAttribute('aria-busy', 'false');
   }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const listEl = document.getElementById('upcoming-list');
+  const backButton = document.getElementById('back-button');
+
+  if (backButton) {
+    backButton.addEventListener('click', () => {
+      window.location.href = 'index.html';
+    });
+  }
+
+  if (!listEl) {
+    return;
+  }
+
+  if (window.hmClassSelector) {
+    const permissions = window.hmCalendar ? window.hmCalendar.permissions : null;
+    const selector = window.hmClassSelector.create({
+      container: '[data-class-selector]',
+      select: '[data-class-select]',
+      permissions,
+      text: {
+        label: t('classLabel', 'Class'),
+        placeholder: t('classPlaceholder', 'Select class'),
+        loading: t('classLoading', 'Loading classes…'),
+        error: t('classError', 'Unable to load classes.'),
+        changeError: t('classChangeError', 'Unable to change class.'),
+        required: t('classRequired', 'Please choose a class to use this feature.')
+      },
+      onError: (message) => {
+        if (typeof window.showOverlay === 'function') {
+          window.showOverlay(message, 'error');
+        } else {
+          console.error(message);
+        }
+      },
+      onClassChange: () => loadUpcomingEvents(listEl, { showLoading: true })
+    });
+    selector.init().catch((error) => {
+      console.error('Failed to initialise class selector:', error);
+    });
+  }
+
+  loadUpcomingEvents(listEl, { showLoading: true });
 });

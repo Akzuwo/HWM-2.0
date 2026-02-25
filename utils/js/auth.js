@@ -3247,14 +3247,21 @@ async function showEntryForm(defaults = null) {
     }
 
     const typeField = form.querySelector('#typ');
+    const typeFieldGroup = form.querySelector('[data-field="type"]');
     if (typeField) {
         if (canManageEntries()) {
+            if (typeFieldGroup) {
+                typeFieldGroup.classList.remove('is-hidden');
+            }
             Array.from(typeField.options || []).forEach((option) => {
                 option.hidden = false;
                 option.disabled = false;
             });
             typeField.disabled = false;
         } else {
+            if (typeFieldGroup) {
+                typeFieldGroup.classList.add('is-hidden');
+            }
             Array.from(typeField.options || []).forEach((option) => {
                 const keep = option.value === 'todo';
                 option.hidden = !keep;
