@@ -61,6 +61,7 @@
       this.permissions = config.permissions || (root.hmCalendar && root.hmCalendar.permissions) || null;
       this.unsubscribe = null;
       this.boundOnChange = (event) => this.handleSelectionChange(event);
+      this.hideTimer = null;
     }
 
     resolveElements() {
@@ -115,16 +116,33 @@
       if (!this.container || !this.select) {
         return;
       }
+      if (this.hideTimer) {
+        clearTimeout(this.hideTimer);
+        this.hideTimer = null;
+      }
       if (!this.state.enabled) {
-        this.container.hidden = true;
         this.container.classList.remove('is-visible');
-        this.container.classList.remove('is-enabled');
+        this.container.classList.add('is-leaving');
         this.select.disabled = true;
+        const hideDelay = Number(this.config.hideDelayMs) || 220;
+        this.hideTimer = setTimeout(() => {
+          if (!this.state.enabled && this.container) {
+            this.container.hidden = true;
+            this.container.classList.remove('is-enabled');
+            this.container.classList.remove('is-leaving');
+          }
+        }, hideDelay);
         return;
       }
       this.container.hidden = false;
-      this.container.classList.add('is-visible');
       this.container.classList.add('is-enabled');
+      this.container.classList.remove('is-leaving');
+      this.container.classList.remove('is-visible');
+      requestAnimationFrame(() => {
+        if (this.state.enabled && this.container) {
+          this.container.classList.add('is-visible');
+        }
+      });
       this.select.disabled = false;
     }
 
@@ -341,6 +359,10 @@
 
     destroy() {
       this.detachListeners();
+      if (this.hideTimer) {
+        clearTimeout(this.hideTimer);
+        this.hideTimer = null;
+      }
       this.container = null;
       this.select = null;
       this.label = null;

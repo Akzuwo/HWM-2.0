@@ -633,7 +633,7 @@ body.calendar-theme main {
 }
 
 .calendar-class-selector {
-  display: none;
+  display: flex;
   flex-direction: column;
   gap: 0.45rem;
   position: relative;
@@ -1519,6 +1519,8 @@ body.calendar-theme main {
 
 body.hm-modal-open {
   overflow: hidden;
+  overscroll-behavior: contain;
+  touch-action: none;
 }
 
 .hm-modal-overlay {
@@ -1537,6 +1539,12 @@ body.hm-modal-open {
   transition: opacity 0.18s ease;
 }
 
+#entry-modal-overlay,
+#fc-modal-overlay {
+  align-items: center;
+  justify-content: center;
+}
+
 .hm-modal-overlay.is-open {
   opacity: 1;
   visibility: visible;
@@ -1546,6 +1554,7 @@ body.hm-modal-open {
 .hm-modal {
   width: clamp(320px, 92vw, 720px);
   max-height: min(92vh, 720px);
+  margin: auto;
   display: flex;
   flex-direction: column;
   background: rgba(16, 20, 31, 0.96);
@@ -1556,6 +1565,7 @@ body.hm-modal-open {
   transform: translateY(12px) scale(0.97);
   opacity: 0;
   transition: transform 0.2s ease, opacity 0.2s ease;
+  transform-origin: center center;
 }
 
 .hm-modal-overlay.is-open .hm-modal {
