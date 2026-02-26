@@ -2682,7 +2682,7 @@ const entryClassPicker = (() => {
         return values;
     }
 
-    function populateOptions(options, classes, selectedValues, allowMultiple) {
+    function populateOptions(options, classes, selectedValues) {
         if (!options) {
             return;
         }
@@ -2702,7 +2702,7 @@ const entryClassPicker = (() => {
             checkbox.checked = selectedSet.has(cls.slug);
             checkbox.disabled = false;
             checkbox.addEventListener('change', () => {
-                if (!allowMultiple && checkbox.checked) {
+                if (!currentMultipleAllowed && checkbox.checked) {
                     getCheckboxes(options).forEach((box) => {
                         if (box !== checkbox) {
                             box.checked = false;
@@ -2804,13 +2804,14 @@ const entryClassPicker = (() => {
                 return [];
             }
             const allowMultiple = resolveEffectiveMultiple();
+            currentMultipleAllowed = allowMultiple;
             container.hidden = false;
             options.innerHTML = '<p class="field-hint">Loading classes…</p>';
             updateHint(container, allowMultiple);
             try {
                 const classes = await ensureClasses();
                 const previousSelection = getSelectedValues(options);
-                populateOptions(options, classes, previousSelection, allowMultiple);
+                populateOptions(options, classes, previousSelection);
                 applyMultipleState(options, container, allowMultiple);
                 syncSelection(options, getStoredEntryClassId());
                 if (!allowMultiple) {
