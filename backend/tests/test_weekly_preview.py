@@ -198,7 +198,8 @@ def test_weekly_preview_fallback_when_openai_fails(app_client, monkeypatch):
     assert resp.status_code == 200
     body = resp.get_json()
     assert body['generated_by'] == 'fallback'
-    assert body['summary'].startswith('- ')
+    assert body['summary']
+    assert 'next 7 days' in body['summary'].lower()
 
 
 def test_weekly_preview_respects_include_todos_0(app_client, monkeypatch):

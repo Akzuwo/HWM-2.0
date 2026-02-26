@@ -41,10 +41,23 @@ function splitSummaryLines(summaryText = '') {
     .split('\n')
     .map((line) => line.trim())
     .filter(Boolean);
-  if (!rows.length) {
-    return [];
+  if (!rows.length) return { intro: '', items: [] };
+  let intro = '';
+  const items = [];
+  rows.forEach((line, index) => {
+    const isBullet = line.startsWith('-') || line.startsWith('•');
+    const clean = line.replace(/^[-•]+\s*/, '').trim();
+    if (!clean) return;
+    if (!intro && !isBullet && index === 0) {
+      intro = clean;
+      return;
+    }
+    items.push(clean);
+  });
+  if (!intro && items.length) {
+    intro = items.shift();
   }
-  return rows.map((line) => line.startsWith('-') ? line.replace(/^-+\s*/, '') : line);
+  return { intro, items };
 }
 
 function setStatus(elements, text, loading = false) {
@@ -52,6 +65,11 @@ function setStatus(elements, text, loading = false) {
   elements.status.textContent = text;
   elements.status.classList.toggle('weekly-preview__status--loading', Boolean(loading));
   elements.status.hidden = false;
+  if (elements.intro) {
+    elements.intro.hidden = true;
+    elements.intro.textContent = '';
+    elements.intro.classList.remove('is-visible');
+  }
   if (elements.list) {
     elements.list.hidden = true;
     elements.list.innerHTML = '';
@@ -64,8 +82,8 @@ function setStatus(elements, text, loading = false) {
 
 function renderSummary(elements, payload) {
   const summary = payload && payload.summary ? payload.summary : '';
-  const lines = splitSummaryLines(summary);
-  if (!lines.length) {
+  const parsed = splitSummaryLines(summary);
+  if (!parsed.intro && !parsed.items.length) {
     setStatus(elements, t('empty', 'No entries in the next 7 days.'));
     return;
   }
@@ -73,13 +91,24 @@ function renderSummary(elements, payload) {
   if (elements.status) {
     elements.status.hidden = true;
   }
+  if (elements.intro && parsed.intro) {
+    elements.intro.hidden = false;
+    elements.intro.textContent = parsed.intro;
+    requestAnimationFrame(() => {
+      elements.intro.classList.add('is-visible');
+    });
+  }
   if (elements.list) {
     elements.list.hidden = false;
     elements.list.innerHTML = '';
-    lines.forEach((line) => {
+    parsed.items.forEach((line, index) => {
       const item = document.createElement('li');
       item.textContent = line;
+       item.style.setProperty('--item-index', String(index));
       elements.list.appendChild(item);
+      requestAnimationFrame(() => {
+        item.classList.add('is-visible');
+      });
     });
   }
   if (elements.meta) {
@@ -131,6 +160,7 @@ async function loadWeeklyPreview(elements, { force = false } = {}) {
 document.addEventListener('DOMContentLoaded', () => {
   const elements = {
     status: document.getElementById('weekly-preview-status'),
+    intro: document.getElementById('weekly-preview-intro'),
     list: document.getElementById('weekly-preview-list'),
     meta: document.getElementById('weekly-preview-meta'),
     refresh: document.getElementById('weekly-preview-refresh'),

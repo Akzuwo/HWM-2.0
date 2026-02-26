@@ -2077,60 +2077,178 @@ def _store_weekly_preview_cache(
     return created_at, expires_at
 
 
-def _sanitize_weekly_summary(summary: str) -> str:
+def _sanitize_weekly_summary(summary: str, locale: str = 'en') -> str:
     text = (summary or '').strip()
     if not text:
         return ''
-    lines = []
+    intro_line = ''
+    detail_lines: List[str] = []
     for raw_line in text.splitlines():
         line = raw_line.strip()
         if not line:
             continue
-        if not line.startswith('-'):
-            line = f"- {line.lstrip('•').strip()}"
-        lines.append(line)
-        if len(lines) >= WEEKLY_PREVIEW_OUTPUT_MAX_BULLETS:
+        is_bullet = line.startswith('-') or line.startswith('•')
+        clean = line.lstrip('-•').strip()
+        clean = re.sub(
+            r"\b(\d{4}-\d{2}-\d{2})\b",
+            lambda match: _weekly_relative_day_label(match.group(1), locale),
+            clean,
+        )
+        if not clean:
+            continue
+        if not intro_line and not is_bullet:
+            intro_line = clean
+            continue
+        detail_lines.append(f"- {clean}")
+        if len(detail_lines) >= WEEKLY_PREVIEW_OUTPUT_MAX_BULLETS:
             break
-    if not lines:
+
+    if not intro_line and detail_lines:
+        first_detail = detail_lines.pop(0).lstrip('-').strip()
+        intro_line = first_detail
+
+    parts: List[str] = []
+    if intro_line:
+        parts.append(intro_line)
+    parts.extend(detail_lines)
+    if not parts:
         return ''
-    output = '\n'.join(lines)
+    output = '\n'.join(parts)
     return output[:WEEKLY_PREVIEW_OUTPUT_MAX_CHARS].strip()
 
 
-def _generate_weekly_preview_fallback(payload: List[Dict[str, str]], locale: str) -> str:
-    type_labels = {
-        'de': {'hausaufgabe': 'Hausaufgabe', 'pruefung': 'Prüfung', 'event': 'Event', 'ferien': 'Ferien', 'todo': 'ToDo'},
-        'en': {'hausaufgabe': 'Homework', 'pruefung': 'Exam', 'event': 'Event', 'ferien': 'Holiday', 'todo': 'ToDo'},
-        'it': {'hausaufgabe': 'Compito', 'pruefung': 'Verifica', 'event': 'Evento', 'ferien': 'Vacanza', 'todo': 'ToDo'},
-        'fr': {'hausaufgabe': 'Devoir', 'pruefung': 'Examen', 'event': 'Événement', 'ferien': 'Vacances', 'todo': 'ToDo'},
-    }
-    empty_text = {
-        'de': '- In den nächsten 7 Tagen sind keine Einträge geplant.',
-        'en': '- No entries are scheduled for the next 7 days.',
-        'it': '- Nessuna voce pianificata per i prossimi 7 giorni.',
-        'fr': '- Aucun élément prévu pour les 7 prochains jours.',
-    }
-    if not payload:
-        return empty_text.get(locale, empty_text['en'])
+def _weekly_relative_day_label(date_iso: str, locale: str) -> str:
+    try:
+        target_date = datetime.date.fromisoformat(str(date_iso))
+    except ValueError:
+        return str(date_iso)
 
-    labels = type_labels.get(locale, type_labels['en'])
-    lines = []
+    today = datetime.date.today()
+    delta = (target_date - today).days
+    weekday_map = {
+        'de': ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'],
+        'en': ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+        'it': ['lunedì', 'martedì', 'mercoledì', 'giovedì', 'venerdì', 'sabato', 'domenica'],
+        'fr': ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'],
+    }
+    weekdays = weekday_map.get(locale, weekday_map['en'])
+    weekday_name = weekdays[target_date.weekday()]
+
+    if locale == 'de':
+        if delta == 0:
+            return 'Heute'
+        if delta == 1:
+            return 'Morgen'
+        if delta == 2:
+            return 'Übermorgen'
+        return f"Am {weekday_name}"
+    if locale == 'it':
+        if delta == 0:
+            return 'Oggi'
+        if delta == 1:
+            return 'Domani'
+        if delta == 2:
+            return 'Dopodomani'
+        return f"{weekday_name.capitalize()}"
+    if locale == 'fr':
+        if delta == 0:
+            return "Aujourd'hui"
+        if delta == 1:
+            return 'Demain'
+        if delta == 2:
+            return 'Après-demain'
+        return f"{weekday_name.capitalize()}"
+
+    if delta == 0:
+        return 'Today'
+    if delta == 1:
+        return 'Tomorrow'
+    if delta == 2:
+        return 'The day after tomorrow'
+    return f"On {weekday_name}"
+
+
+def _weekly_intro_line(payload: List[Dict[str, str]], locale: str) -> str:
+    counts = {'pruefung': 0, 'hausaufgabe': 0, 'event': 0, 'ferien': 0, 'todo': 0}
     for item in payload:
         typ = str(item.get('typ') or '')
-        label = labels.get(typ, typ or 'Entry')
-        date_value = str(item.get('datum') or '')
+        if typ in counts:
+            counts[typ] += 1
+
+    total = sum(counts.values())
+    if locale == 'de':
+        if total == 0:
+            return 'In den nächsten 7 Tagen hast du keine Einträge.'
+        return (
+            f"In den nächsten 7 Tagen hast du {counts['pruefung']} Prüfungen, "
+            f"{counts['hausaufgabe']} Hausaufgaben, {counts['todo']} ToDos und {counts['event']} Events."
+        )
+    if locale == 'it':
+        if total == 0:
+            return 'Nei prossimi 7 giorni non hai voci.'
+        return (
+            f"Nei prossimi 7 giorni hai {counts['pruefung']} verifiche, "
+            f"{counts['hausaufgabe']} compiti, {counts['todo']} ToDo e {counts['event']} eventi."
+        )
+    if locale == 'fr':
+        if total == 0:
+            return "Tu n'as aucun élément sur les 7 prochains jours."
+        return (
+            f"Sur les 7 prochains jours, tu as {counts['pruefung']} examens, "
+            f"{counts['hausaufgabe']} devoirs, {counts['todo']} ToDos et {counts['event']} événements."
+        )
+    if total == 0:
+        return 'You have no entries in the next 7 days.'
+    return (
+        f"In the next 7 days you have {counts['pruefung']} exams, "
+        f"{counts['hausaufgabe']} homework items, {counts['todo']} todos and {counts['event']} events."
+    )
+
+
+def _generate_weekly_preview_fallback(payload: List[Dict[str, str]], locale: str) -> str:
+    if not payload:
+        return _weekly_intro_line(payload, locale)
+
+    lines = [_weekly_intro_line(payload, locale)]
+    for item in payload[:WEEKLY_PREVIEW_OUTPUT_MAX_BULLETS]:
+        typ = str(item.get('typ') or '')
+        when_label = _weekly_relative_day_label(str(item.get('datum') or ''), locale)
         subject = str(item.get('fach') or '').strip()
-        summary = str(item.get('beschreibung') or '').splitlines()[0].strip()
+        summary = str(item.get('beschreibung') or '').splitlines()[0].strip() or ''
         time_label = ''
         if item.get('startzeit'):
-            time_label = f" {str(item.get('startzeit'))[:5]}"
-        subject_part = f" ({subject})" if subject else ''
-        detail = summary or label
-        lines.append(f"- {date_value}{time_label}: {label}{subject_part} - {detail}")
-        if len(lines) >= WEEKLY_PREVIEW_OUTPUT_MAX_BULLETS:
-            break
+            time_label = str(item.get('startzeit'))[:5]
 
-    return _sanitize_weekly_summary('\n'.join(lines))
+        if locale == 'de':
+            if typ == 'pruefung':
+                detail = f"{when_label} hast du einen {subject} Test." if subject else f"{when_label} hast du eine Prüfung."
+            elif typ == 'hausaufgabe':
+                detail = f"{when_label} ist eine Hausaufgabe in {subject} fällig." if subject else f"{when_label} ist eine Hausaufgabe fällig."
+            elif typ == 'todo':
+                detail = f"{when_label} steht dein ToDo an: {summary}." if summary else f"{when_label} hast du ein persönliches ToDo."
+            elif typ == 'ferien':
+                detail = f"{when_label} beginnen Ferien."
+            else:
+                detail = f"{when_label} hast du ein Event: {summary}." if summary else f"{when_label} hast du ein Event."
+            if time_label:
+                detail = detail.replace('.', f" um {time_label}.", 1)
+        else:
+            if typ == 'pruefung':
+                detail = f"{when_label} you have an exam{f' in {subject}' if subject else ''}."
+            elif typ == 'hausaufgabe':
+                detail = f"{when_label} a homework task is due{f' in {subject}' if subject else ''}."
+            elif typ == 'todo':
+                detail = f"{when_label} your todo is: {summary}." if summary else f"{when_label} you have a personal todo."
+            elif typ == 'ferien':
+                detail = f"{when_label} holidays begin."
+            else:
+                detail = f"{when_label} you have an event: {summary}." if summary else f"{when_label} you have an event."
+            if time_label:
+                detail = detail.replace('.', f" at {time_label}.", 1)
+
+        lines.append(f"- {detail}")
+
+    return _sanitize_weekly_summary('\n'.join(lines), locale=locale)
 
 
 def _generate_weekly_preview_with_openai(payload: List[Dict[str, str]], locale: str) -> str:
@@ -2149,7 +2267,11 @@ def _generate_weekly_preview_with_openai(payload: List[Dict[str, str]], locale: 
         "You are an assistant that summarizes upcoming school workload. "
         "Use only the provided events. Do not invent details. "
         f"Respond strictly in {language_hint}. "
-        "Output must be a compact bullet list with '-' prefixes, max 10 bullets, max 900 characters."
+        "Output format is strict: "
+        "line 1 = one concise overview sentence with counts for the next 7 days; "
+        "following lines = compact bullet points with '-' prefixes. "
+        "Use relative day wording (today, tomorrow, day after tomorrow, weekday names), never raw ISO dates. "
+        "Maximum 8 bullet points and 900 characters total."
     )
     user_prompt = (
         "Summarize the next 7 days with focus on deadlines, overlaps, priorities, holidays and todo highlights.\n"
@@ -2193,7 +2315,7 @@ def _generate_weekly_preview_with_openai(payload: List[Dict[str, str]], locale: 
     except (ValueError, KeyError, IndexError, AttributeError) as exc:
         raise RuntimeError('openai_invalid_response') from exc
 
-    sanitized = _sanitize_weekly_summary(content)
+    sanitized = _sanitize_weekly_summary(content, locale=locale)
     if not sanitized:
         raise RuntimeError('openai_empty_response')
     return sanitized
