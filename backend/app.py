@@ -52,6 +52,7 @@ ALLOWED_CORS_ORIGINS = [
     "https://homework-manager.akzuwo.ch",
     "https://hw-manager.akzuwo.ch",
     "https://hwm-beta.akzuwo.ch",
+    "https://hwm2.akzuwo.ch",
 ]
 ALLOWED_CORS_ORIGIN_PATTERNS = [
     "https://*.homework-manager.pages.dev",
