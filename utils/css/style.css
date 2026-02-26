@@ -355,16 +355,30 @@ button {
 .mobile-sidebar .language-menu {
     position: static;
     width: 100%;
-    max-height: 280px;
-    overflow-y: auto;
+    max-height: 0;
+    overflow: hidden;
     margin-top: 0.35rem;
     background: rgba(15, 15, 18, 1);
     box-shadow: none;
-    transform: none;
+    transform: translateY(-6px);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition:
+        opacity 260ms cubic-bezier(0.22, 1, 0.36, 1),
+        transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
+        max-height 300ms cubic-bezier(0.22, 1, 0.36, 1),
+        visibility 0s linear 300ms;
 }
 
-.mobile-sidebar .language-switcher:not(.is-open) .language-menu {
-    display: none;
+.mobile-sidebar .language-switcher.is-open .language-menu {
+    max-height: 280px;
+    overflow-y: auto;
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    pointer-events: auto;
+    transition-delay: 0s, 0s, 0s, 0s;
 }
 
 .mobile-sidebar .language-menu li + li {
@@ -624,10 +638,6 @@ button {
     align-items: center;
 }
 
-.language-switcher:not(.is-open) .language-menu {
-    display: none;
-}
-
 .lang-switch {
     display: inline-flex;
     align-items: center;
@@ -691,7 +701,11 @@ button {
     opacity: 0;
     visibility: hidden;
     transform: translateY(-6px);
-    transition: opacity 0.2s ease, transform 0.2s ease;
+    pointer-events: none;
+    transition:
+        opacity 240ms cubic-bezier(0.22, 1, 0.36, 1),
+        transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+        visibility 0s linear 260ms;
     z-index: 1200;
 }
 
@@ -703,10 +717,11 @@ button {
 }
 
 .language-switcher.is-open .language-menu {
-    display: flex;
     opacity: 1;
     visibility: visible;
     transform: translateY(0);
+    pointer-events: auto;
+    transition-delay: 0s, 0s, 0s;
 }
 
 .language-option {
@@ -780,10 +795,6 @@ button {
     align-items: center;
 }
 
-.account-control:not(.is-open) .account-menu {
-    display: none;
-}
-
 .account-switch {
     display: inline-flex;
     align-items: center;
@@ -849,16 +860,21 @@ button {
     opacity: 0;
     visibility: hidden;
     transform: translateY(-6px);
-    transition: opacity 0.2s ease, transform 0.2s ease;
+    pointer-events: none;
+    transition:
+        opacity 240ms cubic-bezier(0.22, 1, 0.36, 1),
+        transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+        visibility 0s linear 260ms;
     z-index: 1250;
     list-style: none;
 }
 
 .account-control.is-open .account-menu {
-    display: flex;
     opacity: 1;
     visibility: visible;
     transform: translateY(0);
+    pointer-events: auto;
+    transition-delay: 0s, 0s, 0s;
 }
 
 .account-menu li {
@@ -890,6 +906,15 @@ button {
     color: #fff;
     outline: none;
     filter: brightness(1.05);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .language-menu,
+    .account-menu,
+    .mobile-sidebar .language-menu,
+    .hm-class-selector {
+        transition: none !important;
+    }
 }
 
 .btn-login {
@@ -1861,7 +1886,10 @@ body.has-auth-overlay {
     transform: translateY(-8px) scale(0.98);
     max-height: 0;
     pointer-events: none;
-    transition: opacity 0.22s ease, transform 0.24s ease, max-height 0.24s ease;
+    transition:
+        opacity 260ms cubic-bezier(0.22, 1, 0.36, 1),
+        transform 300ms cubic-bezier(0.22, 1, 0.36, 1),
+        max-height 300ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .hm-class-selector.is-enabled {
