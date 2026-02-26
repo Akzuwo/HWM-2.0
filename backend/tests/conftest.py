@@ -47,6 +47,7 @@ class FakeCursor:
         schedule_entries: List[Dict[str, object]] = self.storage.setdefault('stundenplan_entries', [])
         entries: List[Dict[str, object]] = self.storage.setdefault('eintraege', [])
         password_resets: List[Dict[str, object]] = self.storage.setdefault('password_resets', [])
+        weekly_preview_cache: List[Dict[str, object]] = self.storage.setdefault('weekly_preview_cache', [])
 
         if normalized.startswith("select count(*) as total from users"):
             self._prepare_rows([
@@ -833,6 +834,87 @@ class FakeCursor:
 
         if (
             normalized.startswith(
+                "select typ, datum, enddatum, startzeit, endzeit, fach, beschreibung from eintraege"
+            )
+            and "where class_id=%s" in normalized
+            and "datum >= %s" in normalized
+            and "datum <= %s" in normalized
+        ):
+            class_id, start_date, end_date = params
+            start_bound = datetime.date.fromisoformat(str(start_date))
+            end_bound = datetime.date.fromisoformat(str(end_date))
+            filtered = []
+            for entry in entries:
+                if entry.get('class_id') != class_id:
+                    continue
+                if int(entry.get('is_private') or 0) != 0:
+                    continue
+                due = entry.get('datum')
+                if isinstance(due, str):
+                    due = datetime.date.fromisoformat(due)
+                if not isinstance(due, datetime.date):
+                    continue
+                if due < start_bound or due > end_bound:
+                    continue
+                filtered.append(
+                    {
+                        'typ': entry.get('typ'),
+                        'datum': due,
+                        'enddatum': entry.get('enddatum') or due,
+                        'startzeit': entry.get('startzeit'),
+                        'endzeit': entry.get('endzeit'),
+                        'fach': entry.get('fach'),
+                        'beschreibung': entry.get('beschreibung'),
+                    }
+                )
+            filtered.sort(key=lambda row: (row.get('datum') or datetime.date.min, row.get('startzeit') or ''))
+            self._prepare_rows(filtered, ['typ', 'datum', 'enddatum', 'startzeit', 'endzeit', 'fach', 'beschreibung'])
+            return
+
+        if (
+            normalized.startswith(
+                "select typ, datum, enddatum, startzeit, endzeit, fach, beschreibung from eintraege"
+            )
+            and "owner_user_id=%s" in normalized
+            and "typ='todo'" in normalized
+            and "datum >= %s" in normalized
+            and "datum <= %s" in normalized
+        ):
+            owner_user_id, start_date, end_date = params
+            start_bound = datetime.date.fromisoformat(str(start_date))
+            end_bound = datetime.date.fromisoformat(str(end_date))
+            filtered = []
+            for entry in entries:
+                if int(entry.get('is_private') or 0) != 1:
+                    continue
+                if int(entry.get('owner_user_id') or 0) != int(owner_user_id):
+                    continue
+                if entry.get('typ') != 'todo':
+                    continue
+                due = entry.get('datum')
+                if isinstance(due, str):
+                    due = datetime.date.fromisoformat(due)
+                if not isinstance(due, datetime.date):
+                    continue
+                if due < start_bound or due > end_bound:
+                    continue
+                filtered.append(
+                    {
+                        'typ': 'todo',
+                        'datum': due,
+                        'enddatum': entry.get('enddatum') or due,
+                        'startzeit': entry.get('startzeit'),
+                        'endzeit': entry.get('endzeit'),
+                        'fach': entry.get('fach'),
+                        'beschreibung': entry.get('beschreibung'),
+                    }
+                )
+            filtered.sort(key=lambda row: (row.get('datum') or datetime.date.min, row.get('startzeit') or ''))
+            self._prepare_rows(filtered, ['typ', 'datum', 'enddatum', 'startzeit', 'endzeit', 'fach', 'beschreibung'])
+            return
+
+        if (
+            normalized.startswith(
                 "select id, beschreibung, datum, enddatum, startzeit, endzeit, typ, fach from eintraege"
             )
             and "where class_id=%s" in normalized
@@ -1187,6 +1269,74 @@ class FakeCursor:
             self.rowcount = before - len(remaining)
             return
 
+        if (
+            normalized.startswith("select id, summary_markdown, source_hash, created_at, expires_at from weekly_preview_cache")
+            and "where user_id=%s" in normalized
+            and "expires_at > %s" in normalized
+        ):
+            user_id, class_id, locale, window_start, window_end, include_todos, now_value = params
+            filtered = [
+                row
+                for row in weekly_preview_cache
+                if int(row.get('user_id') or 0) == int(user_id)
+                and row.get('class_id') == class_id
+                and row.get('locale') == locale
+                and str(row.get('window_start')) == str(window_start)
+                and str(row.get('window_end')) == str(window_end)
+                and int(row.get('include_todos') or 0) == int(include_todos)
+                and isinstance(row.get('expires_at'), datetime.datetime)
+                and row.get('expires_at') > now_value
+            ]
+            filtered.sort(key=lambda row: row.get('created_at') or datetime.datetime.min, reverse=True)
+            top = filtered[:1]
+            self._prepare_rows(
+                top,
+                ['id', 'summary_markdown', 'source_hash', 'created_at', 'expires_at'],
+            )
+            return
+
+        if normalized.startswith("delete from weekly_preview_cache where user_id=%s"):
+            user_id, class_id, locale, window_start, window_end, include_todos = params
+            before = len(weekly_preview_cache)
+            self.storage['weekly_preview_cache'] = [
+                row
+                for row in weekly_preview_cache
+                if not (
+                    int(row.get('user_id') or 0) == int(user_id)
+                    and row.get('class_id') == class_id
+                    and row.get('locale') == locale
+                    and str(row.get('window_start')) == str(window_start)
+                    and str(row.get('window_end')) == str(window_end)
+                    and int(row.get('include_todos') or 0) == int(include_todos)
+                )
+            ]
+            self.rowcount = before - len(self.storage['weekly_preview_cache'])
+            return
+
+        if normalized.startswith("insert into weekly_preview_cache"):
+            user_id, class_id, locale, window_start, window_end, include_todos, summary_markdown, source_hash, created_at, expires_at = params
+            next_ids = self.storage.setdefault('next_ids', {})
+            new_id = next_ids.setdefault('weekly_preview_cache', 1)
+            next_ids['weekly_preview_cache'] = new_id + 1
+            weekly_preview_cache.append(
+                {
+                    'id': new_id,
+                    'user_id': int(user_id),
+                    'class_id': class_id,
+                    'locale': locale,
+                    'window_start': str(window_start),
+                    'window_end': str(window_end),
+                    'include_todos': int(include_todos),
+                    'summary_markdown': summary_markdown,
+                    'source_hash': source_hash,
+                    'created_at': created_at,
+                    'expires_at': expires_at,
+                }
+            )
+            self.lastrowid = new_id
+            self.rowcount = 1
+            return
+
         self._rows = []
 
     def executemany(self, query: str, param_sequence) -> None:  # pragma: no cover - shim
@@ -1289,6 +1439,7 @@ def app_client(monkeypatch):
         'audit_logs': [],
         'verifications': [],
         'password_resets': [],
+        'weekly_preview_cache': [],
         'next_ids': {
             'users': 2,
             'classes': 2,
@@ -1297,6 +1448,7 @@ def app_client(monkeypatch):
             'stundenplan_entries': 1,
             'eintraege': 1,
             'password_resets': 1,
+            'weekly_preview_cache': 1,
         },
     }
 

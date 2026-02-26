@@ -8,6 +8,9 @@ import smtplib
 import html
 import traceback
 import uuid
+import hashlib
+import urllib.request
+import urllib.error
 from collections import OrderedDict, deque
 from contextlib import closing
 from email.message import EmailMessage
@@ -471,6 +474,15 @@ PASSWORD_CHANGE_SUBJECT = os.getenv('PASSWORD_CHANGE_SUBJECT', 'Passwort geände
 EMAIL_VERIFICATION_CODE_LIFETIME_SECONDS = int(os.getenv('EMAIL_VERIFICATION_CODE_LIFETIME_SECONDS', 8 * 60))
 EMAIL_VERIFICATION_FROM_ADDRESS = os.getenv('EMAIL_VERIFICATION_FROM_ADDRESS', CONTACT_FROM_ADDRESS or CONTACT_SMTP_USER or CONTACT_RECIPIENT)
 EMAIL_VERIFICATION_SUBJECT = os.getenv('EMAIL_VERIFICATION_SUBJECT', 'Bitte E-Mail-Adresse bestätigen')
+
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '').strip()
+OPENAI_MODEL = os.getenv('OPENAI_MODEL', 'gpt-4o-mini').strip() or 'gpt-4o-mini'
+WEEKLY_PREVIEW_CACHE_TTL_MINUTES = max(int(os.getenv('WEEKLY_PREVIEW_CACHE_TTL_MINUTES', 45)), 1)
+WEEKLY_PREVIEW_MAX_ITEMS = max(int(os.getenv('WEEKLY_PREVIEW_MAX_ITEMS', 120)), 1)
+WEEKLY_PREVIEW_MAX_CHARS = max(int(os.getenv('WEEKLY_PREVIEW_MAX_CHARS', 12000)), 500)
+WEEKLY_PREVIEW_TIMEOUT_SECONDS = max(int(os.getenv('WEEKLY_PREVIEW_TIMEOUT_SECONDS', 20)), 5)
+WEEKLY_PREVIEW_OUTPUT_MAX_CHARS = 900
+WEEKLY_PREVIEW_OUTPUT_MAX_BULLETS = 10
 
 REGISTRATION_ALLOWED_DOMAIN = os.getenv('REGISTRATION_ALLOWED_DOMAIN', '@sluz.ch').lower()
 
@@ -1478,10 +1490,48 @@ def ensure_password_resets_table():
         conn.close()
 
 
+def ensure_weekly_preview_cache_table():
+    try:
+        conn = get_connection()
+    except Exception:
+        return
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS weekly_preview_cache (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                class_id VARCHAR(20) NOT NULL,
+                locale VARCHAR(8) NOT NULL,
+                window_start DATE NOT NULL,
+                window_end DATE NOT NULL,
+                include_todos TINYINT(1) NOT NULL DEFAULT 1,
+                summary_markdown MEDIUMTEXT NOT NULL,
+                source_hash CHAR(64) NOT NULL,
+                created_at DATETIME NOT NULL,
+                expires_at DATETIME NOT NULL,
+                INDEX idx_weekly_preview_lookup (user_id, class_id, locale, window_start, window_end, include_todos, expires_at),
+                INDEX idx_weekly_preview_user_created (user_id, created_at),
+                CONSTRAINT fk_weekly_preview_cache_user FOREIGN KEY (user_id)
+                    REFERENCES users(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            """
+        )
+        conn.commit()
+    except mysql.connector.Error:
+        conn.rollback()
+        raise
+    finally:
+        cur.close()
+        conn.close()
+
+
 ensure_stundenplan_table()
 ensure_entries_table()
 ensure_email_verifications_table()
 ensure_password_resets_table()
+ensure_weekly_preview_cache_table()
 
 # ---- Klassen- und Stundenplanhilfen ----
 
@@ -1816,6 +1866,435 @@ def entries_collection():
         finally:
             cursor.close()
     return jsonify(rows)
+
+
+def _resolve_weekly_preview_locale() -> str:
+    allowed = {'de', 'en', 'it', 'fr'}
+    raw = (request.args.get('lang') or '').strip().lower()
+    if raw in allowed:
+        return raw
+    header = (request.headers.get('Accept-Language') or '').lower()
+    for candidate in re.split(r'[,; ]+', header):
+        code = candidate.split('-')[0].strip()
+        if code in allowed:
+            return code
+    return 'en'
+
+
+def _serialize_weekly_date(value: object) -> str:
+    if isinstance(value, datetime.date):
+        return value.isoformat()
+    return str(value or '')
+
+
+def _serialize_weekly_time(value: object) -> str:
+    if value is None:
+        return ''
+    if isinstance(value, datetime.time):
+        return value.strftime('%H:%M:%S')
+    text = str(value).strip()
+    return text[:8] if text else ''
+
+
+def _collect_weekly_preview_entries(conn, class_id: str, user_id: int, start_date: datetime.date, end_date: datetime.date, include_todos: bool) -> List[Dict[str, str]]:
+    cursor = conn.cursor(dictionary=True)
+    rows: List[Dict[str, str]] = []
+    try:
+        cursor.execute(
+            """
+            SELECT typ, datum, enddatum, startzeit, endzeit, fach, beschreibung
+            FROM eintraege
+            WHERE class_id=%s
+              AND COALESCE(is_private, 0)=0
+              AND datum >= %s
+              AND datum <= %s
+            ORDER BY datum ASC, startzeit ASC
+            """,
+            (class_id, start_date.isoformat(), end_date.isoformat()),
+        )
+        for row in (cursor.fetchall() or []):
+            rows.append(
+                {
+                    'typ': str(row.get('typ') or ''),
+                    'datum': _serialize_weekly_date(row.get('datum')),
+                    'enddatum': _serialize_weekly_date(row.get('enddatum') or row.get('datum')),
+                    'startzeit': _serialize_weekly_time(row.get('startzeit')),
+                    'endzeit': _serialize_weekly_time(row.get('endzeit')),
+                    'fach': str(row.get('fach') or ''),
+                    'beschreibung': str(row.get('beschreibung') or ''),
+                }
+            )
+
+        if include_todos:
+            cursor.execute(
+                """
+                SELECT typ, datum, enddatum, startzeit, endzeit, fach, beschreibung
+                FROM eintraege
+                WHERE COALESCE(is_private, 0)=1
+                  AND owner_user_id=%s
+                  AND typ='todo'
+                  AND datum >= %s
+                  AND datum <= %s
+                ORDER BY datum ASC, startzeit ASC
+                """,
+                (int(user_id), start_date.isoformat(), end_date.isoformat()),
+            )
+            for row in (cursor.fetchall() or []):
+                rows.append(
+                    {
+                        'typ': 'todo',
+                        'datum': _serialize_weekly_date(row.get('datum')),
+                        'enddatum': _serialize_weekly_date(row.get('enddatum') or row.get('datum')),
+                        'startzeit': _serialize_weekly_time(row.get('startzeit')),
+                        'endzeit': _serialize_weekly_time(row.get('endzeit')),
+                        'fach': str(row.get('fach') or ''),
+                        'beschreibung': str(row.get('beschreibung') or ''),
+                    }
+                )
+    finally:
+        cursor.close()
+
+    rows.sort(key=lambda item: (item.get('datum') or '', item.get('startzeit') or ''))
+    return rows
+
+
+def _build_weekly_preview_payload(entries: List[Dict[str, str]]) -> List[Dict[str, str]]:
+    selected = entries[:WEEKLY_PREVIEW_MAX_ITEMS]
+    payload: List[Dict[str, str]] = []
+    total_chars = 0
+    for item in selected:
+        prepared = {
+            'typ': str(item.get('typ') or ''),
+            'datum': str(item.get('datum') or ''),
+            'enddatum': str(item.get('enddatum') or item.get('datum') or ''),
+            'startzeit': str(item.get('startzeit') or ''),
+            'endzeit': str(item.get('endzeit') or ''),
+            'fach': str(item.get('fach') or ''),
+            'beschreibung': str(item.get('beschreibung') or ''),
+        }
+        candidate_len = len(json.dumps(prepared, ensure_ascii=False))
+        if payload and (total_chars + candidate_len) > WEEKLY_PREVIEW_MAX_CHARS:
+            break
+        total_chars += candidate_len
+        payload.append(prepared)
+    return payload
+
+
+def _compute_weekly_preview_source_hash(payload: List[Dict[str, str]]) -> str:
+    encoded = json.dumps(payload, ensure_ascii=False, sort_keys=True).encode('utf-8')
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _load_weekly_preview_cache(conn, user_id: int, class_id: str, locale: str, window_start: datetime.date, window_end: datetime.date, include_todos: bool) -> Optional[Dict[str, object]]:
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute(
+            """
+            SELECT id, summary_markdown, source_hash, created_at, expires_at
+            FROM weekly_preview_cache
+            WHERE user_id=%s
+              AND class_id=%s
+              AND locale=%s
+              AND window_start=%s
+              AND window_end=%s
+              AND include_todos=%s
+              AND expires_at > %s
+            ORDER BY created_at DESC
+            LIMIT 1
+            """,
+            (
+                int(user_id),
+                class_id,
+                locale,
+                window_start.isoformat(),
+                window_end.isoformat(),
+                1 if include_todos else 0,
+                datetime.datetime.utcnow(),
+            ),
+        )
+        return cursor.fetchone()
+    finally:
+        cursor.close()
+
+
+def _store_weekly_preview_cache(
+    conn,
+    user_id: int,
+    class_id: str,
+    locale: str,
+    window_start: datetime.date,
+    window_end: datetime.date,
+    include_todos: bool,
+    summary_markdown: str,
+    source_hash: str,
+) -> Tuple[datetime.datetime, datetime.datetime]:
+    created_at = datetime.datetime.utcnow()
+    expires_at = created_at + datetime.timedelta(minutes=WEEKLY_PREVIEW_CACHE_TTL_MINUTES)
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            """
+            DELETE FROM weekly_preview_cache
+            WHERE user_id=%s
+              AND class_id=%s
+              AND locale=%s
+              AND window_start=%s
+              AND window_end=%s
+              AND include_todos=%s
+            """,
+            (
+                int(user_id),
+                class_id,
+                locale,
+                window_start.isoformat(),
+                window_end.isoformat(),
+                1 if include_todos else 0,
+            ),
+        )
+        cursor.execute(
+            """
+            INSERT INTO weekly_preview_cache
+                (user_id, class_id, locale, window_start, window_end, include_todos, summary_markdown, source_hash, created_at, expires_at)
+            VALUES
+                (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """,
+            (
+                int(user_id),
+                class_id,
+                locale,
+                window_start.isoformat(),
+                window_end.isoformat(),
+                1 if include_todos else 0,
+                summary_markdown,
+                source_hash,
+                created_at,
+                expires_at,
+            ),
+        )
+        conn.commit()
+    finally:
+        cursor.close()
+    return created_at, expires_at
+
+
+def _sanitize_weekly_summary(summary: str) -> str:
+    text = (summary or '').strip()
+    if not text:
+        return ''
+    lines = []
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        if not line.startswith('-'):
+            line = f"- {line.lstrip('•').strip()}"
+        lines.append(line)
+        if len(lines) >= WEEKLY_PREVIEW_OUTPUT_MAX_BULLETS:
+            break
+    if not lines:
+        return ''
+    output = '\n'.join(lines)
+    return output[:WEEKLY_PREVIEW_OUTPUT_MAX_CHARS].strip()
+
+
+def _generate_weekly_preview_fallback(payload: List[Dict[str, str]], locale: str) -> str:
+    type_labels = {
+        'de': {'hausaufgabe': 'Hausaufgabe', 'pruefung': 'Prüfung', 'event': 'Event', 'ferien': 'Ferien', 'todo': 'ToDo'},
+        'en': {'hausaufgabe': 'Homework', 'pruefung': 'Exam', 'event': 'Event', 'ferien': 'Holiday', 'todo': 'ToDo'},
+        'it': {'hausaufgabe': 'Compito', 'pruefung': 'Verifica', 'event': 'Evento', 'ferien': 'Vacanza', 'todo': 'ToDo'},
+        'fr': {'hausaufgabe': 'Devoir', 'pruefung': 'Examen', 'event': 'Événement', 'ferien': 'Vacances', 'todo': 'ToDo'},
+    }
+    empty_text = {
+        'de': '- In den nächsten 7 Tagen sind keine Einträge geplant.',
+        'en': '- No entries are scheduled for the next 7 days.',
+        'it': '- Nessuna voce pianificata per i prossimi 7 giorni.',
+        'fr': '- Aucun élément prévu pour les 7 prochains jours.',
+    }
+    if not payload:
+        return empty_text.get(locale, empty_text['en'])
+
+    labels = type_labels.get(locale, type_labels['en'])
+    lines = []
+    for item in payload:
+        typ = str(item.get('typ') or '')
+        label = labels.get(typ, typ or 'Entry')
+        date_value = str(item.get('datum') or '')
+        subject = str(item.get('fach') or '').strip()
+        summary = str(item.get('beschreibung') or '').splitlines()[0].strip()
+        time_label = ''
+        if item.get('startzeit'):
+            time_label = f" {str(item.get('startzeit'))[:5]}"
+        subject_part = f" ({subject})" if subject else ''
+        detail = summary or label
+        lines.append(f"- {date_value}{time_label}: {label}{subject_part} - {detail}")
+        if len(lines) >= WEEKLY_PREVIEW_OUTPUT_MAX_BULLETS:
+            break
+
+    return _sanitize_weekly_summary('\n'.join(lines))
+
+
+def _generate_weekly_preview_with_openai(payload: List[Dict[str, str]], locale: str) -> str:
+    if not OPENAI_API_KEY:
+        raise RuntimeError('openai_api_key_missing')
+
+    language_hint = {
+        'de': 'German',
+        'en': 'English',
+        'it': 'Italian',
+        'fr': 'French',
+    }.get(locale, 'English')
+
+    prompt_payload = json.dumps(payload, ensure_ascii=False)
+    system_prompt = (
+        "You are an assistant that summarizes upcoming school workload. "
+        "Use only the provided events. Do not invent details. "
+        f"Respond strictly in {language_hint}. "
+        "Output must be a compact bullet list with '-' prefixes, max 10 bullets, max 900 characters."
+    )
+    user_prompt = (
+        "Summarize the next 7 days with focus on deadlines, overlaps, priorities, holidays and todo highlights.\n"
+        f"Entries JSON:\n{prompt_payload}"
+    )
+    body = {
+        "model": OPENAI_MODEL,
+        "temperature": 0.2,
+        "max_tokens": 350,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ],
+    }
+    encoded_body = json.dumps(body).encode('utf-8')
+    request_obj = urllib.request.Request(
+        url='https://api.openai.com/v1/chat/completions',
+        data=encoded_body,
+        headers={
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {OPENAI_API_KEY}',
+        },
+        method='POST',
+    )
+    try:
+        with urllib.request.urlopen(request_obj, timeout=WEEKLY_PREVIEW_TIMEOUT_SECONDS) as response:
+            response_body = response.read().decode('utf-8')
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode('utf-8', errors='replace') if hasattr(exc, 'read') else str(exc)
+        raise RuntimeError(f'openai_http_error: {detail}') from exc
+    except Exception as exc:
+        raise RuntimeError(f'openai_request_failed: {exc}') from exc
+
+    try:
+        payload_json = json.loads(response_body)
+        content = (
+            payload_json.get('choices', [{}])[0]
+            .get('message', {})
+            .get('content', '')
+        )
+    except (ValueError, KeyError, IndexError, AttributeError) as exc:
+        raise RuntimeError('openai_invalid_response') from exc
+
+    sanitized = _sanitize_weekly_summary(content)
+    if not sanitized:
+        raise RuntimeError('openai_empty_response')
+    return sanitized
+
+
+@app.route('/api/weekly-preview', methods=['GET'])
+@require_authenticated
+def weekly_preview():
+    class_id = _get_session_entry_class_id()
+    user_id = session.get('user_id')
+    role = str(session.get('role') or '').strip().lower()
+    if user_id is None:
+        return jsonify(status='error', message='unauthorized'), 401
+    if role == 'guest':
+        return jsonify(status='error', message='forbidden'), 403
+    if not class_id:
+        return jsonify(status='error', message='class_required'), 403
+
+    force_refresh = request.args.get('force', '0') == '1'
+    include_todos = request.args.get('include_todos', '1') != '0'
+    locale = _resolve_weekly_preview_locale()
+
+    now = datetime.datetime.now(pytz.timezone('Europe/Berlin'))
+    window_start = now.date()
+    window_end = window_start + datetime.timedelta(days=6)
+
+    try:
+        conn = get_connection()
+    except Exception:
+        return jsonify(status='error', message='database_unavailable'), 503
+
+    with closing(conn):
+        entries = _collect_weekly_preview_entries(
+            conn,
+            class_id=class_id,
+            user_id=int(user_id),
+            start_date=window_start,
+            end_date=window_end,
+            include_todos=include_todos,
+        )
+        payload = _build_weekly_preview_payload(entries)
+        source_hash = _compute_weekly_preview_source_hash(payload)
+
+        if not force_refresh:
+            cached = _load_weekly_preview_cache(
+                conn,
+                user_id=int(user_id),
+                class_id=class_id,
+                locale=locale,
+                window_start=window_start,
+                window_end=window_end,
+                include_todos=include_todos,
+            )
+            if cached and str(cached.get('source_hash') or '') == source_hash:
+                created_at = cached.get('created_at')
+                expires_at = cached.get('expires_at')
+                return jsonify(
+                    status='ok',
+                    summary=str(cached.get('summary_markdown') or ''),
+                    cached=True,
+                    generated_at=created_at.isoformat() if isinstance(created_at, datetime.datetime) else str(created_at or ''),
+                    expires_at=expires_at.isoformat() if isinstance(expires_at, datetime.datetime) else str(expires_at or ''),
+                    window_start=window_start.isoformat(),
+                    window_end=window_end.isoformat(),
+                    entry_count=len(payload),
+                )
+
+        generated_by = 'openai'
+        try:
+            if payload:
+                summary_text = _generate_weekly_preview_with_openai(payload, locale)
+            else:
+                summary_text = _generate_weekly_preview_fallback(payload, locale)
+                generated_by = 'fallback'
+        except Exception as exc:
+            app.logger.warning('weekly_preview_generation_failed user_id=%s class_id=%s error=%s', user_id, class_id, exc)
+            summary_text = _generate_weekly_preview_fallback(payload, locale)
+            generated_by = 'fallback'
+
+        created_at, expires_at = _store_weekly_preview_cache(
+            conn,
+            user_id=int(user_id),
+            class_id=class_id,
+            locale=locale,
+            window_start=window_start,
+            window_end=window_end,
+            include_todos=include_todos,
+            summary_markdown=summary_text,
+            source_hash=source_hash,
+        )
+        return jsonify(
+            status='ok',
+            summary=summary_text,
+            cached=False,
+            generated_by=generated_by,
+            generated_at=created_at.isoformat(),
+            expires_at=expires_at.isoformat(),
+            window_start=window_start.isoformat(),
+            window_end=window_end.isoformat(),
+            entry_count=len(payload),
+        )
 
 
 @app.route('/api/todos', methods=['POST', 'OPTIONS'])
