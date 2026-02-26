@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 ENTRY_CLASS_IDS = (
+    "default",
     "L22a",
     "L22b",
     "L22c",
@@ -43,6 +44,7 @@ ENTRY_CLASS_IDS = (
     "U25d",
     "U25e",
     "U25f",
+    "U25g",
 )
 
 DEFAULT_ENTRY_CLASS_ID = "L23a"
