@@ -3073,9 +3073,7 @@ function setupModalFormInteractions(form, initialMessages = ENTRY_FORM_MESSAGES)
         const isEvent = typeSelect && typeSelect.value === 'event';
         const isHoliday = typeSelect && typeSelect.value === 'ferien';
         const isTodo = typeSelect && typeSelect.value === 'todo';
-        const typeValue = typeSelect ? typeSelect.value : '';
-        const requiresSingleClass = typeValue === 'hausaufgabe' || typeValue === 'pruefung';
-        const allowMultipleClasses = !requiresSingleClass;
+        const allowMultipleClasses = Boolean(sessionState.isAdmin && (isEvent || isHoliday));
 
         if (subjectGroup) {
             subjectGroup.classList.toggle('is-hidden', isEvent || isHoliday || isTodo);
@@ -3419,9 +3417,13 @@ async function saveEntry(event) {
     let selectedClassIds = [];
 
     const canChooseClasses = Boolean(sessionState.isAdmin || sessionState.isClassAdmin);
-    const multipleAllowedForSelection = entryClassPickerController && typeof entryClassPickerController.isMultipleAllowed === 'function'
-        ? entryClassPickerController.isMultipleAllowed()
-        : Boolean(sessionState.isAdmin);
+    const adminCanLinkAcrossClasses = Boolean(sessionState.isAdmin && (typ === 'event' || typ === 'ferien'));
+    const multipleAllowedForSelection = adminCanLinkAcrossClasses
+        && (
+            !entryClassPickerController
+            || typeof entryClassPickerController.isMultipleAllowed !== 'function'
+            || Boolean(entryClassPickerController.isMultipleAllowed())
+        );
 
     if (!isTodo && canChooseClasses && entryClassPickerController && typeof entryClassPickerController.getSelection === 'function') {
         selectedClassIds = entryClassPickerController.getSelection() || [];
@@ -3469,7 +3471,7 @@ async function saveEntry(event) {
                 endzeit,
                 enddatum: resolvedEndDate
             };
-            const allowMultipleForPayload = Boolean(sessionState.isAdmin && multipleAllowedForSelection);
+            const allowMultipleForPayload = Boolean(adminCanLinkAcrossClasses && multipleAllowedForSelection);
             if (!isTodo) {
                 if (allowMultipleForPayload && selectedClassIds.length > 0) {
                     payload.class_ids = selectedClassIds;
