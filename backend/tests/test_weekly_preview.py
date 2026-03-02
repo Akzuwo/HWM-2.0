@@ -58,7 +58,7 @@ def test_weekly_preview_returns_cached_when_valid(app_client, monkeypatch):
         call_counter['count'] += 1
         return '- Focus on math tasks.'
 
-    monkeypatch.setattr(app_module, '_generate_weekly_preview_with_openai', fake_openai)
+    monkeypatch.setattr(app_module, '_generate_weekly_preview_with_groq', fake_openai)
 
     first = client.get('/api/weekly-preview?lang=de')
     assert first.status_code == 200
@@ -85,7 +85,7 @@ def test_weekly_preview_force_bypasses_cache(app_client, monkeypatch):
         call_counter['count'] += 1
         return '- Prepare for physics exam.'
 
-    monkeypatch.setattr(app_module, '_generate_weekly_preview_with_openai', fake_openai)
+    monkeypatch.setattr(app_module, '_generate_weekly_preview_with_groq', fake_openai)
 
     first = client.get('/api/weekly-preview?lang=en')
     assert first.status_code == 200
@@ -145,7 +145,7 @@ def test_weekly_preview_includes_private_todos_of_owner_only(app_client, monkeyp
         captured['payload'] = payload
         return '- Weekly summary.'
 
-    monkeypatch.setattr(app_module, '_generate_weekly_preview_with_openai', fake_openai)
+    monkeypatch.setattr(app_module, '_generate_weekly_preview_with_groq', fake_openai)
 
     resp = client.get('/api/weekly-preview?lang=de')
     assert resp.status_code == 200
@@ -171,7 +171,7 @@ def test_weekly_preview_filters_by_active_class_for_class_entries(app_client, mo
         captured['payload'] = payload
         return '- Summary.'
 
-    monkeypatch.setattr(app_module, '_generate_weekly_preview_with_openai', fake_openai)
+    monkeypatch.setattr(app_module, '_generate_weekly_preview_with_groq', fake_openai)
 
     resp = client.get('/api/weekly-preview')
     assert resp.status_code == 200
@@ -192,7 +192,7 @@ def test_weekly_preview_fallback_when_openai_fails(app_client, monkeypatch):
     def fail_openai(payload, locale):
         raise RuntimeError('boom')
 
-    monkeypatch.setattr(app_module, '_generate_weekly_preview_with_openai', fail_openai)
+    monkeypatch.setattr(app_module, '_generate_weekly_preview_with_groq', fail_openai)
 
     resp = client.get('/api/weekly-preview?lang=en')
     assert resp.status_code == 200
@@ -225,7 +225,7 @@ def test_weekly_preview_respects_include_todos_0(app_client, monkeypatch):
         captured['payload'] = payload
         return '- Summary.'
 
-    monkeypatch.setattr(app_module, '_generate_weekly_preview_with_openai', fake_openai)
+    monkeypatch.setattr(app_module, '_generate_weekly_preview_with_groq', fake_openai)
 
     resp = client.get('/api/weekly-preview?include_todos=0&lang=de')
     assert resp.status_code == 200
@@ -244,7 +244,7 @@ def test_weekly_preview_cache_key_differs_by_locale(app_client, monkeypatch):
     def fake_openai(payload, locale):
         return f'- Locale: {locale}'
 
-    monkeypatch.setattr(app_module, '_generate_weekly_preview_with_openai', fake_openai)
+    monkeypatch.setattr(app_module, '_generate_weekly_preview_with_groq', fake_openai)
 
     resp_de = client.get('/api/weekly-preview?lang=de')
     resp_en = client.get('/api/weekly-preview?lang=en')

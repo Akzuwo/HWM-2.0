@@ -475,8 +475,8 @@ EMAIL_VERIFICATION_CODE_LIFETIME_SECONDS = int(os.getenv('EMAIL_VERIFICATION_COD
 EMAIL_VERIFICATION_FROM_ADDRESS = os.getenv('EMAIL_VERIFICATION_FROM_ADDRESS', CONTACT_FROM_ADDRESS or CONTACT_SMTP_USER or CONTACT_RECIPIENT)
 EMAIL_VERIFICATION_SUBJECT = os.getenv('EMAIL_VERIFICATION_SUBJECT', 'Bitte E-Mail-Adresse bestätigen')
 
-OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '').strip()
-OPENAI_MODEL = os.getenv('OPENAI_MODEL', 'gpt-4o-mini').strip() or 'gpt-4o-mini'
+GROQ_API_KEY = os.getenv('GROQ_API_KEY', '').strip() or os.getenv('OPENAI_API_KEY', '').strip()
+GROQ_MODEL = os.getenv('GROQ_MODEL', 'llama-3.1-8b-instant').strip() or 'llama-3.1-8b-instant'
 WEEKLY_PREVIEW_CACHE_TTL_MINUTES = max(int(os.getenv('WEEKLY_PREVIEW_CACHE_TTL_MINUTES', 45)), 1)
 WEEKLY_PREVIEW_MAX_ITEMS = max(int(os.getenv('WEEKLY_PREVIEW_MAX_ITEMS', 120)), 1)
 WEEKLY_PREVIEW_MAX_CHARS = max(int(os.getenv('WEEKLY_PREVIEW_MAX_CHARS', 12000)), 500)
@@ -2251,9 +2251,9 @@ def _generate_weekly_preview_fallback(payload: List[Dict[str, str]], locale: str
     return _sanitize_weekly_summary('\n'.join(lines), locale=locale)
 
 
-def _generate_weekly_preview_with_openai(payload: List[Dict[str, str]], locale: str) -> str:
-    if not OPENAI_API_KEY:
-        raise RuntimeError('openai_api_key_missing')
+def _generate_weekly_preview_with_groq(payload: List[Dict[str, str]], locale: str) -> str:
+    if not GROQ_API_KEY:
+        raise RuntimeError('groq_api_key_missing')
 
     language_hint = {
         'de': 'German',
@@ -2278,7 +2278,7 @@ def _generate_weekly_preview_with_openai(payload: List[Dict[str, str]], locale: 
         f"Entries JSON:\n{prompt_payload}"
     )
     body = {
-        "model": OPENAI_MODEL,
+        "model": GROQ_MODEL,
         "temperature": 0.2,
         "max_tokens": 350,
         "messages": [
@@ -2288,11 +2288,11 @@ def _generate_weekly_preview_with_openai(payload: List[Dict[str, str]], locale: 
     }
     encoded_body = json.dumps(body).encode('utf-8')
     request_obj = urllib.request.Request(
-        url='https://api.openai.com/v1/chat/completions',
+        url='https://api.groq.com/openai/v1/chat/completions',
         data=encoded_body,
         headers={
             'Content-Type': 'application/json',
-            'Authorization': f'Bearer {OPENAI_API_KEY}',
+            'Authorization': f'Bearer {GROQ_API_KEY}',
         },
         method='POST',
     )
@@ -2301,9 +2301,9 @@ def _generate_weekly_preview_with_openai(payload: List[Dict[str, str]], locale: 
             response_body = response.read().decode('utf-8')
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode('utf-8', errors='replace') if hasattr(exc, 'read') else str(exc)
-        raise RuntimeError(f'openai_http_error: {detail}') from exc
+        raise RuntimeError(f'groq_http_error: {detail}') from exc
     except Exception as exc:
-        raise RuntimeError(f'openai_request_failed: {exc}') from exc
+        raise RuntimeError(f'groq_request_failed: {exc}') from exc
 
     try:
         payload_json = json.loads(response_body)
@@ -2313,12 +2313,17 @@ def _generate_weekly_preview_with_openai(payload: List[Dict[str, str]], locale: 
             .get('content', '')
         )
     except (ValueError, KeyError, IndexError, AttributeError) as exc:
-        raise RuntimeError('openai_invalid_response') from exc
+        raise RuntimeError('groq_invalid_response') from exc
 
     sanitized = _sanitize_weekly_summary(content, locale=locale)
     if not sanitized:
-        raise RuntimeError('openai_empty_response')
+        raise RuntimeError('groq_empty_response')
     return sanitized
+
+
+def _generate_weekly_preview_with_openai(payload: List[Dict[str, str]], locale: str) -> str:
+    """Compatibility shim; weekly preview generation now uses Groq."""
+    return _generate_weekly_preview_with_groq(payload, locale)
 
 
 @app.route('/api/weekly-preview', methods=['GET'])
@@ -2383,10 +2388,10 @@ def weekly_preview():
                     entry_count=len(payload),
                 )
 
-        generated_by = 'openai'
+        generated_by = 'groq'
         try:
             if payload:
-                summary_text = _generate_weekly_preview_with_openai(payload, locale)
+                summary_text = _generate_weekly_preview_with_groq(payload, locale)
             else:
                 summary_text = _generate_weekly_preview_fallback(payload, locale)
                 generated_by = 'fallback'
