@@ -1520,10 +1520,7 @@ body.calendar-theme main {
 body.hm-modal-open {
   overflow: hidden;
   overscroll-behavior: contain;
-<<<<<<< HEAD
-=======
   touch-action: none;
->>>>>>> 7b268bb1ec7b86f2727cc8ee6da0b06f36117745
 }
 
 .hm-modal-overlay {
@@ -1559,12 +1556,8 @@ body.hm-modal-open {
 
 .hm-modal {
   width: clamp(320px, 92vw, 720px);
-<<<<<<< HEAD
   max-height: min(720px, calc(100vh - var(--modal-inset-top) - var(--modal-inset-bottom)));
   max-height: min(720px, calc(100dvh - var(--modal-inset-top) - var(--modal-inset-bottom)));
-=======
-  max-height: min(92vh, 720px);
->>>>>>> 7b268bb1ec7b86f2727cc8ee6da0b06f36117745
   margin: auto;
   display: flex;
   flex-direction: column;
@@ -2456,3 +2449,5 @@ body.hm-modal-open {
     padding: 0.45rem 0.6rem;
   }
 }
+
+

@@ -30,12 +30,12 @@
       },
       home: {
         pageTitle: 'Homework Manager',
-        heroTitle: 'Homework Manager 2.0',
+        heroTitle: 'HWM 3.0',
         description: {
           lead:
-            'Der Homework Manager entstand, um Hausaufgaben, Prüfungen und Projekte transparent für die ganze Klasse bereitzustellen.',
+            'Homework Manager 3.0 bringt die Plattform auf einen modernen Frontend-Stack mit React JS und Tailwind CSS.',
           body:
-            'Statt verstreuter Chats und vergessener Notizen bündelt die Plattform Termine, Erinnerungen und praktische Werkzeuge in einer klaren Oberfläche – jederzeit verfügbar und gemeinsam nutzbar.',
+            'Die neue Version behält die vertraute Struktur des Homework Managers bei, modernisiert aber die Oberfläche mit saubereren Komponenten, besserer Wartbarkeit und einem flüssigeren Web-App-Erlebnis.',
         },
         status: {
           title: 'Hinweis: Work in Progress',
@@ -47,16 +47,15 @@
           body: 'Hinweis: Der Release von 2.0 wurde aufgrund mangelnder Kapazitäten und Qualitätssicherung auf Juli 2026 verschoben.',
         },
         release: {
-          title: 'Release 2.0',
-          date:
-            'Hinweis: Der Release von 2.0 wurde aufgrund mangelnder Kapazitäten und Qualitätssicherung auf Juli 2026 verschoben.',
+          title: 'Update Hinweis 3.0',
+          date: 'Neue Web-App-Basis mit React JS und Tailwind CSS.',
           summary:
-            'Release 2.0 bündelt alles, was den Schulalltag leichter macht – von der neuen Oberfläche über Events bis hin zu Rollen, Datenschutz und frischen Übersichten.',
+            'Version 3.0 setzt auf eine sauberere Frontend-Architektur, konsistente UI-Komponenten und eine stabilere Grundlage für alle Bereiche des Homework Managers.',
           highlights: {
-            design: 'Rundum neu gestaltetes Dark-Theme mit präziser Typografie.',
-            animations: 'Sanfte Animationen sorgen für flüssige Übergänge.',
-            events: 'Event-Feature für spontane Termine, AGs und Aktionen.',
-            upcoming: 'Neue Seite für anstehende Ereignisse schafft Überblick.',
+            design: 'Das komplette Frontend wurde auf React migriert.',
+            animations: 'Das Styling-System wurde mit Tailwind CSS neu aufgebaut.',
+            events: 'Die Komponentenstruktur wurde seitenübergreifend aufgeräumt.',
+            upcoming: 'Die neue Basis vereinfacht künftige UI-Updates deutlich.',
             privacy: 'Datenschutzhinweis direkt integriert.',
             accounts: 'Account-System mit Rollen, Rechten und E-Mail-Verifikation.',
             imprint: 'Impressum ergänzt die rechtlichen Infos.',
@@ -841,12 +840,12 @@
       },
       home: {
         pageTitle: 'Homework Manager',
-        heroTitle: 'Homework Manager 2.0',
+        heroTitle: 'HWM 3.0',
         description: {
           lead:
-            'Homework Manager was built to share homework, exams and projects transparently with the entire class.',
+            'Homework Manager 3.0 brings the platform onto a modern frontend stack with React JS and Tailwind CSS.',
           body:
-            'Instead of scattered chats and forgotten notes, the platform unifies schedules, reminders and handy utilities in one clear interface – available at any time and designed for teamwork.',
+            'The new version keeps the familiar Homework Manager structure, but upgrades the interface with cleaner components, better maintainability and a smoother web app experience across the entire platform.',
         },
         status: {
           title: 'Heads-up: Work in Progress',
@@ -858,15 +857,15 @@
           body: 'Notice: The 2.0 release has been moved to July 2026 due to limited capacity and quality assurance.',
         },
         release: {
-          title: 'Release 2.0',
-          date: 'Notice: The 2.0 release has been moved to July 2026 due to limited capacity and quality assurance.',
+          title: 'Update note 3.0',
+          date: 'New web app foundation with React JS and Tailwind CSS.',
           summary:
-            'Release 2.0 focuses on classroom essentials – a redesigned interface, powerful event tools, smarter overviews, and role-aware accounts.',
+            'Version 3.0 focuses on a cleaner frontend architecture, consistent UI components and a smoother foundation for all pages of Homework Manager.',
           highlights: {
-            design: 'Redesigned dark theme with finely tuned typography.',
-            animations: 'Smooth animations keep every transition fluid.',
-            events: 'Event feature for spontaneous gatherings, clubs, and special dates.',
-            upcoming: 'Upcoming events page keeps plans crystal clear.',
+            design: 'The complete frontend has been migrated to React.',
+            animations: 'The styling system has been rebuilt with Tailwind CSS.',
+            events: 'The component structure is cleaner across all major pages.',
+            upcoming: 'The new foundation makes future UI updates easier.',
             privacy: 'Privacy notice woven right into the experience.',
             accounts: 'Account system with roles, permissions, and email verification.',
             imprint: 'Legal notice (imprint) now included.',
@@ -1649,12 +1648,12 @@
       },
       home: {
         pageTitle: 'Homework Manager',
-        heroTitle: 'Homework Manager 2.0',
+        heroTitle: 'HWM 3.0',
         description: {
           lead:
-            'Homework Manager è nato per condividere compiti, verifiche e progetti in modo trasparente con tutta la classe.',
+            'Homework Manager 3.0 porta la piattaforma su uno stack frontend moderno con React JS e Tailwind CSS.',
           body:
-            'Al posto di chat disperse e appunti dimenticati, la piattaforma riunisce scadenze, promemoria e strumenti utili in un\'unica interfaccia chiara – sempre disponibile e pensata per il lavoro di squadra.',
+            'La nuova versione mantiene la struttura familiare di Homework Manager, ma aggiorna l’interfaccia con componenti più puliti, migliore manutenibilità e un’esperienza web app più fluida.',
         },
         status: {
           title: 'Avviso: Work in Progress',
@@ -1666,16 +1665,15 @@
           body: 'Avviso: la release 2.0 è stata rimandata a luglio 2026 per carenza di capacità e di controllo qualità.',
         },
         release: {
-          title: 'Release 2.0',
-          date:
-            'Avviso: la release 2.0 è stata rimandata a luglio 2026 per carenza di capacità e di controllo qualità.',
+          title: 'Nota di aggiornamento 3.0',
+          date: 'Nuova base web app con React JS e Tailwind CSS.',
           summary:
-            'La release 2.0 porta tutto ciò che serve in classe: interfaccia rinnovata, gestione degli eventi, ruoli dedicati e maggiore attenzione a privacy e panoramiche.',
+            'La versione 3.0 punta su un’architettura frontend più pulita, componenti UI coerenti e una base più solida per tutte le pagine di Homework Manager.',
           highlights: {
-            design: 'Tema scuro riprogettato con tipografia precisa.',
-            animations: 'Micro-animazioni fluide per passaggi più morbidi.',
-            events: 'Funzione Eventi per uscite, club e date speciali.',
-            upcoming: 'Nuova pagina degli eventi in arrivo per una visione chiara.',
+            design: 'L’intero frontend è stato migrato a React.',
+            animations: 'Il sistema di stile è stato ricostruito con Tailwind CSS.',
+            events: 'La struttura dei componenti è più pulita in tutte le pagine principali.',
+            upcoming: 'La nuova base semplifica i futuri aggiornamenti dell’interfaccia.',
             privacy: 'Informativa sulla privacy integrata.',
             accounts: 'Sistema di account con ruoli, permessi e verifica e-mail.',
             imprint: 'Informazioni legali aggiunte alla piattaforma.',
@@ -2459,12 +2457,12 @@
       },
       home: {
         pageTitle: 'Homework Manager',
-        heroTitle: 'Homework Manager 2.0',
+        heroTitle: 'HWM 3.0',
         description: {
           lead:
-            'Homework Manager a été créé pour partager les devoirs, évaluations et projets en toute transparence avec toute la classe.',
+            'Homework Manager 3.0 fait passer la plateforme sur une base frontend moderne avec React JS et Tailwind CSS.',
           body:
-            'Plutôt que des discussions dispersées et des notes oubliées, la plateforme rassemble horaires, rappels et outils pratiques dans une interface claire – disponible à tout moment et pensée pour le travail en équipe.',
+            'La nouvelle version conserve la structure familière de Homework Manager, tout en modernisant l’interface avec des composants plus propres, une meilleure maintenabilité et une expérience web app plus fluide.',
         },
         status: {
           title: 'Info : Work in Progress',
@@ -2476,16 +2474,15 @@
           body: 'Information : la sortie de la version 2.0 est reportée à juillet 2026 en raison de capacités limitées et de l’assurance qualité.',
         },
         release: {
-          title: 'Version 2.0',
-          date:
-            'Information : la sortie de la version 2.0 est reportée à juillet 2026 en raison de capacités limitées et de l’assurance qualité.',
+          title: 'Note de mise à jour 3.0',
+          date: 'Nouvelle base web app avec React JS et Tailwind CSS.',
           summary:
-            'La version 2.0 met l’accent sur l’essentiel en classe : interface repensée, gestion des événements, nouveaux rôles et contrôles de confidentialité.',
+            'La version 3.0 mise sur une architecture frontend plus propre, des composants UI cohérents et une base plus fluide pour toutes les pages de Homework Manager.',
           highlights: {
-            design: 'Thème sombre repensé avec une typographie précise.',
-            animations: 'Micro-animations fluides pour des transitions souples.',
-            events: 'Fonction « Événement » pour sorties, clubs et moments spéciaux.',
-            upcoming: 'Nouvelle page des événements à venir pour garder le cap.',
+            design: 'L’ensemble du frontend a été migré vers React.',
+            animations: 'Le système de styles a été reconstruit avec Tailwind CSS.',
+            events: 'La structure des composants est plus propre sur les pages principales.',
+            upcoming: 'La nouvelle base facilite les futures mises à jour de l’interface.',
             privacy: 'Notice de confidentialité intégrée.',
             accounts: 'Système de comptes avec rôles, droits et vérification e-mail.',
             imprint: 'Mentions légales désormais incluses.',

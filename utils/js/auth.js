@@ -2555,8 +2555,8 @@ function resolveEntryClassElements() {
 }
 
 function getStoredEntryClassId() {
-    return (typeof hmClassStorage.getId === 'function')
-        ? (hmClassStorage.getId() || '')
+    return (typeof hmClassStorage.getSlug === 'function')
+        ? (hmClassStorage.getSlug() || '')
         : '';
 }
 
@@ -3286,6 +3286,8 @@ async function showEntryForm(defaults = null) {
     if (canManageEntries() && window.hmEntryClassPicker && typeof window.hmEntryClassPicker.prepare === 'function') {
         try {
             await window.hmEntryClassPicker.prepare();
+            controller?.toggleTypeFields();
+            controller?.evaluate();
         } catch (error) {
             console.error('Unable to prepare class picker:', error);
         }
@@ -3413,7 +3415,7 @@ async function saveEntry(event) {
     const payloadSubject = (isEvent || isTodo) ? '' : fach;
     const resolvedEndDate = endDateIso || isoDate;
 
-    const storedClassId = (typeof hmClassStorage.getId === 'function') ? hmClassStorage.getId() : '';
+    const storedClassId = (typeof hmClassStorage.getSlug === 'function') ? hmClassStorage.getSlug() : '';
     const entryClassPickerController = window.hmEntryClassPicker;
     let selectedClassIds = [];
 
