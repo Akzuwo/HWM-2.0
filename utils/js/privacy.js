@@ -1,4 +1,6 @@
 (function () {
+  var observer = null;
+
   function initPrivacyAnimations() {
     var body = document.body;
     if (!body || !body.classList.contains('legal-page')) {
@@ -12,6 +14,11 @@
     var prefersReducedMotion = window.matchMedia
       ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
       : false;
+
+    if (observer) {
+      observer.disconnect();
+      observer = null;
+    }
 
     var animatedElements = [];
     var header = document.querySelector('.legal-header');
@@ -31,7 +38,7 @@
       return;
     }
 
-    var observer = new IntersectionObserver(
+    observer = new IntersectionObserver(
       function (entries) {
         entries.forEach(function (entry) {
           var element = entry.target;
@@ -68,4 +75,8 @@
   } else {
     initPrivacyAnimations();
   }
+
+  window.addEventListener('hm:header-ready', function () {
+    window.requestAnimationFrame(initPrivacyAnimations);
+  });
 })();
