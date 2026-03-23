@@ -3073,7 +3073,13 @@ def auth_resend():
 @app.route('/api/auth/password-reset', methods=['POST'])
 def auth_password_reset():
     data = request.json or {}
-    action = (data.get('action') or 'request').strip().lower() or 'request'
+    action = (data.get('action') or '').strip().lower()
+
+    if not action:
+        return jsonify(status='error', message='action_required'), 400
+
+    if action not in {'request', 'create', 'confirm', 'reset'}:
+        return jsonify(status='error', message='invalid_action'), 400
 
     if action in {'request', 'create'}:
         email = (data.get('email') or '').strip().lower()

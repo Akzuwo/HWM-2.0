@@ -2030,7 +2030,7 @@ async function handlePasswordReset(form, options = {}) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
-            body: JSON.stringify({ email })
+            body: JSON.stringify({ action: 'request', email })
         });
 
         if (response.ok) {

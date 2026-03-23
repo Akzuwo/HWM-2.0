@@ -107,3 +107,18 @@ def test_password_reset_missing_email(app_client):
     resp = client.post('/api/auth/password-reset', json={'action': 'request'})
     assert resp.status_code == 400
     assert resp.get_json()['message'] == 'email_required'
+
+
+def test_password_reset_requires_explicit_action(app_client, monkeypatch):
+    client, _, app_module = app_client
+    sent = {'count': 0}
+
+    def fake_deliver(*args, **kwargs):
+        sent['count'] += 1
+
+    monkeypatch.setattr(app_module, '_deliver_email', fake_deliver)
+
+    resp = client.post('/api/auth/password-reset', json={'email': 'admin@example.com'})
+    assert resp.status_code == 400
+    assert resp.get_json()['message'] == 'action_required'
+    assert sent['count'] == 0
