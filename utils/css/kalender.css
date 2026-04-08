@@ -625,6 +625,31 @@ body.calendar-theme main {
   min-height: 0;
 }
 
+.calendar-test-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.9rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(245, 158, 11, 0.34);
+  background:
+    linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(245, 158, 11, 0.04) 62%),
+    rgba(31, 24, 12, 0.88);
+  color: rgba(255, 242, 214, 0.96);
+  box-shadow: 0 18px 40px rgba(10, 8, 2, 0.26);
+}
+
+.calendar-test-mode strong {
+  font-size: 0.92rem;
+  letter-spacing: 0.02em;
+}
+
+.calendar-test-mode span {
+  color: rgba(255, 242, 214, 0.82);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
 .calendar-controls {
   display: flex;
   flex-direction: column;
@@ -1937,6 +1962,7 @@ body.hm-modal-open {
 /*  Mobile calendar (mobile-only)                                             */
 /* -------------------------------------------------------------------------- */
 
+.calendar-mobile-shell,
 .calendar-mobile-bar,
 .calendar-mobile-controls,
 .calendar-agenda-view,
@@ -1945,7 +1971,8 @@ body.hm-modal-open {
   display: none;
 }
 
-.calendar-mobile-bar__date {
+.calendar-mobile-bar__date,
+.calendar-mobile-bar__range {
   font-weight: 600;
 }
 
@@ -2111,16 +2138,20 @@ body.hm-modal-open {
 
   .calendar-weekstrip,
   .calendar-controls,
-  .calendar-shell__legend,
   #calendar {
     display: none;
   }
 
+  .calendar-mobile-shell {
+    display: grid;
+    gap: var(--space-3);
+  }
+
   .calendar-mobile-bar {
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    align-items: flex-start;
     gap: var(--space-3);
-    justify-content: space-between;
     padding: var(--space-3) var(--space-4);
     border-radius: var(--radius-md);
     background: var(--surface-1);
@@ -2131,25 +2162,32 @@ body.hm-modal-open {
     z-index: 20;
   }
 
-  .calendar-mobile-bar__class {
-    flex: 1;
-    min-width: 0;
+  .calendar-mobile-bar__date-wrap {
+    display: grid;
+    gap: 0.35rem;
+    width: 100%;
   }
 
-  .calendar-mobile-bar__class select {
-    padding: 0.45rem 0.6rem;
+  .calendar-mobile-bar__eyebrow {
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
   }
 
-  .calendar-mobile-bar__filter {
-    width: 2.5rem;
-    height: 2.5rem;
-    border-radius: 999px;
-    padding: 0;
+  .calendar-mobile-bar__date {
+    font-size: 1.18rem;
+    line-height: 1.2;
+  }
+
+  .calendar-mobile-bar__range {
+    width: 100%;
+    font-size: 0.92rem;
+    color: var(--muted-strong);
   }
 
   .calendar-mobile-controls {
-    display: flex;
-    flex-direction: column;
+    display: grid;
     gap: var(--space-3);
   }
 
@@ -2157,6 +2195,10 @@ body.hm-modal-open {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: var(--space-2);
+    padding: 0.35rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    background: var(--surface-0);
   }
 
   .calendar-filter-sheet {
@@ -2168,12 +2210,11 @@ body.hm-modal-open {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.35rem;
-    padding: 0.5rem 0.4rem;
+    padding: 0.7rem 0.4rem;
     border-radius: var(--radius-md);
     border: 1px solid var(--border);
     background: var(--surface-0);
-    font-size: 0.85rem;
+    font-size: 0.9rem;
   }
 
   .calendar-mobile-view-switch__button.is-active {
@@ -2184,31 +2225,49 @@ body.hm-modal-open {
 
   .calendar-mobile-nav {
     display: grid;
-    grid-template-columns: auto 1fr auto auto;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     align-items: center;
     gap: var(--space-2);
-    padding: 0.6rem 0.75rem;
+    padding: 0.35rem;
     border-radius: var(--radius-md);
     border: 1px solid var(--border);
     background: var(--surface-0);
   }
 
-  .calendar-mobile-nav__label {
-    text-align: center;
-    font-weight: 600;
-    font-size: 0.9rem;
+  .calendar-mobile-nav__button {
+    min-height: 3rem;
+    padding: 0.7rem 0.6rem;
+    border-radius: calc(var(--radius-md) - 4px);
   }
 
-  .calendar-mobile-nav__button {
-    padding: 0.45rem 0.6rem;
-    border-radius: var(--radius-sm);
+  .calendar-mobile-nav__button--today {
+    font-weight: 700;
   }
 
   .calendar-mobile-carousel {
     display: flex;
     gap: var(--space-2);
     overflow-x: auto;
-    padding-bottom: 0.35rem;
+    padding: 0.15rem 0 0.35rem;
+  }
+
+  .calendar-shell__legend {
+    display: flex;
+    width: 100%;
+    justify-content: flex-start;
+    padding-top: 0.1rem;
+  }
+
+  .calendar-legend {
+    width: 100%;
+    flex-wrap: nowrap;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding: 0.35rem 0.1rem 0.45rem;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    backdrop-filter: none;
   }
 
   .calendar-mobile-carousel__day {
@@ -2402,6 +2461,7 @@ body.hm-modal-open {
 
   .calendar-shell {
     padding: clamp(1rem, 4vw, 1.6rem);
+    gap: var(--space-3);
   }
 
   .calendar-action-bar__inner {

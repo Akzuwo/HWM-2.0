@@ -10,6 +10,14 @@ const API_BASE_URL =
   (typeof window !== 'undefined' && typeof window.hmResolveApiBase === 'function')
     ? window.hmResolveApiBase()
     : 'https://hwm-api.akzuwo.ch';
+const LOCAL_TEST_HOSTS = new Set(['localhost', '127.0.0.1']);
+const CAN_USE_TEMPORARY_TEST_MODE =
+  typeof window !== 'undefined' && LOCAL_TEST_HOSTS.has(window.location.hostname);
+const TEMPORARY_TEST_CLASSES = [
+  { id: 'test-l23a', slug: 'l23a-test', title: 'Test class L23a' },
+  { id: 'test-u24f', slug: 'u24f-test', title: 'Test class U24f' },
+  { id: 'test-b24m', slug: 'b24m-test', title: 'Test class B24m' }
+];
 
 function fetchWithSession(url, options = {}) {
   const { headers, ...rest } = options || {};
@@ -31,6 +39,9 @@ let role = FALLBACK_PERMISSION_STATE.role;
 let userCanManageEntries = FALLBACK_PERMISSION_STATE.canManageEntries;
 let canCreatePersonalTodos = FALLBACK_PERMISSION_STATE.canCreatePersonalTodos;
 let classSelectorEnabled = FALLBACK_PERMISSION_STATE.classSelectorEnabled;
+let temporaryTestModeActive = false;
+let temporaryTestModeReason = '';
+let temporaryTestModeNotified = false;
 
 function applyPermissionSnapshot(nextState) {
   if (!nextState) {
@@ -53,15 +64,6 @@ function refreshPermissionState() {
 }
 
 function applyActionBarPermissions() {
-  if (CALENDAR_PERMISSIONS) {
-    CALENDAR_PERMISSIONS.updateActionBarPermissions({
-      onCreate: () => showEntryForm(),
-      canManageEntries: userCanManageEntries,
-      canCreatePersonalTodos
-    });
-    return;
-  }
-
   if (typeof document === 'undefined') {
     return;
   }
@@ -72,20 +74,60 @@ function applyActionBarPermissions() {
   }
 
   const createBtn = actionBar.querySelector('[data-action="create"]');
-  if (!createBtn) {
+  const exportBtn = actionBar.querySelector('[data-action="export"]');
+  const testModeMessage = 'Temporary test mode is active.';
+  if (temporaryTestModeActive) {
+    if (createBtn) {
+      createBtn.disabled = true;
+      createBtn.setAttribute('aria-disabled', 'true');
+      createBtn.title = testModeMessage;
+    }
+    if (exportBtn) {
+      exportBtn.disabled = true;
+      exportBtn.setAttribute('aria-disabled', 'true');
+      exportBtn.title = testModeMessage;
+    }
     return;
   }
 
-  if (!userCanManageEntries && !canCreatePersonalTodos) {
-    createBtn.disabled = true;
-    createBtn.setAttribute('aria-disabled', 'true');
+  if (CALENDAR_PERMISSIONS) {
+    CALENDAR_PERMISSIONS.updateActionBarPermissions({
+      onCreate: () => showEntryForm(),
+      canManageEntries: userCanManageEntries,
+      canCreatePersonalTodos
+    });
   } else {
-    createBtn.disabled = false;
-    createBtn.removeAttribute('aria-disabled');
-    if (!createBtn.dataset.hmRoleBound) {
-      createBtn.addEventListener('click', () => showEntryForm());
-      createBtn.dataset.hmRoleBound = 'true';
+    if (!createBtn) {
+      if (exportBtn) {
+        exportBtn.disabled = false;
+        exportBtn.removeAttribute('aria-disabled');
+        exportBtn.removeAttribute('title');
+      }
+      return;
     }
+
+    if (!userCanManageEntries && !canCreatePersonalTodos) {
+      createBtn.disabled = true;
+      createBtn.setAttribute('aria-disabled', 'true');
+      createBtn.removeAttribute('title');
+    } else {
+      createBtn.disabled = false;
+      createBtn.removeAttribute('aria-disabled');
+      createBtn.removeAttribute('title');
+      if (!createBtn.dataset.hmRoleBound) {
+        createBtn.addEventListener('click', () => showEntryForm());
+        createBtn.dataset.hmRoleBound = 'true';
+      }
+    }
+  }
+
+  if (createBtn) {
+    createBtn.removeAttribute('title');
+  }
+  if (exportBtn) {
+    exportBtn.disabled = false;
+    exportBtn.removeAttribute('aria-disabled');
+    exportBtn.removeAttribute('title');
   }
 }
 
@@ -185,6 +227,22 @@ const classSelectorText = {
   changeError: t('classSelector.changeError', 'Could not change class.'),
   required: t('classSelector.required', 'Please select a class to view the calendar.')
 };
+const testModeText = {
+  noticeTitle: t('status.testMode.title', 'Development test mode'),
+  noticeBody: t(
+    'status.testMode.body',
+    'The API is currently unavailable in this test environment. Declared temporary test data is being shown. Saving, deleting, exporting and server sync are disabled until production wiring is in place.'
+  ),
+  toast: t(
+    'status.testMode.toast',
+    'Temporary test data is active because the calendar API could not be reached from the local test environment.'
+  ),
+  actionDisabled: t(
+    'status.testMode.actionDisabled',
+    'Temporary test mode is active. This action is unavailable while the calendar uses declared test data.'
+  ),
+  entryLabel: t('status.testMode.entryLabel', 'Test data')
+};
 
 const TYPE_LABELS = {
   hausaufgabe: t('legend.homework', 'Homework'),
@@ -213,6 +271,87 @@ const unauthorizedMessage = t(
   'Please sign in and make sure you are assigned to a class to view the calendar.'
 );
 const exportUnauthorizedMessage = actionText.exportUnauthorized || unauthorizedMessage;
+
+function isTemporaryTestModeAvailable(error = null) {
+  if (!CAN_USE_TEMPORARY_TEST_MODE) {
+    return false;
+  }
+  if (!error) {
+    return true;
+  }
+  if (error instanceof TypeError) {
+    return true;
+  }
+  const message = typeof error?.message === 'string' ? error.message.toLowerCase() : '';
+  return (
+    message.includes('failed to fetch') ||
+    message.includes('networkerror') ||
+    message.includes('load failed')
+  );
+}
+
+function updateTemporaryTestModeNotice() {
+  if (typeof document === 'undefined') {
+    return;
+  }
+  const shell = document.querySelector('.calendar-shell');
+  const notice = document.querySelector('[data-calendar-test-mode]');
+  if (shell) {
+    shell.classList.toggle('calendar-shell--test-mode', temporaryTestModeActive);
+  }
+  if (!notice) {
+    return;
+  }
+  if (!temporaryTestModeActive) {
+    notice.hidden = true;
+    notice.innerHTML = '';
+    return;
+  }
+  const reasonMarkup = temporaryTestModeReason
+    ? `<span>Fallback source: ${temporaryTestModeReason}.</span>`
+    : '';
+  notice.innerHTML = `
+    <strong>${testModeText.noticeTitle}</strong>
+    <span>${testModeText.noticeBody}</span>
+    ${reasonMarkup}
+  `;
+  notice.hidden = false;
+}
+
+function setTemporaryTestMode(active, reason = '') {
+  temporaryTestModeActive = Boolean(active) && CAN_USE_TEMPORARY_TEST_MODE;
+  temporaryTestModeReason = temporaryTestModeActive ? String(reason || '') : '';
+  updateTemporaryTestModeNotice();
+  if (!temporaryTestModeActive && !classSelectorEnabled) {
+    hideClassSelector();
+  }
+  applyActionBarPermissions();
+}
+
+function activateTemporaryTestMode(error = null, reason = '') {
+  if (!isTemporaryTestModeAvailable(error)) {
+    return false;
+  }
+  const wasActive = temporaryTestModeActive;
+  setTemporaryTestMode(true, reason);
+  if (!wasActive && !temporaryTestModeNotified && typeof window !== 'undefined') {
+    temporaryTestModeNotified = true;
+    window.setTimeout(() => {
+      if (typeof showOverlay === 'function') {
+        showOverlay(testModeText.toast, 'warning');
+      }
+    }, 0);
+  }
+  return true;
+}
+
+function isClassSelectorAvailable() {
+  return classSelectorEnabled || temporaryTestModeActive;
+}
+
+function getTemporaryTestClasses() {
+  return TEMPORARY_TEST_CLASSES.map((cls) => ({ ...cls }));
+}
 
 function redirectToLogin() {
   if (typeof window === 'undefined') {
@@ -375,6 +514,109 @@ function addDaysToDate(dateStr, days) {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+function formatEntryDate(date) {
+  const next = new Date(date);
+  next.setHours(0, 0, 0, 0);
+  const year = next.getFullYear();
+  const month = String(next.getMonth() + 1).padStart(2, '0');
+  const day = String(next.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function ensureTemporaryTestClassContext(preferredSlug = '') {
+  const classes = getTemporaryTestClasses();
+  const selected =
+    classes.find((cls) => cls.slug === preferredSlug) ||
+    classes.find((cls) => cls.slug === currentClassSlug) ||
+    classes[0];
+
+  if (!selected) {
+    setCurrentClassContext('test-class', 'test-class');
+    return { classId: currentClassId, classSlug: currentClassSlug };
+  }
+
+  setCurrentClassContext(selected.id, selected.slug);
+  return { classId: currentClassId, classSlug: currentClassSlug };
+}
+
+function buildTemporaryTestEntries(classSlug = currentClassSlug) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const activeClassSlug = (classSlug || 'test-class').toUpperCase();
+
+  const plusDays = (amount) => {
+    const value = new Date(today);
+    value.setDate(value.getDate() + amount);
+    return value;
+  };
+
+  return [
+    {
+      id: `temp-homework-${activeClassSlug}-1`,
+      is_temporary_test_data: true,
+      typ: 'hausaufgabe',
+      fach: 'Mathematik',
+      datum: formatEntryDate(plusDays(0)),
+      enddatum: formatEntryDate(plusDays(0)),
+      startzeit: '',
+      endzeit: '',
+      beschreibung: `Arbeitsblatt 7 fertigstellen und Aufgaben 3-6 kontrollieren. Testklasse: ${activeClassSlug}.`
+    },
+    {
+      id: `temp-exam-${activeClassSlug}-1`,
+      is_temporary_test_data: true,
+      typ: 'pruefung',
+      fach: 'Englisch',
+      datum: formatEntryDate(plusDays(1)),
+      enddatum: formatEntryDate(plusDays(1)),
+      startzeit: '08:15:00',
+      endzeit: '09:00:00',
+      beschreibung: `Vocabulary Quiz Unit 5 for ${activeClassSlug}`
+    },
+    {
+      id: `temp-event-${activeClassSlug}-1`,
+      is_temporary_test_data: true,
+      typ: 'event',
+      fach: '',
+      datum: formatEntryDate(plusDays(2)),
+      enddatum: formatEntryDate(plusDays(2)),
+      startzeit: '13:30:00',
+      endzeit: '15:00:00',
+      beschreibung: `Project presentation ${activeClassSlug}\n\nTemporary test event for the development environment.`
+    },
+    {
+      id: `temp-todo-${activeClassSlug}-1`,
+      is_temporary_test_data: true,
+      typ: 'todo',
+      fach: '',
+      datum: formatEntryDate(plusDays(3)),
+      enddatum: formatEntryDate(plusDays(3)),
+      startzeit: '',
+      endzeit: '',
+      beschreibung: `Update study plan for science class ${activeClassSlug}`
+    },
+    {
+      id: `temp-holiday-${activeClassSlug}-1`,
+      is_temporary_test_data: true,
+      typ: 'ferien',
+      fach: '',
+      datum: formatEntryDate(plusDays(5)),
+      enddatum: formatEntryDate(plusDays(8)),
+      startzeit: '',
+      endzeit: '',
+      beschreibung: `Sports week for ${activeClassSlug}`
+    }
+  ];
+}
+
+function withTemporaryTestEntries(entries) {
+  const safeEntries = Array.isArray(entries) ? entries : [];
+  if (!temporaryTestModeActive) {
+    return safeEntries;
+  }
+  return [...safeEntries, ...buildTemporaryTestEntries(currentClassSlug)];
+}
+
 function formatDateLabel(dateStr, startStr, endStr, endDateStr) {
   if (!dateStr) return '';
   const locale = document.documentElement.lang || 'en-GB';
@@ -434,6 +676,9 @@ function debounce(fn, wait = 160) {
   }
 
 async function fetchSessionClassContext() {
+  if (temporaryTestModeActive) {
+    return ensureTemporaryTestClassContext(currentClassSlug);
+  }
   try {
     const res = await fetchWithSession(`${API_BASE_URL}/api/session/class`);
     if (res.status === 401) {
@@ -447,13 +692,18 @@ async function fetchSessionClassContext() {
     const classId = data?.class_id || '';
     const classSlug = data?.class_slug || '';
     if (classId) {
+      setTemporaryTestMode(false);
       setCurrentClassContext(classId, classSlug || classId);
       return { classId: currentClassId, classSlug: currentClassSlug };
     }
+    setTemporaryTestMode(false);
     setCurrentClassContext('', '');
     return { classId: '', classSlug: '' };
   } catch (error) {
     console.error('Failed to load class context:', error);
+    if (activateTemporaryTestMode(error, 'session class context')) {
+      return ensureTemporaryTestClassContext(currentClassSlug);
+    }
     return null;
   }
 }
@@ -466,15 +716,22 @@ async function ensureSessionClassContext() {
 }
 
 async function fetchAvailableClasses() {
+  if (temporaryTestModeActive) {
+    return getTemporaryTestClasses();
+  }
   try {
     const res = await fetchWithSession(`${API_BASE_URL}/api/classes`);
     if (!res.ok) {
       throw new Error(`Status ${res.status}`);
     }
     const rows = await res.json();
+    setTemporaryTestMode(false);
     return (rows || []).filter((row) => row && row.slug);
   } catch (error) {
     console.error('Failed to load class list:', error);
+    if (activateTemporaryTestMode(error, 'available classes')) {
+      return getTemporaryTestClasses();
+    }
     throw error;
   }
 }
@@ -483,6 +740,10 @@ async function updateSessionClassSelection(slug, { silent = false } = {}) {
   if (!slug) {
     setCurrentClassContext('', '');
     return { classId: '', classSlug: '' };
+  }
+
+  if (temporaryTestModeActive) {
+    return ensureTemporaryTestClassContext(slug);
   }
 
   try {
@@ -498,10 +759,14 @@ async function updateSessionClassSelection(slug, { silent = false } = {}) {
     const data = await res.json();
     const classId = data?.class_id || '';
     const classSlug = data?.class_slug || slug;
+    setTemporaryTestMode(false);
     setCurrentClassContext(classId, classSlug || classId);
     return { classId: currentClassId, classSlug: currentClassSlug };
   } catch (error) {
     console.error('Failed to update class selection:', error);
+    if (activateTemporaryTestMode(error, 'class selection')) {
+      return ensureTemporaryTestClassContext(slug);
+    }
     if (!silent) {
       showOverlay(classSelectorText.changeError, 'error');
     }
@@ -518,7 +783,7 @@ async function initialiseClassSelector() {
     return;
   }
 
-  if (!classSelectorEnabled) {
+  if (!isClassSelectorAvailable()) {
     container.hidden = true;
     container.classList.remove('is-visible');
     select.disabled = true;
@@ -975,6 +1240,10 @@ function initActionBar() {
 async function handleExportClick(event) {
   const button = event.currentTarget;
   if (!(button instanceof HTMLElement)) return;
+  if (temporaryTestModeActive) {
+    showOverlay(testModeText.actionDisabled, 'warning');
+    return;
+  }
   const label = button.querySelector('.calendar-action__label');
   const defaultLabel = label ? label.textContent : actionText.exportLabel;
   button.classList.add('is-loading');
@@ -1098,6 +1367,9 @@ function createEventContent(info) {
   const startLabel = info.event.extendedProps.startLabel;
   const endLabel = info.event.extendedProps.endLabel;
   const metaPieces = [typeLabel];
+  if (info.event.extendedProps.isTemporaryTestData) {
+    metaPieces.unshift(testModeText.entryLabel);
+  }
   if (startLabel && endLabel) {
     metaPieces.push(`${startLabel} – ${endLabel}`);
   } else if (startLabel) {
@@ -1147,7 +1419,8 @@ function normaliseEvent(entry) {
 
   const isPrivate = Boolean(entry.is_private);
   const isOwned = Boolean(entry.is_owned);
-  const canEdit = isPrivate ? isOwned : userCanManageEntries;
+  const isTemporaryTestData = Boolean(entry.is_temporary_test_data);
+  const canEdit = !isTemporaryTestData && (isPrivate ? isOwned : userCanManageEntries);
 
   const eventConfig = {
     id: String(entry.id),
@@ -1169,7 +1442,8 @@ function normaliseEvent(entry) {
       endLabel,
       isPrivate,
       isOwned,
-      canEdit
+      canEdit,
+      isTemporaryTestData
     }
   };
 
@@ -1359,6 +1633,10 @@ function initialiseCalendar(events) {
       );
     },
     dateClick: async (info) => {
+      if (temporaryTestModeActive) {
+        showOverlay(testModeText.actionDisabled, 'warning');
+        return;
+      }
       await showEntryForm({ date: info.dateStr });
       const form = document.getElementById('entry-form');
       const dateInput = form?.querySelector('[data-field="date"] input');
@@ -1404,6 +1682,7 @@ async function loadCalendar() {
 
   const context = await ensureSessionClassContext();
   const classId = context?.classId || currentClassId;
+  const classSlug = context?.classSlug || currentClassSlug;
 
   try {
     const entriesUrl = new URL(`${API_BASE_URL}/entries`);
@@ -1433,19 +1712,25 @@ async function loadCalendar() {
       throw new Error(`API error (${res.status})`);
     }
 
-    const entries = await res.json();
+    setTemporaryTestMode(false);
+    const entries = withTemporaryTestEntries(await res.json());
     const events = entries.map(normaliseEvent);
     publishMobileCalendarState({ events, classId, classSlug: currentClassSlug, error: '' });
     initialiseCalendar(events);
   } catch (err) {
     console.error('Failed to load calendar:', err);
+    const usingTemporaryTestMode = activateTemporaryTestMode(err, 'calendar entries');
+    const fallbackContext = usingTemporaryTestMode
+      ? ensureTemporaryTestClassContext(classSlug || currentClassSlug)
+      : { classId: currentClassId, classSlug: currentClassSlug };
+    const fallbackEvents = withTemporaryTestEntries([]).map(normaliseEvent);
     publishMobileCalendarState({
-      events: [],
-      classId: currentClassId,
-      classSlug: currentClassSlug,
-      error: t('status.error', 'Unable to load calendar entries!')
+      events: fallbackEvents,
+      classId: fallbackContext.classId,
+      classSlug: fallbackContext.classSlug,
+      error: ''
     });
-    showCalendarError(calendarEl, t('status.error', 'Unable to load calendar entries!'));
+    initialiseCalendar(fallbackEvents);
   }
 }
 

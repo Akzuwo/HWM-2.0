@@ -29,59 +29,48 @@ export function CalendarPage() {
           </div>
         </section>
 
-        <div className="calendar-mobile-bar" data-calendar-mobile-bar="">
-          <div className="calendar-mobile-bar__date" data-calendar-mobile-date="">
-            Mo, 29. Jan
+        <div className="calendar-mobile-shell">
+          <div className="calendar-mobile-bar" data-calendar-mobile-bar="">
+            <div className="calendar-mobile-bar__date-wrap">
+              <span className="calendar-mobile-bar__eyebrow">Selected day</span>
+              <div className="calendar-mobile-bar__date" data-calendar-mobile-date="">
+                Mo, 29. Jan
+              </div>
+            </div>
+            <div className="calendar-mobile-bar__range" data-calendar-mobile-label="">
+              January 2026
+            </div>
           </div>
-          <div className="calendar-mobile-bar__class">
-            <label className="visually-hidden" htmlFor="calendar-class-select-mobile">
-              Class
-            </label>
-            <select id="calendar-class-select-mobile" data-calendar-mobile-class-select=""></select>
-          </div>
-          <button
-            type="button"
-            className="calendar-mobile-bar__filter"
-            data-calendar-filter-toggle=""
-            aria-label="Filter calendar entries"
-          >
-            <span aria-hidden="true">⚙️</span>
-          </button>
-        </div>
 
-        <div className="calendar-mobile-controls" data-calendar-mobile-controls="">
-          <div className="calendar-mobile-view-switch" role="group" aria-label="Select calendar view">
-            <button type="button" className="calendar-mobile-view-switch__button" data-mobile-view="day">
-              <span aria-hidden="true">📋</span>
-              <span>Day</span>
-            </button>
-            <button type="button" className="calendar-mobile-view-switch__button" data-mobile-view="week">
-              <span aria-hidden="true">🗓️</span>
-              <span>Week</span>
-            </button>
-            <button type="button" className="calendar-mobile-view-switch__button" data-mobile-view="month">
-              <span aria-hidden="true">📆</span>
-              <span>Month</span>
-            </button>
+          <div className="calendar-mobile-controls" data-calendar-mobile-controls="">
+            <div className="calendar-mobile-nav" role="group" aria-label="Calendar navigation">
+              <button type="button" className="calendar-mobile-nav__button" data-mobile-nav="prev" aria-label="Previous">
+                <span aria-hidden="true">◀</span>
+              </button>
+              <button type="button" className="calendar-mobile-nav__button calendar-mobile-nav__button--today" data-mobile-nav="today">
+                Today
+              </button>
+              <button type="button" className="calendar-mobile-nav__button" data-mobile-nav="next" aria-label="Next">
+                <span aria-hidden="true">▶</span>
+              </button>
+            </div>
+            <div className="calendar-mobile-view-switch" role="group" aria-label="Select calendar view">
+              <button type="button" className="calendar-mobile-view-switch__button" data-mobile-view="day">
+                <span data-mobile-view-label="">Day</span>
+              </button>
+              <button type="button" className="calendar-mobile-view-switch__button" data-mobile-view="week">
+                <span data-mobile-view-label="">Week</span>
+              </button>
+              <button type="button" className="calendar-mobile-view-switch__button" data-mobile-view="month">
+                <span data-mobile-view-label="">Month</span>
+              </button>
+            </div>
+            <div className="calendar-mobile-carousel" data-calendar-mobile-carousel=""></div>
           </div>
-          <div className="calendar-mobile-nav" role="group" aria-label="Calendar navigation">
-            <button type="button" className="calendar-mobile-nav__button" data-mobile-nav="prev" aria-label="Previous">
-              <span aria-hidden="true">◀</span>
-            </button>
-            <span className="calendar-mobile-nav__label" data-calendar-mobile-label="">
-              Current
-            </span>
-            <button type="button" className="calendar-mobile-nav__button" data-mobile-nav="next" aria-label="Next">
-              <span aria-hidden="true">▶</span>
-            </button>
-            <button type="button" className="calendar-mobile-nav__button" data-mobile-nav="today">
-              Today
-            </button>
-          </div>
-          <div className="calendar-mobile-carousel" data-calendar-mobile-carousel=""></div>
         </div>
 
         <section className="calendar-shell" aria-live="polite">
+          <div className="calendar-test-mode" data-calendar-test-mode="" hidden></div>
           <div className="calendar-weekstrip" data-week-strip="">
             <span className="calendar-weekstrip__label" data-i18n="calendar.weekStrip.label">
               Calendar weeks
@@ -182,32 +171,6 @@ export function CalendarPage() {
           <div className="calendar-month-mobile" data-calendar-month=""></div>
         </section>
       </main>
-
-      <div className="calendar-filter-sheet hm-modal-overlay" data-calendar-filter-sheet="">
-        <div className="calendar-filter-sheet__panel" role="dialog" aria-modal="true" aria-label="Calendar filters">
-          <div className="calendar-filter-sheet__header">
-            <h2 className="calendar-filter-sheet__title">Filter &amp; legend</h2>
-            <button type="button" className="calendar-filter-sheet__close" data-calendar-filter-close="" aria-label="Close">
-              ✕
-            </button>
-          </div>
-          <div className="calendar-filter-sheet__body">
-            {[
-              ['hausaufgabe', 'Homework'],
-              ['pruefung', 'Exam'],
-              ['event', 'Event'],
-              ['ferien', 'Holidays & Breaks'],
-              ['todo', 'ToDo']
-            ].map(([type, label]) => (
-              <label key={type} className="calendar-filter-toggle" data-filter-type={type}>
-                <input type="checkbox" defaultChecked />
-                <span className={`calendar-filter-toggle__dot calendar-filter-toggle__dot--${type}`}></span>
-                <span>{label}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-      </div>
 
       <footer className="calendar-action-bar" data-i18n-attr="aria-label:calendar.actionBar.label" aria-label="Calendar actions">
         <div className="calendar-action-bar__inner">

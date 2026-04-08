@@ -441,11 +441,11 @@ function updateBarDate() {
 }
 
 function updateNavLabel() {
-  if (!elements.navLabel) {
+  if (!elements.rangeLabel) {
     return;
   }
   if (state.selectedView === 'month') {
-    elements.navLabel.textContent = formatMonthLabel(state.selectedMonth || state.selectedDate);
+    elements.rangeLabel.textContent = formatMonthLabel(state.selectedMonth || state.selectedDate);
   } else if (state.selectedView === 'week') {
     const start = state.selectedWeekStart || getWeekStart(state.selectedDate);
     const end = addDays(start, 6);
@@ -453,9 +453,9 @@ function updateNavLabel() {
       day: '2-digit',
       month: 'short'
     });
-    elements.navLabel.textContent = `${formatter.format(start)} – ${formatter.format(end)}`;
+    elements.rangeLabel.textContent = `${formatter.format(start)} – ${formatter.format(end)}`;
   } else {
-    elements.navLabel.textContent = formatMonthLabel(state.selectedDate);
+    elements.rangeLabel.textContent = formatMonthLabel(state.selectedDate);
   }
 }
 
@@ -631,7 +631,7 @@ function bindElements() {
   elements.filterToggles = document.querySelectorAll('[data-filter-type]');
   elements.viewButtons = Array.from(document.querySelectorAll('[data-mobile-view]'));
   elements.navButtons = Array.from(document.querySelectorAll('[data-mobile-nav]'));
-  elements.navLabel = document.querySelector('[data-calendar-mobile-label]');
+  elements.rangeLabel = document.querySelector('[data-calendar-mobile-label]');
   elements.carousel = document.querySelector('[data-calendar-mobile-carousel]');
   elements.agenda = document.querySelector('[data-calendar-agenda]');
   elements.month = document.querySelector('[data-calendar-month]');
@@ -642,7 +642,7 @@ function applyLabels() {
     elements.viewButtons.forEach((button) => {
       const view = button.dataset.mobileView;
       const text = viewLabels[view];
-      const label = button.querySelector('span:last-child');
+      const label = button.querySelector('[data-mobile-view-label]');
       if (text && label) {
         label.textContent = text;
       }

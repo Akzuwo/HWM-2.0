@@ -27,6 +27,15 @@
         language: {
           menuLabel: 'Sprache auswählen',
         },
+        settings: {
+          ariaLabel: 'Einstellungen öffnen',
+          label: 'Einstellungen',
+          language: 'Sprache',
+          theme: 'Darstellung',
+          light: 'Light Mode',
+          dark: 'Dark Mode',
+          darkUnavailable: 'Der Darkmode ist noch in Entwicklung und kann daher aktuell nicht angezeigt werden.',
+        },
       },
       home: {
         pageTitle: 'Homework Manager',
@@ -837,6 +846,15 @@
         language: {
           menuLabel: 'Select language',
         },
+        settings: {
+          ariaLabel: 'Open settings',
+          label: 'Settings',
+          language: 'Language',
+          theme: 'Appearance',
+          light: 'Light mode',
+          dark: 'Dark mode',
+          darkUnavailable: 'Dark mode is still in development and cannot be displayed yet.',
+        },
       },
       home: {
         pageTitle: 'Homework Manager',
@@ -1644,6 +1662,15 @@
         },
         language: {
           menuLabel: 'Seleziona la lingua',
+        },
+        settings: {
+          ariaLabel: 'Apri impostazioni',
+          label: 'Impostazioni',
+          language: 'Lingua',
+          theme: 'Aspetto',
+          light: 'Modalita chiara',
+          dark: 'Modalita scura',
+          darkUnavailable: 'La modalita scura e ancora in sviluppo e non puo ancora essere mostrata.',
         },
       },
       home: {
@@ -2453,6 +2480,15 @@
         },
         language: {
           menuLabel: 'Sélectionner la langue',
+        },
+        settings: {
+          ariaLabel: 'Ouvrir les parametres',
+          label: 'Parametres',
+          language: 'Langue',
+          theme: 'Apparence',
+          light: 'Mode clair',
+          dark: 'Mode sombre',
+          darkUnavailable: 'Le mode sombre est encore en cours de developpement et ne peut pas encore etre affiche.',
         },
       },
       home: {
