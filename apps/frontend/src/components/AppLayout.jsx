@@ -64,7 +64,7 @@ export function AppLayout() {
         <div className="hm-app-backdrop__grid"></div>
       </div>
       <Header />
-      <div id="pageContent">
+      <div id="pageContent" className={footer ? 'hm-page-content--with-footer' : undefined}>
         <div className={`hm-react-main ${mainClassName}`.trim()}>
           <div className="hm-react-main__inner">
             <AnimatePresence mode="wait" initial={false}>

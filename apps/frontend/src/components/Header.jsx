@@ -203,6 +203,12 @@ function SettingsDropdown({ mobile = false }) {
               </span>
               <ChevronIcon className="settings-option__chevron" direction="right" />
             </button>
+            <div className="settings-option settings-option--theme" role="menuitem" aria-disabled="true" tabIndex="-1">
+              <span className="settings-option__text">Darkmode</span>
+              <span className="settings-option__theme-toggle" aria-hidden="true">
+                <span className="settings-option__theme-knob"></span>
+              </span>
+            </div>
           </div>
 
           <div className="settings-panel settings-panel--sub" data-settings-panel="language">
@@ -479,7 +485,6 @@ export function Header() {
               </div>
             </div>
             <div className="nav-mobile">
-              <SettingsDropdown />
               <button
                 className={`hm-navbar__toggle hamburger-btn${isNavOpen ? ' is-active' : ''}`}
                 type="button"

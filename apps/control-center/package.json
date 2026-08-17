@@ -1,7 +1,7 @@
 {
   "name": "hwm-server-control-center",
   "productName": "HWM Server Control Center",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "description": "Lokale Electron-Desktop-App zum Steuern und Ueberwachen des HWM-Backends.",
   "main": "src/main/main.js",
