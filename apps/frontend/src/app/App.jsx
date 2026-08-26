@@ -27,7 +27,7 @@ const ROUTES = [
     paths: ['/', '/index.html'],
   },
   {
-    title: 'Mehr ueber HWM - Homework Manager',
+    title: 'Mehr über HWM - Homework Manager',
     element: <AboutPage />,
     paths: ['/mehr-ueber-hwm', '/about', '/about.html', '/mehr-ueber-hwm.html'],
   },
@@ -37,7 +37,7 @@ const ROUTES = [
     paths: ['/geschichte', '/geschichte.html'],
   },
   {
-    title: 'User Guide - Homework Manager',
+    title: 'Hilfe - Homework Manager',
     element: <HelpPage />,
     paths: ['/help', '/help.html'],
   },
@@ -47,12 +47,12 @@ const ROUTES = [
     paths: ['/changelog', '/changelog.html'],
   },
   {
-    title: 'Privacy Policy - Homework Manager',
+    title: 'Datenschutz - Homework Manager',
     element: <LegalPage pageKey="privacy.main" />,
     paths: ['/datenschutz', '/datenschutz.html'],
   },
   {
-    title: 'Legal Notice - Homework Manager',
+    title: 'Impressum - Homework Manager',
     element: <LegalPage pageKey="imprint.main" />,
     paths: ['/impressum', '/impressum.html'],
   },
@@ -62,7 +62,7 @@ const ROUTES = [
     paths: ['/login', '/login.html'],
   },
   {
-    title: 'Calendar - Homework Manager',
+    title: 'Kalender - Homework Manager',
     element: <CalendarPage />,
     paths: ['/kalender', '/kalender.html'],
   },
@@ -72,47 +72,47 @@ const ROUTES = [
     paths: ['/abfahrten', '/abfahrten/'],
   },
   {
-    title: 'Upcoming - Homework Manager',
+    title: 'Anstehend - Homework Manager',
     element: <UpcomingPage />,
     paths: ['/upcoming', '/upcoming.html'],
   },
   {
-    title: 'ToDo Listen - Homework Manager',
+    title: "ToDo's - Homework Manager",
     element: <TodoListsPage />,
     paths: ['/todos', '/todos.html'],
   },
   {
-    title: 'Weekly Preview - Homework Manager',
+    title: 'Daybrief - Homework Manager',
     element: <WeeklyPreviewPage />,
     paths: ['/weekly-preview', '/weekly-preview.html'],
   },
   {
-    title: 'Current Subject - Homework Manager',
+    title: 'Aktuelles Fach - Homework Manager',
     element: <CurrentSubjectPage />,
     paths: ['/stundenplan', '/stundenplan.html'],
   },
   {
-    title: 'Daily Overview - Homework Manager',
+    title: 'Tagesvorschau - Homework Manager',
     element: <DayOverviewPage />,
     paths: ['/tagesuebersicht', '/tagesuebersicht.html'],
   },
   {
-    title: 'Wochenstundenplan - Homework Manager',
+    title: 'Wochenvorschau - Homework Manager',
     element: <TimetableWeekPage />,
     paths: ['/timetable-week', '/timetable-week.html'],
   },
   {
-    title: 'Grade Calculator - Homework Manager',
+    title: 'Notenrechner - Homework Manager',
     element: <GradeCalculatorPage />,
     paths: ['/notenrechner', '/notenrechner.html'],
   },
   {
-    title: 'Profile - Homework Manager',
+    title: 'Profil - Homework Manager',
     element: <ProfilePage />,
     paths: ['/profile', '/profile.html'],
   },
   {
-    title: 'Admin Dashboard - Homework Manager',
+    title: 'Adminbereich - Homework Manager',
     element: <AdminDashboardPage />,
     paths: ['/admin/dashboard', '/admin/dashboard.html'],
   },

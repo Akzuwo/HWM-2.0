@@ -1,0 +1,211 @@
+{
+  "format": "mar-helper-cloud-save",
+  "version": 1,
+  "updatedAt": "2026-08-20T08:41:04.014Z",
+  "data": {
+    "journalEntries": [
+      {
+        "id": "6f339466-59fd-44a5-b513-3bedd1b59610",
+        "title": "Gespräch mit Dario. Zuständigkeiten festlegen und Zeitplan überarbeiten.",
+        "startedAt": "2026-05-19T15:51:00.000Z",
+        "endedAt": "2026-05-19T16:23:00.000Z",
+        "workingTimeMs": 1920000,
+        "pausedTimeMs": 0
+      },
+      {
+        "id": "7b69cfa5-5dc3-4f32-bd52-57e47cf77361",
+        "title": "Zwischenbericht abgeben",
+        "startedAt": "2026-06-14T13:28:00.000Z",
+        "endedAt": "2026-06-14T14:20:00.000Z",
+        "workingTimeMs": 3120000,
+        "pausedTimeMs": 0
+      },
+      {
+        "id": "be9e3516-12bf-42b6-b6a8-51fcfe6eabd7",
+        "title": "Neue Roadmap für praktischen Teil erstellt, weitere Quellen gesucht",
+        "startedAt": "2026-06-11T11:25:00.000Z",
+        "endedAt": "2026-06-11T11:56:00.000Z",
+        "workingTimeMs": 1860000,
+        "pausedTimeMs": 0
+      },
+      {
+        "id": "f377c304-3442-4386-aa1f-dec61139fde7",
+        "title": "Neue Roadmap für praktischen Teil erstellt, weitere Quellen gesucht",
+        "startedAt": "2026-05-26T10:30:00.000Z",
+        "endedAt": "2026-05-26T10:51:00.000Z",
+        "workingTimeMs": 1260000,
+        "pausedTimeMs": 0
+      },
+      {
+        "id": "7c0a0529-fd31-479b-962a-f2cffef80fd0",
+        "title": "Quellensuche und erste Erfahrungen mit latex machen.",
+        "startedAt": "2026-05-22T11:43:00.000Z",
+        "endedAt": "2026-05-22T12:39:00.000Z",
+        "workingTimeMs": 3360000,
+        "pausedTimeMs": 0
+      },
+      {
+        "id": "2395d201-f905-4b17-81cb-ba5343046bcf",
+        "title": "Quellensuche",
+        "startedAt": "2026-05-22T10:25:00.000Z",
+        "endedAt": "2026-05-22T11:15:00.000Z",
+        "workingTimeMs": 3000000,
+        "pausedTimeMs": 0
+      },
+      {
+        "id": "fade7838-d3db-4993-b15f-129cb9682b24",
+        "title": "Meshsoftware",
+        "notes": "Ich habe für die bessere Planung versucht eine Software für die Verwaltung von den benötigten Meshes (3D-Objekte) zu machen. Später hat sich das als Irrfahrt herausgestellt und die Arbeit war für nichts.",
+        "startedAt": "2026-05-20T14:59:00.000Z",
+        "endedAt": "2026-05-20T15:37:00.000Z",
+        "workingTimeMs": 2280000,
+        "pausedTimeMs": 0
+      },
+      {
+        "id": "6a0d8169-cd8a-4bb7-9ccd-b4b6cc2df066",
+        "title": "Nach Server PC gesucht und Mesh Katalog Tool entwickelt",
+        "startedAt": "2026-05-20T13:04:00.000Z",
+        "endedAt": "2026-05-20T13:51:00.000Z",
+        "workingTimeMs": 2820000,
+        "pausedTimeMs": 0
+      },
+      {
+        "id": "319e2c03-c3b3-4867-82da-fe6f601691fc",
+        "title": "Quellensuche und Promptprotokoll App",
+        "notes": "Quellen gesucht, promptprotokoll App überarbeitet, Research für Mesh splitting",
+        "startedAt": "2026-05-17T18:43:00.000Z",
+        "endedAt": "2026-05-17T19:26:00.000Z",
+        "workingTimeMs": 2580000,
+        "pausedTimeMs": 0
+      },
+      {
+        "id": "e425db43-790b-4dff-a6d3-54b9feccb56c",
+        "title": "Baupläne studiert",
+        "startedAt": "2026-04-29T17:03:00.000Z",
+        "endedAt": "2026-04-29T18:51:00.000Z",
+        "workingTimeMs": 6480000,
+        "pausedTimeMs": 0
+      },
+      {
+        "id": "77582e16-4f9b-42b9-8e7d-fedc3942e3ce",
+        "title": "Anforderungsanalyse + Mail an Architekten",
+        "startedAt": "2026-04-26T15:23:00.000Z",
+        "endedAt": "2026-04-26T16:17:00.000Z",
+        "workingTimeMs": 3240000,
+        "pausedTimeMs": 0
+      },
+      {
+        "id": "717315e1-43a7-4a4f-b0b9-345b65b03a56",
+        "title": "Mail an R. Eichenberger bezüglich Baupläne",
+        "startedAt": "2026-03-26T11:51:00.000Z",
+        "endedAt": "2026-03-26T12:01:00.000Z",
+        "workingTimeMs": 600000,
+        "pausedTimeMs": 0
+      },
+      {
+        "id": "6f941eca-d337-48ff-bff9-f00bf69c4224",
+        "title": "Gespräch mit Dario. Zuständigkeiten festlegen und Zeitplan überarbeiten.",
+        "startedAt": "2026-06-19T15:51:00.000Z",
+        "endedAt": "2026-06-19T16:23:00.000Z",
+        "workingTimeMs": 1920000,
+        "pausedTimeMs": 0
+      },
+      {
+        "id": "0f339551-5fae-4279-a040-86cfe5b9b9a2",
+        "title": "Mail an Herr Berger bzgl. Zusammenarbeit mit Dario",
+        "startedAt": "2026-07-19T18:30:00.000Z",
+        "endedAt": "2026-07-19T19:40:00.000Z",
+        "workingTimeMs": 4200000,
+        "pausedTimeMs": 0
+      },
+      {
+        "id": "fcfc8b3c-b09d-4d3c-9f0a-8a0b8c546230",
+        "title": "Dossier bzgl. Zusammenarbeit mit Dario",
+        "notes": "Dossier welches die Zusammenarbeit zwischen mir und Dario darstellt und helfen sollte meine Forderung nach Auflösen der Zusammenarbeit untermauern sollte.",
+        "startedAt": "2026-06-20T12:21:00.000Z",
+        "endedAt": "2026-06-20T14:57:00.000Z",
+        "workingTimeMs": 9360000,
+        "pausedTimeMs": 0
+      },
+      {
+        "id": "360b483c-94cf-4bab-8907-cfddf0ca9c43",
+        "title": "Projekthalbtag an der KSR",
+        "notes": "Wichtige Infos bezüglich der Struktur und des Layouts + Erfahrungsaustauch mit Mitschülern",
+        "startedAt": "2026-06-29T06:00:00.000Z",
+        "endedAt": "2026-06-29T09:00:00.000Z",
+        "workingTimeMs": 10800000,
+        "pausedTimeMs": 0
+      },
+      {
+        "id": "8b05c09d-e1d5-4287-ba02-185b329a2a48",
+        "title": "Gespräch mit Herr Liniger",
+        "notes": "Teams Call in dem das weitere Vorgehen und der Zwischenbericht besprochen wurde",
+        "startedAt": "2026-06-29T12:20:00.000Z",
+        "endedAt": "2026-06-29T13:00:00.000Z",
+        "workingTimeMs": 2400000,
+        "pausedTimeMs": 0
+      },
+      {
+        "id": "af147d4e-35f3-4956-b7de-0d834a01d4e3",
+        "title": "Quellenkenntnis auffrischen und Einleitung schreiben",
+        "notes": "Ich habe mich in einige Quellen neu eingelesen und die Einleitung in meine Arbeit geschrieben",
+        "startedAt": "2026-06-30T09:00:00.000Z",
+        "endedAt": "2026-06-30T15:00:00.000Z",
+        "workingTimeMs": 21600000,
+        "pausedTimeMs": 0
+      },
+      {
+        "id": "64b3c943-c08f-46ee-94c7-812bf23208bc",
+        "title": "Theorie Einführung geschrieben",
+        "notes": "Ich habe zuerst mir das Transkript aller meiner Videoquellen gescrapt. Dann mit codex zusammen mit den PDF Quellen in eine anständige Reihenfolge gebracht. Das habe ich dann in Zotero in meine Bibliothek hinzugefügt und dann angefangen Kapitel 2 der Arbeit zu schreiben, welches die Archtiekturvisualisierung erklärt.",
+        "startedAt": "2026-07-01T09:30:00.000Z",
+        "endedAt": "2026-07-01T16:00:00.000Z",
+        "workingTimeMs": 23400000,
+        "pausedTimeMs": 0
+      },
+      {
+        "id": "570cedf9-7140-483d-852e-cd42ddd94ea2",
+        "title": "Gespräch mit Herr Liniger + Schreiben + prakt. Teil",
+        "notes": "Gespräch mit Herr Liniger via Teams + Kapitel 2.4 fertig geschrieben. Und ich habe in Blender die Baupläne formatiert und sie als Referenzen in den Viewport importiert. Das ging sehr gut, da die Baupläne aus SVGs bestehen und dadurch nicht verpixeln beim hineinzoomen.",
+        "startedAt": "2026-07-02T09:40:00.000Z",
+        "endedAt": "2026-07-02T13:29:00.000Z",
+        "workingTimeMs": 13740000,
+        "pausedTimeMs": 0
+      },
+      {
+        "id": "e0c57779-b9f5-46a0-b76e-e61aab446c74",
+        "title": "3D Modell",
+        "notes": "Baupläne angepasst und in Blender hizugefügt",
+        "startedAt": "2026-08-11T12:40:00.000Z",
+        "endedAt": "2026-08-11T12:59:00.000Z",
+        "workingTimeMs": 1140000,
+        "pausedTimeMs": 0
+      },
+      {
+        "id": "0ac69b13-00b6-40d1-93b4-eca3181f7a8d",
+        "title": "Neustart Model wegen falschen Vermessungen",
+        "notes": "Ich habe die Baupläne nochmal neu in Blender ausgelegt, da mir beim ersten Versuch ein scherwiegender Fehler unterlaufen ist",
+        "startedAt": "2026-08-17T15:47:00.000Z",
+        "endedAt": "2026-08-17T16:10:00.000Z",
+        "workingTimeMs": 1380000,
+        "pausedTimeMs": 0
+      }
+    ],
+    "activeTimer": null,
+    "promptModels": [
+      {
+        "id": "model-gpt-5",
+        "name": "GPT-5.5",
+        "createdAt": "2026-08-17T13:55:26.377Z"
+      },
+      {
+        "id": "ca856b69-207a-46ab-b819-f89924548e79",
+        "name": "GPT-5.6 Sol",
+        "createdAt": "2026-08-20T08:41:00.136Z"
+      }
+    ],
+    "promptEntries": [],
+    "nextPromptNumber": 2,
+    "plannerTasks": []
+  }
+}

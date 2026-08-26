@@ -195,6 +195,9 @@ export function CalendarPage() {
                       Export
                     </span>
                   </button>
+                  <button type="button" className="calendar-cta calendar-cta--secondary" data-action="subscribe">
+                    <span className="calendar-cta__label">Kalender abonnieren</span>
+                  </button>
                   <button type="button" className="calendar-cta calendar-cta--secondary" data-action="back">
                     <span className="calendar-cta__label" data-i18n="calendar.actions.back.label">
                       Back to overview
@@ -509,20 +512,36 @@ export function CalendarPage() {
           </header>
           <div className="calendar-filter-sheet__body">
             <p className="field-hint" data-i18n="calendar.filters.subjectHint">
-              Hide subjects that are not relevant for you.
+              Abonniere die Fächer, deren Einträge du sehen möchtest.
             </p>
-            <div className="calendar-subject-filters" data-calendar-subject-filters="">
-              {SUBJECT_OPTIONS.map((subject) => (
-                <label key={subject} className="calendar-filter-toggle" data-subject-filter={subject}>
-                  <input type="checkbox" value={subject} />
-                  <span>{subject}</span>
-                </label>
-              ))}
-            </div>
+            <div className="calendar-subject-filters" data-calendar-subject-filters=""></div>
             <label className="calendar-filter-toggle calendar-filter-toggle--wide" data-calendar-completed-todos="">
               <input type="checkbox" />
               <span data-i18n="calendar.filters.showCompletedTodos">Show completed ToDos</span>
             </label>
+
+            <section className="calendar-subscription" data-calendar-subscription="">
+              <h3>Kalender abonnieren</h3>
+              <p className="field-hint">Wähle Fächer und Eintragstypen. Der neue geheime Link ersetzt einen früheren Link.</p>
+              <div className="calendar-subject-filters" data-calendar-feed-subjects=""></div>
+              <div className="calendar-subscription__types">
+                <label className="calendar-filter-toggle"><input type="checkbox" value="pruefung" data-calendar-feed-type="" defaultChecked /><span>Prüfungen</span></label>
+                <label className="calendar-filter-toggle"><input type="checkbox" value="hausaufgabe" data-calendar-feed-type="" defaultChecked /><span>Hausaufgaben</span></label>
+                <label className="calendar-filter-toggle"><input type="checkbox" value="event" data-calendar-feed-type="" defaultChecked /><span>Events</span></label>
+              </div>
+              <div className="profile-actions">
+                <button type="button" className="hm-btn hm-btn--primary" data-calendar-feed-create="">Link erstellen</button>
+                <button type="button" className="hm-btn hm-btn--secondary" data-calendar-feed-delete="" hidden>Abonnement löschen</button>
+              </div>
+              <div className="calendar-subscription__result" data-calendar-feed-result="" hidden>
+                <label className="profile-form__label" htmlFor="calendar-feed-url">Dein geheimer Kalender-Link</label>
+                <input id="calendar-feed-url" className="profile-input" readOnly data-calendar-feed-url="" />
+                <div className="profile-actions">
+                  <button type="button" className="hm-btn hm-btn--secondary" data-calendar-feed-copy="">Link kopieren</button>
+                  <a className="hm-btn hm-btn--primary" data-calendar-feed-google="" target="_blank" rel="noreferrer">In Google Calendar öffnen</a>
+                </div>
+              </div>
+            </section>
           </div>
         </div>
       </div>

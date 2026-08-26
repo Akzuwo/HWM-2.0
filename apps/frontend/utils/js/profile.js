@@ -52,7 +52,17 @@ import { resolveApiUrl } from './api-client.js';
     currentPassword: () => el('current-password'),
     newPassword: () => el('new-password'),
     confirmPassword: () => el('confirm-password'),
+    personalForm: () => el('personal-timetable-form'),
+    personalList: () => el('personal-timetable-list'),
+    personalCount: () => el('personal-timetable-count'),
+    personalSave: () => el('personal-timetable-save'),
+    personalCancel: () => el('personal-timetable-cancel'),
   }
+
+  const weekdayLabels = { Monday: 'Montag', Tuesday: 'Dienstag', Wednesday: 'Mittwoch', Thursday: 'Donnerstag', Friday: 'Freitag', Saturday: 'Samstag', Sunday: 'Sonntag' }
+  let personalEntries = []
+  let personalLimit = 5
+  let editingPersonalId = null
 
   function safeText(value) {
     return value === undefined || value === null || value === ''
@@ -113,6 +123,116 @@ import { resolveApiUrl } from './api-client.js';
       }
       console.error('Failed to load profile', err)
       window.showToast && window.showToast(t('loadError', 'Could not load your profile.'))
+    }
+  }
+
+  function resetPersonalForm() {
+    elements.personalForm()?.reset()
+    const day = el('personal-day')
+    if (day) day.value = 'Monday'
+    editingPersonalId = null
+    if (elements.personalSave()) elements.personalSave().textContent = 'Stunde hinzufügen'
+    if (elements.personalCancel()) elements.personalCancel().hidden = true
+  }
+
+  function renderPersonalEntries() {
+    const list = elements.personalList()
+    if (!list) return
+    list.innerHTML = ''
+    if (elements.personalCount()) elements.personalCount().textContent = `${personalEntries.length} von ${personalLimit} Stunden`
+    if (!personalEntries.length) {
+      const empty = document.createElement('p')
+      empty.className = 'profile-help'
+      empty.textContent = 'Noch keine eigenen Stunden erfasst.'
+      list.appendChild(empty)
+      return
+    }
+    personalEntries.forEach((entry) => {
+      const row = document.createElement('div')
+      row.className = 'profile-personal-timetable__item'
+      const content = document.createElement('div')
+      const title = document.createElement('strong')
+      title.textContent = entry.fach
+      const meta = document.createElement('span')
+      meta.textContent = `${weekdayLabels[entry.tag] || entry.tag}, ${(entry.start || '').slice(0, 5)}–${(entry.end || '').slice(0, 5)}${entry.raum ? ` · ${entry.raum}` : ''}`
+      content.append(title, meta)
+      const actions = document.createElement('div')
+      actions.className = 'profile-actions'
+      const edit = document.createElement('button')
+      edit.type = 'button'; edit.className = 'button ripple'; edit.textContent = 'Bearbeiten'
+      edit.addEventListener('click', () => editPersonalEntry(entry))
+      const remove = document.createElement('button')
+      remove.type = 'button'; remove.className = 'button button--danger ripple'; remove.textContent = 'Löschen'
+      remove.addEventListener('click', () => deletePersonalEntry(entry.id))
+      actions.append(edit, remove)
+      row.append(content, actions)
+      list.appendChild(row)
+    })
+  }
+
+  async function loadPersonalEntries() {
+    try {
+      const response = await apiFetch('/api/personal-timetable')
+      personalEntries = Array.isArray(response.data) ? response.data : []
+      personalLimit = Number(response.limit) || 5
+      renderPersonalEntries()
+    } catch (error) {
+      console.error('Failed to load personal timetable', error)
+      window.showToast?.('Eigene Stunden konnten nicht geladen werden.')
+    }
+  }
+
+  function editPersonalEntry(entry) {
+    editingPersonalId = entry.id
+    el('personal-day').value = entry.tag
+    el('personal-subject').value = entry.fach || ''
+    el('personal-start').value = (entry.start || '').slice(0, 5)
+    el('personal-end').value = (entry.end || '').slice(0, 5)
+    el('personal-room').value = entry.raum || ''
+    if (elements.personalSave()) elements.personalSave().textContent = 'Änderungen speichern'
+    if (elements.personalCancel()) elements.personalCancel().hidden = false
+    elements.personalForm()?.scrollIntoView?.({ behavior: 'smooth', block: 'center' })
+  }
+
+  async function savePersonalEntry(event) {
+    event.preventDefault()
+    const payload = {
+      tag: el('personal-day')?.value,
+      fach: el('personal-subject')?.value.trim(),
+      start: el('personal-start')?.value,
+      end: el('personal-end')?.value,
+      raum: el('personal-room')?.value.trim()
+    }
+    if (!editingPersonalId && personalEntries.length >= personalLimit) {
+      window.showToast?.(`Du kannst höchstens ${personalLimit} eigene Stunden erfassen.`)
+      return
+    }
+    try {
+      await withButtonState(elements.personalSave(), () => apiFetch(
+        editingPersonalId ? `/api/personal-timetable/${editingPersonalId}` : '/api/personal-timetable',
+        editingPersonalId ? 'PUT' : 'POST',
+        payload
+      ))
+      resetPersonalForm()
+      await loadPersonalEntries()
+      window.showToast?.('Eigene Stunde wurde gespeichert.')
+    } catch (error) {
+      const message = error.info?.message === 'personal_timetable_limit'
+        ? `Du kannst höchstens ${personalLimit} eigene Stunden erfassen.`
+        : 'Eigene Stunde konnte nicht gespeichert werden.'
+      window.showToast?.(message)
+    }
+  }
+
+  async function deletePersonalEntry(entryId) {
+    if (!confirm('Eigene Stunde wirklich löschen?')) return
+    try {
+      await apiFetch(`/api/personal-timetable/${entryId}`, 'DELETE')
+      if (editingPersonalId === entryId) resetPersonalForm()
+      await loadPersonalEntries()
+      window.showToast?.('Eigene Stunde wurde gelöscht.')
+    } catch (error) {
+      window.showToast?.('Eigene Stunde konnte nicht gelöscht werden.')
     }
   }
 
@@ -203,11 +323,15 @@ import { resolveApiUrl } from './api-client.js';
   document.addEventListener('DOMContentLoaded', function () {
     const passwordForm = elements.passwordForm()
     const deleteBtn = elements.deleteButton()
+    const personalForm = elements.personalForm()
 
     passwordForm && passwordForm.addEventListener('submit', changePassword)
     deleteBtn && deleteBtn.addEventListener('click', deleteAccount)
+    personalForm && personalForm.addEventListener('submit', savePersonalEntry)
+    elements.personalCancel()?.addEventListener('click', resetPersonalForm)
 
     loadProfile()
+    loadPersonalEntries()
   })
 
 })()

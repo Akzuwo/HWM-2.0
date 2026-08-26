@@ -471,7 +471,8 @@ let calendarLoadSequence = 0;
 let pendingDragChange = null;
 let visibleRangeEventMap = new Map();
 let calendarPreferences = {
-  muted_subjects: [],
+  subscribed_subjects: null,
+  available_subjects: [],
   show_completed_todos: false
 };
 
@@ -646,9 +647,13 @@ function applyMonthCellMetrics(calendar) {
 }
 
 function normalisePreferencePayload(payload = {}) {
-  const muted = Array.isArray(payload.muted_subjects) ? payload.muted_subjects : [];
+  const available = Array.isArray(payload.available_subjects) ? payload.available_subjects : [];
+  const subscribed = Array.isArray(payload.subscribed_subjects) ? payload.subscribed_subjects : null;
   return {
-    muted_subjects: Array.from(new Set(muted.map((item) => String(item || '').trim()).filter(Boolean))),
+    subscribed_subjects: subscribed === null
+      ? null
+      : Array.from(new Set(subscribed.map((item) => String(item || '').trim()).filter(Boolean))),
+    available_subjects: Array.from(new Set(available.map((item) => String(item || '').trim()).filter(Boolean))),
     show_completed_todos: Boolean(payload.show_completed_todos)
   };
 }
@@ -691,8 +696,9 @@ async function saveCalendarPreferences(nextPreferences) {
   }
 }
 
-function isSubjectMuted(subject) {
-  return Boolean(subject && calendarPreferences.muted_subjects.includes(subject));
+function isSubjectSubscribed(subject) {
+  if (!subject || calendarPreferences.subscribed_subjects === null) return true;
+  return calendarPreferences.subscribed_subjects.includes(subject);
 }
 
 function shouldDisplayEntry(entry) {
@@ -705,7 +711,7 @@ function shouldDisplayEntry(entry) {
       return false;
     }
   }
-  return !isSubjectMuted(entry.fach || '');
+  return isSubjectSubscribed(entry.fach || '');
 }
 
 function ensureTemporaryTestClassContext(preferredSlug = '') {
@@ -1474,6 +1480,7 @@ function initActionBar() {
   if (!actionBar) return;
   const createBtn = actionBar.querySelector('[data-action="create"]');
   const exportBtn = actionBar.querySelector('[data-action="export"]');
+  const subscribeBtn = actionBar.querySelector('[data-action="subscribe"]');
   const backBtn = actionBar.querySelector('[data-action="back"]');
 
   applyActionBarPermissions();
@@ -1485,6 +1492,13 @@ function initActionBar() {
 
   if (exportBtn) {
     exportBtn.addEventListener('click', handleExportClick);
+  }
+
+  if (subscribeBtn) {
+    subscribeBtn.addEventListener('click', () => {
+      openCalendarFilterSheet();
+      document.querySelector('[data-calendar-subscription]')?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+    });
   }
 
   if (backBtn) {
@@ -1874,10 +1888,45 @@ function setupCalendarControls(calendar) {
   controls.dataset.enhanced = 'true';
 }
 
+function createSubjectToggle(subject, attributeName, checked) {
+  const label = document.createElement('label');
+  label.className = 'calendar-filter-toggle';
+  label.setAttribute(attributeName, subject);
+  const input = document.createElement('input');
+  input.type = 'checkbox';
+  input.value = subject;
+  input.checked = checked;
+  const span = document.createElement('span');
+  span.textContent = subject;
+  label.append(input, span);
+  return label;
+}
+
+function renderSubjectFilters() {
+  const available = calendarPreferences.available_subjects || [];
+  const selected = calendarPreferences.subscribed_subjects === null
+    ? new Set(available)
+    : new Set(calendarPreferences.subscribed_subjects || []);
+  const container = document.querySelector('[data-calendar-subject-filters]');
+  if (container) {
+    container.innerHTML = '';
+    available.forEach((subject) => container.appendChild(createSubjectToggle(subject, 'data-subject-filter', selected.has(subject))));
+    if (!available.length) {
+      const empty = document.createElement('p');
+      empty.className = 'field-hint';
+      empty.textContent = 'Für diese Klasse wurden noch keine Fächer gefunden.';
+      container.appendChild(empty);
+    }
+  }
+}
+
 function syncFilterSheetState() {
-  const subjectSet = new Set(calendarPreferences.muted_subjects || []);
+  renderSubjectFilters();
+  const subjectSet = new Set(calendarPreferences.subscribed_subjects === null
+    ? calendarPreferences.available_subjects
+    : calendarPreferences.subscribed_subjects || []);
   document.querySelectorAll('[data-subject-filter] input[type="checkbox"]').forEach((input) => {
-    input.checked = !subjectSet.has(input.value);
+    input.checked = subjectSet.has(input.value);
   });
   const completedToggle = document.querySelector('[data-calendar-completed-todos] input[type="checkbox"]');
   if (completedToggle) {
@@ -1903,17 +1952,118 @@ function closeCalendarFilterSheet() {
 }
 
 function collectFilterPreferences() {
-  const muted = [];
+  const subscribed = [];
   document.querySelectorAll('[data-subject-filter] input[type="checkbox"]').forEach((input) => {
-    if (!input.checked) {
-      muted.push(input.value);
+    if (input.checked) {
+      subscribed.push(input.value);
     }
   });
   const completedToggle = document.querySelector('[data-calendar-completed-todos] input[type="checkbox"]');
   return {
-    muted_subjects: muted,
+    subscribed_subjects: subscribed,
+    available_subjects: calendarPreferences.available_subjects,
     show_completed_todos: Boolean(completedToggle?.checked)
   };
+}
+
+function renderFeedSubjects(selectedSubjects = []) {
+  const container = document.querySelector('[data-calendar-feed-subjects]');
+  if (!container) return;
+  const selected = new Set(selectedSubjects);
+  const available = calendarPreferences.available_subjects || [];
+  container.innerHTML = '';
+  available.forEach((subject) => {
+    container.appendChild(createSubjectToggle(subject, 'data-calendar-feed-subject', selected.has(subject)));
+  });
+}
+
+async function loadCalendarSubscription() {
+  const deleteButton = document.querySelector('[data-calendar-feed-delete]');
+  try {
+    const response = await fetchWithSession(`${API_BASE_URL}/api/calendar/subscription`);
+    if (!response.ok) return;
+    const payload = (await response.json())?.data || {};
+    const selected = payload.subjects?.length
+      ? payload.subjects
+      : (calendarPreferences.subscribed_subjects ?? calendarPreferences.available_subjects);
+    renderFeedSubjects(selected || []);
+    document.querySelectorAll('[data-calendar-feed-type]').forEach((input) => {
+      input.checked = (payload.event_types || ['pruefung', 'hausaufgabe', 'event']).includes(input.value);
+    });
+    if (deleteButton) deleteButton.hidden = !payload.active;
+  } catch (error) {
+    console.warn('Unable to load calendar subscription:', error);
+  }
+}
+
+async function createCalendarSubscription() {
+  const button = document.querySelector('[data-calendar-feed-create]');
+  const subjects = Array.from(document.querySelectorAll('[data-calendar-feed-subject] input:checked')).map((input) => input.value);
+  const eventTypes = Array.from(document.querySelectorAll('[data-calendar-feed-type]:checked')).map((input) => input.value);
+  if (!eventTypes.length) {
+    showOverlay('Wähle mindestens einen Eintragstyp.', 'error');
+    return;
+  }
+  if (button) button.disabled = true;
+  try {
+    const response = await fetchWithSession(`${API_BASE_URL}/api/calendar/subscription`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subjects, event_types: eventTypes })
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.message || `Status ${response.status}`);
+    const data = payload.data || {};
+    const result = document.querySelector('[data-calendar-feed-result]');
+    const urlInput = document.querySelector('[data-calendar-feed-url]');
+    const googleLink = document.querySelector('[data-calendar-feed-google]');
+    if (urlInput) urlInput.value = data.subscription_url || '';
+    if (googleLink) googleLink.href = data.google_calendar_url || '#';
+    if (result) result.hidden = false;
+    const deleteButton = document.querySelector('[data-calendar-feed-delete]');
+    if (deleteButton) deleteButton.hidden = false;
+    showOverlay('Kalender-Link wurde erstellt. Behandle ihn wie ein Passwort.', 'success');
+  } catch (error) {
+    console.error('Unable to create calendar subscription:', error);
+    showOverlay('Kalender-Link konnte nicht erstellt werden.', 'error');
+  } finally {
+    if (button) button.disabled = false;
+  }
+}
+
+async function deleteCalendarSubscription() {
+  if (!window.confirm('Kalender-Abonnement wirklich deaktivieren? Der bisherige Link funktioniert danach nicht mehr.')) return;
+  try {
+    const response = await fetchWithSession(`${API_BASE_URL}/api/calendar/subscription`, { method: 'DELETE' });
+    if (!response.ok) throw new Error(`Status ${response.status}`);
+    document.querySelector('[data-calendar-feed-result]')?.setAttribute('hidden', '');
+    const deleteButton = document.querySelector('[data-calendar-feed-delete]');
+    if (deleteButton) deleteButton.hidden = true;
+    showOverlay('Kalender-Abonnement wurde gelöscht.', 'success');
+  } catch (error) {
+    showOverlay('Kalender-Abonnement konnte nicht gelöscht werden.', 'error');
+  }
+}
+
+function setupCalendarSubscriptionControls() {
+  const root = document.querySelector('[data-calendar-subscription]');
+  if (!root || root.dataset.enhanced === 'true') return;
+  root.querySelector('[data-calendar-feed-create]')?.addEventListener('click', createCalendarSubscription);
+  root.querySelector('[data-calendar-feed-delete]')?.addEventListener('click', deleteCalendarSubscription);
+  root.querySelector('[data-calendar-feed-copy]')?.addEventListener('click', async () => {
+    const input = root.querySelector('[data-calendar-feed-url]');
+    const value = input?.value || '';
+    if (!value) return;
+    try {
+      await navigator.clipboard.writeText(value);
+      showOverlay('Link kopiert.', 'success');
+    } catch (error) {
+      input?.select?.();
+      showOverlay('Markiere und kopiere den Link manuell.', 'warning');
+    }
+  });
+  root.dataset.enhanced = 'true';
+  loadCalendarSubscription();
 }
 
 function setupCalendarFilterControls() {
@@ -1935,13 +2085,14 @@ function setupCalendarFilterControls() {
       closeCalendarFilterSheet();
     }
   });
-  sheet.querySelectorAll('input[type="checkbox"]').forEach((input) => {
-    input.addEventListener('change', async () => {
+  sheet.addEventListener('change', async (event) => {
+    if (event.target?.matches?.('[data-subject-filter] input, [data-calendar-completed-todos] input')) {
       await saveCalendarPreferences(collectFilterPreferences());
       await loadCalendar();
-    });
+    }
   });
   sheet.dataset.enhanced = 'true';
+  setupCalendarSubscriptionControls();
 }
 
 function prepareCalendarContainer(calendarEl) {

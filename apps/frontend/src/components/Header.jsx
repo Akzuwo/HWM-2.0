@@ -1,15 +1,44 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
-const navItems = [
-  { href: '/', label: 'Startseite', key: 'common.nav.home' },
-  { href: '/kalender', label: 'Kalender', key: 'common.nav.calendar' },
-  { href: '/abfahrten', label: 'Abfahrten', key: null },
-  { href: '/upcoming', label: 'Anstehend', key: 'common.nav.upcoming' },
-  { href: '/todos', label: 'ToDos', key: 'common.nav.todos' },
-  { href: '/weekly-preview', label: 'Wochenvorschau', key: 'common.nav.weeklyPreview' },
-  { href: '/stundenplan', label: 'Aktuelles Fach', key: 'common.nav.currentSubject' },
-  { href: '/notenrechner', label: 'Notenrechner', key: 'common.nav.grades' }
+const navigationGroups = [
+  {
+    id: 'calendar',
+    label: 'Kalender',
+    key: 'common.nav.calendar',
+    href: '/kalender'
+  },
+  {
+    id: 'preparation',
+    label: 'Vorbereitung',
+    key: 'common.nav.preparation',
+    items: [
+      { href: '/upcoming', label: 'Anstehend', key: 'common.nav.upcoming', description: 'Termine und Abgaben im Blick behalten', descriptionKey: 'common.nav.upcomingHint' },
+      { href: '/tagesuebersicht', label: 'Tagesvorschau', key: 'common.nav.dayPreview', description: 'Unterricht und Räume des Tages', descriptionKey: 'common.nav.dayPreviewHint' },
+      { href: '/timetable-week', label: 'Wochenvorschau', key: 'common.nav.weekPreview', description: 'Der Stundenplan der ganzen Woche', descriptionKey: 'common.nav.weekPreviewHint' },
+      { href: '/weekly-preview', label: 'Daybrief', key: 'common.nav.dayBrief', description: 'Kompakte Zusammenfassung deiner nächsten Tage', descriptionKey: 'common.nav.dayBriefHint' }
+    ]
+  },
+  {
+    id: 'now',
+    label: 'Jetzt',
+    key: 'common.nav.now',
+    hint: 'Während der Schule',
+    hintKey: 'common.nav.schoolTime',
+    items: [
+      { href: '/abfahrten', label: 'Abfahrten', key: 'common.nav.departures', description: 'Die nächsten Verbindungen', descriptionKey: 'common.nav.departuresHint' },
+      { href: '/stundenplan', label: 'Aktuelles Fach', key: 'common.nav.currentSubject', description: 'Was jetzt läuft und was danach kommt', descriptionKey: 'common.nav.currentSubjectHint' }
+    ]
+  },
+  {
+    id: 'other',
+    label: 'Sonstiges',
+    key: 'common.nav.other',
+    items: [
+      { href: '/todos', label: "ToDo's", key: 'common.nav.todos', description: 'Persönliche Aufgaben organisieren', descriptionKey: 'common.nav.todosHint' },
+      { href: '/notenrechner', label: 'Notenrechner', key: 'common.nav.grades', description: 'Noten und Ziele berechnen', descriptionKey: 'common.nav.gradesHint' }
+    ]
+  }
 ];
 
 const locales = [
@@ -18,9 +47,6 @@ const locales = [
   { code: 'it', label: 'Italiano' },
   { code: 'fr', label: 'Francais' }
 ];
-
-const DESKTOP_NAV_BREAKPOINT = 1080;
-const MEHR_BUTTON_ESTIMATE = 86;
 
 function ChevronIcon({ className = '', direction = 'down' }) {
   const transforms = {
@@ -82,25 +108,17 @@ function normalizePath(pathname) {
   return path.replace(/\/index\.html$/, '').replace(/\/+$/, '') || '/';
 }
 
-function NavLinks({ currentPath, onNavigate }) {
-  return navItems.map((item) => (
-    <Link
-      key={item.href}
-      className="nav-link"
-      to={item.href}
-      {...(item.key ? { 'data-i18n': item.key } : {})}
-      onClick={onNavigate}
-      aria-current={currentPath === normalizePath(item.href) ? 'page' : undefined}
-    >
-      {item.label}
-    </Link>
-  ));
+function isItemActive(item, currentPath) {
+  return currentPath === normalizePath(item.href);
 }
 
-function MoreMenu({ items, currentPath, onNavigate }) {
+function NavGroupMenu({ group, currentPath, onNavigate }) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef(null);
-  const hasActiveItem = items.some((item) => currentPath === normalizePath(item.href));
+  const buttonRef = useRef(null);
+  const panelRef = useRef(null);
+  const items = group.items || [];
+  const hasActiveItem = items.some((item) => isItemActive(item, currentPath));
 
   useEffect(() => {
     if (!isOpen) {
@@ -116,6 +134,7 @@ function MoreMenu({ items, currentPath, onNavigate }) {
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') {
         setIsOpen(false);
+        buttonRef.current?.focus();
       }
     };
 
@@ -133,37 +152,91 @@ function MoreMenu({ items, currentPath, onNavigate }) {
   }
 
   return (
-    <div ref={menuRef} className={`more-menu${isOpen ? ' is-open' : ''}`}>
+    <div ref={menuRef} className={`more-menu nav-group-menu${isOpen ? ' is-open' : ''}`}>
       <button
+        ref={buttonRef}
         type="button"
         className={`nav-link nav-link--more${hasActiveItem ? ' is-active' : ''}`}
-        aria-haspopup="menu"
         aria-expanded={isOpen ? 'true' : 'false'}
-        aria-current={hasActiveItem ? 'page' : undefined}
+        aria-controls={`nav-group-${group.id}`}
         onClick={() => setIsOpen((open) => !open)}
+        onKeyDown={(event) => {
+          if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            setIsOpen(true);
+            window.requestAnimationFrame(() => panelRef.current?.querySelector('a')?.focus());
+          }
+        }}
       >
-        <span>Mehr</span>
+        <span {...(group.key ? { 'data-i18n': group.key } : {})}>{group.label}</span>
+        {group.hint ? <span className="nav-group-menu__hint" {...(group.hintKey ? { 'data-i18n': group.hintKey } : {})}>{group.hint}</span> : null}
         <ChevronIcon className="more-menu__chevron" />
       </button>
-      <div className="more-menu__panel" role="menu">
+      <div ref={panelRef} className="more-menu__panel nav-group-menu__panel" id={`nav-group-${group.id}`}>
+        <div className="nav-group-menu__heading">
+          <strong {...(group.key ? { 'data-i18n': group.key } : {})}>{group.label}</strong>
+          {group.hint ? <span {...(group.hintKey ? { 'data-i18n': group.hintKey } : {})}>{group.hint}</span> : null}
+        </div>
         {items.map((item) => (
           <Link
             key={item.href}
             className="more-menu__link"
             to={item.href}
-            role="menuitem"
-            aria-current={currentPath === normalizePath(item.href) ? 'page' : undefined}
+            aria-current={isItemActive(item, currentPath) ? 'page' : undefined}
             onClick={(event) => {
               setIsOpen(false);
               onNavigate?.(event);
             }}
           >
-            {item.label}
+            <span {...(item.key ? { 'data-i18n': item.key } : {})}>{item.label}</span>
+            <small {...(item.descriptionKey ? { 'data-i18n': item.descriptionKey } : {})}>{item.description}</small>
           </Link>
         ))}
       </div>
     </div>
   );
+}
+
+function MobileNavigation({ currentPath, onNavigate }) {
+  return navigationGroups.map((group) => {
+    if (group.href) {
+      return (
+        <section key={group.id} className="mobile-nav-group mobile-nav-group--single">
+          <Link
+            className="nav-link"
+            to={group.href}
+            onClick={onNavigate}
+            aria-current={isItemActive(group, currentPath) ? 'page' : undefined}
+            {...(group.key ? { 'data-i18n': group.key } : {})}
+          >
+            {group.label}
+          </Link>
+        </section>
+      );
+    }
+    return (
+      <section key={group.id} className="mobile-nav-group" aria-labelledby={`mobile-nav-${group.id}`}>
+        <div className="mobile-nav-group__heading">
+          <span id={`mobile-nav-${group.id}`} {...(group.key ? { 'data-i18n': group.key } : {})}>{group.label}</span>
+          {group.hint ? <small {...(group.hintKey ? { 'data-i18n': group.hintKey } : {})}>{group.hint}</small> : null}
+        </div>
+        <div className="mobile-nav-group__links">
+          {group.items.map((item) => (
+            <Link
+              key={item.href}
+              className="nav-link"
+              to={item.href}
+              onClick={onNavigate}
+              aria-current={isItemActive(item, currentPath) ? 'page' : undefined}
+              {...(item.key ? { 'data-i18n': item.key } : {})}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </div>
+      </section>
+    );
+  });
 }
 
 function SettingsDropdown({ mobile = false }) {
@@ -173,7 +246,6 @@ function SettingsDropdown({ mobile = false }) {
         className={`lang-switch settings-trigger${mobile ? ' settings-trigger--mobile' : ''}`}
         type="button"
         data-settings-toggle=""
-        aria-haspopup="true"
         aria-expanded="false"
         data-i18n-attr="aria-label:common.settings.ariaLabel"
       >
@@ -203,12 +275,6 @@ function SettingsDropdown({ mobile = false }) {
               </span>
               <ChevronIcon className="settings-option__chevron" direction="right" />
             </button>
-            <div className="settings-option settings-option--theme" role="menuitem" aria-disabled="true" tabIndex="-1">
-              <span className="settings-option__text">Darkmode</span>
-              <span className="settings-option__theme-toggle" aria-hidden="true">
-                <span className="settings-option__theme-knob"></span>
-              </span>
-            </div>
           </div>
 
           <div className="settings-panel settings-panel--sub" data-settings-panel="language">
@@ -302,9 +368,8 @@ export function Header() {
   const [drawerView, setDrawerView] = useState('main');
   const [isLanguageOpen, setIsLanguageOpen] = useState(false);
   const [selectedLocale, setSelectedLocale] = useState(getStoredLocale);
-  const [visibleCount, setVisibleCount] = useState(navItems.length);
-  const navViewportRef = useRef(null);
-  const navMeasureRef = useRef(null);
+  const toggleRef = useRef(null);
+  const drawerRef = useRef(null);
   const currentPath = normalizePath(location.pathname);
 
   useEffect(() => {
@@ -314,9 +379,25 @@ export function Header() {
 
     const previousOverflow = document.body.style.overflow;
 
+    const focusableSelector = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') {
-        setIsNavOpen(false);
+        closeNav();
+        window.requestAnimationFrame(() => toggleRef.current?.focus());
+      }
+      if (event.key === 'Tab') {
+        const focusable = Array.from(drawerRef.current?.querySelectorAll(focusableSelector) || [])
+          .filter((element) => element.offsetParent !== null);
+        if (!focusable.length) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
       }
     };
 
@@ -327,6 +408,7 @@ export function Header() {
     };
 
     document.body.style.overflow = 'hidden';
+    window.requestAnimationFrame(() => drawerRef.current?.querySelector('.mobile-sidebar__close')?.focus());
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('resize', handleResize);
 
@@ -372,75 +454,9 @@ export function Header() {
     }
   };
 
-  useLayoutEffect(() => {
-    if (typeof window === 'undefined') {
-      return undefined;
-    }
-
-    const updateVisibleItems = () => {
-      if (window.innerWidth <= DESKTOP_NAV_BREAKPOINT) {
-        setVisibleCount(navItems.length);
-        return;
-      }
-
-      const viewport = navViewportRef.current;
-      const measure = navMeasureRef.current;
-      if (!viewport || !measure) {
-        return;
-      }
-
-      const itemWidths = Array.from(measure.querySelectorAll('[data-nav-measure="item"]')).map((element) =>
-        Math.ceil(element.getBoundingClientRect().width)
-      );
-
-      const availableWidth = Math.floor(viewport.clientWidth);
-      if (!availableWidth || !itemWidths.length) {
-        setVisibleCount(navItems.length);
-        return;
-      }
-
-      let usedWidth = 0;
-      let nextVisibleCount = itemWidths.length;
-
-      for (let index = 0; index < itemWidths.length; index += 1) {
-        const reserveWidth = index < itemWidths.length - 1 ? MEHR_BUTTON_ESTIMATE : 0;
-        if (usedWidth + itemWidths[index] + reserveWidth > availableWidth) {
-          nextVisibleCount = Math.max(index, 1);
-          break;
-        }
-        usedWidth += itemWidths[index];
-      }
-
-      setVisibleCount(nextVisibleCount);
-    };
-
-    updateVisibleItems();
-
-    const resizeObserver = typeof ResizeObserver !== 'undefined'
-      ? new ResizeObserver(() => updateVisibleItems())
-      : null;
-
-    if (resizeObserver && navViewportRef.current) {
-      resizeObserver.observe(navViewportRef.current);
-    }
-    if (resizeObserver && navMeasureRef.current) {
-      resizeObserver.observe(navMeasureRef.current);
-    }
-
-    window.addEventListener('resize', updateVisibleItems);
-
-    return () => {
-      resizeObserver?.disconnect();
-      window.removeEventListener('resize', updateVisibleItems);
-    };
-  }, []);
-
-  const visibleItems = navItems.slice(0, visibleCount);
-  const overflowItems = navItems.slice(visibleCount);
-
   return (
     <>
-      <header className="hm-navbar" data-i18n-attr="aria-label:common.nav.primary" role="navigation" aria-label="Main navigation">
+      <header className="hm-navbar">
         <div className="hm-navbar__inner header">
           <div className="header-left logo">
             <Link className="logo-link" to="/" data-brand-link="">
@@ -453,27 +469,21 @@ export function Header() {
 
           <div className="header-center">
             <div className="nav-desktop-shell">
-              <nav ref={navViewportRef} className="nav-links nav-links--desktop" aria-label="Main navigation">
-                {visibleItems.map((item) => (
+              <nav className="nav-links nav-links--desktop" aria-label="Main navigation" data-i18n-attr="aria-label:common.nav.primary">
+                {navigationGroups.map((group) => group.href ? (
                   <Link
-                    key={item.href}
+                    key={group.id}
                     className="nav-link"
-                    to={item.href}
-                    {...(item.key ? { 'data-i18n': item.key } : {})}
-                    aria-current={currentPath === normalizePath(item.href) ? 'page' : undefined}
+                    to={group.href}
+                    {...(group.key ? { 'data-i18n': group.key } : {})}
+                    aria-current={isItemActive(group, currentPath) ? 'page' : undefined}
                   >
-                    {item.label}
+                    {group.label}
                   </Link>
+                ) : (
+                  <NavGroupMenu key={group.id} group={group} currentPath={currentPath} />
                 ))}
-                <MoreMenu items={overflowItems} currentPath={currentPath} />
               </nav>
-              <div ref={navMeasureRef} className="nav-links nav-links--measure" aria-hidden="true">
-                {navItems.map((item) => (
-                  <span key={item.href} className="nav-link" data-nav-measure="item">
-                    {item.label}
-                  </span>
-                ))}
-              </div>
             </div>
           </div>
 
@@ -486,6 +496,7 @@ export function Header() {
             </div>
             <div className="nav-mobile">
               <button
+                ref={toggleRef}
                 className={`hm-navbar__toggle hamburger-btn${isNavOpen ? ' is-active' : ''}`}
                 type="button"
                 aria-expanded={isNavOpen ? 'true' : 'false'}
@@ -511,10 +522,14 @@ export function Header() {
       ></div>
 
       <aside
+        ref={drawerRef}
         className={`mobile-sidebar${isNavOpen ? ' is-open' : ''}${drawerView === 'settings' ? ' is-settings-view' : ''}`}
         id="hm-navbar-drawer"
         aria-hidden={isNavOpen ? 'false' : 'true'}
-        aria-modal="true"
+        aria-modal={isNavOpen ? 'true' : undefined}
+        role="dialog"
+        aria-label="Navigation"
+        data-i18n-attr="aria-label:common.nav.primary"
       >
         <div className="mobile-sidebar__views">
           <div
@@ -531,19 +546,19 @@ export function Header() {
                     Homework Manager
                   </span>
                 </Link>
-                <button className="mobile-sidebar__close" type="button" aria-label="Close menu" onClick={closeNav}>
-                  <span aria-hidden="true">X</span>
+                <button className="mobile-sidebar__close" type="button" aria-label="Menü schließen" data-i18n-attr="aria-label:common.nav.close" onClick={closeNav}>
+                  <span aria-hidden="true">×</span>
                 </button>
               </div>
 
-              <nav className="nav-links nav-links--mobile" aria-label="Main navigation">
+              <nav className="nav-links nav-links--mobile" aria-label="Main navigation" data-i18n-attr="aria-label:common.nav.primary">
                 <div className="nav-links--mobile__list">
-                  <NavLinks currentPath={currentPath} onNavigate={closeNav} />
+                  <MobileNavigation currentPath={currentPath} onNavigate={closeNav} />
                   <button className="mobile-sidebar__settings-row" type="button" onClick={openSettingsView}>
                     <span className="mobile-sidebar__settings-row-icon" aria-hidden="true">
                       <GearIcon />
                     </span>
-                    <span>Einstellungen</span>
+                    <span data-i18n="common.settings.label">Einstellungen</span>
                     <ChevronIcon className="mobile-sidebar__settings-row-chevron" direction="right" />
                   </button>
                 </div>
@@ -563,26 +578,26 @@ export function Header() {
           >
             <div className="mobile-sidebar__inner mobile-sidebar__inner--settings">
               <div className="mobile-sidebar__header mobile-sidebar__header--settings">
-                <button className="mobile-sidebar__circle-button" type="button" aria-label="Back" onClick={showMainView}>
+                <button className="mobile-sidebar__circle-button" type="button" aria-label="Zurück" data-i18n-attr="aria-label:common.nav.back" onClick={showMainView}>
                   <ArrowBackIcon />
                 </button>
-                <h2 className="mobile-sidebar__settings-title">Einstellungen</h2>
-                <button className="mobile-sidebar__close" type="button" aria-label="Close menu" onClick={closeNav}>
-                  <span aria-hidden="true">X</span>
+                <h2 className="mobile-sidebar__settings-title" data-i18n="common.settings.label">Einstellungen</h2>
+                <button className="mobile-sidebar__close" type="button" aria-label="Menü schließen" data-i18n-attr="aria-label:common.nav.close" onClick={closeNav}>
+                  <span aria-hidden="true">×</span>
                 </button>
               </div>
 
               <div className="mobile-sidebar__settings-content">
                 <section className="mobile-sidebar__settings-group">
-                  <span className="mobile-sidebar__settings-label">Präferenzen</span>
+                  <span className="mobile-sidebar__settings-label" data-i18n="common.settings.preferences">Präferenzen</span>
                   <div className="mobile-sidebar__field">
-                    <span className="mobile-sidebar__field-label">Sprache</span>
+                    <span className="mobile-sidebar__field-label" data-i18n="common.settings.language">Sprache</span>
                     <div className={`mobile-sidebar__language-select${isLanguageOpen ? ' is-open' : ''}`}>
                       <button
                         className="mobile-sidebar__select"
                         type="button"
-                        aria-haspopup="listbox"
                         aria-expanded={isLanguageOpen ? 'true' : 'false'}
+                        aria-controls="mobile-language-options"
                         onClick={() => setIsLanguageOpen((open) => !open)}
                       >
                         <span>
@@ -590,14 +605,13 @@ export function Header() {
                         </span>
                         <ChevronIcon className="mobile-sidebar__select-chevron" />
                       </button>
-                      <div className="mobile-sidebar__language-menu" role="listbox" aria-label="Sprache">
+                      <div className="mobile-sidebar__language-menu" id="mobile-language-options">
                         {locales.map((locale) => (
                           <button
                             key={locale.code}
                             className="mobile-sidebar__language-option"
                             type="button"
-                            role="option"
-                            aria-selected={selectedLocale === locale.code ? 'true' : 'false'}
+                            aria-pressed={selectedLocale === locale.code ? 'true' : 'false'}
                             onClick={() => updateLocale(locale.code)}
                           >
                             {locale.label} ({locale.code.toUpperCase()})
@@ -606,21 +620,12 @@ export function Header() {
                       </div>
                     </div>
                   </div>
-                  <div className="mobile-sidebar__toggle-row">
-                    <span>
-                      <strong>Darkmode</strong>
-                      <small>Dunkles Erscheinungsbild</small>
-                    </span>
-                    <button className="mobile-sidebar__theme-toggle" type="button" aria-pressed="false" aria-label="Darkmode">
-                      <span className="mobile-sidebar__theme-knob" aria-hidden="true"></span>
-                    </button>
-                  </div>
                 </section>
 
                 <section className="mobile-sidebar__settings-group">
-                  <span className="mobile-sidebar__settings-label">App Info</span>
+                  <span className="mobile-sidebar__settings-label" data-i18n="common.settings.appInfo">App Info</span>
                   <div className="mobile-sidebar__info-row">
-                    <span>Version</span>
+                    <span data-i18n="common.settings.version">Version</span>
                     <strong>3.0.0</strong>
                   </div>
                 </section>

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Header } from './Header';
@@ -34,6 +34,8 @@ export function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const prefersReducedMotion = useReducedMotion();
+  const mainRef = useRef(null);
+  const previousPathRef = useRef(location.pathname);
   const { footer, mainClassName, shellClassName } = getLayout(location.pathname);
   const transition = prefersReducedMotion
     ? {
@@ -43,10 +45,10 @@ export function AppLayout() {
         transition: { duration: 0 }
       }
     : {
-        initial: { opacity: 0, y: 12, scale: 0.985 },
-        animate: { opacity: 1, y: 0, scale: 1 },
-        exit: { opacity: 0, y: -8, scale: 0.99 },
-        transition: { duration: 0.24, ease: [0.22, 1, 0.36, 1] }
+        initial: { opacity: 0, y: 6 },
+        animate: { opacity: 1, y: 0 },
+        exit: { opacity: 0 },
+        transition: { duration: 0.18, ease: [0.22, 1, 0.36, 1] }
       };
 
   useEffect(() => {
@@ -56,6 +58,15 @@ export function AppLayout() {
     };
   }, [navigate]);
 
+  useEffect(() => {
+    if (previousPathRef.current === location.pathname) {
+      return;
+    }
+    previousPathRef.current = location.pathname;
+    window.scrollTo({ top: 0, behavior: 'auto' });
+    window.requestAnimationFrame(() => mainRef.current?.focus({ preventScroll: true }));
+  }, [location.pathname]);
+
   return (
     <div className={`hm-react-shell ${shellClassName}`.trim()}>
       <div className="hm-app-backdrop" aria-hidden="true">
@@ -63,11 +74,14 @@ export function AppLayout() {
         <div className="hm-app-backdrop__orb hm-app-backdrop__orb--cyan"></div>
         <div className="hm-app-backdrop__grid"></div>
       </div>
+      <a className="hm-skip-link" href="#main-content" data-i18n="common.actions.skipContent">
+        Zum Inhalt springen
+      </a>
       <Header />
       <div id="pageContent" className={footer ? 'hm-page-content--with-footer' : undefined}>
-        <div className={`hm-react-main ${mainClassName}`.trim()}>
+        <div ref={mainRef} id="main-content" className={`hm-react-main ${mainClassName}`.trim()} tabIndex="-1">
           <div className="hm-react-main__inner">
-            <AnimatePresence mode="wait" initial={false}>
+            <AnimatePresence mode="sync" initial={false}>
               <motion.div className="hm-route-transition" key={location.pathname} {...transition}>
                 <Outlet />
               </motion.div>

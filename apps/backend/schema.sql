@@ -152,11 +152,42 @@ CREATE INDEX IF NOT EXISTS idx_todo_subtasks_owner_todo ON todo_subtasks(owner_u
 CREATE TABLE IF NOT EXISTS calendar_preferences (
     user_id INTEGER PRIMARY KEY,
     muted_subjects TEXT,
+    subscribed_subjects TEXT,
     show_completed_todos INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS calendar_subscriptions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL UNIQUE,
+    token_hash TEXT NOT NULL UNIQUE,
+    class_slug TEXT,
+    subjects TEXT NOT NULL,
+    event_types TEXT NOT NULL,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_calendar_subscriptions_token ON calendar_subscriptions(token_hash, is_active);
+
+CREATE TABLE IF NOT EXISTS personal_timetable_entries (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    tag TEXT NOT NULL,
+    start TEXT NOT NULL,
+    "end" TEXT NOT NULL,
+    fach TEXT NOT NULL,
+    raum TEXT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_personal_timetable_user_day ON personal_timetable_entries(user_id, tag, start);
 
 CREATE TABLE IF NOT EXISTS encrypted_grade_vaults (
     user_id INTEGER PRIMARY KEY,

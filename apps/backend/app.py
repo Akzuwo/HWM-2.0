@@ -16,6 +16,7 @@ from email.message import EmailMessage
 from pathlib import Path
 import sqlite3
 from typing import Dict, Optional, Tuple, Any, Iterable, List
+from urllib.parse import quote
 
 from logging.handlers import RotatingFileHandler
 
@@ -26,7 +27,6 @@ from fnmatch import fnmatch
 from flask_cors import CORS
 
 from auth.utils import calculate_token_expiry, generate_numeric_code, verify_password, hash_password
-from class_ids import DEFAULT_ENTRY_CLASS_ID, ENTRY_CLASS_ID_SET
 from config import get_contact_smtp_settings
 from db import DB_PATH, DATA_DIR, init_db, get_db_connection
 from schedule_importer import (
@@ -134,6 +134,9 @@ _LOG_HANDLER_LOGGERS = (app.logger, logging.getLogger())
 CLASS_ADMIN_ROLES = {'admin', 'class_admin'}
 ENTRY_MANAGER_ROLES = {'admin', 'teacher', 'class_admin'}
 GLOBAL_ENTRY_CLASS_ID = "default"
+DEFAULT_ENTRY_CLASS_ID = GLOBAL_ENTRY_CLASS_ID
+PERSONAL_TIMETABLE_LIMIT = 5
+CALENDAR_FEED_TYPES = ('pruefung', 'hausaufgabe', 'event')
 TODO_STATUS_OPEN = "offen"
 TODO_STATUS_IN_PROGRESS = "in_bearbeitung"
 TODO_STATUS_DONE = "beendet"
@@ -620,7 +623,8 @@ def _debug_calendar_entries() -> List[Dict[str, Any]]:
 
 def _debug_calendar_preferences() -> Dict[str, Any]:
     return {
-        'muted_subjects': [],
+        'subscribed_subjects': ['Mathematik', 'Englisch'],
+        'available_subjects': ['Mathematik', 'Englisch', 'Geschichte'],
         'show_completed_todos': False,
     }
 
@@ -1007,15 +1011,15 @@ def _get_session_entry_class_id() -> Optional[str]:
 
 
 def _normalize_entry_class_id(raw_value: Optional[object]) -> str:
-    value = (str(raw_value).strip() if raw_value is not None else '').replace(' ', '')
-    if not value or value.isdigit() or len(value) < 2:
+    value = str(raw_value).strip() if raw_value is not None else ''
+    if not value:
         return DEFAULT_ENTRY_CLASS_ID
-
-    prefix, suffix = value[:-1], value[-1]
-    normalized = f"{prefix.upper()}{suffix.lower()}"
-    if normalized not in ENTRY_CLASS_ID_SET:
+    if len(value) > 80 or any(ord(char) < 32 for char in value):
         raise ValueError('invalid_class_id')
-    return normalized
+    legacy_match = re.fullmatch(r'([A-Za-z])(\d{2})([A-Za-z])', value)
+    if legacy_match:
+        return f"{legacy_match.group(1).upper()}{legacy_match.group(2)}{legacy_match.group(3).lower()}"
+    return value
 
 
 def _normalize_entry_class_id_list(raw_values: Optional[object]) -> List[str]:
@@ -1928,10 +1932,13 @@ def _resolve_class_id(raw_identifier, conn=None):
         identifier = (raw_identifier or "").strip()
         if not identifier:
             cursor.execute("SELECT id FROM classes WHERE slug=?", (DEFAULT_CLASS_SLUG,))
-        elif identifier.isdigit():
-            cursor.execute("SELECT id FROM classes WHERE id=?", (int(identifier),))
         else:
-            cursor.execute("SELECT id FROM classes WHERE slug=?", (identifier.lower(),))
+            cursor.execute("SELECT id FROM classes WHERE LOWER(slug)=LOWER(?)", (identifier,))
+            row = cursor.fetchone()
+            if not row and identifier.isdigit():
+                cursor.execute("SELECT id FROM classes WHERE id=?", (int(identifier),))
+            else:
+                return int(row[0])
         row = cursor.fetchone()
     finally:
         cursor.close()
@@ -2072,6 +2079,8 @@ def _build_ics_content(entries: Iterable[Dict[str, Any]]) -> str:
         "PRODID:-//Homework Manager//Calendar Export//DE",
         "CALSCALE:GREGORIAN",
         "METHOD:PUBLISH",
+        "X-WR-CALNAME:HWM",
+        "X-WR-TIMEZONE:Europe/Zurich",
     ]
 
     for entry in entries:
@@ -2104,21 +2113,93 @@ def _build_ics_content(entries: Iterable[Dict[str, Any]]) -> str:
         uid_prefix = "todo" if str(entry.get("typ") or "").lower() == "todo" else "eintrag"
         uid = f"{uid_prefix}-{entry.get('id')}@homework-manager.akzuwo.ch"
 
-        lines.extend(
-            [
+        event_lines = [
                 "BEGIN:VEVENT",
                 f"UID:{_escape_ical_text(uid)}",
                 f"DTSTAMP:{generated_utc}",
                 f"SUMMARY:{_escape_ical_text(summary)}",
                 f"DESCRIPTION:{_escape_ical_text(entry.get('beschreibung'))}",
+        ]
+        start_time = _time_hhmm(entry.get('startzeit'))
+        end_time = _time_hhmm(entry.get('endzeit'))
+        start_minutes = _time_to_minutes(start_time)
+        end_minutes = _time_to_minutes(end_time)
+        if start_minutes is not None and 0 <= start_minutes < 24 * 60:
+            start_dt = datetime.datetime.combine(due, datetime.time(start_minutes // 60, start_minutes % 60))
+            if end_minutes is not None and 0 <= end_minutes < 24 * 60:
+                end_dt = datetime.datetime.combine(end_due, datetime.time(end_minutes // 60, end_minutes % 60))
+                if end_dt <= start_dt:
+                    end_dt += datetime.timedelta(days=1)
+            else:
+                end_dt = start_dt + datetime.timedelta(hours=1)
+            event_lines.extend([
+                f"DTSTART;TZID=Europe/Zurich:{start_dt.strftime('%Y%m%dT%H%M%S')}",
+                f"DTEND;TZID=Europe/Zurich:{end_dt.strftime('%Y%m%dT%H%M%S')}",
+            ])
+        else:
+            event_lines.extend([
                 f"DTSTART;VALUE=DATE:{_format_ical_date(due)}",
                 f"DTEND;VALUE=DATE:{_format_ical_date(end_due + datetime.timedelta(days=1))}",
-                "END:VEVENT",
-            ]
-        )
+            ])
+        event_lines.append("END:VEVENT")
+        lines.extend(event_lines)
 
     lines.append("END:VCALENDAR")
     return "\r\n".join(lines) + "\r\n"
+
+
+def _calendar_feed_urls(token: str) -> Dict[str, str]:
+    configured_base = (os.getenv('HWM_PUBLIC_API_URL') or '').strip().rstrip('/')
+    base = configured_base or request.url_root.rstrip('/')
+    subscription_url = f"{base}/calendar/subscription/{token}.ics"
+    webcal_url = re.sub(r'^https?://', 'webcal://', subscription_url)
+    return {
+        'subscription_url': subscription_url,
+        'webcal_url': webcal_url,
+        'google_calendar_url': f"https://calendar.google.com/calendar/render?cid={quote(webcal_url, safe='')}",
+    }
+
+
+def _parse_json_string_list(value: Any) -> List[str]:
+    if not value:
+        return []
+    try:
+        parsed = json.loads(value) if isinstance(value, str) else value
+    except (TypeError, ValueError):
+        return []
+    if not isinstance(parsed, list):
+        return []
+    return list(OrderedDict.fromkeys(str(item).strip() for item in parsed if str(item).strip()))
+
+
+def _load_subscription_entries(conn, subscription: Dict[str, Any]) -> List[Dict[str, Any]]:
+    subjects = set(_parse_json_string_list(subscription.get('subjects')))
+    event_types = set(_parse_json_string_list(subscription.get('event_types'))) & set(CALENDAR_FEED_TYPES)
+    class_slug = str(subscription.get('class_slug') or '').strip()
+    if not class_slug or not event_types:
+        return []
+    cursor = conn.dict_cursor()
+    try:
+        cursor.execute(
+            """
+            SELECT id, typ, beschreibung, datum, enddatum, startzeit, endzeit, fach
+            FROM eintraege
+            WHERE class_id=? AND COALESCE(is_private, 0)=0 AND datum >= ?
+            ORDER BY datum ASC, startzeit ASC
+            """,
+            (class_slug, datetime.date.today()),
+        )
+        rows = cursor.fetchall() or []
+    finally:
+        cursor.close()
+    return [
+        row for row in rows
+        if str(row.get('typ') or '') in event_types
+        and (
+            not str(row.get('fach') or '').strip()
+            or str(row.get('fach') or '').strip() in subjects
+        )
+    ]
 
 # ---------- ROUTES ----------
 
@@ -2149,10 +2230,13 @@ def export_ics():
     conn = get_connection()
     cursor = conn.dict_cursor()
     entries = []
+    preferences = _load_calendar_preferences(conn, int(user_id), class_id=class_id) if user_id is not None else {}
+    subscribed = preferences.get('subscribed_subjects')
+    subscribed_set = set(subscribed) if subscribed is not None else None
     if class_id:
         cursor.execute(
             """
-            SELECT id, typ, beschreibung, datum, enddatum, fach
+            SELECT id, typ, beschreibung, datum, enddatum, startzeit, endzeit, fach
             FROM eintraege
             WHERE class_id=?
               AND COALESCE(is_private, 0)=0
@@ -2161,11 +2245,16 @@ def export_ics():
             """,
             (class_id,),
         )
-        entries.extend(cursor.fetchall() or [])
+        entries.extend(
+            row for row in (cursor.fetchall() or [])
+            if subscribed_set is None
+            or not str(row.get('fach') or '').strip()
+            or str(row.get('fach') or '').strip() in subscribed_set
+        )
     if include_todos and user_id is not None:
         cursor.execute(
             """
-            SELECT id, typ, beschreibung, datum, enddatum, fach
+            SELECT id, typ, beschreibung, datum, enddatum, startzeit, endzeit, fach
             FROM eintraege
             WHERE COALESCE(is_private, 0)=1
               AND owner_user_id=?
@@ -2175,7 +2264,12 @@ def export_ics():
             """,
             (int(user_id),),
         )
-        entries.extend(cursor.fetchall() or [])
+        entries.extend(
+            row for row in (cursor.fetchall() or [])
+            if subscribed_set is None
+            or not str(row.get('fach') or '').strip()
+            or str(row.get('fach') or '').strip() in subscribed_set
+        )
     cursor.close()
     conn.close()
 
@@ -2185,6 +2279,121 @@ def export_ics():
         mimetype='text/calendar',
         headers={'Content-Disposition': 'attachment; filename="homework.ics"'}
     )
+
+
+@app.route('/calendar/subscription/<token>.ics', methods=['GET'])
+def calendar_subscription_feed(token: str):
+    if not re.fullmatch(r'[A-Za-z0-9_-]{32,128}', token or ''):
+        return jsonify(status='error', message='subscription_not_found'), 404
+    token_hash = hashlib.sha256(token.encode('utf-8')).hexdigest()
+    try:
+        conn = get_connection()
+    except Exception:
+        return jsonify(status='error', message='database_unavailable'), 503
+    with closing(conn):
+        cursor = conn.dict_cursor()
+        try:
+            cursor.execute(
+                """
+                SELECT cs.user_id, cs.subjects, cs.event_types,
+                       COALESCE(cs.class_slug, c.slug) AS class_slug
+                FROM calendar_subscriptions cs
+                JOIN users u ON u.id=cs.user_id AND u.is_active=1
+                JOIN classes c ON c.id=u.class_id
+                WHERE cs.token_hash=? AND cs.is_active=1
+                LIMIT 1
+                """,
+                (token_hash,),
+            )
+            subscription = cursor.fetchone()
+        finally:
+            cursor.close()
+        if not subscription:
+            return jsonify(status='error', message='subscription_not_found'), 404
+        entries = _load_subscription_entries(conn, subscription)
+    response = Response(_build_ics_content(entries), mimetype='text/calendar; charset=utf-8')
+    response.headers['Content-Disposition'] = 'inline; filename="hwm-kalender.ics"'
+    response.headers['Cache-Control'] = 'no-cache, max-age=0'
+    response.headers['X-Robots-Tag'] = 'noindex, nofollow'
+    return response
+
+
+@app.route('/api/calendar/subscription', methods=['GET', 'PUT', 'DELETE', 'OPTIONS'])
+@require_authenticated
+def calendar_subscription_settings():
+    if request.method == 'OPTIONS':
+        return _cors_preflight()
+    user_id = int(session.get('user_id'))
+    try:
+        conn = get_connection()
+    except Exception:
+        return jsonify(status='error', message='database_unavailable'), 503
+    with closing(conn):
+        if request.method == 'GET':
+            cursor = conn.dict_cursor()
+            try:
+                cursor.execute(
+                    "SELECT subjects, event_types, is_active, updated_at FROM calendar_subscriptions WHERE user_id=? LIMIT 1",
+                    (user_id,),
+                )
+                row = cursor.fetchone()
+            finally:
+                cursor.close()
+            return jsonify(status='ok', data={
+                'active': bool(row and row.get('is_active')),
+                'subjects': _parse_json_string_list(row.get('subjects')) if row else [],
+                'event_types': _parse_json_string_list(row.get('event_types')) if row else list(CALENDAR_FEED_TYPES),
+                'updated_at': _serialize_value(row.get('updated_at')) if row else None,
+                'available_subjects': _available_calendar_subjects(conn, _get_session_entry_class_id(), _get_session_class_id()),
+            })
+        cursor = conn.cursor()
+        try:
+            if request.method == 'DELETE':
+                cursor.execute("DELETE FROM calendar_subscriptions WHERE user_id=?", (user_id,))
+                conn.commit()
+                return jsonify(status='ok')
+
+            data = request.get_json(silent=True) or {}
+            class_slug = _get_session_entry_class_id()
+            if not class_slug:
+                return jsonify(status='error', message='class_required'), 400
+            subjects = data.get('subjects')
+            event_types = data.get('event_types')
+            if not isinstance(subjects, list) or not isinstance(event_types, list):
+                return jsonify(status='error', message='invalid_subscription_options'), 400
+            subjects = list(OrderedDict.fromkeys(str(item).strip() for item in subjects if str(item).strip()))
+            event_types = list(OrderedDict.fromkeys(str(item).strip() for item in event_types if str(item).strip()))
+            if any(len(subject) > 120 for subject in subjects) or not event_types or any(item not in CALENDAR_FEED_TYPES for item in event_types):
+                return jsonify(status='error', message='invalid_subscription_options'), 400
+            token = pysecrets.token_urlsafe(32)
+            token_hash = hashlib.sha256(token.encode('utf-8')).hexdigest()
+            now = datetime.datetime.utcnow()
+            cursor.execute(
+                """
+                INSERT INTO calendar_subscriptions (user_id, token_hash, class_slug, subjects, event_types, is_active, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, 1, ?, ?)
+                ON CONFLICT(user_id) DO UPDATE SET
+                  token_hash=excluded.token_hash,
+                  class_slug=excluded.class_slug,
+                  subjects=excluded.subjects,
+                  event_types=excluded.event_types,
+                  is_active=1,
+                  updated_at=excluded.updated_at
+                """,
+                (user_id, token_hash, class_slug, json.dumps(subjects, ensure_ascii=False), json.dumps(event_types), now, now),
+            )
+            conn.commit()
+        except sqlite3.Error:
+            conn.rollback()
+            return jsonify(status='error', message='database_unavailable'), 503
+        finally:
+            cursor.close()
+    return jsonify(status='ok', data={
+        'active': True,
+        'subjects': subjects,
+        'event_types': event_types,
+        **_calendar_feed_urls(token),
+    })
 
 @app.route('/entries', methods=['GET'])
 @app.route('/api/entries', methods=['GET'])
@@ -2212,8 +2421,10 @@ def entries_collection():
     with closing(conn):
         cursor = conn.dict_cursor()
         try:
-            preferences = _load_calendar_preferences(conn, int(user_id))
+            preferences = _load_calendar_preferences(conn, int(user_id), class_id=class_id)
             show_completed_todos = bool(preferences.get('show_completed_todos'))
+            subscribed_subjects = preferences.get('subscribed_subjects')
+            subscribed_set = set(subscribed_subjects) if subscribed_subjects is not None else None
             rows = []
             if class_id:
                 cursor.execute(
@@ -2227,6 +2438,9 @@ def entries_collection():
                     (class_id,),
                 )
                 for row in (cursor.fetchall() or []):
+                    subject = str(row.get('fach') or '').strip()
+                    if subscribed_set is not None and subject and subject not in subscribed_set:
+                        continue
                     row['is_private'] = False
                     row['is_owned'] = False
                     row['can_edit'] = _can_edit_class_entry(
@@ -2250,6 +2464,9 @@ def entries_collection():
                 (int(user_id), 1 if show_completed_todos else 0, TODO_STATUS_DONE, TODO_STATUS_OPEN, TODO_STATUS_DONE),
             )
             for row in (cursor.fetchall() or []):
+                subject = str(row.get('fach') or '').strip()
+                if subscribed_set is not None and subject and subject not in subscribed_set:
+                    continue
                 row['is_private'] = True
                 row['is_owned'] = True
                 row['can_edit'] = False
@@ -2289,11 +2506,34 @@ def _normalize_todo_status(value: Optional[object], is_done: Optional[object] = 
     return TODO_STATUS_OPEN
 
 
-def _load_calendar_preferences(conn, user_id: int) -> Dict[str, Any]:
+def _available_calendar_subjects(conn, class_id: Optional[str], numeric_class_id: Optional[int] = None) -> List[str]:
+    subjects: List[str] = []
+    cursor = conn.cursor()
+    try:
+        if class_id:
+            cursor.execute(
+                "SELECT DISTINCT fach FROM eintraege WHERE class_id=? AND COALESCE(is_private, 0)=0 AND TRIM(COALESCE(fach, '')) <> '' ORDER BY fach",
+                (class_id,),
+            )
+            subjects.extend(str(row[0]).strip() for row in (cursor.fetchall() or []) if row and str(row[0] or '').strip())
+        if numeric_class_id:
+            cursor.execute(
+                "SELECT DISTINCT fach FROM stundenplan_entries WHERE class_id=? AND TRIM(COALESCE(fach, '')) <> '' ORDER BY fach",
+                (numeric_class_id,),
+            )
+            subjects.extend(str(row[0]).strip() for row in (cursor.fetchall() or []) if row and str(row[0] or '').strip())
+    except sqlite3.Error:
+        pass
+    finally:
+        cursor.close()
+    return sorted(OrderedDict.fromkeys(subjects), key=str.casefold)
+
+
+def _load_calendar_preferences(conn, user_id: int, *, class_id: Optional[str] = None) -> Dict[str, Any]:
     cursor = conn.dict_cursor()
     try:
         cursor.execute(
-            "SELECT muted_subjects, show_completed_todos FROM calendar_preferences WHERE user_id=?",
+            "SELECT muted_subjects, subscribed_subjects, show_completed_todos FROM calendar_preferences WHERE user_id=?",
             (int(user_id),),
         )
         row = cursor.fetchone() or {}
@@ -2310,8 +2550,21 @@ def _load_calendar_preferences(conn, user_id: int) -> Dict[str, Any]:
                 muted_subjects = [str(item) for item in parsed]
         except (TypeError, ValueError):
             muted_subjects = []
+    subscribed_subjects = None
+    subscribed_raw = row.get('subscribed_subjects')
+    if subscribed_raw is not None:
+        try:
+            parsed = json.loads(subscribed_raw)
+            if isinstance(parsed, list):
+                subscribed_subjects = list(OrderedDict.fromkeys(str(item).strip() for item in parsed if str(item).strip()))
+        except (TypeError, ValueError):
+            subscribed_subjects = None
+    available_subjects = _available_calendar_subjects(conn, class_id, _get_session_class_id())
+    if subscribed_subjects is None and muted_subjects:
+        subscribed_subjects = [subject for subject in available_subjects if subject not in set(muted_subjects)]
     return {
-        'muted_subjects': muted_subjects,
+        'subscribed_subjects': subscribed_subjects,
+        'available_subjects': available_subjects,
         'show_completed_todos': bool(row.get('show_completed_todos')),
     }
 
@@ -2363,13 +2616,14 @@ def _lesson_datetime(day: datetime.date, value: Any) -> Optional[datetime.dateti
     )
 
 
-def _lesson_sort_key(lesson: Dict[str, Any]) -> Tuple[str, str, int]:
-    return (lesson.get('start') or '', lesson.get('end') or '', int(lesson.get('id') or 0))
+def _lesson_sort_key(lesson: Dict[str, Any]) -> Tuple[str, str, str]:
+    return (lesson.get('start') or '', lesson.get('end') or '', str(lesson.get('id') or ''))
 
 
 def _serialize_timetable_lesson(lesson: Dict[str, Any], *, include_date: bool = True) -> Dict[str, Any]:
     payload = {
         'id': lesson.get('id'),
+        'source': lesson.get('source') or 'normal',
         'subject': lesson.get('subject'),
         'fach': lesson.get('subject'),
         'room': lesson.get('room') or '-',
@@ -2394,6 +2648,7 @@ def _serialize_timetable_lesson(lesson: Dict[str, Any], *, include_date: bool = 
         'new_end',
         'reason',
         'exception_id',
+        'personal_entry_id',
     ):
         if lesson.get(key) not in (None, ''):
             payload[key] = lesson.get(key)
@@ -2640,7 +2895,42 @@ def _exception_to_extra_lesson(exception: Dict[str, Any], day: datetime.date, cl
     }
 
 
-def _calculate_timetable_day(conn, class_id: int, day: datetime.date) -> Dict[str, Any]:
+def _load_personal_timetable_lessons(conn, user_id: Optional[int], day: datetime.date) -> List[Dict[str, Any]]:
+    if not user_id:
+        return []
+    weekday = day.strftime('%A')
+    rows = _query_optional_rows(
+        conn,
+        """
+        SELECT id, tag, start, "end", fach, raum
+        FROM personal_timetable_entries
+        WHERE user_id=? AND tag=?
+        ORDER BY start, "end", id
+        """,
+        (int(user_id), weekday),
+    )
+    return [
+        {
+            'id': f"personal-{row.get('id')}",
+            'personal_entry_id': row.get('id'),
+            'source': 'personal',
+            'date': day,
+            'class_id': None,
+            'lesson_number': None,
+            'subject': row.get('fach'),
+            'room': row.get('raum') or '-',
+            'group': None,
+            'start': _time_hhmm(row.get('start')),
+            'end': _time_hhmm(row.get('end')),
+            'status': 'personal',
+            'badges': ['Persönlich'],
+            'is_real_lesson': True,
+        }
+        for row in rows
+    ]
+
+
+def _calculate_timetable_day(conn, class_id: int, day: datetime.date, user_id: Optional[int] = None) -> Dict[str, Any]:
     weekday = day.strftime('%A').lower()
     holiday = _load_school_holiday_for_day(conn, day)
     if holiday:
@@ -2698,6 +2988,8 @@ def _calculate_timetable_day(conn, class_id: int, day: datetime.date) -> Dict[st
         if exception.get('type') == 'extra_lesson' or exception.get('id') in shifted_exception_ids:
             final_lessons.append(_exception_to_extra_lesson(exception, day, class_id))
 
+    final_lessons.extend(_load_personal_timetable_lessons(conn, user_id, day))
+
     final_lessons.sort(key=_lesson_sort_key)
     notice_day = next((item for item in special_days if item.get('mode') == 'show_notice_keep_plan'), None)
     day_status = 'special_day' if (replace_day or notice_day) else 'normal'
@@ -2718,7 +3010,7 @@ def _calculate_timetable_day(conn, class_id: int, day: datetime.date) -> Dict[st
     }
 
 
-def _find_next_real_lesson(conn, class_id: int, now: datetime.datetime) -> Optional[Dict[str, Any]]:
+def _find_next_real_lesson(conn, class_id: int, now: datetime.datetime, user_id: Optional[int] = None) -> Optional[Dict[str, Any]]:
     if now.tzinfo is None:
         now = TIMETABLE_TIMEZONE.localize(now)
     else:
@@ -2726,7 +3018,7 @@ def _find_next_real_lesson(conn, class_id: int, now: datetime.datetime) -> Optio
     start_date = now.date()
     for offset in range(TIMETABLE_REAL_LESSON_SEARCH_DAYS):
         day = start_date + datetime.timedelta(days=offset)
-        plan = _calculate_timetable_day(conn, class_id, day)
+        plan = _calculate_timetable_day(conn, class_id, day, user_id=user_id)
         for lesson in plan.get('lessons') or []:
             if not lesson.get('is_real_lesson'):
                 continue
@@ -2738,23 +3030,23 @@ def _find_next_real_lesson(conn, class_id: int, now: datetime.datetime) -> Optio
     return None
 
 
-def _next_school_day(conn, class_id: int, after_day: datetime.date) -> Optional[datetime.date]:
+def _next_school_day(conn, class_id: int, after_day: datetime.date, user_id: Optional[int] = None) -> Optional[datetime.date]:
     for offset in range(1, TIMETABLE_REAL_LESSON_SEARCH_DAYS):
         day = after_day + datetime.timedelta(days=offset)
-        plan = _calculate_timetable_day(conn, class_id, day)
+        plan = _calculate_timetable_day(conn, class_id, day, user_id=user_id)
         if any(lesson.get('is_real_lesson') for lesson in plan.get('lessons') or []):
             return day
     return None
 
 
-def _calculate_timetable_live(conn, class_id: int, now: Optional[datetime.datetime] = None) -> Dict[str, Any]:
+def _calculate_timetable_live(conn, class_id: int, now: Optional[datetime.datetime] = None, user_id: Optional[int] = None) -> Dict[str, Any]:
     now = now or datetime.datetime.now(TIMETABLE_TIMEZONE)
     if now.tzinfo is None:
         now = TIMETABLE_TIMEZONE.localize(now)
     else:
         now = now.astimezone(TIMETABLE_TIMEZONE)
     day = now.date()
-    day_plan = _calculate_timetable_day(conn, class_id, day)
+    day_plan = _calculate_timetable_day(conn, class_id, day, user_id=user_id)
     current_lesson = None
     for lesson in day_plan.get('lessons') or []:
         if not lesson.get('is_real_lesson'):
@@ -2771,7 +3063,7 @@ def _calculate_timetable_live(conn, class_id: int, now: Optional[datetime.dateti
             current_lesson['gesamt_sekunden'] = total
             break
 
-    next_lesson = _find_next_real_lesson(conn, class_id, now)
+    next_lesson = _find_next_real_lesson(conn, class_id, now, user_id=user_id)
     next_start_dt = None
     if next_lesson:
         next_date = _parse_iso_date(next_lesson.get('date')) or day
@@ -3273,36 +3565,37 @@ def calendar_preferences():
 
     with closing(conn):
         if request.method == 'GET':
-            return jsonify(status='ok', data=_load_calendar_preferences(conn, user_id))
+            return jsonify(status='ok', data=_load_calendar_preferences(conn, user_id, class_id=_get_session_entry_class_id()))
 
         data = request.json or {}
-        muted_raw = data.get('muted_subjects', [])
-        if muted_raw is None:
-            muted_raw = []
-        if not isinstance(muted_raw, list):
-            return jsonify(status='error', message='invalid_muted_subjects'), 400
-        muted_subjects = [
+        subscribed_raw = data.get('subscribed_subjects', [])
+        if subscribed_raw is None or not isinstance(subscribed_raw, list):
+            return jsonify(status='error', message='invalid_subscribed_subjects'), 400
+        subscribed_subjects = [
             str(item).strip()
-            for item in muted_raw
+            for item in subscribed_raw
             if str(item).strip()
         ]
-        muted_subjects = list(OrderedDict.fromkeys(muted_subjects))
+        subscribed_subjects = list(OrderedDict.fromkeys(subscribed_subjects))
+        if any(len(subject) > 120 for subject in subscribed_subjects):
+            return jsonify(status='error', message='invalid_subscribed_subjects'), 400
         show_completed_todos = _parse_bool(data.get('show_completed_todos'), default=False)
         cursor = conn.cursor()
         try:
             now = datetime.datetime.utcnow()
             cursor.execute(
                 """
-                INSERT INTO calendar_preferences (user_id, muted_subjects, show_completed_todos, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO calendar_preferences (user_id, muted_subjects, subscribed_subjects, show_completed_todos, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?)
                 ON CONFLICT(user_id) DO UPDATE SET
-                  muted_subjects=excluded.muted_subjects,
+                  subscribed_subjects=excluded.subscribed_subjects,
                   show_completed_todos=excluded.show_completed_todos,
                   updated_at=excluded.updated_at
                 """,
                 (
                     user_id,
-                    json.dumps(muted_subjects),
+                    None,
+                    json.dumps(subscribed_subjects, ensure_ascii=False),
                     1 if show_completed_todos else 0,
                     now,
                     now,
@@ -3315,7 +3608,7 @@ def calendar_preferences():
         finally:
             cursor.close()
 
-        return jsonify(status='ok', data=_load_calendar_preferences(conn, user_id))
+        return jsonify(status='ok', data=_load_calendar_preferences(conn, user_id, class_id=_get_session_entry_class_id()))
 
 
 def _resolve_weekly_preview_locale() -> str:
@@ -3482,6 +3775,9 @@ def encrypted_grade_vault():
 def _collect_weekly_preview_entries(conn, class_id: str, user_id: int, start_date: datetime.date, end_date: datetime.date, include_todos: bool) -> List[Dict[str, str]]:
     cursor = conn.dict_cursor()
     rows: List[Dict[str, str]] = []
+    preferences = _load_calendar_preferences(conn, user_id, class_id=class_id)
+    subscribed = preferences.get('subscribed_subjects')
+    subscribed_set = set(subscribed) if subscribed is not None else None
     try:
         cursor.execute(
             """
@@ -3496,6 +3792,9 @@ def _collect_weekly_preview_entries(conn, class_id: str, user_id: int, start_dat
             (class_id, start_date.isoformat(), end_date.isoformat()),
         )
         for row in (cursor.fetchall() or []):
+            subject = str(row.get('fach') or '').strip()
+            if subscribed_set is not None and subject and subject not in subscribed_set:
+                continue
             rows.append(
                 {
                     'typ': str(row.get('typ') or ''),
@@ -3523,6 +3822,9 @@ def _collect_weekly_preview_entries(conn, class_id: str, user_id: int, start_dat
                 (int(user_id), start_date.isoformat(), end_date.isoformat()),
             )
             for row in (cursor.fetchall() or []):
+                subject = str(row.get('fach') or '').strip()
+                if subscribed_set is not None and subject and subject not in subscribed_set:
+                    continue
                 rows.append(
                     {
                         'typ': 'todo',
@@ -5465,7 +5767,7 @@ def admin_classes_collection():
         description = (data.get('description') or '').strip() or None
         is_active = _parse_bool(data.get('is_active'), True)
 
-        if not slug or not re.match(r'^[A-Za-z0-9\-]+$', slug):
+        if not slug or len(slug) > 80 or any(ord(char) < 32 for char in slug):
             return jsonify(status='error', message='invalid_slug'), 400
         if not title:
             return jsonify(status='error', message='title_required'), 400
@@ -5545,7 +5847,7 @@ def admin_classes_resource(class_id: int):
 
             if 'slug' in data:
                 slug = (data.get('slug') or '').strip()
-                if not slug or not re.match(r'^[A-Za-z0-9\-]+$', slug):
+                if not slug or len(slug) > 80 or any(ord(char) < 32 for char in slug):
                     return jsonify(status='error', message='invalid_slug'), 400
                 updates.append('slug=?')
                 values.append(slug)
@@ -6272,11 +6574,11 @@ def manage_session_class():
 
         session['class_id'] = class_row['id']
         session['class_slug'] = class_row['slug']
-        session['entry_class_id'] = normalized
+        session['entry_class_id'] = class_row['slug']
 
         response = {
             'status': 'ok',
-            'class_id': normalized,
+            'class_id': class_row['slug'],
             'class_slug': class_row.get('slug'),
             'class_numeric_id': class_row.get('id'),
         }
@@ -6775,6 +7077,106 @@ def _cors_preflight():
     })
     return resp, 200
 
+def _personal_timetable_payload(data: Dict[str, Any]) -> Tuple[Optional[Dict[str, str]], Optional[Any]]:
+    try:
+        tag = _canonicalize_weekday(data.get('tag'))
+    except ValueError:
+        return None, (jsonify(status='error', message='invalid_tag'), 400)
+    if tag not in WEEKDAY_ORDER:
+        return None, (jsonify(status='error', message='invalid_tag'), 400)
+    start = _time_hhmm(data.get('start'))
+    end = _time_hhmm(data.get('end'))
+    fach = str(data.get('fach') or '').strip()
+    raum = str(data.get('raum') or '').strip()
+    if not start or not end or _time_to_minutes(start) is None or _time_to_minutes(end) is None:
+        return None, (jsonify(status='error', message='invalid_time'), 400)
+    if _time_to_minutes(end) <= _time_to_minutes(start):
+        return None, (jsonify(status='error', message='end_before_start'), 400)
+    if not fach or len(fach) > 120 or len(raum) > 120:
+        return None, (jsonify(status='error', message='invalid_subject'), 400)
+    return {'tag': tag, 'start': start, 'end': end, 'fach': fach, 'raum': raum}, None
+
+
+@app.route('/api/personal-timetable', methods=['GET', 'POST', 'OPTIONS'])
+@require_authenticated
+def personal_timetable_collection():
+    if request.method == 'OPTIONS':
+        return _cors_preflight()
+    user_id = int(session.get('user_id'))
+    try:
+        conn = get_connection()
+    except Exception:
+        return jsonify(status='error', message='database_unavailable'), 503
+    with closing(conn):
+        if request.method == 'GET':
+            rows = _query_optional_rows(
+                conn,
+                'SELECT id, tag, start, "end", fach, raum, created_at, updated_at FROM personal_timetable_entries WHERE user_id=? ORDER BY tag, start, id',
+                (user_id,),
+            )
+            rows.sort(key=_schedule_entry_sort_key)
+            return jsonify(status='ok', data=list(_serialize_rows(rows)), limit=PERSONAL_TIMETABLE_LIMIT)
+        payload, error = _personal_timetable_payload(request.get_json(silent=True) or {})
+        if error:
+            return error
+        cursor = conn.cursor()
+        try:
+            cursor.execute('SELECT COUNT(*) FROM personal_timetable_entries WHERE user_id=?', (user_id,))
+            count_row = cursor.fetchone()
+            count = int((count_row[0] if count_row else 0) or 0)
+            if count >= PERSONAL_TIMETABLE_LIMIT:
+                return jsonify(status='error', message='personal_timetable_limit', limit=PERSONAL_TIMETABLE_LIMIT), 409
+            now = datetime.datetime.utcnow()
+            cursor.execute(
+                'INSERT INTO personal_timetable_entries (user_id, tag, start, "end", fach, raum, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                (user_id, payload['tag'], payload['start'], payload['end'], payload['fach'], payload['raum'] or None, now, now),
+            )
+            entry_id = cursor.lastrowid
+            conn.commit()
+        except sqlite3.Error:
+            conn.rollback()
+            return jsonify(status='error', message='database_unavailable'), 503
+        finally:
+            cursor.close()
+    return jsonify(status='ok', id=entry_id), 201
+
+
+@app.route('/api/personal-timetable/<int:entry_id>', methods=['PUT', 'DELETE', 'OPTIONS'])
+@require_authenticated
+def personal_timetable_resource(entry_id: int):
+    if request.method == 'OPTIONS':
+        return _cors_preflight()
+    user_id = int(session.get('user_id'))
+    payload = None
+    if request.method == 'PUT':
+        payload, error = _personal_timetable_payload(request.get_json(silent=True) or {})
+        if error:
+            return error
+    try:
+        conn = get_connection()
+    except Exception:
+        return jsonify(status='error', message='database_unavailable'), 503
+    with closing(conn):
+        cursor = conn.cursor()
+        try:
+            if request.method == 'DELETE':
+                cursor.execute('DELETE FROM personal_timetable_entries WHERE id=? AND user_id=?', (entry_id, user_id))
+            else:
+                cursor.execute(
+                    'UPDATE personal_timetable_entries SET tag=?, start=?, "end"=?, fach=?, raum=?, updated_at=? WHERE id=? AND user_id=?',
+                    (payload['tag'], payload['start'], payload['end'], payload['fach'], payload['raum'] or None, datetime.datetime.utcnow(), entry_id, user_id),
+                )
+            if cursor.rowcount == 0:
+                return jsonify(status='error', message='personal_timetable_entry_not_found'), 404
+            conn.commit()
+        except sqlite3.Error:
+            conn.rollback()
+            return jsonify(status='error', message='database_unavailable'), 503
+        finally:
+            cursor.close()
+    return jsonify(status='ok')
+
+
 # --- STUNDENPLAN / AKTUELLES_FACH ---
 @app.route('/api/timetable/live', methods=['GET'])
 def timetable_live():
@@ -6796,7 +7198,7 @@ def timetable_live():
                     now_value = datetime.datetime.fromisoformat(now_param)
                 except ValueError:
                     return jsonify(status='error', message='invalid_now'), 400
-            payload = _calculate_timetable_live(conn, class_id, now_value)
+            payload = _calculate_timetable_live(conn, class_id, now_value, user_id=session.get('user_id'))
         except sqlite3.Error:
             return jsonify({'status': 'error', 'message': 'database_unavailable'}), 503
     return jsonify(payload)
@@ -6816,9 +7218,10 @@ def timetable_day():
         try:
             if not _class_has_schedule(conn, class_id):
                 return jsonify({'error': 'schedule_unavailable'}), 404
-            day = _calculate_timetable_day(conn, class_id, requested_date)
-            next_day = _next_school_day(conn, class_id, requested_date)
-            next_plan = _calculate_timetable_day(conn, class_id, next_day) if next_day else None
+            user_id = session.get('user_id')
+            day = _calculate_timetable_day(conn, class_id, requested_date, user_id=user_id)
+            next_day = _next_school_day(conn, class_id, requested_date, user_id=user_id)
+            next_plan = _calculate_timetable_day(conn, class_id, next_day, user_id=user_id) if next_day else None
         except sqlite3.Error:
             return jsonify({'status': 'error', 'message': 'database_unavailable'}), 503
     return jsonify(
@@ -6852,7 +7255,10 @@ def timetable_week():
         try:
             if not _class_has_schedule(conn, class_id):
                 return jsonify({'error': 'schedule_unavailable'}), 404
-            days = [_calculate_timetable_day(conn, class_id, week_start + datetime.timedelta(days=offset)) for offset in range(5)]
+            days = [
+                _calculate_timetable_day(conn, class_id, week_start + datetime.timedelta(days=offset), user_id=session.get('user_id'))
+                for offset in range(5)
+            ]
         except sqlite3.Error:
             return jsonify({'status': 'error', 'message': 'database_unavailable'}), 503
     return jsonify(
@@ -6892,7 +7298,7 @@ def aktuelles_fach():
         try:
             if not _class_has_schedule(conn, class_id):
                 return jsonify({'error': 'schedule_unavailable'}), 404
-            live = _calculate_timetable_live(conn, class_id)
+            live = _calculate_timetable_live(conn, class_id, user_id=session.get('user_id'))
         except sqlite3.Error:
             return jsonify({'status': 'error', 'message': 'database_unavailable'}), 503
     return jsonify(_legacy_live_payload(live))
@@ -6911,9 +7317,10 @@ def tagesuebersicht():
         try:
             if not _class_has_schedule(conn, class_id):
                 return jsonify({'error': 'schedule_unavailable'}), 404
-            day = _calculate_timetable_day(conn, class_id, today)
-            next_day = _next_school_day(conn, class_id, today)
-            next_plan = _calculate_timetable_day(conn, class_id, next_day) if next_day else None
+            user_id = session.get('user_id')
+            day = _calculate_timetable_day(conn, class_id, today, user_id=user_id)
+            next_day = _next_school_day(conn, class_id, today, user_id=user_id)
+            next_plan = _calculate_timetable_day(conn, class_id, next_day, user_id=user_id) if next_day else None
         except sqlite3.Error:
             return jsonify({'status': 'error', 'message': 'database_unavailable'}), 503
         return jsonify(

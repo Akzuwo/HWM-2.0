@@ -10,10 +10,10 @@ export function WeeklyPreviewPage() {
         <header className="weekly-preview__header">
           <div className="weekly-preview__heading">
             <h1 className="weekly-preview__title" data-i18n="weeklyPreview.title">
-              🧠 Weekly Preview
+              Daybrief
             </h1>
             <p className="weekly-preview__lead" data-i18n="weeklyPreview.lead">
-              AI summary of tasks and events for the next 7 days.
+              Your compact overview of tasks and events for the next 7 days.
             </p>
           </div>
           <div className="calendar-class-selector class-select" data-class-selector="" hidden>
@@ -31,7 +31,7 @@ export function WeeklyPreviewPage() {
           <p className="weekly-preview__status weekly-preview__status--loading" id="weekly-preview-status" data-i18n="weeklyPreview.loading">
             Generating preview...
           </p>
-          <GlassSkeleton label="Wochenvorschau wird erstellt" rows={4} />
+          <GlassSkeleton label="Daybrief wird erstellt" rows={4} />
           <p className="weekly-preview__intro" id="weekly-preview-intro" hidden></p>
           <ul className="weekly-preview__list" id="weekly-preview-list" hidden></ul>
           <p className="weekly-preview__meta" id="weekly-preview-meta" hidden></p>

@@ -65,6 +65,37 @@ export function ProfilePage() {
               </dl>
             </article>
 
+            <article className="profile-card profile-card--wide">
+              <header className="profile-card__header">
+                <div>
+                  <p className="profile__eyebrow">Personalisierung</p>
+                  <h2>Eigene Stunden</h2>
+                </div>
+                <p className="muted">Ergänzungs- und Freifächer erscheinen nur in deinem Stundenplan. Maximal 5 Einträge.</p>
+              </header>
+              <form className="profile-form profile-personal-timetable__form" id="personal-timetable-form">
+                <label className="profile-form__label" htmlFor="personal-day">Wochentag</label>
+                <select id="personal-day" className="profile-input" required defaultValue="Monday">
+                  <option value="Monday">Montag</option><option value="Tuesday">Dienstag</option><option value="Wednesday">Mittwoch</option>
+                  <option value="Thursday">Donnerstag</option><option value="Friday">Freitag</option><option value="Saturday">Samstag</option><option value="Sunday">Sonntag</option>
+                </select>
+                <label className="profile-form__label" htmlFor="personal-subject">Fach</label>
+                <input id="personal-subject" className="profile-input" maxLength="120" required placeholder="z. B. Philosophie" />
+                <label className="profile-form__label" htmlFor="personal-start">Beginn</label>
+                <input id="personal-start" className="profile-input" type="time" required />
+                <label className="profile-form__label" htmlFor="personal-end">Ende</label>
+                <input id="personal-end" className="profile-input" type="time" required />
+                <label className="profile-form__label" htmlFor="personal-room">Raum (optional)</label>
+                <input id="personal-room" className="profile-input" maxLength="120" placeholder="z. B. A204" />
+                <div className="profile-actions">
+                  <button type="submit" id="personal-timetable-save" className="button ripple">Stunde hinzufügen</button>
+                  <button type="button" id="personal-timetable-cancel" className="button ripple" hidden>Bearbeiten abbrechen</button>
+                </div>
+              </form>
+              <p className="profile-help" id="personal-timetable-count">0 von 5 Stunden</p>
+              <div className="profile-personal-timetable__list" id="personal-timetable-list"></div>
+            </article>
+
             <article className="profile-card">
               <header className="profile-card__header">
                 <div>

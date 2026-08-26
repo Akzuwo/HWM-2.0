@@ -58,6 +58,7 @@ class SQLiteConnection:
     def __init__(self):
         self._conn = sqlite3.connect(DB_PATH, timeout=5)
         self._conn.row_factory = sqlite3.Row
+        self._conn.create_function("CURDATE", 0, lambda: _dt.date.today().isoformat())
         self._conn.execute("PRAGMA foreign_keys = ON")
         self._conn.execute("PRAGMA journal_mode = WAL")
         self._conn.execute("PRAGMA busy_timeout = 5000")
@@ -136,6 +137,16 @@ def init_db() -> None:
         conn.execute("PRAGMA journal_mode = WAL")
         conn.execute("PRAGMA busy_timeout = 5000")
         conn.executescript(schema)
+        calendar_columns = {
+            row[1] for row in conn.execute("PRAGMA table_info(calendar_preferences)")
+        }
+        if "subscribed_subjects" not in calendar_columns:
+            conn.execute("ALTER TABLE calendar_preferences ADD COLUMN subscribed_subjects TEXT")
+        subscription_columns = {
+            row[1] for row in conn.execute("PRAGMA table_info(calendar_subscriptions)")
+        }
+        if "class_slug" not in subscription_columns:
+            conn.execute("ALTER TABLE calendar_subscriptions ADD COLUMN class_slug TEXT")
         conn.commit()
     except Exception:
         conn.rollback()

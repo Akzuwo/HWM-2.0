@@ -13,7 +13,7 @@ export function TimetableWeekPage() {
       <main className="page-container" id="main">
         <header className="page-header">
           <div className="page-title">
-            <h1>Wochenstundenplan</h1>
+            <h1>Wochenvorschau</h1>
             <p id="weekRange" className="page-date"></p>
           </div>
           <div className="page-controls">
@@ -41,7 +41,7 @@ export function TimetableWeekPage() {
         </header>
 
         <div id="weekOverview" className="overview-grid overview-grid--week">
-          <GlassSkeleton label="Wochenstundenplan wird geladen" rows={5} />
+          <GlassSkeleton label="Wochenvorschau wird geladen" rows={5} />
         </div>
       </main>
     </>

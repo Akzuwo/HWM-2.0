@@ -2830,6 +2830,41 @@ body.profile-page {
     gap: 0.65rem;
 }
 
+.profile-personal-timetable__form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.profile-personal-timetable__form .profile-actions {
+    grid-column: 1 / -1;
+}
+
+.profile-personal-timetable__list {
+    display: grid;
+    gap: 0.65rem;
+    margin-top: 0.85rem;
+}
+
+.profile-personal-timetable__item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.8rem;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.45);
+}
+
+.profile-personal-timetable__item > div:first-child {
+    display: grid;
+    gap: 0.2rem;
+}
+
+.profile-personal-timetable__item span {
+    color: var(--muted-text);
+    font-size: 0.9rem;
+}
+
 .profile-form__label {
     font-size: 0.9rem;
     color: rgba(226, 232, 240, 0.85);
@@ -2883,6 +2918,15 @@ body.profile-page {
     .profile-card__header {
         flex-direction: column;
         align-items: flex-start;
+    }
+
+    .profile-personal-timetable__form {
+        grid-template-columns: 1fr;
+    }
+
+    .profile-personal-timetable__item {
+        align-items: flex-start;
+        flex-direction: column;
     }
 }
 

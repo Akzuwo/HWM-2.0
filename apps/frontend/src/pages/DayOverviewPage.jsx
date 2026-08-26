@@ -13,7 +13,7 @@ export function DayOverviewPage() {
       <main className="page-container" id="main">
         <header className="page-header">
           <div className="page-title">
-            <h1 data-i18n="dayOverview.title">📅 Daily Overview</h1>
+            <h1 data-i18n="dayOverview.title">Tagesvorschau</h1>
             <p id="pageDate" className="page-date"></p>
           </div>
           <div className="page-controls">
@@ -37,7 +37,7 @@ export function DayOverviewPage() {
         </header>
 
         <div id="overview" className="overview-grid">
-          <GlassSkeleton label="Tagesübersicht wird geladen" rows={4} />
+          <GlassSkeleton label="Tagesvorschau wird geladen" rows={4} />
         </div>
       </main>
     </>
