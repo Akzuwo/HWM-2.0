@@ -1,6 +1,9 @@
 export function createTable(columns, { emptyMessage = 'No data available' } = {}) {
   const container = document.createElement('div');
   container.className = 'admin-table-container';
+  container.tabIndex = 0;
+  container.setAttribute('aria-label', 'Ergebnistabelle');
+  container.setAttribute('role', 'region');
 
   const table = document.createElement('table');
   table.className = 'admin-table';
@@ -30,6 +33,12 @@ export function createTable(columns, { emptyMessage = 'No data available' } = {}
 
   container.appendChild(table);
   container.appendChild(emptyState);
+  const loadingState = document.createElement('p');
+  loadingState.className = 'hm-refresh-status';
+  loadingState.setAttribute('role', 'status');
+  loadingState.textContent = 'Daten werden geladen…';
+  loadingState.hidden = true;
+  container.prepend(loadingState);
 
   function renderCell(td, value) {
     if (value instanceof Node) {
@@ -77,6 +86,9 @@ export function createTable(columns, { emptyMessage = 'No data available' } = {}
     },
     setLoading(isLoading) {
       container.classList.toggle('is-loading', Boolean(isLoading));
+      container.setAttribute('aria-busy', String(Boolean(isLoading)));
+      loadingState.hidden = !isLoading;
+      if (isLoading) emptyState.hidden = true;
     },
   };
 }
@@ -90,6 +102,7 @@ export function createDialog({ title, confirmLabel = 'Save', cancelLabel = 'Canc
   dialog.className = 'admin-dialog';
   dialog.setAttribute('role', 'dialog');
   dialog.setAttribute('aria-modal', 'true');
+  dialog.setAttribute('aria-label', title || 'Bearbeiten');
 
   const header = document.createElement('header');
   header.className = 'admin-dialog__header';
@@ -113,6 +126,7 @@ export function createDialog({ title, confirmLabel = 'Save', cancelLabel = 'Canc
 
   const message = document.createElement('div');
   message.className = 'admin-dialog__message';
+  message.setAttribute('role', 'alert');
   footer.appendChild(message);
 
   const cancelButton = document.createElement('button');
@@ -141,6 +155,8 @@ export function createDialog({ title, confirmLabel = 'Save', cancelLabel = 'Canc
   }
 
   function closeDialog() {
+    if (confirmButton.getAttribute('aria-busy') === 'true') return;
+    window.hmModal?.close(backdrop);
     backdrop.classList.remove('is-visible');
     setTimeout(() => {
       if (backdrop.parentElement) {
@@ -183,20 +199,24 @@ export function createDialog({ title, confirmLabel = 'Save', cancelLabel = 'Canc
   }
 
   async function handleConfirm() {
+    if (confirmButton.getAttribute('aria-busy') === 'true') return;
     if (!confirmHandler) {
       closeDialog();
       return;
     }
     try {
       confirmButton.disabled = true;
+      confirmButton.setAttribute('aria-busy', 'true');
       confirmButton.classList.add('is-busy');
       await confirmHandler();
+      confirmButton.setAttribute('aria-busy', 'false');
       closeDialog();
     } catch (error) {
       message.textContent = error instanceof Error ? error.message : String(error);
       message.hidden = false;
     } finally {
       confirmButton.disabled = false;
+      confirmButton.setAttribute('aria-busy', 'false');
       confirmButton.classList.remove('is-busy');
     }
   }
@@ -213,6 +233,7 @@ export function createDialog({ title, confirmLabel = 'Save', cancelLabel = 'Canc
     },
     setTitle(newTitle) {
       titleEl.textContent = newTitle;
+      dialog.setAttribute('aria-label', newTitle);
     },
     setLabels({ confirm, cancel } = {}) {
       if (confirm) {
@@ -234,6 +255,7 @@ export function createDialog({ title, confirmLabel = 'Save', cancelLabel = 'Canc
       backdrop.addEventListener('click', handleBackdropClick);
       document.addEventListener('keydown', handleKeydown);
       document.body.appendChild(backdrop);
+      window.hmModal?.open(backdrop, { onRequestClose: () => { closeDialog(); cancelHandler?.(); } });
       requestAnimationFrame(() => backdrop.classList.add('is-visible'));
     },
     close() {

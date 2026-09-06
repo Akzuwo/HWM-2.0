@@ -3,21 +3,7 @@ import { apiFetch } from '../../utils/js/api-client';
 import { HomeHero } from '../components/home/HomeHero';
 import { NewsPreviewCard } from '../components/home/NewsPreviewCard';
 import { usePageSetup } from '../hooks/usePageSetup';
-
-const NEWS_PLACEHOLDERS = [
-  {
-    titleKey: 'home.news.items.primary.title',
-    summaryKey: 'home.news.items.primary.summary',
-    metaKey: 'home.news.items.primary.meta',
-    todoKey: 'latest-news-route',
-  },
-  {
-    titleKey: 'home.news.items.secondary.title',
-    summaryKey: 'home.news.items.secondary.summary',
-    metaKey: 'home.news.items.secondary.meta',
-    todoKey: 'second-latest-news-route',
-  },
-];
+import { GlassSkeleton } from '../components/GlassSkeleton';
 
 function formatNewsMeta(value) {
   if (!value) {
@@ -52,22 +38,25 @@ function normalizeNewsHref(value) {
 export function HomePage() {
   usePageSetup({ bodyClass: 'home-page', scripts: ['home'] });
   const [newsItems, setNewsItems] = useState([]);
+  const [newsState, setNewsState] = useState('loading');
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
+    setNewsState('loading');
 
     async function loadNews() {
       try {
         const response = await apiFetch('/api/news?limit=2');
-        if (!response.ok) {
-          return;
-        }
+        if (!response.ok) throw new Error('News request failed');
         const payload = await response.json();
         const items = Array.isArray(payload?.data) ? payload.data : [];
         if (!cancelled) {
           setNewsItems(items);
+          setNewsState(items.length ? 'ready' : 'empty');
         }
       } catch (error) {
+        if (!cancelled) setNewsState('error');
         if (import.meta.env?.DEV) {
           console.warn('[HWM] Failed to load news preview:', error);
         }
@@ -78,7 +67,7 @@ export function HomePage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [attempt]);
 
   useEffect(() => {
     window.hmI18n?.apply?.();
@@ -90,20 +79,13 @@ export function HomePage() {
         <HomeHero />
 
         <section className="home-preview-grid" aria-label="News-Vorschau">
-          {NEWS_PLACEHOLDERS.map((placeholder, index) => {
-            const item = newsItems[index];
-            const href = normalizeNewsHref(item?.link_url);
-            return (
-              <NewsPreviewCard
-                key={item?.id || placeholder.todoKey}
-                {...placeholder}
-                title={item?.title || ''}
-                summary={item?.summary || item?.body || ''}
-                meta={formatNewsMeta(item?.published_at || item?.created_at)}
-                href={href || '#'}
-                disabled={!item || !href}
-              />
-            );
+          {newsState === 'loading' && !newsItems.length ? <GlassSkeleton label="Neuigkeiten werden geladen" rows={4} /> : null}
+          {newsState === 'empty' ? <p className="hm-state">Noch keine Neuigkeiten veröffentlicht. Aktuelle Aufgaben findest du im Kalender.</p> : null}
+          {newsState === 'error' ? <div className="hm-state" role="alert"><p>Die Neuigkeiten konnten nicht geladen werden.</p><button type="button" onClick={() => setAttempt(value => value + 1)}>Erneut versuchen</button></div> : null}
+          {newsItems.map(item => {
+            const href = normalizeNewsHref(item.link_url);
+            return <NewsPreviewCard key={item.id} title={item.title || 'Neuigkeit'} summary={item.summary || item.body || ''}
+              meta={formatNewsMeta(item.published_at || item.created_at)} href={href} disabled={!href} />;
           })}
         </section>
       </main>

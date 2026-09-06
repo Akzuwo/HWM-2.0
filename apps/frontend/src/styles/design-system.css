@@ -1,0 +1,716 @@
+/* Shared interaction and theme contract. See docs/FRONTEND-DESIGN-AUDIT.md. */
+:root {
+  --hm-space-1: 4px;
+  --hm-space-2: 8px;
+  --hm-space-3: 12px;
+  --hm-space-4: 16px;
+  --hm-space-5: 24px;
+  --hm-space-6: 32px;
+  --hm-space-7: 48px;
+  --hm-space-8: 64px;
+  --hm-duration-feedback: 120ms;
+  --hm-duration-panel: 200ms;
+  --hm-duration-modal: 240ms;
+  --hm-z-sticky: 100;
+  --hm-z-dropdown: 200;
+  --hm-z-drawer-backdrop: 290;
+  --hm-z-drawer: 300;
+  --hm-z-modal: 400;
+  --hm-z-toast: 500;
+  --hm-z-critical: 600;
+  --hm-page: #eef4ff;
+  --hm-panel: #f8fbff;
+  --hm-control: #ffffff;
+  --hm-line: #bbc9dc;
+  --hm-focus: #215bc7;
+  --hm-success-text: #146342;
+  --hm-warning-text: #805300;
+  --hm-danger-text: #a32942;
+  --hm-on-action: #ffffff;
+  --hm-overlay-scrim: rgb(16 24 40 / 45%);
+}
+[hidden] { display: none !important; }
+html, body { background-color: var(--hm-page); }
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid var(--hm-focus) !important;
+  outline-offset: 3px !important;
+}
+:where(button, input, select, textarea) { accent-color: var(--hm-focus); }
+button[aria-busy="true"], .is-busy { cursor: progress; }
+button[aria-busy="true"]::after {
+  content: '';
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin-inline-start: var(--hm-space-2);
+  border: 2px solid currentColor;
+  border-inline-end-color: transparent;
+  border-radius: 50%;
+  animation: hm-busy-spin 800ms linear infinite;
+}
+@keyframes hm-busy-spin { to { transform: rotate(360deg); } }
+:where(button, [role="button"]):active:not(:disabled) { filter: brightness(0.94); }
+:where(input, select, textarea):disabled { opacity: 0.65; }
+:where(input, textarea)[aria-invalid="true"] { border-color: var(--hm-danger-text) !important; }
+time, .schedule-table, .grade-calculator, .departures-page, .current-subject { font-variant-numeric: tabular-nums; }
+.hm-skip-link {
+  position: fixed;
+  top: var(--hm-space-2);
+  left: var(--hm-space-2);
+  z-index: var(--hm-z-critical);
+  padding: var(--hm-space-3) var(--hm-space-4);
+  background: var(--hm-control);
+  color: var(--hm-text);
+  transform: translateY(-200%);
+}
+.hm-skip-link:focus { transform: none; }
+.hm-network-status, .hm-state, .hm-inline-feedback {
+  padding: var(--hm-space-4);
+  border: 1px solid var(--hm-line);
+  border-radius: var(--hm-radius-sm);
+  background: var(--hm-panel);
+  color: var(--hm-text);
+}
+.hm-network-status { margin: var(--hm-space-2) var(--hm-space-4); text-align: center; }
+.hm-state { grid-column: 1 / -1; text-align: start; }
+.hm-state button, .hm-state a, .hm-inline-feedback button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  min-height: 44px;
+  padding: var(--hm-space-2) var(--hm-space-4);
+  margin: var(--hm-space-2) var(--hm-space-2) 0 0;
+  border: 1px solid var(--hm-line);
+  border-radius: var(--hm-radius-sm);
+  color: var(--hm-text);
+  background: var(--hm-control);
+}
+.hm-inline-feedback[role="alert"], .todo-lists__message { color: var(--hm-danger-text); }
+.hm-navbar { z-index: var(--hm-z-sticky); }
+.hm-navbar__overlay { z-index: var(--hm-z-drawer-backdrop); }
+.mobile-sidebar { z-index: var(--hm-z-drawer); }
+.hm-modal-overlay, .auth-overlay, .grade-modal, .admin-dialog-backdrop { z-index: var(--hm-z-modal); }
+.hm-toast-container, .overlay { z-index: var(--hm-z-toast); }
+.cookie-consent { z-index: var(--hm-z-drawer); }
+.mobile-sidebar__theme-toggle[aria-pressed="true"] { background: var(--hm-focus); }
+.mobile-sidebar__theme-toggle[aria-pressed="true"] .mobile-sidebar__theme-knob { transform: translateX(20px); }
+.grade-modal, .admin-dialog-backdrop { position: fixed; inset: 0; background: var(--hm-overlay-scrim); }
+.grade-modal__dialog, .admin-dialog, .hm-modal { max-height: calc(100dvh - 32px); overflow-y: auto; overscroll-behavior: contain; }
+.grade-modal__dialog { animation: hm-dialog-enter var(--hm-duration-modal) var(--hm-ease); }
+@keyframes hm-dialog-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.legal-main a, .help-main a, .login-link { text-decoration: underline; text-underline-offset: 3px; }
+.hm-auth-switch-fade { animation-duration: var(--hm-duration-panel); }
+.auth-overlay__close:hover, .auth-overlay__close:focus-visible { transform: none; }
+.todo-card__expand { width: auto; min-width: 44px; min-height: 44px; margin: 0; padding: var(--hm-space-2); background: transparent; color: var(--hm-text-muted); }
+.todo-lists__header--compact { padding: var(--hm-space-5); background: var(--hm-panel) !important; border-radius: var(--hm-radius-lg); text-align: start; }
+.todo-lists__title { font-size: clamp(1.75rem, 3vw, 2.25rem); }
+.todo-panel { padding: var(--hm-space-5); text-align: start; }
+.todo-form--compact { display: grid; align-content: start; gap: var(--hm-space-4); }
+.todo-field, .todo-subtask-editor { text-align: start; gap: var(--hm-space-2); }
+.todo-subtask-row--draft { display: flex; align-items: end; gap: var(--hm-space-2); }
+.todo-subtask-row--draft input { width: 100%; min-width: 0; }
+.todo-subtask-row--draft button { flex: 0 0 44px; width: 44px; height: 44px; margin: 0; }
+.todo-list-toolbar { display: flex; flex-wrap: wrap; gap: var(--hm-space-3); align-items: center; justify-content: space-between; margin-bottom: var(--hm-space-4); }
+.todo-filters { display: flex; flex-wrap: wrap; gap: var(--hm-space-1); }
+.todo-filters button { margin: 0; padding: var(--hm-space-2) var(--hm-space-3); width: auto; min-height: 44px; border: 1px solid var(--hm-line); border-radius: var(--hm-radius-sm); background: var(--hm-control); }
+.todo-filters button.is-active { box-shadow: inset 0 -3px var(--hm-focus); font-weight: 700; }
+.todo-cards { display: grid; gap: var(--hm-space-3); }
+.todo-card--compact { padding: var(--hm-space-3); border-radius: var(--hm-radius-md); }
+.todo-card__main { display: flex; gap: var(--hm-space-2); align-items: center; }
+.todo-card__content { flex: 1; min-width: 0; text-align: start; }
+.todo-card__title { display: block; width: auto; max-width: 100%; margin: 0; padding: var(--hm-space-1) 0; background: transparent; text-align: start; overflow-wrap: anywhere; font-size: 1rem; font-weight: 600; }
+.todo-check, .todo-subcheck, .todo-card__delete { display: inline-flex; flex: 0 0 44px; align-items: center; justify-content: center; width: 44px; height: 44px; margin: 0; padding: var(--hm-space-2); background: var(--hm-control); border: 1px solid var(--hm-line); border-radius: var(--hm-radius-sm); }
+.todo-check[aria-pressed="true"], .todo-subcheck[aria-pressed="true"] { border-color: var(--hm-focus); background: var(--hm-control); }
+.todo-card__subtask-wrap[aria-hidden="true"] { display: none; }
+.todo-card__subtasks { display: grid; grid-template-columns: 1fr; gap: var(--hm-space-2); padding: var(--hm-space-3) 0 0; margin: 0; list-style: none; }
+.todo-card__subtasks li { display: flex; align-items: center; gap: var(--hm-space-2); text-align: start; font-size: 1rem; }
+.todo-card__subtasks li > span { flex: 1; overflow-wrap: anywhere; }
+.todo-card__subtasks .is-done > span { text-decoration: line-through; }
+.todo-card__progress { display: inline-block; margin-top: var(--hm-space-1); padding: var(--hm-space-1) var(--hm-space-2); }
+@media (max-width: 760px) {
+  .todo-lists__grid { grid-template-columns: minmax(0, 1fr); }
+  .todo-lists__header--compact, .todo-panel { padding: var(--hm-space-4); }
+  .todo-card__content { flex-basis: calc(100% - 60px); }
+  .todo-card__date { margin-inline-start: 52px; flex: 1; }
+}
+.todo-subtask-row label { flex: 1; min-width: 0; }
+.todo-subtask-row label span { display: block; font-size: 0.875rem; color: var(--hm-text-muted); }
+.grade-modal__form label { display: grid; gap: var(--hm-space-2); text-align: start; }
+.hm-password-field { position: relative; }
+.hm-password-field input { padding-inline-end: 6rem; }
+.hm-password-field button { position: absolute; inset-inline-end: 4px; top: 50%; transform: translateY(-50%); width: auto; margin: 0; padding: var(--hm-space-2); background: transparent; color: var(--hm-text-muted); }
+.hm-refresh-status { font-size: 0.875rem; color: var(--hm-text-muted); }
+.hm-labelled-field { display: grid; flex: 1; min-width: 0; gap: var(--hm-space-2); text-align: start; }
+.hm-labelled-field > span { font-size: 0.875rem; color: var(--hm-text-muted); }
+.hm-footer__links { display: flex !important; flex-wrap: wrap; gap: var(--hm-space-2) var(--hm-space-4); align-items: center; }
+.hm-footer .hm-footer__link { display: inline-flex; align-items: center; width: auto; margin: 0; padding: var(--hm-space-2) 0; min-height: 44px; }
+.profile__header h1 { font-size: clamp(1.75rem, 3vw, 2.25rem); line-height: 1.2; margin: var(--hm-space-2) 0; }
+.profile-card__header { display: block; }
+.profile-card h2 { font-size: 1.25rem; line-height: 1.3; margin: var(--hm-space-2) 0; }
+.profile-meta { grid-template-columns: 1fr; }
+.profile-meta__item { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: var(--hm-space-2); padding: var(--hm-space-3) 0; background: transparent !important; border: 0; border-bottom: 1px solid var(--hm-line); border-radius: 0; }
+.profile-meta__item dd { overflow-wrap: anywhere; }
+.admin-table th { font-size: 0.875rem; }
+.departures-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--hm-space-3); }
+.departures-toolbar button { width: auto; margin: 0; min-height: 44px; padding: var(--hm-space-2) var(--hm-space-4); border: 1px solid var(--hm-line); border-radius: var(--hm-radius-sm); background: var(--hm-control); color: var(--hm-text); }
+.grade-calculator__title { font-size: clamp(1.75rem, 3vw, 2.25rem); line-height: 1.15; }
+.grade-calculator__hero, .grade-calculator__hero-copy, .grade-calculator__shell, .grade-calculator__main-column, .grade-summary { gap: var(--hm-space-5); }
+.grade-calculator__lead { font-size: 1rem; max-width: 65ch; }
+.grade-panel--list { min-height: 0; }
+.grade-panel, .grade-summary__card, .grade-summary__current-card, .grade-summary__cloud-card { padding: var(--hm-space-5); border-radius: var(--hm-radius-lg); }
+.grade-summary__current-card { background: #0e59d5; }
+.grade-summary__kicker, .grade-summary__current-stats span { color: var(--hm-on-action) !important; }
+.grade-summary__result > span { color: var(--hm-on-action) !important; background: #215bc7; }
+.grade-summary__target-form .grade-calculator__button { color: #174fa6; }
+.grade-calculator__field--subtle { display: grid !important; }
+.grade-calculator__empty-state, .grade-chart__empty { min-height: 120px; }
+.grade-calculator__input, .grade-calculator__button { min-height: 44px; }
+.home-card, .home-callout, .help-section, .help-callout { opacity: 1 !important; transform: none !important; transition-delay: 0ms !important; }
+.fc .fc-scroller { padding: 0 !important; scrollbar-gutter: auto !important; }
+.fc .fc-daygrid-day-events { min-height: 2em; }
+.fc .calendar-event { border-radius: var(--hm-radius-sm) !important; box-shadow: none !important; padding: 4px 8px !important; }
+.calendar-cta__label { overflow: visible !important; text-overflow: clip !important; }
+.calendar-action-bar__inner { gap: var(--hm-space-2); }
+.hm-modal-overlay { background: var(--hm-overlay-scrim) !important; backdrop-filter: blur(4px); }
+.calendar-filter-sheet { display: none !important; z-index: var(--hm-z-modal); background: var(--hm-overlay-scrim) !important; padding: var(--hm-space-4); align-items: center; justify-content: center; }
+.calendar-filter-sheet.is-open { display: flex !important; }
+.calendar-filter-sheet__panel { position: relative; inset: auto; width: min(640px, 100%); max-height: calc(100dvh - 32px); overflow-y: auto; border-radius: var(--hm-radius-lg); padding: var(--hm-space-5); background: var(--hm-panel); }
+.calendar-subject-filters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--hm-space-2); }
+.calendar-filter-toggle { display: flex; align-items: center; gap: var(--hm-space-2); min-height: 44px; cursor: pointer; }
+.calendar-filter-toggle input { width: 20px; height: 20px; margin: 0; }
+@media (max-width: 760px) { .calendar-filter-sheet { align-items: end; } .calendar-subject-filters { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 760px) {
+  .departure-row { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--hm-space-3); text-align: start; padding: var(--hm-space-4); }
+  .departure-line { grid-column: 1; align-items: start; }
+  .departure-destination { grid-column: 2 / -1; align-items: start; text-align: start; }
+  .departure-status { grid-column: 1 / -1; }
+  .departure-time, .departure-delay { align-items: start; text-align: start; }
+  .departure-time__value, .departure-delay__value { font-size: 1rem; }
+}
+@media (min-width: 768px) {
+  body.calendar-theme .calendar-workspace { grid-template-columns: 280px minmax(0, 1fr); gap: var(--hm-space-5); }
+  body.calendar-theme .calendar-sidebar, body.calendar-theme .calendar-board { padding: var(--hm-space-5); border-radius: var(--hm-radius-lg); }
+  body.calendar-theme .calendar-month-nav__button, body.calendar-theme .calendar-view-switch__button, body.calendar-theme .calendar-class-selector select, body.calendar-theme .calendar-filter-button { min-height: 44px; }
+}
+.grade-summary__result { min-height: 80px; padding: var(--hm-space-4); }
+.grade-summary__target-form { gap: var(--hm-space-4); }
+.grade-summary__toggle { background: transparent; border: 1px solid var(--hm-line); border-radius: var(--hm-radius-sm); }
+.upcoming-card { animation-delay: 0ms; animation-duration: var(--hm-duration-panel); }
+.weekly-preview__item { animation-delay: 0ms; animation-duration: var(--hm-duration-panel); }
+@media (pointer: coarse), (max-width: 760px) {
+  :where(button, select, input:not([type="checkbox"]):not([type="radio"]), .nav-link, .hm-back-link, .home-button, .hm-footer__link) {
+    min-height: 44px !important;
+    min-width: 44px !important;
+  }
+  .todo-card__main { flex-wrap: wrap; }
+  .grade-calculator__row-actions { flex-wrap: wrap; }
+  .grade-modal { align-items: end; padding: var(--hm-space-2); }
+  .grade-modal__dialog { width: 100%; max-height: calc(100dvh - 16px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto !important; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Dark surfaces preserve the same hierarchy and do not invert images or charts. */
+html[data-theme="dark"] {
+  --hm-page: #101722;
+  --hm-panel: #1a2535;
+  --hm-control: #233146;
+  --hm-line: #52647a;
+  --hm-focus: #9bbcff;
+  --hm-bg: var(--hm-page);
+  --hm-bg-soft: var(--hm-panel);
+  --hm-surface: var(--hm-panel);
+  --hm-surface-soft: var(--hm-panel);
+  --hm-surface-strong: var(--hm-control);
+  --hm-glass-regular: rgb(26 37 53 / 94%);
+  --hm-glass-strong: rgb(35 49 70 / 96%);
+  --hm-glass-overlay: rgb(35 49 70 / 98%);
+  --hm-border: var(--hm-line);
+  --hm-border-strong: var(--hm-line);
+  --hm-text: #edf3fc;
+  --hm-text-muted: #c2cfe1;
+  --hm-text-soft: #acbdd3;
+  --hm-accent: #9bbcff;
+  --hm-success-text: #8de0b6;
+  --hm-warning-text: #f6d88b;
+  --hm-danger-text: #ffadbb;
+  --hm-shadow-lg: 0 24px 64px rgb(0 0 0 / 20%);
+  --hm-shadow-md: 0 16px 40px rgb(0 0 0 / 16%);
+  --hm-shadow-sm: 0 8px 24px rgb(0 0 0 / 12%);
+}
+html[data-theme="dark"] .hm-app-backdrop { background: var(--hm-page); }
+html[data-theme="dark"] :is(.hm-app-backdrop::before, body::before, body::after) { opacity: 0.12; }
+html[data-theme="dark"] :is(.hm-navbar, .hm-footer, .home-card, .hm-hero, .about-card, .profile-card, .help-section, .help-callout, .changelog-entry, .legal-main, .day-card, .current-subject__section, .current-subject__status, .weekly-preview__card, .upcoming__item, .todo-panel, .todo-card, .departures-panel, .departure-row, .hm-react-card, .grade-calculator__panel, .grade-summary__card, .grade-summary__cloud-card, .grade-summary__target-card, .grade-summary__overview-card, .grade-modal__dialog, .admin-dialog, .admin-card, .admin-table-container, .admin-sidebar, .hm-modal, .cookie-consent__panel, .mobile-sidebar, .settings-menu, .account-menu, .more-menu__panel, .calendar-filter-sheet__panel, .calendar-mobile-agenda__item) {
+  background: var(--hm-panel) !important;
+  border-color: var(--hm-line) !important;
+  color: var(--hm-text);
+}
+html[data-theme="dark"] :is(h1, h2, h3, h4, dt, dd, label, p, th, td, .nav-link, .brand-mark, .settings-option, .account-option, .hm-footer__link, .more-menu__link, .todo-card__title, .grade-calculator__grade-copy, .grade-summary__metric, .login-title) {
+  color: var(--hm-text);
+}
+html[data-theme="dark"] :is(input, select, textarea, .todo-filters button, .grade-calculator__inline-button, .mobile-sidebar__select, .mobile-sidebar__language-menu, .mobile-sidebar__language-option, .schedule-table th, .schedule-table td, .grade-chart__empty, .grade-calculator__empty-state, .admin-table-empty) {
+  background: var(--hm-control) !important;
+  color: var(--hm-text) !important;
+  border-color: var(--hm-line) !important;
+}
+html[data-theme="dark"] :is(.muted, .page-date, .grade-calculator__grade-copy p, .grade-chart__legend, .departure-time__label, .departure-line__meta, .departure-destination__meta, .todo-sort-label, .todo-card__progress) { color: var(--hm-text-muted); }
+html[data-theme="dark"] :is(.bg-white, [class*="bg-white/"], .bg-slate-50, .bg-blue-50, .bg-blue-100) { background: var(--hm-control) !important; }
+html[data-theme="dark"] :is([class*="text-slate-"], [class*="text-gray-"], .text-blue-700, .text-blue-800) { color: var(--hm-text-muted) !important; }
+html[data-theme="dark"] :is(.text-transparent, .login-stage__title) { color: var(--hm-text); background-clip: border-box; background-image: none; }
+html[data-theme="dark"] body .hm-app-backdrop { background: var(--hm-page) !important; }
+html[data-theme="dark"] body::after, html[data-theme="dark"] body .hm-app-backdrop::before { opacity: 0.08; }
+html[data-theme="dark"] body :is(p, li, dt, dd, span, label, small, strong, button, a, h1, h2, h3, h4, th, td) { color: var(--hm-text) !important; }
+html[data-theme="dark"] body :is(.calendar-sidebar, .calendar-board, .calendar-board__body, .calendar-legend, .calendar-mobile-shell, .calendar-mobile-bar, .calendar-mobile-controls, .calendar-mobile-agenda, .calendar-mobile-month, .calendar-mobile-week, .calendar-filter-sheet, .upcoming-card, .grade-panel, .departures-liveboard-panel, .departures-list-shell, .departures-list__header, .grade-summary__result, .grade-summary__toggle, .grade-calculator__trend-pill, .todo-lists__stats, .cookie-consent__option, .admin-header, .admin-main, .admin-nav, .admin-toolbar, .admin-message, .mobile-sidebar__settings-group, .mobile-sidebar__toggle-row) {
+  background: var(--hm-panel) !important;
+  border-color: var(--hm-line) !important;
+}
+html[data-theme="dark"] body :is(.calendar-month-nav__button, .calendar-mobile-nav__button, .calendar-view-switch__button, .calendar-filter-button, .calendar-cta, .hm-back-link, .account-switch, .btn-login, .settings-trigger, .home-button--ghost, .grade-calculator__button--secondary, .guest-button, .admin-button--ghost, .cookie-consent__button--secondary, .cookie-consent__button--ghost, .calendar-mobile-view-switch__button, .calendar-mobile-day, .calendar-mobile-month__day, .calendar-legend__item, .hm-modal__close, .hm-modal__button--secondary) {
+  background: var(--hm-control) !important;
+  color: var(--hm-text) !important;
+  border-color: var(--hm-line) !important;
+}
+html[data-theme="dark"] body :is(.departure-status, .calendar-event, .calendar-mobile-event, .timetable-badge, .grade-calculator__grade-badge, [class*="bg-emerald-"], [class*="bg-rose-"], [class*="bg-amber-"], [class*="bg-indigo-"], [class*="bg-blue-"], [class*="bg-red-"], [class*="bg-slate-"]) {
+  background: var(--hm-control) !important;
+  border-color: var(--hm-line) !important;
+}
+html[data-theme="dark"] body :is(.departure-status--delay, .departure-status--soon, .grade-summary__result.is-warning) { color: var(--hm-warning-text) !important; }
+html[data-theme="dark"] body :is(.hm-inline-feedback[role="alert"], .todo-lists__message, .is-error, .grade-calculator__inline-button--danger) { color: var(--hm-danger-text) !important; }
+html[data-theme="dark"] .fc { --fc-page-bg-color: var(--hm-panel); --fc-neutral-bg-color: var(--hm-control); --fc-border-color: var(--hm-line); --fc-today-bg-color: rgb(155 188 255 / 14%); }
+html[data-theme="dark"] .fc :is(.fc-scrollgrid, .fc-col-header, .fc-daygrid-body, .fc-popover, .fc-list, .fc-timegrid) { background: var(--hm-panel) !important; }
+html[data-theme="dark"] body :is(.grade-summary__current-card, .grade-summary__result > span, .grade-calculator__button--primary, .login-button, .home-button--primary) { background: #215bc7 !important; color: var(--hm-on-action) !important; }
+html[data-theme="dark"] body .grade-summary__current-card :is(span, p, strong) { color: var(--hm-on-action) !important; }
+html[data-theme="dark"] body :is(time, .calendar-month-nav__label, .calendar-mobile-bar__date, .calendar-mobile-bar__range) { color: var(--hm-text) !important; }
+html[data-theme="dark"] body :is(.todo-lists__stats > span, .todo-card__progress) { background: var(--hm-control) !important; }
+html[data-theme="dark"] body :is(.admin-dashboard, .admin-dashboard__content, .admin-dashboard__logs, .admin-dashboard__logs-content, .admin-table thead, .admin-table tbody, .admin-table tr, .fc-col-header-cell, .fc-popover-header, .language-menu, .calendar-view-switch__button.is-active) { background: var(--hm-panel) !important; color: var(--hm-text) !important; }
+html[data-theme="dark"] body :is(.admin-pagination__info, .admin-dashboard__logs-status, .admin-dashboard__log-rest, .admin-dashboard__log-message) { color: var(--hm-text-muted) !important; }
+html[data-theme="dark"] body :is(.hm-navbar, .hm-footer, .home-card, .hm-modal, .admin-dashboard, .admin-table-container, .calendar-sidebar, .calendar-board, .calendar-month-nav__button, .calendar-view-switch__button, .calendar-cta, .account-switch)::before { display: none !important; }
+html[data-theme="dark"] body :is(.hm-navbar, .hm-footer, .hm-modal, .admin-dashboard, .admin-table-container, .calendar-month-nav__button, .calendar-view-switch__button, .calendar-cta, .account-switch, .admin-button) { box-shadow: none !important; background-image: none !important; }
+html[data-theme="dark"] body .admin-table th { background: var(--hm-control) !important; }
+html[data-theme="dark"] body .departures-refresh { background: var(--hm-control) !important; color: var(--hm-text) !important; box-shadow: none !important; }
+html[data-theme="dark"] body :is(.hm-footer, .hm-navbar, .profile-card, .todo-panel, .todo-lists__header, .current-subject)::after { display: none !important; }
+html[data-theme="dark"] body :is(.button, .current-subject__button, .todo-subtask-row button, .hm-navbar__toggle, .hm-footer) { background: var(--hm-control) !important; background-image: none !important; box-shadow: none !important; color: var(--hm-text) !important; }
+html[data-theme="dark"] body :is(.button--danger, .hm-modal__button--danger) { color: var(--hm-danger-text) !important; border: 1px solid var(--hm-danger-text); }
+
+/* HWM 3 consolidated visual layer. Keep this last so legacy page CSS inherits one product language. */
+:root {
+  --color-bg-page: #eef4ff;
+  --color-bg-surface: rgb(248 251 255 / 88%);
+  --color-bg-elevated: rgb(255 255 255 / 94%);
+  --color-bg-glass: linear-gradient(180deg, rgb(255 255 255 / 72%), rgb(242 248 255 / 54%));
+  --color-bg-glass-strong: linear-gradient(180deg, rgb(255 255 255 / 86%), rgb(239 246 255 / 68%));
+  --color-text-primary: #172033;
+  --color-text-secondary: #43546b;
+  --color-text-muted: #68788d;
+  --color-border-subtle: rgb(149 174 209 / 36%);
+  --color-border-strong: rgb(72 113 190 / 42%);
+  --color-action-primary: #215bc7;
+  --color-action-primary-hover: #174fae;
+  --color-action-soft: rgb(33 91 199 / 10%);
+  --color-success: #16704b;
+  --color-warning: #8a5a00;
+  --color-danger: #a32942;
+  --color-info: #1b669f;
+  --shadow-surface: 0 14px 36px rgb(67 96 143 / 10%);
+  --shadow-floating: 0 20px 54px rgb(67 96 143 / 16%);
+  --shadow-overlay: 0 28px 80px rgb(27 44 72 / 22%);
+  --duration-fast: 120ms;
+  --duration-normal: 220ms;
+  --duration-slow: 320ms;
+  --ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --hm-page: var(--color-bg-page);
+  --hm-panel: var(--color-bg-surface);
+  --hm-control: var(--color-bg-elevated);
+  --hm-line: var(--color-border-subtle);
+  --hm-focus: var(--color-action-primary);
+  --hm-bg: var(--color-bg-page);
+  --hm-bg-soft: #f6f9ff;
+  --hm-surface: var(--color-bg-surface);
+  --hm-surface-soft: rgb(255 255 255 / 70%);
+  --hm-surface-strong: var(--color-bg-elevated);
+  --hm-glass-regular: var(--color-bg-glass);
+  --hm-glass-strong: var(--color-bg-glass-strong);
+  --hm-glass-overlay: linear-gradient(180deg, rgb(255 255 255 / 94%), rgb(244 249 255 / 84%));
+  --hm-border: var(--color-border-subtle);
+  --hm-border-strong: var(--color-border-strong);
+  --hm-text: var(--color-text-primary);
+  --hm-text-muted: var(--color-text-secondary);
+  --hm-text-soft: var(--color-text-muted);
+  --hm-accent: var(--color-action-primary);
+  --hm-accent-soft: var(--color-action-soft);
+  --hm-success: #3db887;
+  --hm-danger: #d94b66;
+  --hm-shadow-lg: var(--shadow-overlay);
+  --hm-shadow-md: var(--shadow-floating);
+  --hm-shadow-sm: var(--shadow-surface);
+  --hm-radius-xl: 22px;
+  --hm-radius-lg: 18px;
+  --hm-radius-md: 14px;
+  --hm-radius-sm: 10px;
+  --hm-ease: var(--ease-standard);
+}
+
+html[data-theme="dark"] {
+  --color-bg-page: #101722;
+  --color-bg-surface: #182436;
+  --color-bg-elevated: #223149;
+  --color-bg-glass: linear-gradient(180deg, rgb(35 49 70 / 94%), rgb(26 37 53 / 91%));
+  --color-bg-glass-strong: linear-gradient(180deg, rgb(43 59 82 / 96%), rgb(30 43 62 / 94%));
+  --color-text-primary: #edf3fc;
+  --color-text-secondary: #c2cfe1;
+  --color-text-muted: #a9bad1;
+  --color-border-subtle: rgb(126 146 170 / 46%);
+  --color-border-strong: rgb(155 188 255 / 48%);
+  --color-action-primary: #9bbcff;
+  --color-action-primary-hover: #bdd3ff;
+  --color-action-soft: rgb(155 188 255 / 15%);
+  --color-success: #8de0b6;
+  --color-warning: #f6d88b;
+  --color-danger: #ffadbb;
+  --color-info: #9dd7ff;
+  --shadow-surface: 0 14px 36px rgb(0 0 0 / 14%);
+  --shadow-floating: 0 20px 54px rgb(0 0 0 / 20%);
+  --shadow-overlay: 0 28px 80px rgb(0 0 0 / 28%);
+}
+
+html,
+body,
+.hm-app-backdrop {
+  background: var(--color-bg-page) !important;
+}
+
+body::before {
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 18%), rgb(238 244 255 / 8%)),
+    linear-gradient(135deg, rgb(33 91 199 / 8%), transparent 42%),
+    linear-gradient(315deg, rgb(22 112 75 / 7%), transparent 34%) !important;
+}
+
+.hm-app-backdrop__orb {
+  display: none;
+}
+
+.hm-app-backdrop__grid {
+  opacity: 0.36;
+  background-size: 96px 96px, 96px 96px, 32px 32px;
+}
+
+.hm-navbar,
+.hm-footer {
+  border-color: var(--color-border-subtle) !important;
+  background: var(--color-bg-glass-strong) !important;
+  box-shadow: var(--shadow-surface), inset 0 1px 0 rgb(255 255 255 / 72%) !important;
+  backdrop-filter: blur(24px) saturate(126%);
+}
+
+.hm-navbar {
+  top: var(--hm-space-2);
+  z-index: var(--hm-z-sticky);
+}
+
+.hm-react-main {
+  padding: clamp(16px, 2.4vw, 28px) clamp(12px, 2vw, 28px) var(--hm-space-7);
+}
+
+.hm-route-transition {
+  will-change: opacity, transform;
+}
+
+:is(
+  .hm-hero__content,
+  .hm-hero__panel,
+  .home-card,
+  .about-card,
+  .help-section,
+  .help-callout,
+  .profile-card,
+  .grade-calculator__section,
+  .grade-panel,
+  .grade-summary__card,
+  .grade-summary__cloud-card,
+  .grade-summary__target-card,
+  .grade-summary__overview-card,
+  .current-subject__section,
+  .current-subject__status,
+  .weekly-preview__card,
+  .upcoming__list,
+  .upcoming-card,
+  .todo-panel,
+  .todo-card,
+  .departures-panel,
+  .departures-liveboard-panel,
+  .departures-list-shell,
+  .departure-row,
+  .page-header,
+  .login-stage__intro,
+  .login-container,
+  .changelog-entry,
+  .changelog-subentry,
+  .changelog-header,
+  .legal-main,
+  .calendar-sidebar,
+  .calendar-board,
+  .calendar-controls,
+  .calendar-weekstrip,
+  .admin-dashboard,
+  .admin-card,
+  .admin-table-container,
+  .day-card,
+  .hm-react-card
+) {
+  border-color: var(--color-border-subtle) !important;
+  background: var(--color-bg-glass) !important;
+  box-shadow: var(--shadow-surface), inset 0 1px 0 rgb(255 255 255 / 64%) !important;
+  color: var(--color-text-primary);
+}
+
+:is(.hm-hero__content, .hm-hero__panel, .login-container, .calendar-sidebar, .calendar-board, .admin-dashboard) {
+  background: var(--color-bg-glass-strong) !important;
+  box-shadow: var(--shadow-floating), inset 0 1px 0 rgb(255 255 255 / 70%) !important;
+}
+
+:is(h1, h2, h3, h4, .brand-mark, .hm-hero__title, .login-title, .calendar-header__title, .current-subject__title, .grade-calculator__title, .upcoming__title, .weekly-preview__title, .page-title h1) {
+  color: var(--color-text-primary) !important;
+  letter-spacing: 0 !important;
+}
+
+:is(p, li, dd, small, .hm-hero__lead, .hm-hero__body, .home-card p, .help-section p, .profile__subtitle, .calendar-header__subtitle, .upcoming__lead, .weekly-preview__lead, .field-hint, .muted, .page-date) {
+  color: var(--color-text-secondary) !important;
+}
+
+:is(.hm-badge, .calendar-header__label, .home-card__meta, .profile__eyebrow, .login-status, .current-subject__countdown-label, .home-card__eyebrow, .home-card__status, .todo-card__progress, .departure-status, .timetable-badge) {
+  border-color: var(--color-border-subtle) !important;
+  background: var(--color-action-soft) !important;
+  color: var(--color-text-secondary) !important;
+}
+
+:is(.nav-link, .more-menu__link, .settings-option, .account-option) {
+  color: var(--color-text-secondary) !important;
+  transition:
+    color var(--duration-normal) var(--ease-standard),
+    background-color var(--duration-normal) var(--ease-standard),
+    box-shadow var(--duration-normal) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard) !important;
+}
+
+:is(.nav-link, .more-menu__link, .settings-option, .account-option):hover,
+:is(.nav-link, .more-menu__link, .settings-option, .account-option):focus-visible,
+.nav-link[aria-current='page'],
+.more-menu__link[aria-current='page'],
+.nav-link--more.is-active {
+  background: var(--color-action-soft) !important;
+  color: var(--color-text-primary) !important;
+}
+
+.nav-link[aria-current='page'] {
+  box-shadow: inset 0 -2px 0 var(--color-action-primary) !important;
+}
+
+:is(
+  .home-button,
+  .login-button,
+  .guest-button,
+  .button,
+  .hm-btn,
+  .grade-calculator__button,
+  .weekly-preview__button,
+  .current-subject__button,
+  .upcoming__button,
+  .calendar-cta,
+  .calendar-month-nav__button,
+  .calendar-view-switch__button,
+  .calendar-mobile-view-switch__button,
+  .calendar-mobile-nav__button,
+  .hm-back-link,
+  .btn-login,
+  .account-switch,
+  .lang-switch,
+  .hm-navbar__toggle,
+  .settings-trigger,
+  .departures-toolbar button,
+  .todo-filters button
+) {
+  min-height: 44px;
+  border-radius: var(--hm-radius-md) !important;
+  border-color: var(--color-border-subtle) !important;
+  background: var(--color-bg-elevated) !important;
+  color: var(--color-text-primary) !important;
+  box-shadow: 0 8px 18px rgb(67 96 143 / 8%), inset 0 1px 0 rgb(255 255 255 / 72%) !important;
+  transition:
+    transform var(--duration-normal) var(--ease-standard),
+    border-color var(--duration-normal) var(--ease-standard),
+    background-color var(--duration-normal) var(--ease-standard),
+    box-shadow var(--duration-normal) var(--ease-standard),
+    color var(--duration-normal) var(--ease-standard) !important;
+}
+
+:is(.home-button--primary, .login-button, .button:not(.button--danger), .hm-btn--primary, .grade-calculator__button--primary, .weekly-preview__button--primary, .current-subject__button--primary, .calendar-cta--primary, .btn-login) {
+  border-color: rgb(33 91 199 / 24%) !important;
+  background: linear-gradient(180deg, #2f6fe3, #215bc7) !important;
+  color: var(--hm-on-action) !important;
+  box-shadow: 0 12px 24px rgb(33 91 199 / 18%) !important;
+}
+
+:is(.button--danger, .hm-btn--danger, .hm-modal__button--danger, .grade-calculator__inline-button--danger) {
+  border-color: rgb(163 41 66 / 28%) !important;
+  background: rgb(163 41 66 / 8%) !important;
+  color: var(--color-danger) !important;
+}
+
+.grade-summary__current-card,
+.grade-summary__current-card :is(p, span, strong) {
+  color: var(--hm-on-action) !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  :is(.home-card, .about-card, .todo-card, .upcoming-card, .departure-row, .weekly-preview__item):hover {
+    border-color: var(--color-border-strong) !important;
+    box-shadow: var(--shadow-floating), inset 0 1px 0 rgb(255 255 255 / 72%) !important;
+    transform: translateY(-1px);
+  }
+
+  :is(
+    .home-button,
+    .login-button,
+    .guest-button,
+    .button,
+    .hm-btn,
+    .grade-calculator__button,
+    .weekly-preview__button,
+    .current-subject__button,
+    .upcoming__button,
+    .calendar-cta,
+    .calendar-month-nav__button,
+    .calendar-view-switch__button,
+    .calendar-mobile-view-switch__button,
+    .calendar-mobile-nav__button,
+    .hm-back-link,
+    .btn-login,
+    .account-switch,
+    .lang-switch,
+    .hm-navbar__toggle,
+    .settings-trigger,
+    .departures-toolbar button,
+    .todo-filters button
+  ):hover {
+    transform: translateY(-1px);
+    border-color: var(--color-border-strong) !important;
+    box-shadow: 0 14px 28px rgb(67 96 143 / 14%), inset 0 1px 0 rgb(255 255 255 / 78%) !important;
+    filter: none !important;
+  }
+}
+
+:is(button, [role="button"], a, input, select, textarea):focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--color-action-primary) 72%, white) !important;
+  outline-offset: 3px !important;
+}
+
+:is(.form-control, .profile-input, .grade-calculator__input, .hm-select, .hm-modal input, .hm-modal textarea, .hm-modal select, .calendar-class-selector select, .class-select select, #calendar-class-select-mobile, input[type='date'], input[type='time'], textarea, select) {
+  border-color: var(--color-border-subtle) !important;
+  background: var(--color-bg-elevated) !important;
+  color: var(--color-text-primary) !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 72%) !important;
+}
+
+:is(.settings-menu, .account-menu, .more-menu__panel, .language-menu, .mobile-sidebar, .calendar-filter-sheet__panel, .hm-modal, .grade-modal__dialog, .admin-dialog, .cookie-consent__panel) {
+  border-color: var(--color-border-subtle) !important;
+  background: var(--hm-glass-overlay) !important;
+  box-shadow: var(--shadow-overlay), inset 0 1px 0 rgb(255 255 255 / 72%) !important;
+  backdrop-filter: blur(24px) saturate(126%);
+}
+
+:is(.settings-menu, .account-menu, .more-menu__panel, .language-menu, .mobile-sidebar__language-menu) {
+  transition:
+    opacity var(--duration-normal) var(--ease-enter),
+    transform var(--duration-normal) var(--ease-enter),
+    visibility 0s linear var(--duration-normal),
+    height var(--duration-normal) var(--ease-standard) !important;
+}
+
+.hm-navbar__overlay,
+.hm-modal-overlay,
+.auth-overlay,
+.grade-modal,
+.admin-dialog-backdrop,
+.calendar-filter-sheet {
+  background: rgb(16 24 40 / 42%) !important;
+  backdrop-filter: blur(6px);
+}
+
+.hm-toast-container,
+.overlay {
+  z-index: var(--hm-z-toast);
+}
+
+@media (max-width: 760px) {
+  .hm-navbar {
+    width: min(calc(100% - var(--hm-space-4)), 1520px);
+    margin-top: var(--hm-space-2);
+    border-radius: var(--hm-radius-lg);
+  }
+
+  .hm-navbar__inner {
+    min-height: 56px;
+    padding: var(--hm-space-2) var(--hm-space-3);
+  }
+
+  .hm-react-main {
+    padding: var(--hm-space-4) var(--hm-space-3) var(--hm-space-6);
+  }
+
+  :is(.hm-hero, .login-stage, .home-preview-grid, .about-card-grid, .home-callout-strip, .profile__grid, .help-grid, .current-subject__grid) {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  :is(.hm-hero__content, .hm-hero__panel, .home-card, .about-card, .help-section, .profile-card, .login-container, .todo-panel, .calendar-sidebar, .calendar-board, .admin-dashboard, .day-card) {
+    padding: var(--hm-space-4) !important;
+    border-radius: var(--hm-radius-lg) !important;
+  }
+
+  .mobile-sidebar {
+    width: min(100vw, 390px);
+    border-radius: var(--hm-radius-xl) 0 0 var(--hm-radius-xl) !important;
+  }
+}
+
+@media (pointer: coarse) {
+  :is(.home-card, .about-card, .todo-card, .upcoming-card, .departure-row, .weekly-preview__item):hover {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hm-route-transition {
+    transform: none !important;
+    will-change: auto;
+  }
+}
+
+html[data-theme="dark"] body::before {
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 4%), rgb(0 0 0 / 0%)),
+    linear-gradient(135deg, rgb(155 188 255 / 8%), transparent 44%),
+    linear-gradient(315deg, rgb(141 224 182 / 6%), transparent 36%) !important;
+}
+
+html[data-theme="dark"] :is(.hm-navbar, .hm-footer, .hm-hero__content, .hm-hero__panel, .home-card, .about-card, .profile-card, .help-section, .help-callout, .changelog-entry, .legal-main, .day-card, .current-subject__section, .current-subject__status, .weekly-preview__card, .upcoming__list, .upcoming-card, .todo-panel, .todo-card, .departures-panel, .departures-liveboard-panel, .departures-list-shell, .departure-row, .grade-panel, .grade-summary__card, .grade-summary__cloud-card, .grade-summary__target-card, .grade-summary__overview-card, .admin-dashboard, .admin-card, .admin-table-container, .calendar-sidebar, .calendar-board, .hm-react-card) {
+  background: var(--color-bg-glass) !important;
+  border-color: var(--color-border-subtle) !important;
+  box-shadow: var(--shadow-surface) !important;
+}
+
+html[data-theme="dark"] :is(.home-button--primary, .login-button, .button:not(.button--danger), .hm-btn--primary, .grade-calculator__button--primary, .weekly-preview__button--primary, .current-subject__button--primary, .calendar-cta--primary, .btn-login) {
+  background: #2b63d3 !important;
+  color: #ffffff !important;
+}

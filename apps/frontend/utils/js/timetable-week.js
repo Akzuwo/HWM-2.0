@@ -1,6 +1,8 @@
+import { showViewState, setViewLoading } from './view-state.js';
 import { resolveApiBase } from './api-client.js';
 
 const API_BASE_URL = resolveApiBase();
+let loadSequence = 0;
 
 const locale = window.hmI18n ? window.hmI18n.getLocale() : 'de-CH';
 let anchorDate = new Date();
@@ -84,7 +86,12 @@ function renderLesson(tbody, lesson) {
 
 function renderWeek(container, data) {
   clearNode(container);
+  container.setAttribute('aria-busy', 'false');
   const today = new Date();
+  if (!data?.days?.length) {
+    showViewState(container, { message: 'Für diese Woche sind keine Lektionen eingetragen. Wähle bei Bedarf eine andere Woche.' });
+    return;
+  }
   const range = document.getElementById('weekRange');
   if (range) {
     const start = new Date(`${data.week_start}T00:00:00`);
@@ -134,35 +141,40 @@ function renderWeek(container, data) {
 }
 
 async function loadWeek(container, { showLoading = false } = {}) {
+  const requestId = ++loadSequence;
   if (!container) return;
-  if (showLoading) {
-    container.textContent = 'Daten werden geladen...';
-  }
+  if (showLoading) setViewLoading(container);
   try {
     const response = await fetch(`${API_BASE_URL}/api/timetable/week?date=${encodeURIComponent(isoDate(anchorDate))}`, {
       credentials: 'include',
       cache: 'no-store',
     });
+    if (requestId !== loadSequence || !container.isConnected) return;
     if (response.status === 401 || response.status === 403) {
-      container.textContent = 'Bitte melde dich an und wähle eine Klasse aus.';
+      showViewState(container, { message: 'Bitte melde dich an und wähle eine Klasse aus.', login: true });
       return;
     }
     if (response.status === 404) {
-      container.textContent = 'Für diese Klasse ist noch kein Stundenplan verfügbar.';
+      showViewState(container, { message: 'Für diese Klasse ist noch kein Stundenplan verfügbar. Bitte wende dich an deine Klassenadministration.', retry: () => loadWeek(container) });
       return;
     }
     if (!response.ok) {
       throw new Error(`API error: ${response.status}`);
     }
-    renderWeek(container, await response.json());
+    const data = await response.json();
+    if (requestId !== loadSequence || !container.isConnected) return;
+    renderWeek(container, data);
   } catch (error) {
+    if (requestId !== loadSequence || !container.isConnected) return;
     console.error('Error loading timetable week:', error);
-    container.textContent = 'Fehler beim Laden der Wochenansicht.';
+    showViewState(container, { message: 'Die Wochenansicht konnte nicht geladen werden. Bitte prüfe die Verbindung.', error: true, retry: () => loadWeek(container), preserve: Boolean(container.querySelector('.day-card')) });
   }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
   const container = document.getElementById('weekOverview');
+  if (!container || container.dataset.enhanced === 'true') return;
+  container.dataset.enhanced = 'true';
   document.querySelector('[data-week-prev]')?.addEventListener('click', () => {
     anchorDate = addDays(anchorDate, -7);
     loadWeek(container, { showLoading: true });

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { NotFoundPage } from '../pages/NotFoundPage';
 import { AppLayout } from '../components/AppLayout';
 import { AdminDashboardPage } from '../pages/AdminDashboardPage';
 import { AboutPage } from '../pages/AboutPage';
@@ -142,7 +143,7 @@ export function App() {
               />
             ))
           )}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<PageRoute title="Seite nicht gefunden – Homework Manager" element={<NotFoundPage />} />} />
         </Route>
       </Routes>
     </BrowserRouter>

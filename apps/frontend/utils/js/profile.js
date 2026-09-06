@@ -1,3 +1,4 @@
+import { showViewState } from './view-state.js';
 import { resolveApiUrl } from './api-client.js';
 
 /* Profile page logic: load /api/me, allow password updates, and account deletion */
@@ -29,7 +30,7 @@ import { resolveApiUrl } from './api-client.js';
     if (!res.ok || !parsed) {
       const message = (parsed && parsed.message) || 'Request failed'
       const err = new Error(message)
-      err.info = parsed || { raw: rawText, status: res.status }
+      err.info = { ...(parsed || {}), status: res.status }
       throw err
     }
     return parsed
@@ -101,10 +102,14 @@ import { resolveApiUrl } from './api-client.js';
   }
 
   async function loadProfile() {
+    const notice = el('profile-load-status')
+    if (!notice) return
+    notice.textContent = 'Profil wird geladen…'
     try {
       const resp = await apiFetch('/api/me')
       if (resp.status !== 'ok') throw new Error(resp.message || 'failed')
       const data = resp.data || {}
+      notice.textContent = ''
 
       setText(elements.id(), data.id)
       setText(elements.email(), data.email)
@@ -117,12 +122,8 @@ import { resolveApiUrl } from './api-client.js';
       const info = err && err.info ? err.info : {}
       const status = info.status
       const code = info.message
-      if (status === 503 || code === 'database_unavailable') {
-        window.showToast && window.showToast(t('loadUnavailable', 'Profile service is temporarily unavailable.'))
-        return
-      }
-      console.error('Failed to load profile', err)
-      window.showToast && window.showToast(t('loadError', 'Could not load your profile.'))
+      showViewState(notice, { message: status === 401 ? 'Bitte melde dich an, um dein Profil zu sehen.' : t('loadError', 'Dein Profil konnte nicht geladen werden. Bitte versuche es erneut.'), error: true, login: status === 401, retry: loadProfile })
+
     }
   }
 
@@ -239,34 +240,37 @@ import { resolveApiUrl } from './api-client.js';
   function withButtonState(button, callback) {
     if (!button) return callback()
     const originalContent = button.innerHTML
+    if (button.getAttribute('aria-busy') === 'true') return Promise.resolve()
+    button.setAttribute('aria-busy', 'true')
     button.disabled = true
     return Promise.resolve()
       .then(callback)
       .finally(() => {
         button.disabled = false
+        button.setAttribute('aria-busy', 'false')
         button.innerHTML = originalContent
       })
   }
 
   async function changePassword(event) {
     if (event) event.preventDefault()
-    const current = elements.currentPassword() && elements.currentPassword().value.trim()
-    const next = elements.newPassword() && elements.newPassword().value.trim()
-    const confirm = elements.confirmPassword() && elements.confirmPassword().value.trim()
+    const current = elements.currentPassword() && elements.currentPassword().value
+    const next = elements.newPassword() && elements.newPassword().value
+    const confirm = elements.confirmPassword() && elements.confirmPassword().value
     const button = elements.passwordButton()
     const status = elements.passwordEmailStatus()
     if (status) status.textContent = ''
 
     if (!current || !next || !confirm) {
-      window.showToast && window.showToast(t('passwordMissing', 'Please fill in all password fields.'))
+      window.showOverlay && window.showOverlay(t('passwordMissing', 'Please fill in all password fields.'), 'error')
       return
     }
     if (next !== confirm) {
-      window.showToast && window.showToast(t('passwordMismatch', 'The new passwords do not match.'))
+      window.showOverlay && window.showOverlay(t('passwordMismatch', 'The new passwords do not match.'), 'error')
       return
     }
     if (next.length < 8) {
-      window.showToast && window.showToast(t('passwordChangeWeak', 'The password is too weak.'))
+      window.showOverlay && window.showOverlay(t('passwordChangeWeak', 'The password is too weak.'), 'error')
       return
     }
 
@@ -274,7 +278,7 @@ import { resolveApiUrl } from './api-client.js';
       try {
         const resp = await apiFetch('/api/me/password', 'POST', { current_password: current, new_password: next })
         const emailSent = resp && resp.email_sent !== false
-        window.showToast && window.showToast(t('passwordChangeSuccess', 'Password updated successfully.'))
+        window.showOverlay && window.showOverlay(t('passwordChangeSuccess', 'Password updated successfully.'))
         if (status) {
           status.textContent = emailSent
             ? t('passwordEmailSuccess', 'We sent you a confirmation email.')
@@ -295,33 +299,35 @@ import { resolveApiUrl } from './api-client.js';
         } else if (code === 'password_required' || code === 'current_password_required') {
           message = t('passwordMissing', 'Please fill in all password fields.')
         }
-        window.showToast && window.showToast(message)
+        window.showOverlay && window.showOverlay(message, 'error')
       }
     })
   }
 
   async function deleteAccount() {
     const confirmation = t('deleteConfirm', 'Do you really want to permanently delete your account?')
-    if (!confirm(confirmation)) return
+    if (!await window.hmModal.confirm({ title: 'Konto dauerhaft löschen', message: confirmation, label: 'Konto löschen' })) return
     const button = elements.deleteButton()
 
     await withButtonState(button, async () => {
       try {
         await apiFetch('/api/me', 'DELETE')
-        window.showToast && window.showToast(t('deleteSuccess', 'Account deleted.'))
+        window.showOverlay && window.showOverlay(t('deleteSuccess', 'Account deleted.'))
         setTimeout(() => {
           if (typeof window.hmNavigate === 'function') window.hmNavigate('/')
           else window.location.href = '/'
         }, 800)
       } catch (err) {
         console.error('Failed to delete account', err)
-        window.showToast && window.showToast(t('deleteError', 'Could not delete the account.'))
+        showViewState(el('profile-load-status'), { message: t('deleteError', 'Das Konto konnte nicht gelöscht werden. Bitte versuche es erneut.'), error: true })
       }
     })
   }
 
   document.addEventListener('DOMContentLoaded', function () {
     const passwordForm = elements.passwordForm()
+    if (!passwordForm || passwordForm.dataset.enhanced === 'true') return
+    passwordForm.dataset.enhanced = 'true'
     const deleteBtn = elements.deleteButton()
     const personalForm = elements.personalForm()
 

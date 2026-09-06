@@ -1,0 +1,669 @@
+/* Apple-inspired product layer, sourced from the current DESIGN.md supplied for HWM. */
+:root {
+  color-scheme: light;
+  --apple-ink: #1d1d1f;
+  --apple-body: #6e6e73;
+  --apple-mute: #86868b;
+  --apple-hairline: #d2d2d7;
+  --apple-canvas: #ffffff;
+  --apple-canvas-soft: #f5f5f7;
+  --apple-canvas-nav: rgb(250 250 250 / 88%);
+  --apple-link: #0066cc;
+  --apple-link-hover: #004499;
+  --apple-success: #28cd41;
+  --apple-error: #ff3b30;
+  --apple-warning: #ff9f0a;
+  --apple-overlay: rgb(0 0 0 / 48%);
+  --apple-font-display: "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --apple-font-text: "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+
+  --color-bg-page: var(--apple-canvas-soft);
+  --color-bg-surface: var(--apple-canvas);
+  --color-bg-elevated: var(--apple-canvas);
+  --color-bg-glass: var(--apple-canvas);
+  --color-bg-glass-strong: var(--apple-canvas);
+  --color-text-primary: var(--apple-ink);
+  --color-text-secondary: var(--apple-body);
+  --color-text-muted: var(--apple-mute);
+  --color-border-subtle: var(--apple-hairline);
+  --color-border-strong: var(--apple-body);
+  --color-action-primary: var(--apple-link);
+  --color-action-primary-hover: var(--apple-link-hover);
+  --color-action-soft: rgb(0 102 204 / 8%);
+  --color-success: var(--apple-success);
+  --color-warning: var(--apple-warning);
+  --color-danger: var(--apple-error);
+  --color-info: var(--apple-link);
+
+  --hm-page: var(--apple-canvas-soft);
+  --hm-panel: var(--apple-canvas);
+  --hm-control: var(--apple-canvas);
+  --hm-line: var(--apple-hairline);
+  --hm-focus: var(--apple-link);
+  --hm-bg: var(--apple-canvas-soft);
+  --hm-bg-soft: var(--apple-canvas-soft);
+  --hm-surface: var(--apple-canvas);
+  --hm-surface-soft: var(--apple-canvas-soft);
+  --hm-surface-strong: var(--apple-canvas);
+  --hm-glass-regular: var(--apple-canvas);
+  --hm-glass-strong: var(--apple-canvas);
+  --hm-glass-overlay: var(--apple-canvas);
+  --hm-border: var(--apple-hairline);
+  --hm-border-strong: var(--apple-hairline);
+  --hm-text: var(--apple-ink);
+  --hm-text-muted: var(--apple-body);
+  --hm-text-soft: var(--apple-mute);
+  --hm-accent: var(--apple-link);
+  --hm-accent-soft: rgb(0 102 204 / 8%);
+  --hm-success: var(--apple-success);
+  --hm-danger: var(--apple-error);
+  --hm-on-action: #ffffff;
+  --hm-overlay-scrim: var(--apple-overlay);
+  --hm-shadow-lg: none;
+  --hm-shadow-md: none;
+  --hm-shadow-sm: none;
+  --shadow-surface: none;
+  --shadow-floating: none;
+  --shadow-overlay: none;
+  --hm-radius-xl: 20px;
+  --hm-radius-lg: 18px;
+  --hm-radius-md: 12px;
+  --hm-radius-sm: 8px;
+  --hm-content: 980px;
+  --hm-shell-max-width: 100%;
+  --hm-space-1: 7px;
+  --hm-space-2: 8px;
+  --hm-space-3: 11px;
+  --hm-space-4: 15px;
+  --hm-space-5: 22px;
+  --hm-space-6: 40px;
+  --hm-space-7: 48px;
+  --hm-space-8: 84px;
+}
+
+html,
+body,
+.hm-react-shell,
+.hm-app-backdrop {
+  background: var(--apple-canvas-soft) !important;
+  color: var(--apple-ink) !important;
+  font-family: var(--apple-font-text) !important;
+}
+
+body {
+  font-size: 15px;
+  line-height: 22px;
+  letter-spacing: 0;
+}
+
+body::before,
+body::after,
+.hm-app-backdrop::before,
+.hm-app-backdrop__orb,
+.hm-app-backdrop__grid {
+  display: none !important;
+  background: none !important;
+}
+
+::selection {
+  background: rgb(0 102 204 / 18%);
+  color: var(--apple-ink);
+}
+
+:where(h1, h2, h3, h4, h5, h6) {
+  font-family: var(--apple-font-display) !important;
+  font-weight: 600 !important;
+  color: var(--apple-ink) !important;
+}
+
+:where(p, li, dd, small, .muted, .field-hint, .page-date) {
+  color: var(--apple-body) !important;
+}
+
+:where(a:not([class*="button"]):not(.btn-login)) {
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.hm-react-main {
+  padding: 40px 22px 88px !important;
+}
+
+.hm-react-main__inner,
+.hm-react-shell--landing .hm-react-main__inner {
+  width: min(100%, 980px) !important;
+  margin-inline: auto;
+}
+
+/* Navigation: one quiet, 44px frosted strip. */
+.hm-navbar,
+.hm-react-shell--landing .hm-navbar {
+  position: sticky;
+  top: 0 !important;
+  width: 100% !important;
+  height: 44px;
+  min-height: 44px;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--apple-canvas-nav) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  backdrop-filter: saturate(180%) blur(20px) !important;
+}
+
+.hm-navbar::before,
+.hm-navbar::after {
+  display: none !important;
+}
+
+.hm-navbar__inner {
+  width: min(100%, 980px);
+  min-height: 44px !important;
+  height: 44px;
+  margin-inline: auto;
+  padding: 0 22px !important;
+  gap: 15px !important;
+}
+
+.logo-link {
+  gap: 8px !important;
+}
+
+.logo-link img {
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 7px !important;
+  box-shadow: none !important;
+}
+
+.brand-mark,
+.nav-link,
+.more-menu__link {
+  font-family: var(--apple-font-text) !important;
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  line-height: 16px !important;
+  letter-spacing: -0.12px !important;
+}
+
+.brand-mark {
+  font-weight: 600 !important;
+  color: var(--apple-ink) !important;
+}
+
+.nav-link {
+  min-height: 44px !important;
+  padding: 8px 11px !important;
+  border-radius: 0 !important;
+  color: var(--apple-body) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.nav-link:hover,
+.nav-link:focus-visible,
+.nav-link[aria-current='page'],
+.nav-link--more.is-active {
+  color: var(--apple-ink) !important;
+  background: transparent !important;
+}
+
+.nav-link[aria-current='page'] {
+  box-shadow: inset 0 -1px 0 var(--apple-ink) !important;
+}
+
+.settings-trigger,
+.account-switch,
+.hm-navbar__toggle,
+.lang-switch {
+  min-width: 32px !important;
+  min-height: 32px !important;
+  height: 32px !important;
+  padding: 7px !important;
+  border: 0 !important;
+  border-radius: 9999px !important;
+  background: transparent !important;
+  background-image: none !important;
+  color: var(--apple-ink) !important;
+  box-shadow: none !important;
+}
+
+/* Flat surfaces replace the former glass-card treatment. */
+:is(
+  .hm-hero__content, .hm-hero__panel, .home-card, .about-card,
+  .help-section, .help-callout, .profile-card, .grade-calculator__section,
+  .grade-panel, .grade-summary__card, .grade-summary__cloud-card,
+  .grade-summary__target-card, .grade-summary__overview-card,
+  .current-subject__section, .current-subject__status, .weekly-preview__card,
+  .upcoming__list, .upcoming-card, .todo-panel, .todo-card,
+  .departures-panel, .departures-liveboard-panel, .departures-list-shell,
+  .departure-row, .page-header, .login-stage__intro, .login-container,
+  .changelog-entry, .changelog-subentry, .changelog-header, .legal-main,
+  .calendar-sidebar, .calendar-board, .calendar-controls, .calendar-weekstrip,
+  .admin-dashboard, .admin-card, .admin-table-container, .day-card,
+  .hm-react-card
+) {
+  border-color: transparent !important;
+  background: var(--apple-canvas) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  color: var(--apple-ink) !important;
+}
+
+:is(
+  .hm-hero__content, .hm-hero__panel, .home-card, .about-card,
+  .help-section, .help-callout, .profile-card, .grade-calculator__section,
+  .grade-panel, .grade-summary__card, .grade-summary__cloud-card,
+  .grade-summary__target-card, .grade-summary__overview-card,
+  .current-subject__section, .current-subject__status, .weekly-preview__card,
+  .upcoming__list, .upcoming-card, .todo-panel, .todo-card,
+  .departures-panel, .departures-liveboard-panel, .departures-list-shell,
+  .page-header, .login-stage__intro, .login-container, .changelog-header,
+  .legal-main, .calendar-sidebar, .calendar-board, .admin-dashboard,
+  .admin-card, .day-card, .hm-react-card
+)::before {
+  display: none !important;
+}
+
+.hm-hero__content,
+.hm-hero__panel {
+  padding: 48px 22px !important;
+  border-radius: 40px !important;
+  background: var(--apple-canvas) !important;
+  text-align: center;
+}
+
+.home-hero__copy {
+  justify-items: center !important;
+  text-align: center !important;
+}
+
+.home-hero--single .hm-hero__title,
+.home-hero--single .hm-hero__lead,
+.home-hero--single .hm-hero__body {
+  margin-inline: auto !important;
+}
+
+.home-hero .hm-hero__body {
+  display: block !important;
+  overflow: visible !important;
+  -webkit-line-clamp: unset !important;
+}
+
+.home-hero__footer {
+  justify-content: center !important;
+  align-items: center !important;
+}
+
+.home-card,
+.about-card {
+  padding: 44px 22px !important;
+  border-radius: 980px !important;
+  background: var(--apple-canvas) !important;
+  text-align: center;
+}
+
+.home-card__topline,
+.home-card__actions,
+.about-card__actions {
+  justify-content: center !important;
+}
+
+.home-preview-grid > .home-card:only-child {
+  grid-column: 1 / -1;
+  width: min(100%, 620px);
+  justify-self: center;
+}
+
+.home-card__divider,
+.about-card__divider {
+  background: var(--apple-hairline) !important;
+}
+
+:is(.home-card, .about-card, .todo-card, .upcoming-card, .departure-row, .weekly-preview__item):hover {
+  transform: none !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Apple typography hierarchy. */
+.hm-hero__title,
+.login-stage__title {
+  margin-block: 0 15px !important;
+  font-size: clamp(40px, 6vw, 56px) !important;
+  line-height: 1.07 !important;
+  letter-spacing: -0.5px !important;
+}
+
+:is(.calendar-header__title, .current-subject__title, .grade-calculator__title, .upcoming__title, .weekly-preview__title, .page-title h1, .profile__header h1, .help-hero h1) {
+  font-size: clamp(34px, 4.5vw, 40px) !important;
+  line-height: 1.1 !important;
+  letter-spacing: -0.374px !important;
+}
+
+:is(.home-card__title, .about-card__title, .profile-card h2, .help-section h2, .grade-panel h2, .login-title) {
+  font-size: 24px !important;
+  line-height: 28px !important;
+  letter-spacing: 0 !important;
+}
+
+.hm-hero__lead {
+  max-width: 680px !important;
+  margin-inline: auto !important;
+  font-size: 19px !important;
+  line-height: 28px !important;
+  color: var(--apple-body) !important;
+}
+
+.hm-hero__body,
+.home-card__summary,
+.about-card__summary {
+  max-width: 620px;
+  margin-inline: auto;
+  font-size: 17px !important;
+  line-height: 25px !important;
+  color: var(--apple-body) !important;
+}
+
+:is(.home-card__eyebrow, .home-card__status, .calendar-header__label, .profile__eyebrow, .login-status, .hm-badge, .timetable-badge) {
+  border: 0 !important;
+  background: var(--apple-canvas-soft) !important;
+  color: var(--apple-body) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  line-height: 16px !important;
+  letter-spacing: -0.12px !important;
+}
+
+/* One blue accent; all actions are pills and stay flat. */
+:is(
+  .home-button, .login-button, .guest-button, .button, .hm-btn,
+  .grade-calculator__button, .weekly-preview__button,
+  .current-subject__button, .upcoming__button, .calendar-cta,
+  .calendar-month-nav__button, .calendar-view-switch__button,
+  .calendar-mobile-view-switch__button, .calendar-mobile-nav__button,
+  .hm-back-link, .btn-login, .departures-toolbar button,
+  .todo-filters button, .hm-modal__button
+) {
+  min-height: 44px !important;
+  padding: 9px 22px !important;
+  border: 1px solid var(--apple-link) !important;
+  border-radius: 9999px !important;
+  background: var(--apple-canvas) !important;
+  background-image: none !important;
+  color: var(--apple-link) !important;
+  box-shadow: none !important;
+  font-size: 15px !important;
+  font-weight: 400 !important;
+  line-height: 22px !important;
+  letter-spacing: 0 !important;
+}
+
+:is(
+  .home-button--primary, .login-button, .button:not(.button--danger),
+  .hm-btn--primary, .grade-calculator__button--primary,
+  .weekly-preview__button--primary, .current-subject__button--primary,
+  .calendar-cta--primary, .btn-login, .hm-modal__button--primary
+) {
+  border-color: var(--apple-link) !important;
+  background: var(--apple-link) !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+:is(
+  .home-button--primary, .login-button, .button:not(.button--danger),
+  .hm-btn--primary, .grade-calculator__button--primary,
+  .weekly-preview__button--primary, .current-subject__button--primary,
+  .calendar-cta--primary, .btn-login, .hm-modal__button--primary
+) :is(span, strong) {
+  color: #ffffff !important;
+}
+
+:is(.home-button--ghost, .guest-button, .grade-calculator__button--secondary, .calendar-cta--secondary, .hm-modal__button--secondary) {
+  background: transparent !important;
+  color: var(--apple-link) !important;
+}
+
+:is(.button--danger, .hm-btn--danger, .hm-modal__button--danger, .grade-calculator__inline-button--danger) {
+  border-color: var(--apple-error) !important;
+  background: transparent !important;
+  color: var(--apple-error) !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  :is(
+    .home-button, .login-button, .guest-button, .button, .hm-btn,
+    .grade-calculator__button, .weekly-preview__button,
+    .current-subject__button, .upcoming__button, .calendar-cta,
+    .calendar-month-nav__button, .calendar-view-switch__button,
+    .calendar-mobile-view-switch__button, .calendar-mobile-nav__button,
+    .hm-back-link, .btn-login, .departures-toolbar button,
+    .todo-filters button, .hm-modal__button
+  ):hover {
+    transform: none !important;
+    border-color: var(--apple-link-hover) !important;
+    background: var(--apple-link-hover) !important;
+    color: #ffffff !important;
+    box-shadow: none !important;
+    filter: none !important;
+  }
+}
+
+:is(.home-button, .login-button, .button, .calendar-cta, .hm-btn)::before {
+  display: none !important;
+}
+
+/* Inputs, tables and utility surfaces keep the compact in-app radius scale. */
+:is(.form-control, .profile-input, .grade-calculator__input, .hm-select, .hm-modal input, .hm-modal textarea, .hm-modal select, .calendar-class-selector select, .class-select select, #calendar-class-select-mobile, input[type='date'], input[type='time'], textarea, select) {
+  min-height: 44px;
+  border: 1px solid var(--apple-hairline) !important;
+  border-radius: 12px !important;
+  background: var(--apple-canvas) !important;
+  color: var(--apple-ink) !important;
+  box-shadow: none !important;
+}
+
+:is(.form-control, .profile-input, .grade-calculator__input, .hm-modal input, .hm-modal textarea, .hm-modal select):focus {
+  border-color: var(--apple-link) !important;
+  outline: 1px solid var(--apple-link) !important;
+}
+
+:is(.settings-menu, .account-menu, .more-menu__panel, .language-menu, .mobile-sidebar, .calendar-filter-sheet__panel, .hm-modal, .grade-modal__dialog, .admin-dialog, .cookie-consent__panel) {
+  border: 1px solid var(--apple-hairline) !important;
+  border-radius: 20px !important;
+  background: var(--apple-canvas) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+:is(.hm-navbar__overlay, .hm-modal-overlay, .auth-overlay, .grade-modal, .admin-dialog-backdrop, .calendar-filter-sheet) {
+  background: var(--apple-overlay) !important;
+  backdrop-filter: none !important;
+}
+
+:is(table, .admin-table, .schedule-table) th {
+  background: var(--apple-canvas-soft) !important;
+  color: var(--apple-body) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+}
+
+:is(table, .admin-table, .schedule-table) :is(th, td) {
+  border-color: var(--apple-hairline) !important;
+}
+
+.grade-summary__current-card {
+  background: var(--apple-ink) !important;
+  color: #ffffff !important;
+  border-radius: 20px !important;
+}
+
+.grade-summary__current-card :is(p, span, strong) {
+  color: #ffffff !important;
+}
+
+.hm-footer,
+.hm-react-shell--landing .hm-footer {
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 22px !important;
+  border: 0 !important;
+  border-top: 1px solid var(--apple-hairline) !important;
+  border-radius: 0 !important;
+  background: var(--apple-canvas-soft) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  color: var(--apple-body) !important;
+  font-size: 12px !important;
+  line-height: 16px !important;
+  letter-spacing: -0.12px !important;
+}
+
+.hm-footer::before,
+.hm-footer::after {
+  display: none !important;
+}
+
+.hm-footer__inner {
+  width: min(100%, 980px);
+  margin-inline: auto;
+}
+
+.hm-footer__link,
+.hm-footer__button,
+.hm-footer__eyebrow,
+.hm-footer__legal {
+  color: var(--apple-body) !important;
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  line-height: 16px !important;
+  letter-spacing: -0.12px !important;
+  opacity: 1 !important;
+}
+
+.hm-footer__link,
+.hm-footer__button {
+  color: #515154 !important;
+}
+
+body.calendar-theme .calendar-class-selector label,
+label[for='calendar-class-select'] {
+  color: var(--apple-body) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  line-height: 16px !important;
+  letter-spacing: -0.12px !important;
+  opacity: 1 !important;
+}
+
+.hm-footer__link:hover,
+.hm-footer__button:hover {
+  color: var(--apple-ink) !important;
+  text-decoration: underline;
+}
+
+@media (max-width: 760px) {
+  .hm-navbar,
+  .hm-react-shell--landing .hm-navbar {
+    width: 100% !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  .hm-navbar__inner {
+    min-height: 44px !important;
+    height: 44px !important;
+    padding-inline: 15px !important;
+  }
+
+  .hm-react-main {
+    padding: 22px 15px 48px !important;
+  }
+
+  .hm-hero__content,
+  .hm-hero__panel {
+    padding: 44px 22px !important;
+    border-radius: 32px !important;
+  }
+
+  .home-card,
+  .about-card {
+    padding: 40px 22px !important;
+    border-radius: 40px !important;
+  }
+
+  :is(.help-section, .help-callout, .profile-card, .login-container, .todo-panel, .calendar-sidebar, .calendar-board, .admin-dashboard, .day-card) {
+    padding: 22px !important;
+    border-radius: 20px !important;
+  }
+
+  .mobile-sidebar {
+    border-radius: 20px 0 0 20px !important;
+  }
+
+  .brand-mark {
+    display: none;
+  }
+}
+
+/* The app retains its theme control with an Apple-like graphite treatment. */
+html[data-theme='dark'] {
+  color-scheme: dark;
+  --apple-ink: #f5f5f7;
+  --apple-body: #a1a1a6;
+  --apple-mute: #86868b;
+  --apple-hairline: #424245;
+  --apple-canvas: #1d1d1f;
+  --apple-canvas-soft: #000000;
+  --apple-canvas-nav: rgb(22 22 23 / 88%);
+  --apple-link: #2997ff;
+  --apple-link-hover: #0077ed;
+  --color-bg-page: var(--apple-canvas-soft);
+  --color-bg-surface: var(--apple-canvas);
+  --color-bg-elevated: #2c2c2e;
+  --color-text-primary: var(--apple-ink);
+  --color-text-secondary: var(--apple-body);
+  --color-text-muted: var(--apple-mute);
+  --color-border-subtle: var(--apple-hairline);
+  --color-action-primary: var(--apple-link);
+  --color-action-primary-hover: var(--apple-link-hover);
+  --hm-page: var(--apple-canvas-soft);
+  --hm-panel: var(--apple-canvas);
+  --hm-control: #2c2c2e;
+  --hm-line: var(--apple-hairline);
+  --hm-focus: var(--apple-link);
+  --hm-bg: var(--apple-canvas-soft);
+  --hm-bg-soft: var(--apple-canvas);
+  --hm-surface: var(--apple-canvas);
+  --hm-surface-soft: var(--apple-canvas);
+  --hm-surface-strong: #2c2c2e;
+  --hm-glass-regular: var(--apple-canvas);
+  --hm-glass-strong: var(--apple-canvas);
+  --hm-glass-overlay: #2c2c2e;
+  --hm-border: var(--apple-hairline);
+  --hm-border-strong: var(--apple-hairline);
+  --hm-text: var(--apple-ink);
+  --hm-text-muted: var(--apple-body);
+  --hm-text-soft: var(--apple-mute);
+  --hm-accent: var(--apple-link);
+}
+
+html[data-theme='dark'] body :is(p, li, dt, dd, span, label, small, strong, button, a, h1, h2, h3, h4, th, td) {
+  color: inherit !important;
+}
+
+html[data-theme='dark'] body :is(.home-button--primary, .login-button, .button:not(.button--danger), .hm-btn--primary, .grade-calculator__button--primary, .weekly-preview__button--primary, .current-subject__button--primary, .calendar-cta--primary, .btn-login) {
+  background: var(--apple-link) !important;
+  color: #ffffff !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+  }
+}

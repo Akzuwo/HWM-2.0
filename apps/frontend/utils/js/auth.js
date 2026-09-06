@@ -12,7 +12,7 @@ function formatMessage(template, params) {
 }
 
 const LOGIN_TEXT = {
-    title: authT('title', '🔒 Login'),
+    title: authT('title', 'Login'),
     registerTitle: authT('registerTitle', '🆕 Create account'),
     registerSubtitle: authT('registerSubtitle', 'Sign up with your school email address.'),
     newBadge: authT('newBadge', 'NEW'),
@@ -31,7 +31,7 @@ const LOGIN_TEXT = {
     verificationStepSubtitle: authT('verificationStepSubtitle', 'Confirm your email address to get started.'),
     verificationCodeLabel: authT('verificationCodeLabel', 'Verification code'),
     verificationCodePlaceholder: authT('verificationCodePlaceholder', '8-digit code'),
-    verificationCodeHint: authT('verificationCodeHint', '⚠️ Email delivery can take up to 2 minutes.'),
+    verificationCodeHint: authT('verificationCodeHint', 'Email delivery can take up to 2 minutes.'),
     verificationCodeSubmit: authT('verificationCodeSubmit', 'Confirm code'),
     verificationCodeSubmitLoading: authT('verificationCodeSubmitLoading', 'Checking…'),
     verificationCodeResend: authT('verificationCodeResend', 'Resend code'),
@@ -43,7 +43,7 @@ const LOGIN_TEXT = {
     cooldownWarning: authT('cooldownWarning', 'Please wait a moment before trying again.'),
     forgotPassword: authT('forgotPassword', 'Forgot password?'),
     forgotPasswordMissingEmail: authT('forgotPasswordMissingEmail', 'Please enter your email address first.'),
-    passwordResetTitle: authT('passwordResetTitle', '🔁 Reset password'),
+    passwordResetTitle: authT('passwordResetTitle', 'Reset password'),
     passwordResetSubtitle: authT('passwordResetSubtitle', 'Enter the code from your email and choose a new password.'),
     passwordResetCodeLabel: authT('passwordResetCodeLabel', 'Reset code'),
     passwordResetCodePlaceholder: authT('passwordResetCodePlaceholder', '8-digit code'),
@@ -882,6 +882,8 @@ function setFormLoading(form, isLoading) {
         return;
     }
     const submit = form.querySelector('[data-auth-submit]');
+    form.setAttribute('aria-busy', String(Boolean(isLoading)));
+    submit?.setAttribute('aria-busy', String(Boolean(isLoading)));
     if (submit) {
         if (isLoading) {
             submit.disabled = true;
@@ -1421,6 +1423,7 @@ function createAuthOverlay() {
     overlay.id = 'auth-overlay';
     overlay.className = 'auth-overlay';
     overlay.setAttribute('aria-hidden', 'true');
+    overlay.inert = true;
     overlay.innerHTML = `
         <div class="auth-overlay__backdrop" data-auth-close></div>
         <div class="login-container" role="dialog" aria-modal="true" aria-labelledby="auth-overlay-title">
@@ -1554,6 +1557,8 @@ function openAuthOverlay(trigger) {
 
     overlay.classList.add('is-visible');
     overlay.setAttribute('aria-hidden', 'false');
+    overlay.inert = false;
+    window.hmModal?.open(overlay, { onRequestClose: closeAuthOverlay });
     document.body.classList.add('has-auth-overlay');
     bindAuthForms();
     updateAuthStatus();
@@ -1570,6 +1575,8 @@ function closeAuthOverlay() {
 
     overlay.classList.remove('is-visible');
     overlay.setAttribute('aria-hidden', 'true');
+    window.hmModal?.close(overlay);
+    overlay.inert = true;
     document.body.classList.remove('has-auth-overlay');
     document.removeEventListener('keydown', handleAuthOverlayEscape);
 
@@ -3514,6 +3521,7 @@ async function saveEntry(event) {
         return;
     }
 
+    if (form.getAttribute('aria-busy') === 'true') return;
     const controller = setupModalFormInteractions(form);
     controller?.evaluate();
 
@@ -3629,12 +3637,15 @@ async function saveEntry(event) {
         selectedClassIds = selectedClassIds.slice(0, 1);
     }
 
+    form.setAttribute('aria-busy', 'true');
+    saveButton.setAttribute('aria-busy', 'true');
     saveButton.disabled = true;
     saveButton.innerText = CALENDAR_MODAL_BUTTONS.saveLoading;
 
     let success = false;
     let attempt = 0;
-    const maxAttempts = 10;
+    // Creation is not idempotent: an automatic retry can create duplicate entries.
+    const maxAttempts = 1;
     let aborted = false;
 
     while (!success && attempt < maxAttempts) {
@@ -3688,11 +3699,13 @@ async function saveEntry(event) {
             console.error("Network error while saving:", error);
         }
 
-        if (!success) {
+        if (!success && attempt + 1 < maxAttempts) {
             attempt++;
             console.warn(`Save attempt ${attempt} failed. Retrying in 2 seconds.`);
             // Warte 2000ms, bevor erneut versucht wird
             await new Promise(resolve => setTimeout(resolve, 2000));
+        } else if (!success) {
+            attempt++;
         }
     }
 
@@ -3707,6 +3720,8 @@ async function saveEntry(event) {
     }
 
     // Re-enable button
+    form.setAttribute('aria-busy', 'false');
+    saveButton.setAttribute('aria-busy', 'false');
     saveButton.disabled = false;
     saveButton.innerText = CALENDAR_MODAL_BUTTONS.add;
 }

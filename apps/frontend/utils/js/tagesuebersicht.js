@@ -1,6 +1,8 @@
+import { showViewState, setViewLoading } from './view-state.js';
 import { resolveApiBase } from './api-client.js';
 
 const API_BASE_URL = resolveApiBase();
+let loadSequence = 0;
 
 function fetchWithSession(url, options = {}) {
   const { headers, ...rest } = options || {};
@@ -61,6 +63,7 @@ function normalizeDay(value) {
 
 function renderOverview(container, data) {
   container.innerHTML = '';
+  container.setAttribute('aria-busy', 'false');
 
   const todayKey = normalizeDay(new Intl.DateTimeFormat(locale, { weekday: 'long' }).format(new Date()));
   const normalizedData = data && Array.isArray(data.day_plan)
@@ -74,6 +77,11 @@ function renderOverview(container, data) {
           : {})
       }
     : data;
+
+  if (!normalizedData || !Object.keys(normalizedData).length) {
+    showViewState(container, { message: 'Für diesen Tag sind keine Lektionen eingetragen.' });
+    return;
+  }
 
   for (const [tag, entries] of Object.entries(normalizedData || {})) {
     const card = document.createElement('section');
@@ -136,17 +144,17 @@ function renderOverview(container, data) {
 }
 
 async function loadOverview(container, { showLoading = false } = {}) {
+  const requestId = ++loadSequence;
   if (!container) {
     return;
   }
-  if (showLoading) {
-    container.textContent = t('loading', 'Loading data…');
-  }
+  if (showLoading) setViewLoading(container);
 
   try {
     const res = await fetchWithSession(`${API_BASE_URL}/api/timetable/day`);
+    if (requestId !== loadSequence || !container.isConnected) return;
     if (await responseRequiresClassContext(res)) {
-      container.textContent = unauthorizedMessage;
+      showViewState(container, { message: unauthorizedMessage, login: true });
       return;
     }
     if (res.status === 404) {
@@ -157,7 +165,7 @@ async function loadOverview(container, { showLoading = false } = {}) {
         payload = null;
       }
       if (payload && payload.error === 'schedule_unavailable') {
-        container.textContent = featureUnavailableMessage;
+        showViewState(container, { message: featureUnavailableMessage, retry: () => loadOverview(container) });
         return;
       }
     }
@@ -165,15 +173,19 @@ async function loadOverview(container, { showLoading = false } = {}) {
       throw new Error(`API error: ${res.status}`);
     }
     const data = await res.json();
+    if (requestId !== loadSequence || !container.isConnected) return;
     renderOverview(container, data);
   } catch (err) {
+    if (requestId !== loadSequence || !container.isConnected) return;
     console.error('Error loading daily overview:', err);
-    container.textContent = t('error', 'Error loading data.');
+    showViewState(container, { message: t('error', 'Die Tagesübersicht konnte nicht geladen werden.'), error: true, retry: () => loadOverview(container), preserve: Boolean(container.querySelector('.day-card')) });
   }
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
   const container = document.getElementById('overview');
+  if (!container || container.dataset.enhanced === 'true') return;
+  container.dataset.enhanced = 'true';
   setPageDate();
 
   if (window.hmClassSelector) {

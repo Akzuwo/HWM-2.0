@@ -102,24 +102,14 @@
       }
     });
 
-    const reducedMotion = prefersReducedMotion();
-    const duration = reducedMotion ? 120 : 220;
-    const easing = reducedMotion ? 'linear' : 'cubic-bezier(0.2, 0.7, 0.2, 1)';
-    const baseOptions = { duration, easing, fill: 'forwards' };
-
-    const outFrames = reducedMotion
-      ? [{ opacity: 1 }, { opacity: 0.3 }]
-      : [
-          { opacity: 1, transform: 'translateY(0) scale(1)', filter: 'blur(0px)' },
-          { opacity: 0, transform: 'translateY(-4px) scale(0.98)', filter: 'blur(4px)' }
-        ];
-
-    const inFrames = reducedMotion
-      ? [{ opacity: 0 }, { opacity: 1 }]
-      : [
-          { opacity: 0, transform: 'translateY(4px) scale(0.98)', filter: 'blur(4px)' },
-          { opacity: 1, transform: 'translateY(0) scale(1)', filter: 'blur(0px)' }
-        ];
+    if (prefersReducedMotion()) {
+      applyTranslations(scope, applyFn);
+      resetActiveElements();
+      return;
+    }
+    const baseOptions = { duration: 100, easing: 'ease-out', fill: 'forwards' };
+    const outFrames = [{ opacity: 1 }, { opacity: 0.6 }];
+    const inFrames = [{ opacity: 0.6 }, { opacity: 1 }];
 
     await new Promise((resolve) => window.requestAnimationFrame(resolve));
     await animatePhase(elements, outFrames, baseOptions, 'i18n-anim-out');
@@ -140,7 +130,7 @@
     elements.forEach((element) => {
       element.classList.remove('i18n-anim-out', 'i18n-anim-in', 'i18n-placeholder-animating');
       unlockHeight(element);
-      activeAnimations.delete(element);
+      stopAnimation(element);
     });
 
     activeElements = [];

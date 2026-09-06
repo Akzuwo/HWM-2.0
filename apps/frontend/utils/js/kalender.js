@@ -1,4 +1,11 @@
 import { resolveApiBase } from './api-client.js';
+import { Calendar } from '@fullcalendar/core';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import listPlugin from '@fullcalendar/list';
+import interactionPlugin from '@fullcalendar/interaction';
+import allLocales from '@fullcalendar/core/locales-all';
+import { showViewState } from './view-state.js';
 
 // kalender.js
 if (typeof window !== 'undefined' && window.__hmKalenderLoaded) {
@@ -24,7 +31,7 @@ const CALENDAR_MODAL_MESSAGES = window.CALENDAR_MODAL_MESSAGES || {
 };
 const LOCAL_TEST_HOSTS = new Set(['localhost', '127.0.0.1']);
 const CAN_USE_TEMPORARY_TEST_MODE =
-  typeof window !== 'undefined' && LOCAL_TEST_HOSTS.has(window.location.hostname);
+  import.meta.env?.VITE_CALENDAR_TEST_MODE === 'true' && typeof window !== 'undefined' && LOCAL_TEST_HOSTS.has(window.location.hostname);
 const TEMPORARY_TEST_CLASSES = [
   { id: 'test-l23a', slug: 'l23a-test', title: 'Test class L23a' },
   { id: 'test-u24f', slug: 'u24f-test', title: 'Test class U24f' },
@@ -1824,7 +1831,7 @@ function updateViewButtons(calendar) {
   if (!calendar) {
     return;
   }
-  const buttons = document.querySelectorAll('[data-calendar-view]');
+  const buttons = document.querySelectorAll('button[data-calendar-view]');
   buttons.forEach((button) => {
     const targetView = button.getAttribute('data-calendar-view');
     const isActive = targetView === calendar.view.type;
@@ -1940,6 +1947,7 @@ function openCalendarFilterSheet() {
   syncFilterSheetState();
   sheet.classList.add('is-open');
   sheet.setAttribute('aria-hidden', 'false');
+  window.hmModal?.open(sheet, { onRequestClose: closeCalendarFilterSheet });
   const firstInput = sheet.querySelector('input');
   firstInput?.focus?.();
 }
@@ -1947,6 +1955,7 @@ function openCalendarFilterSheet() {
 function closeCalendarFilterSheet() {
   const sheet = document.querySelector('[data-calendar-filter-sheet]');
   if (!sheet) return;
+  window.hmModal?.close(sheet);
   sheet.classList.remove('is-open');
   sheet.setAttribute('aria-hidden', 'true');
 }
@@ -2137,11 +2146,13 @@ function showCalendarError(calendarEl, message) {
   calendarEl.setAttribute('aria-busy', 'false');
   calendarEl.removeAttribute('data-loading-message');
   if (calendarInstance) {
+    const status = document.getElementById('calendar-load-status');
+    if (status) showViewState(status, { message: `${message} Die zuletzt geladenen Einträge bleiben sichtbar.`, error: true, retry: loadCalendar });
     return;
   }
   calendarEl.setAttribute('role', 'alert');
   calendarEl.setAttribute('aria-live', 'polite');
-  calendarEl.textContent = message;
+  showViewState(calendarEl, { message, error: true, retry: loadCalendar, login: role === 'guest' });
 }
 
 function getDragConfirmOverlay() {
@@ -2313,8 +2324,10 @@ function initialiseCalendar(events) {
   const preferredDate = lastCalendarDateValue ? new Date(lastCalendarDateValue) : null;
 
   const calendarConfig = {
+    plugins: [dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin],
+    locales: allLocales,
     initialView: preferredView,
-    locale: 'en-gb',
+    locale: window.hmI18n?.getLocale() || 'de',
     firstDay: 1,
     height: '100%',
     contentHeight: '100%',
@@ -2326,9 +2339,10 @@ function initialiseCalendar(events) {
     editable: !window.matchMedia('(max-width: 767px)').matches,
     eventStartEditable: !window.matchMedia('(max-width: 767px)').matches,
     eventDurationEditable: false,
-    dayMaxEventRows: true,
+    dayMaxEventRows: 3,
     moreLinkClick: 'popover',
     moreLinkContent: (args) => `+ ${args.num} weitere`,
+    moreLinkDidMount: ({ el }) => el.setAttribute('role', 'button'),
     eventOrder: 'start,-duration,allDay,title',
     buttonText: {
       month: t('views.month', 'Month'),
@@ -2340,8 +2354,7 @@ function initialiseCalendar(events) {
     eventDidMount: (info) => {
       const eventContent = info.el.querySelector('.calendar-event');
       if (!eventContent) return;
-      const delayIndex = calendarAnimationIndex % 10;
-      const delay = `${delayIndex * 60}ms`;
+      const delay = '0ms';
       calendarAnimationIndex += 1;
       eventContent.style.setProperty('--calendar-event-delay', delay);
       eventContent.classList.add('calendar-event--enter');
@@ -2393,7 +2406,7 @@ function initialiseCalendar(events) {
     calendarConfig.initialDate = preferredDate;
   }
 
-  const calendar = new FullCalendar.Calendar(calendarEl, calendarConfig);
+  const calendar = new Calendar(calendarEl, calendarConfig);
 
   calendar.render();
   calendarInstance = calendar;
@@ -2421,6 +2434,7 @@ function initialiseCalendar(events) {
 async function loadCalendar() {
   const calendarEl = document.getElementById('calendar');
   if (!calendarEl) return;
+  document.getElementById('calendar-load-status')?.replaceChildren();
   showCalendarLoading(calendarEl, t('status.loading', 'Loading calendar …'));
 
   const requestId = ++calendarLoadSequence;
@@ -2475,6 +2489,12 @@ async function loadCalendar() {
     }
     console.error('Failed to load calendar:', err);
     const usingTemporaryTestMode = activateTemporaryTestMode(err, 'calendar entries');
+    if (!usingTemporaryTestMode) {
+      const message = t('status.error', 'Der Kalender konnte nicht geladen werden. Bitte prüfe die Verbindung.');
+      showCalendarError(calendarEl, message);
+      publishMobileCalendarState({ events: lastCalendarEvents, error: message });
+      return;
+    }
     const fallbackContext = usingTemporaryTestMode
       ? ensureTemporaryTestClassContext(classSlug || currentClassSlug)
       : { classId: currentClassId, classSlug: currentClassSlug };
@@ -2490,6 +2510,9 @@ async function loadCalendar() {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
+  const root = document.getElementById('calendar');
+  if (!root || root.dataset.calendarBound === 'true') return;
+  root.dataset.calendarBound = 'true';
   initActionBar();
   setupCalendarFilterControls();
   (async () => {
@@ -2498,7 +2521,17 @@ window.addEventListener('DOMContentLoaded', () => {
       await loadCalendar();
     } catch (error) {
       console.error('Failed to initialise calendar:', error);
+      showCalendarError(root, 'Der Kalender konnte nicht geöffnet werden. Bitte versuche es erneut.');
     }
   })();
+});
+window.addEventListener('hm:page-leave', () => {
+  if (!calendarInstance) return;
+  calendarInstance.destroy();
+  calendarInstance = null;
+  calendarLoadSequence += 1;
+  lastCalendarEventSignature = '';
+  if (resizeHandler) window.removeEventListener('resize', resizeHandler);
+  resizeHandler = null;
 });
 }

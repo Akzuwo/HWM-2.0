@@ -13,9 +13,6 @@ export function CurrentSubjectPage() {
         <header className="current-subject__header">
           <div className="current-subject__header-main">
             <h1 className="current-subject__title">
-              <span className="current-subject__title-icon" aria-hidden="true">
-                🕒
-              </span>
               <span data-i18n="currentSubject.title">Current Subject</span>
               <span className="current-subject__title-subject" data-subject-name="">
                 · —
@@ -43,7 +40,7 @@ export function CurrentSubjectPage() {
               Loading current data ...
             </span>
           </div>
-          <div className="current-subject__countdown" aria-live="polite">
+          <div className="current-subject__countdown">
             <span className="current-subject__countdown-label" data-countdown-label="" data-i18n="currentSubject.countdownLabel">
               Time remaining
             </span>
@@ -114,7 +111,7 @@ export function CurrentSubjectPage() {
 
         <div className="current-subject__actions">
           <Link className="current-subject__button current-subject__button--primary" to="/tagesuebersicht">
-            <span aria-hidden="true">📅</span>
+
             <span data-i18n="currentSubject.actions.dayOverview">Daily Overview</span>
           </Link>
           <Link className="current-subject__button current-subject__button--secondary" to="/timetable-week">
@@ -122,7 +119,7 @@ export function CurrentSubjectPage() {
             <span>Wochenansicht</span>
           </Link>
           <Link className="current-subject__button current-subject__button--secondary" to="/">
-            <span aria-hidden="true">◀️</span>
+            <span aria-hidden="true">←</span>
             <span data-i18n="currentSubject.actions.back">Back</span>
           </Link>
         </div>

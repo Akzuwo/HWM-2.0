@@ -1,5 +1,20 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useDialog } from '../hooks/useDialog';
+import { toggleTheme } from '../theme';
+
+function ThemeToggle({ compact = false }) {
+  const [dark, setDark] = useState(document.documentElement.dataset.theme === 'dark');
+  useEffect(() => {
+    const update = () => setDark(document.documentElement.dataset.theme === 'dark');
+    window.addEventListener('hm:theme-changed', update);
+    return () => window.removeEventListener('hm:theme-changed', update);
+  }, []);
+  return <button type="button" className={compact ? 'mobile-sidebar__theme-toggle' : 'settings-option'}
+    aria-pressed={dark} aria-label="Darkmode" onClick={toggleTheme}>
+    {compact ? <span className="mobile-sidebar__theme-knob" aria-hidden="true" /> : <span>Darkmode: {dark ? 'Ein' : 'Aus'}</span>}
+  </button>;
+}
 
 const navigationGroups = [
   {
@@ -105,7 +120,7 @@ function normalizePath(pathname) {
     return '/';
   }
 
-  return path.replace(/\/index\.html$/, '').replace(/\/+$/, '') || '/';
+  return path.replace(/\/index\.html$/, '').replace(/\.html$/, '').replace(/\/+$/, '') || '/';
 }
 
 function isItemActive(item, currentPath) {
@@ -136,6 +151,13 @@ function NavGroupMenu({ group, currentPath, onNavigate }) {
         setIsOpen(false);
         buttonRef.current?.focus();
       }
+      if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key) && menuRef.current?.contains(event.target)) {
+        event.preventDefault();
+        const links = [...menuRef.current.querySelectorAll('[role="menuitem"]')];
+        const index = links.indexOf(document.activeElement);
+        const next = event.key === 'Home' ? 0 : event.key === 'End' ? links.length - 1 : (index + (event.key === 'ArrowUp' ? -1 : 1) + links.length) % links.length;
+        links[next]?.focus();
+      }
     };
 
     document.addEventListener('mousedown', handlePointerDown);
@@ -158,6 +180,7 @@ function NavGroupMenu({ group, currentPath, onNavigate }) {
         type="button"
         className={`nav-link nav-link--more${hasActiveItem ? ' is-active' : ''}`}
         aria-expanded={isOpen ? 'true' : 'false'}
+        aria-haspopup="menu"
         aria-controls={`nav-group-${group.id}`}
         onClick={() => setIsOpen((open) => !open)}
         onKeyDown={(event) => {
@@ -172,8 +195,8 @@ function NavGroupMenu({ group, currentPath, onNavigate }) {
         {group.hint ? <span className="nav-group-menu__hint" {...(group.hintKey ? { 'data-i18n': group.hintKey } : {})}>{group.hint}</span> : null}
         <ChevronIcon className="more-menu__chevron" />
       </button>
-      <div ref={panelRef} className="more-menu__panel nav-group-menu__panel" id={`nav-group-${group.id}`}>
-        <div className="nav-group-menu__heading">
+      <div ref={panelRef} className="more-menu__panel nav-group-menu__panel" id={`nav-group-${group.id}`} role="menu">
+        <div className="nav-group-menu__heading" role="presentation">
           <strong {...(group.key ? { 'data-i18n': group.key } : {})}>{group.label}</strong>
           {group.hint ? <span {...(group.hintKey ? { 'data-i18n': group.hintKey } : {})}>{group.hint}</span> : null}
         </div>
@@ -182,6 +205,7 @@ function NavGroupMenu({ group, currentPath, onNavigate }) {
             key={item.href}
             className="more-menu__link"
             to={item.href}
+            role="menuitem"
             aria-current={isItemActive(item, currentPath) ? 'page' : undefined}
             onClick={(event) => {
               setIsOpen(false);
@@ -266,6 +290,7 @@ function SettingsDropdown({ mobile = false }) {
       <div className="settings-menu" data-settings-menu="">
         <div className="settings-menu__inner" data-settings-menu-inner="">
           <div className="settings-panel settings-panel--main" data-settings-panel="main">
+            <ThemeToggle />
             <button type="button" className="settings-option" data-settings-open-panel="language">
               <span className="settings-option__icon" aria-hidden="true">
                 <GlobeIcon />
@@ -289,7 +314,7 @@ function SettingsDropdown({ mobile = false }) {
             {locales.map((locale) => (
               <button key={locale.code} type="button" className="settings-option" data-settings-lang={locale.code}>
                 <span className="settings-option__icon settings-option__icon--flag" aria-hidden="true">
-                  {locale.code === 'de' ? '🇩🇪' : locale.code === 'en' ? '🇬🇧' : locale.code === 'it' ? '🇮🇹' : '🇫🇷'}
+                  <GlobeIcon />
                 </span>
                 <span className="settings-option__text">{locale.label}</span>
                 <span className="settings-option__meta">{locale.code.toUpperCase()}</span>
@@ -369,37 +394,21 @@ export function Header() {
   const [isLanguageOpen, setIsLanguageOpen] = useState(false);
   const [selectedLocale, setSelectedLocale] = useState(getStoredLocale);
   const toggleRef = useRef(null);
-  const drawerRef = useRef(null);
   const currentPath = normalizePath(location.pathname);
+  const drawerRef = useDialog(isNavOpen, () => setIsNavOpen(false));
+  useEffect(() => {
+    const close = () => setIsNavOpen(false);
+    window.addEventListener('hm:modal-open', close);
+    return () => window.removeEventListener('hm:modal-open', close);
+  }, []);
+  useLayoutEffect(() => {
+    if (isNavOpen) drawerRef.current?.querySelector('.mobile-sidebar__view.is-active button')?.focus();
+  }, [drawerView, isNavOpen, drawerRef]);
 
   useEffect(() => {
     if (!isNavOpen || typeof window === 'undefined') {
       return undefined;
     }
-
-    const previousOverflow = document.body.style.overflow;
-
-    const focusableSelector = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
-    const handleKeyDown = (event) => {
-      if (event.key === 'Escape') {
-        closeNav();
-        window.requestAnimationFrame(() => toggleRef.current?.focus());
-      }
-      if (event.key === 'Tab') {
-        const focusable = Array.from(drawerRef.current?.querySelectorAll(focusableSelector) || [])
-          .filter((element) => element.offsetParent !== null);
-        if (!focusable.length) return;
-        const first = focusable[0];
-        const last = focusable[focusable.length - 1];
-        if (event.shiftKey && document.activeElement === first) {
-          event.preventDefault();
-          last.focus();
-        } else if (!event.shiftKey && document.activeElement === last) {
-          event.preventDefault();
-          first.focus();
-        }
-      }
-    };
 
     const handleResize = () => {
       if (window.innerWidth > 1080) {
@@ -407,14 +416,9 @@ export function Header() {
       }
     };
 
-    document.body.style.overflow = 'hidden';
-    window.requestAnimationFrame(() => drawerRef.current?.querySelector('.mobile-sidebar__close')?.focus());
-    window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('resize', handleResize);
 
     return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('resize', handleResize);
     };
   }, [isNavOpen]);
@@ -459,7 +463,7 @@ export function Header() {
       <header className="hm-navbar">
         <div className="hm-navbar__inner header">
           <div className="header-left logo">
-            <Link className="logo-link" to="/" data-brand-link="">
+            <Link className="logo-link" to="/" data-brand-link="" aria-label="Homework Manager – Startseite">
               <img data-logo="" alt="" aria-hidden="true" width="32" height="32" src="/media/logo.png" />
               <span className="brand-mark" data-i18n="common.appName">
                 Homework Manager
@@ -523,6 +527,8 @@ export function Header() {
 
       <aside
         ref={drawerRef}
+        tabIndex={-1}
+        inert={isNavOpen ? undefined : ''}
         className={`mobile-sidebar${isNavOpen ? ' is-open' : ''}${drawerView === 'settings' ? ' is-settings-view' : ''}`}
         id="hm-navbar-drawer"
         aria-hidden={isNavOpen ? 'false' : 'true'}
@@ -535,6 +541,7 @@ export function Header() {
           <div
             className={`mobile-sidebar__view mobile-sidebar__view--main${drawerView === 'main' ? ' is-active' : ''}`}
             aria-hidden={drawerView === 'main' ? 'false' : 'true'}
+            inert={drawerView === 'main' ? undefined : ''}
           >
             <div className="mobile-sidebar__inner">
               <div className="mobile-sidebar__header">
@@ -575,6 +582,7 @@ export function Header() {
           <div
             className={`mobile-sidebar__view mobile-sidebar__view--settings${drawerView === 'settings' ? ' is-active' : ''}`}
             aria-hidden={drawerView === 'settings' ? 'false' : 'true'}
+            inert={drawerView === 'settings' ? undefined : ''}
           >
             <div className="mobile-sidebar__inner mobile-sidebar__inner--settings">
               <div className="mobile-sidebar__header mobile-sidebar__header--settings">
@@ -605,13 +613,23 @@ export function Header() {
                         </span>
                         <ChevronIcon className="mobile-sidebar__select-chevron" />
                       </button>
-                      <div className="mobile-sidebar__language-menu" id="mobile-language-options">
+                      <div className="mobile-sidebar__language-menu" id="mobile-language-options" role="listbox" aria-label="Sprache" hidden={!isLanguageOpen}
+                        onKeyDown={event => {
+                          if (event.key === 'Escape') { event.stopPropagation(); setIsLanguageOpen(false); event.currentTarget.previousElementSibling?.focus(); return; }
+                          if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+                          event.preventDefault();
+                          const options = [...event.currentTarget.querySelectorAll('[role="option"]')];
+                          const current = options.indexOf(document.activeElement);
+                          const next = event.key === 'Home' ? 0 : event.key === 'End' ? options.length - 1 : (current + (event.key === 'ArrowDown' ? 1 : -1) + options.length) % options.length;
+                          options[next]?.focus();
+                        }}>
                         {locales.map((locale) => (
                           <button
                             key={locale.code}
                             className="mobile-sidebar__language-option"
                             type="button"
-                            aria-pressed={selectedLocale === locale.code ? 'true' : 'false'}
+                            role="option"
+                            aria-selected={selectedLocale === locale.code ? 'true' : 'false'}
                             onClick={() => updateLocale(locale.code)}
                           >
                             {locale.label} ({locale.code.toUpperCase()})
@@ -619,6 +637,13 @@ export function Header() {
                         ))}
                       </div>
                     </div>
+                  </div>
+                  <div className="mobile-sidebar__toggle-row">
+                    <span>
+                      <strong>Darkmode</strong>
+                      <small>Dunkles Erscheinungsbild</small>
+                    </span>
+                    <ThemeToggle compact />
                   </div>
                 </section>
 

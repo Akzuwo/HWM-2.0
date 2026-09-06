@@ -61,6 +61,8 @@ import { resolveApiBase } from './api-client.js';
       this.unsubscribe = null;
       this.boundOnChange = (event) => this.handleSelectionChange(event);
       this.hideTimer = null;
+      this.boundOnLeave = () => this.destroy();
+      root.addEventListener('hm:page-leave', this.boundOnLeave, { once: true });
     }
 
     resolveElements() {
@@ -357,6 +359,7 @@ import { resolveApiBase } from './api-client.js';
     }
 
     destroy() {
+      root.removeEventListener('hm:page-leave', this.boundOnLeave);
       this.detachListeners();
       if (this.hideTimer) {
         clearTimeout(this.hideTimer);

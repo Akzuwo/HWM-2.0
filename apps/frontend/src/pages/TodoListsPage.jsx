@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { GlassSkeleton } from '../components/GlassSkeleton';
 import { usePageSetup } from '../hooks/usePageSetup';
 import { resolveApiBase } from '../../utils/js/api-client';
+import { Link } from 'react-router-dom';
+import { useConfirm } from '../hooks/useConfirm';
 
 const today = new Date().toISOString().slice(0, 10);
 const filters = [
@@ -20,7 +22,9 @@ async function apiFetch(path, options = {}) {
   });
   const payload = await response.json().catch(() => null);
   if (!response.ok || !payload) {
-    throw new Error(payload?.message || 'request_failed');
+    const error = new Error('Die Anfrage konnte nicht abgeschlossen werden.');
+    error.status = response.status;
+    throw error;
   }
   return payload;
 }
@@ -86,6 +90,10 @@ export function TodoListsPage() {
   const [status, setStatus] = useState('loading');
   const [message, setMessage] = useState('');
   const subtaskRefs = useRef([]);
+  const mutationRefs = useRef(new Set());
+  const [pendingIds, setPendingIds] = useState(new Set());
+  const [authRequired, setAuthRequired] = useState(false);
+  const { confirm, confirmation } = useConfirm();
 
   const stats = useMemo(() => {
     const openTodos = todos.filter((todo) => !todo.is_done).length;
@@ -107,14 +115,18 @@ export function TodoListsPage() {
   }, [filter, todos]);
 
   async function loadTodos() {
-    setStatus('loading');
+    setStatus(todos.length ? 'refreshing' : 'loading');
     try {
       const payload = await apiFetch('/api/todos');
       setTodos((payload.data || []).map(normalizeTodo));
       setMessage('');
       setStatus('ready');
+      setAuthRequired(false);
     } catch (error) {
-      setMessage('Bitte melde dich an, um deine ToDo-Listen zu sehen.');
+      setAuthRequired(error.status === 401 || error.status === 403);
+      setMessage(error.status === 401 || error.status === 403
+        ? 'Bitte melde dich an, um deine ToDo-Listen zu sehen.'
+        : 'Deine ToDos konnten nicht geladen werden. Prüfe die Verbindung und versuche es erneut.');
       setStatus('error');
     }
   }
@@ -157,17 +169,10 @@ export function TodoListsPage() {
     window.setTimeout(() => subtaskRefs.current[index + 1]?.focus(), 0);
   }
 
-  function patchTodoLocal(todoId, updater) {
-    let nextTodo = null;
-    setTodos((current) =>
-      current.map((todo) => {
-        if (todo.id !== todoId) return todo;
-        const patched = normalizeTodo(typeof updater === 'function' ? updater(todo) : { ...todo, ...updater });
-        nextTodo = patched;
-        return patched;
-      })
-    );
-    return nextTodo;
+  function setPending(todoId, pending) {
+    if (pending) mutationRefs.current.add(todoId);
+    else mutationRefs.current.delete(todoId);
+    setPendingIds(new Set(mutationRefs.current));
   }
 
   async function persistTodo(todo) {
@@ -178,20 +183,26 @@ export function TodoListsPage() {
   }
 
   async function updateTodoOptimistic(todoId, updater) {
-    const previous = todos;
-    const nextTodo = patchTodoLocal(todoId, updater);
-    if (!nextTodo) return;
+    if (mutationRefs.current.has(todoId)) return;
+    const previous = todos.find(todo => todo.id === todoId);
+    if (!previous) return;
+    const nextTodo = normalizeTodo(typeof updater === 'function' ? updater(previous) : { ...previous, ...updater });
+    setPending(todoId, true);
+    setTodos(current => current.map(todo => todo.id === todoId ? nextTodo : todo));
     try {
       await persistTodo(nextTodo);
       setMessage('');
     } catch {
-      setTodos(previous);
-      setMessage('Änderung konnte nicht gespeichert werden.');
+      setTodos(current => current.map(todo => todo.id === todoId ? previous : todo));
+      setMessage('Änderung konnte nicht gespeichert werden. Der vorherige Stand wurde wiederhergestellt. Bitte versuche es erneut.');
+    } finally {
+      setPending(todoId, false);
     }
   }
 
   async function submitTodo(event) {
     event.preventDefault();
+    if (mutationRefs.current.has('create')) return;
     const title = draft.beschreibung.trim();
     if (!title) {
       setMessage('Bitte gib deinem ToDo einen Titel.');
@@ -207,21 +218,22 @@ export function TodoListsPage() {
       subtasks
     });
 
-    setTodos((current) => [optimisticTodo, ...current]);
-    setDraft(createDraft());
+    setPending('create', true);
     setStatus('saving');
     try {
       const payload = await apiFetch('/api/todos', {
         method: 'POST',
         body: JSON.stringify(todoPayload(optimisticTodo))
       });
-      setTodos((current) => current.map((todo) => (todo.id === optimisticTodo.id ? { ...optimisticTodo, id: payload.id } : todo)));
+      setTodos(current => [{ ...optimisticTodo, id: payload.id }, ...current]);
+      setDraft(current => current === draft ? createDraft() : current);
       setStatus('ready');
       setMessage('');
     } catch {
-      setTodos((current) => current.filter((todo) => todo.id !== optimisticTodo.id));
       setStatus('ready');
-      setMessage('ToDo konnte nicht erstellt werden.');
+      setMessage('ToDo konnte nicht erstellt werden. Dein Entwurf bleibt erhalten. Bitte versuche es erneut.');
+    } finally {
+      setPending('create', false);
     }
   }
 
@@ -268,19 +280,24 @@ export function TodoListsPage() {
   }
 
   async function deleteTodo(todoId) {
-    const previous = todos;
-    setTodos((current) => current.filter((todo) => todo.id !== todoId));
+    if (mutationRefs.current.has(todoId)) return;
+    const todo = todos.find(item => item.id === todoId);
+    if (!await confirm({ title: 'ToDo löschen', message: `„${todo?.beschreibung}“ und alle zugehörigen Schritte werden dauerhaft gelöscht.`, label: 'ToDo löschen' })) return;
+    setPending(todoId, true);
     try {
       await apiFetch(`/api/todos/${todoId}`, { method: 'DELETE' });
+      setTodos((current) => current.filter((todo) => todo.id !== todoId));
       setMessage('');
     } catch {
-      setTodos(previous);
-      setMessage('ToDo konnte nicht gelöscht werden.');
+      setMessage('ToDo konnte nicht gelöscht werden. Bitte versuche es erneut.');
+    } finally {
+      setPending(todoId, false);
     }
   }
 
   return (
     <>
+      {confirmation}
       <main className="todo-lists todo-lists--compact" id="main">
         <header className="todo-lists__header todo-lists__header--compact">
           <div>
@@ -318,7 +335,9 @@ export function TodoListsPage() {
               <span className="todo-subtask-editor__label">Subtasks</span>
               {draft.subtasks.map((subtask, index) => (
                 <div className="todo-subtask-row todo-subtask-row--draft" key={index}>
+                  <label><span>Schritt {index + 1}</span>
                   <input
+                    aria-label={`Schritt ${index + 1}`}
                     ref={(node) => {
                       subtaskRefs.current[index] = node;
                     }}
@@ -327,6 +346,7 @@ export function TodoListsPage() {
                     onKeyDown={(event) => handleDraftSubtaskKeyDown(event, index)}
                     placeholder={index === 0 ? 'Schritt eingeben, Enter für nächsten' : 'Nächster Schritt'}
                   />
+                  </label>
                   <button type="button" aria-label="Subtask entfernen" onClick={() => removeDraftSubtask(index)}>
                     ×
                   </button>
@@ -334,10 +354,12 @@ export function TodoListsPage() {
               ))}
             </div>
 
-            <button className="todo-lists__primary" type="submit" disabled={status === 'saving'}>
-              Erstellen
+            <button className="todo-lists__primary" type="submit" aria-disabled={status === 'saving'} aria-busy={status === 'saving'}>
+              {status === 'saving' ? 'Wird erstellt…' : 'ToDo erstellen'}
             </button>
-            {message ? <p className="todo-lists__message">{message}</p> : null}
+            {message ? <div className="todo-lists__message" role="alert"><p>{message}</p>
+              {status === 'error' ? (authRequired ? <Link to="/login">Anmelden</Link> : <button type="button" onClick={loadTodos}>Erneut versuchen</button>) : null}
+            </div> : null}
           </form>
 
           <section className="todo-panel todo-list-panel todo-list-panel--compact" aria-live="polite">
@@ -348,17 +370,19 @@ export function TodoListsPage() {
                     key={item.id}
                     type="button"
                     className={filter === item.id ? 'is-active' : ''}
+                    aria-pressed={filter === item.id}
                     onClick={() => setFilter(item.id)}
                   >
                     {item.label}
                   </button>
                 ))}
               </div>
-              <span className="todo-sort-label">Nach Datum</span>
+              <span className="todo-sort-label">{visibleTodos.length} Ergebnisse · Nach Datum</span>
             </div>
 
             {status === 'loading' ? <GlassSkeleton label="ToDos werden geladen" rows={4} compact /> : null}
-            {status !== 'loading' && visibleTodos.length === 0 ? <p className="todo-lists__empty">Keine passenden ToDos.</p> : null}
+            {status === 'refreshing' ? <p role="status">ToDos werden aktualisiert…</p> : null}
+            {status === 'ready' && visibleTodos.length === 0 ? <div className="todo-lists__empty"><p>{todos.length ? 'Keine ToDos für diesen Filter.' : 'Noch keine ToDos. Erfasse deine erste Aufgabe im Formular.'}</p>{filter !== 'all' ? <button type="button" onClick={() => setFilter('all')}>Alle ToDos anzeigen</button> : null}</div> : null}
 
             <div className="todo-cards todo-cards--compact" role="list">
               {visibleTodos.map((todo) => {
@@ -369,7 +393,7 @@ export function TodoListsPage() {
                     className={`todo-card todo-card--compact${todo.is_done ? ' is-done' : ''}${isExpanded ? ' is-expanded' : ''}`}
                     key={todo.id}
                     role="listitem"
-                    onClick={() => toggleExpanded(todo.id)}
+                    aria-busy={pendingIds.has(todo.id)}
                   >
                     <div className="todo-card__main">
                       <button
@@ -377,6 +401,7 @@ export function TodoListsPage() {
                         type="button"
                         aria-label={todo.is_done ? 'ToDo wieder öffnen' : 'ToDo erledigen'}
                         aria-pressed={todo.is_done}
+                        disabled={pendingIds.has(todo.id)}
                         onClick={(event) => {
                           event.stopPropagation();
                           toggleTodo(todo);
@@ -389,6 +414,7 @@ export function TodoListsPage() {
                         {editingTitleId === todo.id ? (
                           <input
                             className="todo-title-input"
+                            aria-label="ToDo-Titel bearbeiten"
                             value={titleDraft}
                             autoFocus
                             onClick={(event) => event.stopPropagation()}
@@ -417,10 +443,12 @@ export function TodoListsPage() {
                       <time className="todo-card__date" dateTime={todo.datum}>
                         {formatDueDate(todo.datum)}
                       </time>
+                      <button className="todo-card__expand" type="button" aria-expanded={isExpanded} aria-controls={`todo-steps-${todo.id}`} onClick={() => toggleExpanded(todo.id)} aria-label={isExpanded ? 'Schritte einklappen' : 'Schritte anzeigen'}>{isExpanded ? '−' : '+'}</button>
                       <button
                         className="todo-card__delete"
                         type="button"
                         aria-label="ToDo löschen"
+                        disabled={pendingIds.has(todo.id)}
                         onClick={(event) => {
                           event.stopPropagation();
                           deleteTodo(todo.id);
@@ -430,7 +458,7 @@ export function TodoListsPage() {
                       </button>
                     </div>
 
-                    <div className="todo-card__subtask-wrap" aria-hidden={!isExpanded}>
+                    <div id={`todo-steps-${todo.id}`} className="todo-card__subtask-wrap" aria-hidden={!isExpanded} inert={isExpanded ? undefined : ''}>
                       {todo.subtasks.length ? (
                         <ul className="todo-card__subtasks todo-card__subtasks--compact">
                           {todo.subtasks.map((subtask, index) => (
@@ -440,6 +468,7 @@ export function TodoListsPage() {
                                 className="todo-subcheck"
                                 aria-label={subtask.is_done ? 'Subtask wieder öffnen' : 'Subtask erledigen'}
                                 aria-pressed={subtask.is_done}
+                                disabled={pendingIds.has(todo.id)}
                                 onClick={(event) => {
                                   event.stopPropagation();
                                   toggleSubtask(todo, index);

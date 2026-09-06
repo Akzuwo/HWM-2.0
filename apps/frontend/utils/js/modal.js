@@ -125,7 +125,7 @@
       close(activeModal.overlay, { restoreFocus: false });
     }
 
-    const dialog = overlay.querySelector('.hm-modal') || overlay;
+    const dialog = overlay.querySelector('[role="dialog"], .hm-modal') || overlay;
     if (!dialog.hasAttribute('tabindex')) {
       dialog.setAttribute('tabindex', '-1');
     }
@@ -135,6 +135,7 @@
       : null;
 
     overlay.classList.add('is-open');
+    overlay.inert = false;
     overlay.setAttribute('aria-hidden', 'false');
 
     if (openCount === 0) {
@@ -156,16 +157,19 @@
     };
 
     setInitialFocus(overlay, dialog, options);
+    window.dispatchEvent(new Event('hm:modal-open'));
   }
 
   function close(target, options = {}) {
     const overlay = resolveElement(target);
     if (!overlay) return;
+    if (!overlay.classList.contains('is-open')) return;
 
     const shouldRestoreFocus = options.restoreFocus !== false;
 
     if (overlay.classList.contains('is-open')) {
       overlay.classList.remove('is-open');
+      overlay.inert = true;
       overlay.setAttribute('aria-hidden', 'true');
     }
 
@@ -253,6 +257,54 @@
 
   window.hmModal = {
     open,
-    close
+    close,
+    confirm({ title, message, label = 'Löschen' }) {
+      return new Promise(resolve => {
+        const overlay = document.createElement('div');
+        overlay.className = 'hm-modal-overlay';
+        const dialog = document.createElement('section');
+        dialog.className = 'hm-modal';
+        dialog.setAttribute('role', 'dialog');
+        dialog.setAttribute('aria-modal', 'true');
+        const heading = document.createElement('h2');
+        heading.id = 'hm-confirm-title';
+        heading.textContent = title;
+        dialog.setAttribute('aria-labelledby', heading.id);
+        const text = document.createElement('p');
+        text.textContent = message;
+        const actions = document.createElement('div');
+        actions.className = 'hm-modal__actions';
+        const cancel = document.createElement('button');
+        cancel.type = 'button';
+        cancel.className = 'hm-modal__button hm-modal__button--secondary';
+        cancel.textContent = 'Abbrechen';
+        const accept = document.createElement('button');
+        accept.type = 'button';
+        accept.className = 'hm-modal__button hm-modal__button--danger';
+        accept.textContent = label;
+        let finished = false;
+        const finish = value => {
+          if (finished) return;
+          finished = true;
+          close(overlay);
+          overlay.remove();
+          resolve(value);
+        };
+        cancel.onclick = () => finish(false);
+        accept.onclick = () => finish(true);
+        overlay.onclick = event => { if (event.target === overlay) finish(false); };
+        actions.append(cancel, accept);
+        dialog.append(heading, text, actions);
+        overlay.append(dialog);
+        document.body.append(overlay);
+        open(overlay, { initialFocus: cancel, onRequestClose: () => finish(false) });
+      });
+    }
   };
+  window.addEventListener('hm:page-leave', () => {
+    if (activeModal) {
+      activeModal.onRequestClose?.();
+      if (activeModal) close(activeModal.overlay, { restoreFocus: false });
+    }
+  });
 })();

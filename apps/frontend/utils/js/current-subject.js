@@ -1,4 +1,5 @@
 import { resolveApiBase } from './api-client.js';
+import { showViewState } from './view-state.js';
 
 (function () {
   const API_BASE = resolveApiBase();
@@ -109,6 +110,13 @@ import { resolveApiBase } from './api-client.js';
     if (!root) {
       return;
     }
+    if (root.dataset.enhanced === 'true') return;
+    root.dataset.enhanced = 'true';
+    const feedback = document.createElement('div');
+    feedback.hidden = true;
+    root.prepend(feedback);
+    let disposed = false;
+    let controller = null;
 
     const text = { ...DEFAULT_TEXT, ...(config.text || {}) };
     const subjectSuffix = root.querySelector('[data-subject-name]');
@@ -165,14 +173,14 @@ import { resolveApiBase } from './api-client.js';
 
     function updateLoadingState() {
       const isLoading = state.activeRequests > 0;
-      root.classList.toggle('is-loading', isLoading);
+      root.classList.toggle('is-loading', isLoading && !state.lastPayload);
       if (isLoading) {
         root.setAttribute('aria-busy', 'true');
       } else {
         root.removeAttribute('aria-busy');
       }
       if (loaderIndicator) {
-        loaderIndicator.hidden = !isLoading;
+        loaderIndicator.hidden = !isLoading || Boolean(state.lastPayload);
       }
       if (countdownContainer) {
         if (isLoading) {
@@ -369,6 +377,9 @@ import { resolveApiBase } from './api-client.js';
     }
 
     function handleError(message = text.error) {
+      feedback.hidden = false;
+      showViewState(feedback, { message: state.lastPayload ? 'Die Aktualisierung ist fehlgeschlagen. Die zuletzt geladenen Angaben bleiben sichtbar.' : message, error: !state.unauthorized, login: state.unauthorized, retry: state.unauthorized ? undefined : () => { state.featureUnavailable = false; fetchData(); } });
+      if (state.lastPayload) return;
       setSubjectLabel(null, false);
       if (subjectSuffix) {
         subjectSuffix.textContent = '· —';
@@ -400,12 +411,13 @@ import { resolveApiBase } from './api-client.js';
     }
 
     async function fetchData() {
-      if (state.unauthorized || state.featureUnavailable) {
+      if (disposed || state.activeRequests || state.unauthorized || state.featureUnavailable) {
         return;
       }
       beginLoading();
       try {
         const requestInit = {
+          signal: (controller = new AbortController()).signal,
           cache: 'no-store',
           credentials: 'include',
           ...(config.fetchOptions || {}),
@@ -441,12 +453,16 @@ import { resolveApiBase } from './api-client.js';
           throw new Error(`Request failed with status ${response.status}`);
         }
         const payload = await response.json();
+        if (disposed) return;
+        feedback.hidden = true;
+        feedback.replaceChildren();
         state.unauthorized = false;
         state.featureUnavailable = false;
         state.lastPayload = payload;
         renderCurrent(payload);
         renderNext(payload);
       } catch (error) {
+        if (disposed || error?.name === 'AbortError') return;
         console.error('Error while loading current subject', error);
         handleError();
       } finally {
@@ -470,6 +486,8 @@ import { resolveApiBase } from './api-client.js';
     }
 
     function cleanup() {
+      disposed = true;
+      controller?.abort();
       stopTicker();
       if (state.fetchTimer) {
         clearInterval(state.fetchTimer);
@@ -478,11 +496,13 @@ import { resolveApiBase } from './api-client.js';
       document.removeEventListener('visibilitychange', onVisibilityChange);
       window.removeEventListener('pagehide', cleanup);
       window.removeEventListener('beforeunload', cleanup);
+      window.removeEventListener('hm:page-leave', cleanup);
     }
 
     document.addEventListener('visibilitychange', onVisibilityChange);
     window.addEventListener('pagehide', cleanup);
     window.addEventListener('beforeunload', cleanup);
+    window.addEventListener('hm:page-leave', cleanup);
 
     fetchData();
     scheduleRefresh();

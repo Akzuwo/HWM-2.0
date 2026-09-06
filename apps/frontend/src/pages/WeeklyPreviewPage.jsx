@@ -28,9 +28,9 @@ export function WeeklyPreviewPage() {
           </div>
         </header>
         <section className="weekly-preview__card" aria-live="polite">
-          <p className="weekly-preview__status weekly-preview__status--loading" id="weekly-preview-status" data-i18n="weeklyPreview.loading">
+          <div className="weekly-preview__status weekly-preview__status--loading" id="weekly-preview-status">
             Generating preview...
-          </p>
+          </div>
           <GlassSkeleton label="Daybrief wird erstellt" rows={4} />
           <p className="weekly-preview__intro" id="weekly-preview-intro" hidden></p>
           <ul className="weekly-preview__list" id="weekly-preview-list" hidden></ul>
@@ -41,7 +41,7 @@ export function WeeklyPreviewPage() {
             <span data-i18n="weeklyPreview.refresh">Regenerate</span>
           </button>
           <button type="button" className="weekly-preview__button weekly-preview__button--secondary" id="weekly-preview-back">
-            <span data-i18n="weeklyPreview.back">◀️ Back to overview</span>
+            <span data-i18n="weeklyPreview.back">← Back to overview</span>
           </button>
         </div>
       </main>

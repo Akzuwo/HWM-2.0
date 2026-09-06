@@ -51,7 +51,9 @@
 
   function notify(previousState) {
     const snapshot = getStateSnapshot();
-    listeners.forEach((listener) => {
+    // A subscriber may unsubscribe and subscribe again while handling a role change.
+    // Iterate a snapshot so the replacement is not visited again in this notification.
+    Array.from(listeners).forEach((listener) => {
       if (typeof listener !== 'function') {
         return;
       }

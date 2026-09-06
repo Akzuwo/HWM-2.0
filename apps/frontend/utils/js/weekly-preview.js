@@ -1,4 +1,5 @@
 import { resolveApiBase } from './api-client.js';
+import { showViewState } from './view-state.js';
 
 const API_BASE_URL = resolveApiBase();
 const IS_DEV = Boolean(import.meta.env?.DEV);
@@ -106,6 +107,7 @@ function setStatus(elements, text, loading = false, { clearContent = true } = {}
   elements.status.textContent = text;
   elements.status.classList.toggle('weekly-preview__status--loading', Boolean(loading));
   elements.status.hidden = false;
+  if (elements.skeleton) elements.skeleton.hidden = !loading || !clearContent;
   if (!clearContent) {
     elements.card?.setAttribute('aria-busy', loading ? 'true' : 'false');
     return;
@@ -128,6 +130,7 @@ function setStatus(elements, text, loading = false, { clearContent = true } = {}
 }
 
 function renderSummary(elements, payload) {
+  if (elements.skeleton) elements.skeleton.hidden = true;
   warnOnRenderBurst();
   const summary = payload && payload.summary ? payload.summary : '';
   const parsed = splitSummaryLines(summary);
@@ -185,6 +188,7 @@ async function loadWeeklyPreview(elements, { force = false } = {}) {
   const hasContent = Boolean(elements.intro?.textContent || elements.list?.children.length);
   if (refreshButton) {
     refreshButton.disabled = true;
+    refreshButton.setAttribute('aria-busy', 'true');
   }
   setStatus(elements, t('loading', 'Generating preview...'), true, { clearContent: !hasContent });
 
@@ -207,6 +211,7 @@ async function loadWeeklyPreview(elements, { force = false } = {}) {
     if (requestId !== previewRequestSequence) return;
     if (await responseRequiresClassContext(res)) {
       setStatus(elements, t('unauthorized', 'Please sign in and make sure you are assigned to a class.'), false);
+      showViewState(elements.status, { message: t('unauthorized', 'Bitte melde dich an und wähle deine Klasse.'), login: true });
       return;
     }
     if (!res.ok) {
@@ -221,9 +226,11 @@ async function loadWeeklyPreview(elements, { force = false } = {}) {
     }
     console.error('Failed to load weekly preview:', error);
     setStatus(elements, t('error', 'Unable to generate weekly preview right now.'), false, { clearContent: !hasContent });
+    showViewState(elements.status, { message: hasContent ? 'Die Aktualisierung ist fehlgeschlagen. Die letzte Vorschau bleibt sichtbar.' : t('error', 'Die Wochenvorschau konnte nicht geladen werden.'), error: true, retry: () => loadWeeklyPreview(elements) });
   } finally {
     if (requestId === previewRequestSequence && refreshButton) {
       refreshButton.disabled = false;
+      refreshButton.setAttribute('aria-busy', 'false');
     }
   }
 }
@@ -231,6 +238,7 @@ async function loadWeeklyPreview(elements, { force = false } = {}) {
 document.addEventListener('DOMContentLoaded', async () => {
   const elements = {
     card: document.querySelector('.weekly-preview__card'),
+    skeleton: document.querySelector('.weekly-preview__card .loading-glass-placeholder'),
     status: document.getElementById('weekly-preview-status'),
     intro: document.getElementById('weekly-preview-intro'),
     list: document.getElementById('weekly-preview-list'),
@@ -243,6 +251,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
   elements.card.dataset.weeklyPreviewEnhanced = 'true';
+  lastPreviewSignature = '';
 
   if (elements.back && elements.back.dataset.weeklyPreviewBound !== 'true') {
     elements.back.addEventListener('click', () => {

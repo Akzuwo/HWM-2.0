@@ -13,6 +13,7 @@ export function usePageSetup({ bodyClass = '', scripts = [] } = {}) {
     const previous = document.body.className;
     document.body.className = bodyClass;
     document.body.classList.add('hm-react-shell');
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     return () => {
       document.body.className = previous;
     };
@@ -31,10 +32,26 @@ export function usePageSetup({ bodyClass = '', scripts = [] } = {}) {
 
     bootstrap().catch((error) => {
       console.error('Failed to bootstrap legacy page logic:', error);
+      if (!cancelled) {
+        const main = document.querySelector('main, .login-stage');
+        if (main) {
+          const notice = document.createElement('div');
+          notice.className = 'hm-state';
+          notice.setAttribute('role', 'alert');
+          notice.textContent = 'Diese Ansicht konnte nicht vollständig geladen werden. ';
+          const retry = document.createElement('button');
+          retry.type = 'button';
+          retry.textContent = 'Erneut versuchen';
+          retry.onclick = () => window.location.reload();
+          notice.appendChild(retry);
+          main.prepend(notice);
+        }
+      }
     });
 
     return () => {
       cancelled = true;
+      window.dispatchEvent(new Event('hm:page-leave'));
     };
   }, [scriptsKey]);
 }

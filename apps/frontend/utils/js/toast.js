@@ -1,7 +1,7 @@
 (function (global) {
   const TOAST_TIMEOUT = 5000;
   const CONTAINER_ID = 'hm-toast-container';
-  const VARIANTS = new Set(['info', 'success', 'error']);
+  const VARIANTS = new Set(['info', 'success', 'error', 'warning']);
 
   function ensureContainer() {
     let container = document.getElementById(CONTAINER_ID);
@@ -28,6 +28,7 @@
       remove();
     } else {
       toast.addEventListener('transitionend', remove, { once: true });
+      setTimeout(remove, 400);
     }
   }
 
@@ -42,21 +43,37 @@
     const closeButton = document.createElement('button');
     closeButton.type = 'button';
     closeButton.className = 'hm-toast__close';
-    closeButton.setAttribute('aria-label', options.closeLabel || 'Dismiss message');
+    closeButton.setAttribute('aria-label', options.closeLabel || 'Meldung schliessen');
     closeButton.textContent = '×';
     closeButton.addEventListener('click', () => hideToast(toast));
     toast.appendChild(closeButton);
 
     container.appendChild(toast);
+    while (container.children.length > 3) container.firstElementChild.remove();
 
     requestAnimationFrame(() => {
       toast.classList.add('is-visible');
     });
 
-    const timeout = Math.max(2000, Number(options.timeout) || TOAST_TIMEOUT);
+    const timeout = Math.max(5000, Number(options.timeout) || TOAST_TIMEOUT);
     if (timeout !== Infinity) {
-      const timer = setTimeout(() => hideToast(toast), timeout);
-      toast.addEventListener('mouseenter', () => clearTimeout(timer), { once: true });
+      let remaining = timeout;
+      let started = Date.now();
+      let timer = setTimeout(() => hideToast(toast), remaining);
+      let paused = false;
+      const pause = () => { if (paused) return; paused = true; clearTimeout(timer); remaining -= Date.now() - started; };
+      const resume = () => {
+        if (toast.matches(':hover') || toast.contains(document.activeElement)) return;
+        if (!paused) return;
+        paused = false;
+        clearTimeout(timer);
+        started = Date.now();
+        timer = setTimeout(() => hideToast(toast), Math.max(0, remaining));
+      };
+      toast.addEventListener('mouseenter', pause);
+      toast.addEventListener('mouseleave', resume);
+      toast.addEventListener('focusin', pause);
+      toast.addEventListener('focusout', () => queueMicrotask(resume));
     }
     return toast;
   }
@@ -77,4 +94,5 @@
   };
 
   global.hmToast = api;
+  global.showToast = (message) => api.info(message);
 })(window);

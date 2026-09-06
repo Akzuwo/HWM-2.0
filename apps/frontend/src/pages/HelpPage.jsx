@@ -18,9 +18,6 @@ export function HelpPage() {
         <section className="help-grid">
           <article className="help-section">
             <header className="help-section__header">
-              <span className="help-section__icon" aria-hidden="true">
-                👩‍🏫
-              </span>
               <h2 data-i18n="help.teacher.title">For teachers</h2>
             </header>
             <p data-i18n="help.teacher.summary">Plan entries and keep your class informed.</p>
@@ -42,9 +39,6 @@ export function HelpPage() {
 
           <article className="help-section">
             <header className="help-section__header">
-              <span className="help-section__icon" aria-hidden="true">
-                🎒
-              </span>
               <h2 data-i18n="help.students.title">For students</h2>
             </header>
             <p data-i18n="help.students.summary">Track rooms, deadlines, and assignments on any device.</p>
@@ -66,9 +60,6 @@ export function HelpPage() {
 
           <article className="help-section">
             <header className="help-section__header">
-              <span className="help-section__icon" aria-hidden="true">
-                🛡️
-              </span>
               <h2 data-i18n="help.admins.title">For class admins</h2>
             </header>
             <p data-i18n="help.admins.summary">Keep roles, timetables, and entries organised.</p>

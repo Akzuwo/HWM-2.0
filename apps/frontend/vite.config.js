@@ -20,11 +20,11 @@ function departuresRouteRedirectPlugin() {
   };
 }
 
-export default defineConfig({
-  plugins: [react(), departuresRouteRedirectPlugin(), cloudflare()],
+export default defineConfig(({ mode }) => ({
+  plugins: [react(), departuresRouteRedirectPlugin(), ...(mode === 'audit' ? [] : [cloudflare()])],
   envDir: '.',
   server: {
     host: true,
     port: 5173
   }
-});
+}));

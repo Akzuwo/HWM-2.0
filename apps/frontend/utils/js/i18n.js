@@ -210,7 +210,7 @@
       },
       calendar: {
         pageTitle: 'Kalender',
-        heading: '📅 Kalender',
+        heading: 'Kalender',
         description: 'Behalte Hausaufgaben, Prüfungen und Events in einer dunklen, klar strukturierten Ansicht im Blick.',
         header: {
           eyebrow: 'Planungsboard',
@@ -315,7 +315,7 @@
           viewTitle: 'Kalender-Eintrag',
           noDescription: '<em>Keine Beschreibung vorhanden.</em>',
           close: 'Schließen',
-          createTitle: '📝 Neuen Eintrag erstellen',
+          createTitle: 'Neuen Eintrag erstellen',
           labels: {
             type: 'Typ',
             subject: 'Fach',
@@ -545,7 +545,7 @@
         passwordResetSubmitLoading: 'Passwort wird geändert …',
         passwordResetSubtitle: 'Gib den Code aus der E-Mail ein und wähle ein neues Passwort.',
         passwordResetSuccess: 'Dein Passwort wurde erfolgreich geändert. Du kannst dich jetzt anmelden.',
-        passwordResetTitle: '🔁 Passwort zurücksetzen',
+        passwordResetTitle: 'Passwort zurücksetzen',
         registerClassLabel: 'Klasse (optional)',
         registerClassNotFound: 'Diese Klasse wurde nicht gefunden.',
         registerClassPlaceholder: 'z.B. L23a/ Lehrpersonen dieses Feld bitte leer lassen',
@@ -567,8 +567,8 @@
         submitLoading: 'Anmelden …',
         switchToLogin: 'Schon registriert? Anmelden',
         switchToRegister: 'Neu hier? Konto erstellen',
-        title: '🔒 Login',
-        verificationCodeHint: '⚠️ Der Versand der E-Mail kann bis zu 2 Minuten dauern.',
+        title: 'Login',
+        verificationCodeHint: 'Der Versand der E-Mail kann bis zu 2 Minuten dauern.',
         verificationCodeInvalid: 'Der Code ist ungültig oder abgelaufen.',
         verificationCodeLabel: 'Bestätigungscode',
         verificationCodePlaceholder: '8-stelliger Code',
@@ -638,7 +638,7 @@
         title: 'Tagesvorschau',
         classLabel: 'Klasse',
         classPlaceholder: 'Klasse wählen',
-        back: '◀️ Zurück',
+        back: '← Zurück',
         loading: 'Lade Daten…',
         unauthorized:
           'Bitte melde dich an und stelle sicher, dass du einer Klasse zugeordnet bist, um die Tagesübersicht zu sehen.',
@@ -661,7 +661,7 @@
         lead: 'Bleibe über anstehende Schul-Events informiert und plane deine Woche mühelos.',
         notice: 'Dieses Feature wird aktuell umgebaut.',
         loading: 'Lade Daten…',
-        back: '◀️ Zur Übersicht',
+        back: '← Zur Übersicht',
         backLabel: 'Zurück zur Startseite',
         unauthorized:
           'Bitte melde dich an und stelle sicher, dass du einer Klasse zugeordnet bist, um die anstehenden Events zu sehen.',
@@ -680,7 +680,7 @@
         lead: 'Dein kompakter Überblick über Aufgaben und Ereignisse der nächsten 7 Tage.',
         loading: 'Vorschau wird erstellt…',
         refresh: 'Neu generieren',
-        back: '◀️ Zur Übersicht',
+        back: '← Zur Übersicht',
         unauthorized: 'Bitte melde dich an und stelle sicher, dass du einer Klasse zugeordnet bist.',
         empty: 'Keine Einträge in den nächsten 7 Tagen.',
         error: 'Die Wochenvorschau konnte aktuell nicht erstellt werden.',
@@ -1125,7 +1125,7 @@
       },
       calendar: {
         pageTitle: 'Calendar',
-        heading: '📅 Calendar',
+        heading: 'Calendar',
         description: 'Keep homework, exams and events in view with a cohesive light experience.',
         header: {
           eyebrow: 'Planning board',
@@ -1206,7 +1206,7 @@
           viewTitle: 'Calendar entry',
           noDescription: '<em>No description provided.</em>',
           close: 'Close',
-          createTitle: '📝 Create new entry',
+          createTitle: 'Create new entry',
           labels: {
             type: 'Type',
             subject: 'Subject',
@@ -1431,7 +1431,7 @@
         passwordResetSubmitLoading: 'Updating password…',
         passwordResetSubtitle: 'Enter the code from your email and choose a new password.',
         passwordResetSuccess: 'Your password has been updated. You can sign in now.',
-        passwordResetTitle: '🔁 Reset password',
+        passwordResetTitle: 'Reset password',
         registerClassLabel: 'Class (optional)',
         registerClassNotFound: 'We could not find this class.',
         registerClassPlaceholder: 'e.g. L23a / Teachers: leave this blank',
@@ -1453,8 +1453,8 @@
         submitLoading: 'Logging in…',
         switchToLogin: 'Already registered? Log in',
         switchToRegister: 'New here? Create an account',
-        title: '🔒 Login',
-        verificationCodeHint: '⚠️ Email delivery can take up to 2 minutes.',
+        title: 'Login',
+        verificationCodeHint: 'Email delivery can take up to 2 minutes.',
         verificationCodeInvalid: 'The code is invalid or has expired.',
         verificationCodeLabel: 'Verification code',
         verificationCodePlaceholder: '8-digit code',
@@ -1524,7 +1524,7 @@
         title: 'Day preview',
         classLabel: 'Class',
         classPlaceholder: 'Select class',
-        back: '◀️ Back',
+        back: '← Back',
         loading: 'Loading data…',
         unauthorized:
           'Please sign in and make sure you are assigned to a class to view the daily overview.',
@@ -1547,7 +1547,7 @@
         lead: 'Stay on top of upcoming school events and plan ahead with ease.',
         notice: 'This feature is currently being rebuilt.',
         loading: 'Loading data…',
-        back: '◀️ Back to overview',
+        back: '← Back to overview',
         backLabel: 'Back to the home page',
         unauthorized:
           'Please sign in and make sure you are assigned to a class to view upcoming events.',
@@ -1566,7 +1566,7 @@
         lead: 'Your compact overview of tasks and events for the next 7 days.',
         loading: 'Generating preview…',
         refresh: 'Regenerate',
-        back: '◀️ Back to overview',
+        back: '← Back to overview',
         unauthorized: 'Please sign in and make sure you are assigned to a class.',
         empty: 'No entries in the next 7 days.',
         error: 'Unable to generate weekly preview right now.',
@@ -2012,7 +2012,7 @@
       },
       calendar: {
         pageTitle: 'Calendario',
-        heading: '📅 Calendario',
+        heading: 'Calendario',
         description: 'Gestisci compiti, verifiche ed eventi in un\'interfaccia scura e coerente.',
         header: {
           eyebrow: 'Area di pianificazione',
@@ -2093,7 +2093,7 @@
           viewTitle: 'Voce di calendario',
           noDescription: '<em>Nessuna descrizione disponibile.</em>',
           close: 'Chiudi',
-          createTitle: '📝 Crea una nuova voce',
+          createTitle: 'Crea una nuova voce',
           labels: {
             type: 'Tipo',
             subject: 'Materia',
@@ -2317,7 +2317,7 @@
         passwordResetSubmitLoading: 'Aggiornamento…',
         passwordResetSubtitle: 'Inserisci il codice ricevuto via e-mail e scegli una nuova password.',
         passwordResetSuccess: 'La tua password è stata aggiornata. Ora puoi accedere.',
-        passwordResetTitle: '🔁 Reimposta password',
+        passwordResetTitle: 'Reimposta password',
         registerClassLabel: 'Classe (facoltativo)',
         registerClassNotFound: 'Questa classe non è stata trovata.',
         registerClassPlaceholder: 'es. L23a / Docenti: lasciare questo campo vuoto',
@@ -2339,8 +2339,8 @@
         submitLoading: 'Accesso…',
         switchToLogin: 'Hai già un account? Accedi',
         switchToRegister: 'Nuovo qui? Crea un account',
-        title: '🔒 Login',
-        verificationCodeHint: '⚠️ L\'invio dell\'e-mail può richiedere fino a 2 minuti.',
+        title: 'Login',
+        verificationCodeHint: 'L\'invio dell\'e-mail può richiedere fino a 2 minuti.',
         verificationCodeInvalid: 'Il codice non è valido o è scaduto.',
         verificationCodeLabel: 'Codice di verifica',
         verificationCodePlaceholder: 'Codice a 8 cifre',
@@ -2410,7 +2410,7 @@
         title: 'Anteprima giornaliera',
         classLabel: 'Classe',
         classPlaceholder: 'Seleziona classe',
-        back: '◀️ Indietro',
+        back: '← Indietro',
         loading: 'Caricamento dati…',
         unauthorized:
           'Accedi e assicurati di essere assegnato a una classe per visualizzare la panoramica giornaliera.',
@@ -2433,7 +2433,7 @@
         lead: 'Rimani aggiornato sugli eventi scolastici imminenti e organizza la tua settimana con facilità.',
         notice: 'Questa funzione è attualmente in fase di revisione.',
         loading: 'Caricamento dati…',
-        back: '◀️ Torna alla panoramica',
+        back: '← Torna alla panoramica',
         backLabel: 'Torna alla pagina principale',
         unauthorized:
           'Accedi e assicurati di essere assegnato a una classe per vedere gli eventi in arrivo.',
@@ -2452,7 +2452,7 @@
         lead: 'La tua panoramica compatta di compiti ed eventi per i prossimi 7 giorni.',
         loading: 'Generazione anteprima…',
         refresh: 'Rigenera',
-        back: '◀️ Torna alla panoramica',
+        back: '← Torna alla panoramica',
         unauthorized: 'Accedi e assicurati di essere assegnato a una classe.',
         empty: 'Nessuna voce nei prossimi 7 giorni.',
         error: 'Impossibile generare l’anteprima settimanale in questo momento.',
@@ -2896,7 +2896,7 @@
       },
       calendar: {
         pageTitle: 'Calendrier',
-        heading: '📅 Calendrier',
+        heading: 'Calendrier',
         description: 'Gardez devoirs, évaluations et événements en vue grâce à une interface sombre harmonisée.',
         header: {
           eyebrow: 'Espace planification',
@@ -2977,7 +2977,7 @@
           viewTitle: 'Entrée du calendrier',
           noDescription: '<em>Aucune description disponible.</em>',
           close: 'Fermer',
-          createTitle: '📝 Créer une nouvelle entrée',
+          createTitle: 'Créer une nouvelle entrée',
           labels: {
             type: 'Type',
             subject: 'Matière',
@@ -3201,7 +3201,7 @@
         passwordResetSubmitLoading: 'Modification…',
         passwordResetSubtitle: 'Saisis le code reçu par e-mail et choisis un nouveau mot de passe.',
         passwordResetSuccess: 'Ton mot de passe a été mis à jour. Tu peux maintenant te connecter.',
-        passwordResetTitle: '🔁 Réinitialiser le mot de passe',
+        passwordResetTitle: 'Réinitialiser le mot de passe',
         registerClassLabel: 'Classe (facultatif)',
         registerClassNotFound: 'Cette classe est introuvable.',
         registerClassPlaceholder: 'p. ex. L23a / Enseignants : laissez ce champ vide',
@@ -3223,8 +3223,8 @@
         submitLoading: 'Connexion…',
         switchToLogin: 'Déjà inscrit ? Se connecter',
         switchToRegister: 'Nouveau ici ? Créer un compte',
-        title: '🔒 Connexion',
-        verificationCodeHint: '⚠️ L’envoi de l’e-mail peut prendre jusqu’à 2 minutes.',
+        title: 'Connexion',
+        verificationCodeHint: 'L’envoi de l’e-mail peut prendre jusqu’à 2 minutes.',
         verificationCodeInvalid: 'Le code est invalide ou a expiré.',
         verificationCodeLabel: 'Code de vérification',
         verificationCodePlaceholder: 'Code à 8 chiffres',
@@ -3294,7 +3294,7 @@
         title: 'Aperçu du jour',
         classLabel: 'Classe',
         classPlaceholder: 'Sélectionner une classe',
-        back: '◀️ Retour',
+        back: '← Retour',
         loading: 'Chargement des données…',
         unauthorized: 'Connecte-toi et assure-toi d’être affecté·e à une classe pour voir l’aperçu quotidien.',
         featureUnavailable: 'Cette fonctionnalité n’est pas encore disponible pour ta classe.',
@@ -3316,7 +3316,7 @@
         lead: 'Restez informé des événements scolaires à venir et planifiez sereinement.',
         notice: 'Cette fonctionnalité est en cours de refonte.',
         loading: 'Chargement des données…',
-        back: '◀️ Retour à l’aperçu',
+        back: '← Retour à l’aperçu',
         backLabel: 'Retour à la page d’accueil',
         unauthorized:
           'Connecte-toi et assure-toi d’être affecté·e à une classe pour consulter les événements à venir.',
@@ -3335,7 +3335,7 @@
         lead: 'Votre aperçu compact des devoirs et événements des 7 prochains jours.',
         loading: 'Génération de l’aperçu…',
         refresh: 'Regénérer',
-        back: '◀️ Retour à l’aperçu',
+        back: '← Retour à l’aperçu',
         unauthorized: 'Connecte-toi et assure-toi d’être affecté·e à une classe.',
         empty: 'Aucun élément dans les 7 prochains jours.',
         error: 'Impossible de générer l’aperçu hebdomadaire pour le moment.',
@@ -3587,8 +3587,8 @@
 
   function detectLocale() {
     return (
-      normaliseLocale(document.documentElement.getAttribute('lang')) ||
       normaliseLocale(navigator.language) ||
+      normaliseLocale(document.documentElement.getAttribute('lang')) ||
       FALLBACK_LOCALE
     );
   }
@@ -3667,6 +3667,7 @@
     document.documentElement.setAttribute('lang', currentLocale);
     document.documentElement.setAttribute('data-locale', currentLocale);
     apply();
+    global.dispatchEvent(new CustomEvent('hm:locale-changed', { detail: currentLocale }));
   }
 
   function getLocale() {

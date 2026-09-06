@@ -30,7 +30,7 @@ export function UpcomingPage() {
         </section>
         <div className="upcoming__actions">
           <button type="button" className="upcoming__button" id="back-button" aria-label="Back to the home page" data-i18n-attr="aria-label:upcoming.backLabel">
-            <span data-i18n="upcoming.back">◀️ Back to overview</span>
+            <span data-i18n="upcoming.back">← Back to overview</span>
           </button>
         </div>
       </main>

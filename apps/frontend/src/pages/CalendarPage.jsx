@@ -1,4 +1,5 @@
 import { GlassSkeleton } from '../components/GlassSkeleton';
+import { createPortal } from 'react-dom';
 import { usePageSetup } from '../hooks/usePageSetup';
 import { SUBJECT_OPTIONS } from './shared';
 
@@ -15,13 +16,14 @@ export function CalendarPage() {
   return (
     <>
       <main className="calendar-page" id="main">
+        <div id="calendar-load-status" aria-live="polite"></div>
         <section className="calendar-intro">
           <div className="calendar-intro__heading">
             <p className="calendar-header__label" data-i18n="calendar.header.badge">
               Calendar hub
             </p>
             <h1 className="calendar-header__title" data-i18n="calendar.heading">
-              📅 Calendar
+              Calendar
             </h1>
             <p className="calendar-header__subtitle" data-i18n="calendar.header.subtitle">
               Real-time overview for homework, exams and events.
@@ -84,7 +86,7 @@ export function CalendarPage() {
                   Calendar hub
                 </span>
                 <h1 className="calendar-sidebar__title" data-i18n="calendar.heading">
-                  📅 Calendar
+                  Calendar
                 </h1>
                 <span className="calendar-month-nav__label" data-calendar-month-label="" data-i18n="calendar.monthNav.current">
                   Current month
@@ -167,7 +169,7 @@ export function CalendarPage() {
               </div>
 
               <div className="calendar-shell__legend" role="presentation">
-                <div className="calendar-legend" role="list">
+                <div className="calendar-legend" role="list" tabIndex={0} aria-label="Eintragstypen">
                   {[
                     ['hausaufgabe', 'calendar.legend.homework', 'Homework'],
                     ['pruefung', 'calendar.legend.exam', 'Exam'],
@@ -217,9 +219,9 @@ export function CalendarPage() {
           </div>
         </section>
       </main>
-
+      {createPortal(<>
       <div id="fc-modal-overlay" className="hm-modal-overlay" onClick={() => window.closeModal?.()}>
-        <div className="hm-modal" role="dialog" aria-modal="true" tabIndex="-1" onClick={(event) => event.stopPropagation()}>
+        <div className="hm-modal" role="dialog" aria-modal="true" aria-label="Eintrag bearbeiten" tabIndex="-1" onClick={(event) => event.stopPropagation()}>
           <header className="hm-modal__header">
             <button type="button" className="hm-modal__close" onClick={() => window.closeModal?.()} aria-label="Close">
               <span className="visually-hidden" data-i18n="calendar.modal.buttons.close">
@@ -352,7 +354,7 @@ export function CalendarPage() {
       </div>
 
       <div id="entry-modal-overlay" className="hm-modal-overlay" onClick={() => window.closeEntryModal?.()}>
-        <div className="hm-modal" role="dialog" aria-modal="true" tabIndex="-1" onClick={(event) => event.stopPropagation()}>
+        <div className="hm-modal" role="dialog" aria-modal="true" aria-label="Kalender exportieren" tabIndex="-1" onClick={(event) => event.stopPropagation()}>
           <header className="hm-modal__header">
             <button type="button" className="hm-modal__close" onClick={() => window.closeEntryModal?.()} aria-label="Close">
               ✕
@@ -547,6 +549,7 @@ export function CalendarPage() {
       </div>
 
       <div id="calendar-toast-container" className="calendar-toast-container" aria-live="polite" aria-atomic="true"></div>
+      </>, document.body)}
     </>
   );
 }

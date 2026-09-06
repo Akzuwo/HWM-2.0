@@ -4,35 +4,31 @@ export function LoginPage() {
   usePageSetup({ bodyClass: '', scripts: [] });
 
   return (
-    <div className="login-stage relative">
+    <main id="main" className="login-stage relative">
           <aside className="login-stage__intro hm-react-card relative overflow-hidden group transition-all duration-500 hover:shadow-xl hover:bg-white/30">
-            <div className="absolute -top-32 -right-32 w-80 h-80 bg-blue-400/20 rounded-full blur-3xl group-hover:bg-blue-400/30 transition-colors duration-700 pointer-events-none"></div>
-            <div className="absolute -bottom-32 -left-32 w-64 h-64 bg-indigo-400/10 rounded-full blur-3xl group-hover:bg-indigo-400/20 transition-colors duration-700 pointer-events-none"></div>
             
             <div className="hm-badge shadow-sm backdrop-blur-md bg-white/50 border border-white/60 text-blue-800 font-medium px-3 py-1 rounded-full relative z-10">
               <span className="hm-badge__dot bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]" aria-hidden="true"></span>
-              <span>Secure access</span>
+              <span>Dein Schulalltag an einem Ort</span>
             </div>
-            <h1 className="login-stage__title bg-clip-text text-transparent bg-gradient-to-br from-slate-800 to-slate-600 relative z-10">Homework Manager</h1>
+            <h1 className="login-stage__title  relative z-10">Homework Manager</h1>
             <p className="login-stage__lead text-slate-600 relative z-10 leading-relaxed">
-              Sign in to manage your class calendar, upcoming work, weekly summaries and personal account settings.
+              Melde dich an, um deinen Klassenkalender, Aufgaben und Einstellungen zu verwalten.
             </p>
             <ul className="login-stage__features">
-              <li>Role-aware access with class-based views</li>
-              <li>Consistent workflows across desktop and mobile</li>
-              <li>Cleaner overview for homework, exams and events</li>
+              <li>Termine und Aufgaben deiner Klasse</li>
+              <li>Auf Computer und Smartphone verfügbar</li>
+              <li>Hausaufgaben, Prüfungen und Ereignisse im Blick</li>
             </ul>
           </aside>
 
           <div className="login-container hm-react-card relative overflow-hidden bg-white/40 backdrop-blur-xl border border-white/50 shadow-2xl shadow-blue-900/10 transition-all duration-500 hover:shadow-blue-900/15">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 via-indigo-500 to-blue-400 opacity-80"></div>
-            <div className="absolute -bottom-32 -right-32 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
             
             <header className="login-header relative z-10">
               <img src="/media/logo.png" alt="Logo" className="login-logo drop-shadow-lg rounded-2xl ring-4 ring-white/50 transition-transform duration-500 hover:scale-105" data-i18n-attr="alt:auth.logoAlt" />
               <div className="login-heading">
                 <h2 className="login-title font-bold text-slate-800 tracking-tight" data-auth-title="" data-i18n="auth.title">
-                  🔒 Login
+                  Login
                 </h2>
                 <span
                   className="login-badge"
@@ -156,6 +152,6 @@ export function LoginPage() {
               </div>
             </form>
           </div>
-    </div>
+    </main>
   );
 }

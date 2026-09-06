@@ -1,5 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePageSetup } from '../hooks/usePageSetup';
+import { PasswordField } from '../components/PasswordField';
+import { Dialog as Modal } from '../components/Dialog';
+import { useConfirm } from '../hooks/useConfirm';
 import {
   MAX_GRADE,
   MIN_GRADE,
@@ -158,11 +161,7 @@ function readLocalGrades() {
 }
 
 function writeLocalGrades(grades) {
-  try {
-    localStorage.setItem(LOCAL_GRADES_KEY, JSON.stringify(grades));
-  } catch {
-    /* ignore local storage errors */
-  }
+  localStorage.setItem(LOCAL_GRADES_KEY, JSON.stringify(grades));
 }
 
 function calculateAverageFromGrades(grades) {
@@ -228,36 +227,6 @@ function createSyncStateLabel(syncState) {
   return 'Nur lokal';
 }
 
-function Modal({ open, title, subtitle, onClose, actions, children, wide = false }) {
-  if (!open) {
-    return null;
-  }
-
-  return (
-    <div className="grade-modal" role="presentation" onClick={onClose}>
-      <div
-        className={`grade-modal__dialog${wide ? ' grade-modal__dialog--wide' : ''}`}
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="grade-modal__header">
-          <div>
-            <h2>{title}</h2>
-            {subtitle ? <p>{subtitle}</p> : null}
-          </div>
-          <button type="button" className="grade-modal__close" aria-label="Schliessen" onClick={onClose}>
-            ×
-          </button>
-        </div>
-        <div className="grade-modal__body">{children}</div>
-        {actions ? <div className="grade-modal__footer">{actions}</div> : null}
-      </div>
-    </div>
-  );
-}
-
 function TrendChart({ grades }) {
   const points = buildTrendPoints(grades);
 
@@ -313,11 +282,11 @@ function GradeList({ grades, onEdit, onDelete }) {
   return (
     <div className="grade-calculator__grade-list max-h-[600px] overflow-y-auto scroll-smooth pr-2 custom-scrollbar">
       {grades.slice().reverse().map((grade) => (
-        <article 
-          key={grade.id} 
-          className="grade-calculator__grade-item p-3 sm:p-4 mb-2 rounded-2xl bg-white/40 border border-white/60 shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-md hover:bg-white/80 hover:border-blue-300/60"
+        <article
+          key={grade.id}
+          className="grade-calculator__grade-item p-3 sm:p-4 mb-2 rounded-2xl bg-white/40 border border-white/60 shadow-sm transition-all duration-300 ease-out hover:bg-white/80 hover:border-blue-300/60"
         >
-          <div className="grade-calculator__grade-badge transition-transform duration-300 hover:scale-110">{formatNumber(grade.value, 1)}</div>
+          <div className="grade-calculator__grade-badge transition-transform duration-300">{formatNumber(grade.value, 1)}</div>
           <div className="grade-calculator__grade-copy">
             <h3 className="transition-colors duration-300 hover:text-blue-700">{grade.title}</h3>
             <p>
@@ -326,12 +295,12 @@ function GradeList({ grades, onEdit, onDelete }) {
             </p>
           </div>
           <div className="grade-calculator__row-actions">
-            <button type="button" className="grade-calculator__inline-button transition-transform duration-200 hover:scale-105" onClick={() => onEdit(grade)}>
+            <button type="button" className="grade-calculator__inline-button transition-transform duration-200" onClick={() => onEdit(grade)}>
               Bearbeiten
             </button>
             <button
               type="button"
-              className="grade-calculator__inline-button grade-calculator__inline-button--danger transition-transform duration-200 hover:scale-105"
+              className="grade-calculator__inline-button grade-calculator__inline-button--danger transition-transform duration-200"
               onClick={() => onDelete(grade.id)}
             >
               Löschen
@@ -369,6 +338,11 @@ export function GradeCalculatorPage() {
   const [syncModalOpen, setSyncModalOpen] = useState(false);
   const [deficitOpen, setDeficitOpen] = useState(false);
   const [conflictOpen, setConflictOpen] = useState(false);
+  const { confirm, confirmation, confirming } = useConfirm();
+  const operationRef = useRef(false);
+  const [operationBusy, setOperationBusy] = useState(false);
+  const [formError, setFormError] = useState('');
+  const [storageError, setStorageError] = useState('');
   const [syncPassword, setSyncPassword] = useState('');
   const [subjectDraft, setSubjectDraft] = useState({ name: '', shortName: '' });
   const [syncState, setSyncState] = useState({
@@ -386,8 +360,28 @@ export function GradeCalculatorPage() {
   });
 
   useEffect(() => {
-    writeLocalGrades(localGrades);
+    try {
+      writeLocalGrades(localGrades);
+      setStorageError('');
+    } catch {
+      setStorageError('Deine Noten konnten auf diesem Gerät nicht gespeichert werden. Bitte halte diese Seite offen und gib Speicherplatz frei.');
+    }
   }, [localGrades]);
+
+  useEffect(() => {
+    if (!storageError && !syncState.hasUnsavedChanges) return;
+    const preventLoss = (event) => { event.preventDefault(); event.returnValue = ''; };
+    window.addEventListener('beforeunload', preventLoss);
+    const guardNavigation = (event) => {
+      const link = event.target.closest?.('a[href]');
+      if (!link || link.target === '_blank' || link.hasAttribute('download') || link.getAttribute('href').startsWith('#')) return;
+      event.preventDefault();
+      event.stopPropagation();
+      setFormError('Bitte speichere deine Noten, bevor du diese Seite verlässt.');
+    };
+    document.addEventListener('click', guardNavigation, true);
+    return () => { window.removeEventListener('beforeunload', preventLoss); document.removeEventListener('click', guardNavigation, true); };
+  }, [storageError, syncState.hasUnsavedChanges]);
 
   const cloudMode = syncState.unlocked;
 
@@ -437,11 +431,11 @@ export function GradeCalculatorPage() {
     const value = normalizeNumber(gradeForm.value);
     const weight = normalizeNumber(gradeForm.weight || '1');
     if (!isValidGradeValue(value)) {
-      notify('Die Note muss zwischen 1 und 6 liegen.', 'error');
+      setFormError('Die Note muss zwischen 1 und 6 liegen.');
       return;
     }
     if (!isPositiveWeight(weight)) {
-      notify('Die Gewichtung muss grösser als 0 sein.', 'error');
+      setFormError('Die Gewichtung muss grösser als 0 sein.');
       return;
     }
 
@@ -468,10 +462,13 @@ export function GradeCalculatorPage() {
       setLocalGrades((current) => [...current, grade]);
     }
 
+    setFormError('');
     clearGradeForm();
   }
 
-  function handleDeleteGrade(gradeId) {
+  async function handleDeleteGrade(gradeId) {
+    const grade = activeGrades.find(item => item.id === gradeId);
+    if (!await confirm({ title: 'Note löschen', message: `Die Note „${grade?.title}“ wird aus der Liste entfernt.`, label: 'Note löschen' })) return;
     if (cloudMode) {
       updateVault((vault) => {
         const subject = vault.subjects.find((item) => item.id === syncState.selectedSubjectId);
@@ -488,7 +485,7 @@ export function GradeCalculatorPage() {
     const value = normalizeNumber(editDraft?.value);
     const weight = normalizeNumber(editDraft?.weight);
     if (!editDraft || !isValidGradeValue(value) || !isPositiveWeight(weight)) {
-      notify('Bitte gib eine gültige Note und Gewichtung ein.', 'error');
+      setFormError('Die Note muss zwischen 1 und 6 liegen; die Gewichtung muss grösser als 0 sein.');
       return;
     }
 
@@ -515,10 +512,13 @@ export function GradeCalculatorPage() {
   }
 
   async function handleSaveVault() {
-    if (!syncState.unlocked || syncState.isSaving || syncState.conflict) {
+    if (!syncState.unlocked || syncState.isSaving || syncState.conflict || operationRef.current) {
       return;
     }
 
+    operationRef.current = true;
+    setOperationBusy(true);
+    const savedVault = syncState.vault;
     setSyncState((current) => ({ ...current, isSaving: true, error: '' }));
     try {
       const encrypted = await encryptGradeVault(syncState.vault, syncState.password);
@@ -527,7 +527,7 @@ export function GradeCalculatorPage() {
         ...current,
         revision: response.data.revision,
         updatedAt: response.data.updated_at,
-        hasUnsavedChanges: false,
+        hasUnsavedChanges: current.vault !== savedVault,
         isSaving: false,
         error: '',
       }));
@@ -550,11 +550,15 @@ export function GradeCalculatorPage() {
         error: 'Der Cloudsync konnte nicht gespeichert werden.',
       }));
       notify('Der Cloudsync konnte nicht gespeichert werden.', 'error');
+    } finally {
+      operationRef.current = false;
+      setOperationBusy(false);
     }
   }
 
   async function handleUnlockSync(event) {
     event.preventDefault();
+    if (operationRef.current) return;
     if (!syncPassword || syncPassword.length < 8) {
       setSyncState((current) => ({
         ...current,
@@ -563,6 +567,8 @@ export function GradeCalculatorPage() {
       return;
     }
 
+    operationRef.current = true;
+    setOperationBusy(true);
     try {
       const response = await getGradeVault();
       const data = response.data || {};
@@ -614,10 +620,14 @@ export function GradeCalculatorPage() {
               ? 'Bitte melde dich zuerst in HWM an.'
               : 'Der Cloudsync ist momentan nicht erreichbar.',
       }));
+    } finally {
+      operationRef.current = false;
+      setOperationBusy(false);
     }
   }
 
   async function performReloadFromCloud() {
+    if (operationRef.current) return;
     const password = syncState.password || syncPassword;
     if (!password) {
       setSyncState((current) => ({
@@ -628,6 +638,8 @@ export function GradeCalculatorPage() {
       return;
     }
 
+    operationRef.current = true;
+    setOperationBusy(true);
     try {
       const response = await getGradeVault();
       const data = response.data || {};
@@ -656,6 +668,9 @@ export function GradeCalculatorPage() {
         ...current,
         error: error.message === 'wrong_sync_password' ? 'Das Sync-Passwort ist falsch.' : 'Der Serverstand konnte nicht geladen werden.',
       }));
+    } finally {
+      operationRef.current = false;
+      setOperationBusy(false);
     }
   }
 
@@ -667,7 +682,8 @@ export function GradeCalculatorPage() {
     performReloadFromCloud();
   }
 
-  function handleDisableSyncOnDevice() {
+  async function handleDisableSyncOnDevice(skipConfirmation = false) {
+    if (syncState.hasUnsavedChanges && skipConfirmation !== true && !await confirm({ title: 'Ungespeicherte Änderungen verwerfen', message: 'Die Änderungen an deinen Cloud-Noten sind noch nicht gespeichert. Beim Trennen dieses Geräts gehen diese Änderungen verloren.', label: 'Änderungen verwerfen' })) return;
     setDeviceSyncEnabled(false);
     setSyncState({
       enabledOnDevice: false,
@@ -687,12 +703,19 @@ export function GradeCalculatorPage() {
   }
 
   async function handleDeleteServerVault() {
+    if (operationRef.current) return;
+    if (!await confirm({ title: 'Cloud-Noten dauerhaft löschen', message: 'Alle Fächer und Noten im Server-Tresor werden dauerhaft gelöscht. Dieser Vorgang kann nicht rückgängig gemacht werden. Lokale Noten im lokalen Modus bleiben erhalten.', label: 'Cloud-Noten löschen' })) return;
+    operationRef.current = true;
+    setOperationBusy(true);
     try {
       await deleteGradeVault();
-      handleDisableSyncOnDevice();
+      await handleDisableSyncOnDevice(true);
       notify('Der Server-Tresor wurde gelöscht.', 'success');
     } catch {
-      setSyncState((current) => ({ ...current, error: 'Der Server-Tresor konnte nicht gelöscht werden.' }));
+      setSyncState((current) => ({ ...current, error: 'Der Server-Tresor konnte nicht gelöscht werden. Bitte versuche es erneut.' }));
+    } finally {
+      operationRef.current = false;
+      setOperationBusy(false);
     }
   }
 
@@ -716,7 +739,9 @@ export function GradeCalculatorPage() {
     setSubjectDraft({ name: '', shortName: '' });
   }
 
-  function handleDeleteSubject(subjectId) {
+  async function handleDeleteSubject(subjectId) {
+    const subject = syncState.vault.subjects.find(item => item.id === subjectId);
+    if (!await confirm({ title: 'Fach löschen', message: `„${subject?.name}“ und alle ${subject?.grades.length || 0} zugehörigen Noten werden entfernt. Die Cloud wird erst beim Speichern aktualisiert.`, label: 'Fach löschen' })) return;
     updateVault((vault) => {
       vault.subjects = vault.subjects.filter((subject) => subject.id !== subjectId);
     });
@@ -741,6 +766,9 @@ export function GradeCalculatorPage() {
 
   return (
     <>
+      {confirmation}
+      {formError ? <p role="alert" className="hm-inline-feedback">{formError}</p> : null}
+      {storageError ? <div role="alert" className="hm-inline-feedback"><p>{storageError}</p><button type="button" onClick={() => setLocalGrades(current => [...current])}>Speichern erneut versuchen</button></div> : null}
       <main className="grade-calculator grade-calculator--page" id="main">
         <section className="grade-calculator__shell">
           <header className="grade-calculator__hero">
@@ -761,23 +789,23 @@ export function GradeCalculatorPage() {
               {cloudMode ? (
                 <div className="grade-calculator__hero-button-row">
                   <>
-                    <button type="button" className="grade-calculator__button grade-calculator__button--secondary" onClick={handleReloadRequest}>
+                    <button type="button" className="grade-calculator__button grade-calculator__button--secondary" aria-busy={operationBusy} aria-disabled={operationBusy} onClick={handleReloadRequest}>
                       Neu laden
                     </button>
-                    <button type="button" className="grade-calculator__button grade-calculator__button--primary" onClick={handleSaveVault}>
+                    <button type="button" className="grade-calculator__button grade-calculator__button--primary" aria-busy={operationBusy} aria-disabled={operationBusy} onClick={handleSaveVault}>
                       In Cloud speichern
                     </button>
                   </>
                 </div>
               ) : null}
-              {cloudMode ? <div className={`grade-sync-state${syncState.error ? ' is-error' : ''}`}>{syncStatusLabel}</div> : null}
+              {cloudMode ? <div role="status" aria-live="polite" className={`grade-sync-state${syncState.error ? ' is-error' : ''}`}>{syncStatusLabel}</div> : null}
             </div>
           </header>
 
           <div className="grade-calculator__content">
             <div className="grade-calculator__main-column">
               {cloudMode ? (
-                <section className="grade-panel grade-panel--compact transition-all duration-300 ease-out hover:shadow-lg hover:-translate-y-0.5 hover:bg-white/60 border border-white/20 hover:border-blue-200/50">
+                <section className="grade-panel grade-panel--compact transition-all duration-300 ease-out hover:bg-white/60 border border-white/20 hover:border-blue-200/50">
                   <div className="grade-panel__header">
                     <div>
                       <h2>Fach auswählen</h2>
@@ -786,7 +814,7 @@ export function GradeCalculatorPage() {
                   </div>
                   <div className="grade-calculator__subject-row">
                     <select
-                      className="grade-calculator__select transition-shadow duration-200 hover:shadow-sm focus:shadow-md"
+                      aria-label="Fach auswählen" className="grade-calculator__select transition-shadow duration-200 focus:shadow-md"
                       value={syncState.selectedSubjectId || ''}
                       onChange={(event) => setSyncState((current) => ({ ...current, selectedSubjectId: event.target.value || null }))}
                     >
@@ -797,14 +825,14 @@ export function GradeCalculatorPage() {
                         </option>
                       ))}
                     </select>
-                    <button type="button" className="grade-calculator__button grade-calculator__button--secondary transition-transform duration-200 hover:scale-105" onClick={() => setSyncModalOpen(true)}>
+                    <button type="button" className="grade-calculator__button grade-calculator__button--secondary transition-transform duration-200" onClick={() => setSyncModalOpen(true)}>
                       Fächer verwalten
                     </button>
                   </div>
                 </section>
               ) : null}
 
-              <section className="grade-panel grade-panel--compact transition-all duration-300 ease-out hover:shadow-lg hover:-translate-y-0.5 hover:bg-white/60 border border-white/20 hover:border-blue-200/50">
+              <section className="grade-panel grade-panel--compact transition-all duration-300 ease-out hover:bg-white/60 border border-white/20 hover:border-blue-200/50">
                 <div className="grade-panel__header">
                   <div>
                     <h2>Neue Note hinzufügen</h2>
@@ -857,13 +885,13 @@ export function GradeCalculatorPage() {
                 <div className="grade-panel__header">
                   <div>
                     <h2>Erfasste Noten</h2>
-                    <p>{cloudMode && selectedSubject ? `Aktuelles Fach: ${selectedSubject.name}` : 'Letzte 12 Monate'}</p>
+                    <p>{cloudMode && selectedSubject ? `Aktuelles Fach: ${selectedSubject.name}` : 'Alle erfassten Noten'}</p>
                   </div>
                   <button type="button" className="grade-calculator__trend-pill" onClick={() => setTrendOpen(true)}>
                     <span aria-hidden="true">↗</span> Trend: {formatSignedNumber(currentTrend)}
                   </button>
                 </div>
-                <TrendChart grades={activeGrades} />
+                {activeGrades.length ? <TrendChart grades={activeGrades} /> : null}
                 <GradeList grades={activeGrades} onEdit={setEditDraft} onDelete={handleDeleteGrade} />
               </section>
             </div>
@@ -931,8 +959,7 @@ export function GradeCalculatorPage() {
                   <div className={`grade-summary__result${targetOutcome?.state === 'unreachable' ? ' is-warning' : ''}`}>
                     {!targetRequested || targetOutcome?.state === 'empty' ? (
                       <>
-                        <span>5.3</span>
-                        <p>benötigt in der nächsten Prüfung.</p>
+                        <p>{activeGrades.length ? "Gib deinen Wunschschnitt ein und starte die Berechnung." : "Füge zuerst eine Note hinzu, um die nächste benötigte Note zu berechnen."}</p>
                       </>
                     ) : null}
                     {targetOutcome?.state === 'invalid' ? <p>Bitte gib einen gültigen Zielschnitt und eine gültige Gewichtung ein.</p> : null}
@@ -950,15 +977,6 @@ export function GradeCalculatorPage() {
                 </form>
               </section>
 
-              <section className="grade-summary__study-card" aria-label="Organisation">
-                <div className="grade-summary__study-screen" aria-hidden="true">
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                </div>
-                <strong>"Organisation ist das halbe Studium."</strong>
-              </section>
-
               <section className="grade-summary__cloud-card">
                 <div className="grade-summary__cloud-header">
                   <span className="grade-summary__cloud-icon" aria-hidden="true">☁</span>
@@ -968,8 +986,8 @@ export function GradeCalculatorPage() {
                   </div>
                 </div>
                 <button type="button" className={`grade-summary__toggle${cloudMode ? ' is-on' : ''}`} onClick={() => setSyncModalOpen(true)}>
-                  <span>Auto-Sync</span>
-                  <i aria-hidden="true"></i>
+                  <span>Cloudsync-Einstellungen</span>
+
                 </button>
                 {cloudMode ? (
                   <div className="grade-summary__cloud-metrics">
@@ -986,7 +1004,7 @@ export function GradeCalculatorPage() {
                   Konto verbinden
                 </button>
                 <button type="button" className="grade-calculator__button grade-calculator__button--secondary" onClick={cloudMode ? handleSaveVault : () => setSyncModalOpen(true)}>
-                  Backup jetzt erstellen
+                  In Cloud speichern
                 </button>
               </section>
             </aside>
@@ -994,9 +1012,9 @@ export function GradeCalculatorPage() {
         </section>
 
         <Modal
-          open={Boolean(editDraft)}
+          open={Boolean(editDraft) && !confirming}
           title="Note bearbeiten"
-          subtitle="Passe Name, Wert oder Gewichtung an, ohne die Hauptseite zu verlängern."
+          subtitle="Passe Name, Wert oder Gewichtung an."
           onClose={() => setEditDraft(null)}
           actions={
             <>
@@ -1010,14 +1028,15 @@ export function GradeCalculatorPage() {
           }
         >
           <div className="grade-modal__form">
-            <input
+            {formError ? <p role="alert" className="hm-inline-feedback">{formError}</p> : null}
+            <label className="hm-labelled-field"><span>Name (optional)</span><input
               className="grade-calculator__input"
               type="text"
               placeholder="Name der Note"
               value={editDraft?.title || ''}
               onChange={(event) => setEditDraft((current) => ({ ...current, title: event.target.value }))}
-            />
-            <input
+            /></label>
+            <label className="hm-labelled-field"><span>Note</span><input
               className="grade-calculator__input"
               type="number"
               min="1"
@@ -1026,8 +1045,8 @@ export function GradeCalculatorPage() {
               placeholder="Note"
               value={editDraft?.value || ''}
               onChange={(event) => setEditDraft((current) => ({ ...current, value: event.target.value }))}
-            />
-            <input
+            /></label>
+            <label className="hm-labelled-field"><span>Gewichtung</span><input
               className="grade-calculator__input"
               type="number"
               min="0.01"
@@ -1035,12 +1054,12 @@ export function GradeCalculatorPage() {
               placeholder="Gewichtung"
               value={editDraft?.weight || ''}
               onChange={(event) => setEditDraft((current) => ({ ...current, weight: event.target.value }))}
-            />
+            /></label>
           </div>
         </Modal>
 
         <Modal
-          open={trendOpen}
+          open={trendOpen && !confirming}
           wide
           title="Trend-Grafik"
           subtitle="Der Verlauf basiert nur auf den aktuell sichtbaren Noten in diesem Modus."
@@ -1080,7 +1099,7 @@ export function GradeCalculatorPage() {
         </Modal>
 
         <Modal
-          open={syncModalOpen}
+          open={syncModalOpen && !conflictOpen && !confirming}
           wide
           title="Cloudsync-Einstellungen"
           subtitle="Deine Noten bleiben verschlüsselt. HWM kann den Inhalt des Tresors nicht lesen."
@@ -1091,7 +1110,7 @@ export function GradeCalculatorPage() {
                 Schliessen
               </button>
               {cloudMode ? (
-                <button type="button" className="grade-calculator__button grade-calculator__button--primary" onClick={handleSaveVault}>
+                <button type="button" className="grade-calculator__button grade-calculator__button--primary" aria-busy={operationBusy} aria-disabled={operationBusy} onClick={handleSaveVault}>
                   In Cloud speichern
                 </button>
               ) : null}
@@ -1109,8 +1128,8 @@ export function GradeCalculatorPage() {
                   {syncStatusLabel}
                 </span>
               </div>
-              <form className="flex flex-col sm:flex-row gap-3" onSubmit={handleUnlockSync}>
-                <input
+              <form className="flex flex-col sm:flex-row gap-3" aria-busy={operationBusy} onSubmit={handleUnlockSync}>
+                <label className="hm-labelled-field"><span>Sync-Passwort (mindestens 8 Zeichen)</span><PasswordField
                   className="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white shadow-inner"
                   type="password"
                   minLength="8"
@@ -1118,8 +1137,8 @@ export function GradeCalculatorPage() {
                   autoComplete="new-password"
                   value={syncPassword}
                   onChange={(event) => setSyncPassword(event.target.value)}
-                />
-                <button type="submit" className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 whitespace-nowrap flex items-center justify-center gap-2">
+                /></label>
+                <button type="submit" className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-all shadow-md whitespace-nowrap flex items-center justify-center gap-2">
                   {cloudMode ? (
                     <>
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
@@ -1147,7 +1166,7 @@ export function GradeCalculatorPage() {
               ) : null}
               {cloudMode ? (
                 <div className="mt-6 pt-5 border-t border-slate-200/80 flex flex-wrap gap-2.5">
-                  <button type="button" className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 font-medium rounded-lg border border-slate-300 transition-all shadow-sm hover:shadow text-sm flex items-center gap-2" onClick={handleReloadRequest}>
+                  <button type="button" className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 font-medium rounded-lg border border-slate-300 transition-all shadow-sm hover:shadow text-sm flex items-center gap-2" aria-busy={operationBusy} aria-disabled={operationBusy} onClick={handleReloadRequest}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21v-5h5"/></svg>
                     Neu laden
                   </button>
@@ -1155,7 +1174,7 @@ export function GradeCalculatorPage() {
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
                     Gerät trennen
                   </button>
-                  <button type="button" className="px-4 py-2 bg-red-50 hover:bg-red-600 hover:text-white text-red-600 border border-red-200 hover:border-red-600 font-medium rounded-lg transition-all shadow-sm text-sm ml-auto flex items-center gap-2" onClick={handleDeleteServerVault}>
+                  <button type="button" className="px-4 py-2 bg-red-50 hover:bg-red-600 hover:text-white text-red-600 border border-red-200 hover:border-red-600 font-medium rounded-lg transition-all shadow-sm text-sm ml-auto flex items-center gap-2" aria-busy={operationBusy} aria-disabled={operationBusy} onClick={handleDeleteServerVault}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
                     Server-Tresor löschen
                   </button>
@@ -1173,21 +1192,21 @@ export function GradeCalculatorPage() {
                   <span className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-sm font-medium shadow-sm border border-indigo-200">{syncState.vault.subjects.length} Fächer</span>
                 </div>
                 <form className="flex flex-col sm:flex-row gap-3 mb-5" onSubmit={handleAddSubject}>
-                  <input
+                  <label className="hm-labelled-field"><span>Fachname</span><input
                     className="flex-[2] px-4 py-2.5 rounded-xl border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none bg-white shadow-inner"
                     type="text"
                     placeholder="Fachname (z.B. Mathematik)"
                     value={subjectDraft.name}
                     onChange={(event) => setSubjectDraft((current) => ({ ...current, name: event.target.value }))}
-                  />
-                  <input
+                  /></label>
+                  <label className="hm-labelled-field"><span>Kürzel (optional)</span><input
                     className="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none bg-white shadow-inner"
                     type="text"
                     placeholder="Kürzel (opt.)"
                     value={subjectDraft.shortName}
                     onChange={(event) => setSubjectDraft((current) => ({ ...current, shortName: event.target.value }))}
-                  />
-                  <button type="submit" className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 whitespace-nowrap flex items-center justify-center gap-2">
+                  /></label>
+                  <button type="submit" className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl transition-all shadow-md whitespace-nowrap flex items-center justify-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
                     Hinzufügen
                   </button>
@@ -1198,7 +1217,7 @@ export function GradeCalculatorPage() {
                       const average = calculateSubjectAverage(subject);
                       const isActive = subject.id === syncState.selectedSubjectId;
                       return (
-                        <div key={subject.id} className={`flex items-center justify-between p-3.5 rounded-xl border transition-all duration-200 ${isActive ? 'bg-indigo-50/80 border-indigo-300 shadow-sm ring-1 ring-indigo-200' : 'bg-white border-slate-200 hover:border-indigo-300 hover:shadow-sm'}`}>
+                        <div key={subject.id} className={`flex items-center justify-between p-3.5 rounded-xl border transition-all duration-200 ${isActive ? 'bg-indigo-50/80 border-indigo-300 shadow-sm ring-1 ring-indigo-200' : 'bg-white border-slate-200 hover:border-indigo-300'}`}>
                           <button
                             type="button"
                             className="flex flex-col items-start text-left flex-1 group"
@@ -1248,7 +1267,7 @@ export function GradeCalculatorPage() {
         </Modal>
 
         <Modal
-          open={conflictOpen}
+          open={conflictOpen && !confirming}
           title="Konfliktlösung"
           subtitle="Beim Neu-Laden könnten lokale Änderungen überschrieben werden."
           onClose={() => setConflictOpen(false)}
@@ -1289,7 +1308,7 @@ export function GradeCalculatorPage() {
         </Modal>
 
         <Modal
-          open={deficitOpen}
+          open={deficitOpen && !confirming}
           title="Mangelpunkte im Detail"
           subtitle="Jede halbe Note unter 4.0 zählt als 0.5 Mangelpunkte."
           onClose={() => setDeficitOpen(false)}

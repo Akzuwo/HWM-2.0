@@ -45,20 +45,12 @@ export class BackendProcess {
     for (const candidate of candidates) {
       try {
         this.#appendLog("system", `Starte Backend: ${candidate.command} ${candidate.args.join(" ")}`);
-        this.child = spawn(candidate.command, candidate.args, {
-          cwd: paths.backendInstall,
-          windowsHide: true,
-          shell: false,
-          env: { ...process.env, PYTHONUNBUFFERED: "1", HWM_SERVER_HOME: paths.serverHome }
-        });
-        this.startedAt = Date.now();
-        this.lastError = "";
-        this.#wireChild(candidate);
+        await this.#startCandidate(candidate, paths);
         this.#emit();
         return this.getStatus();
       } catch (error) {
         lastFailure = error;
-        this.#appendLog("stderr", `${candidate.command} konnte nicht gestartet werden: ${error.message}`);
+        this.#appendLog("stderr", `${candidate.command} konnte das Backend nicht starten: ${error.message}`);
       }
     }
 
@@ -113,6 +105,62 @@ export class BackendProcess {
     throw new Error("Kein Backend-Startpunkt gefunden. Bitte Setup reparieren.");
   }
 
+  #startCandidate(candidate, paths) {
+    return new Promise((resolve, reject) => {
+      let child;
+      let settled = false;
+      let startupTimer = null;
+
+      const rejectStartup = (error) => {
+        if (settled) return;
+        settled = true;
+        if (startupTimer) clearTimeout(startupTimer);
+        reject(error);
+      };
+
+      try {
+        child = spawn(candidate.command, candidate.args, {
+          cwd: paths.backendInstall,
+          windowsHide: true,
+          shell: false,
+          env: { ...process.env, PYTHONUNBUFFERED: "1", HWM_SERVER_HOME: paths.serverHome }
+        });
+      } catch (error) {
+        rejectStartup(error);
+        return;
+      }
+
+      this.child = child;
+      this.startedAt = Date.now();
+      this.lastError = "";
+
+      child.once("error", rejectStartup);
+      child.once("exit", (code, signal) => {
+        if (settled) return;
+        const recentError = this.logs
+          .slice(-12)
+          .filter((entry) => entry.source === "stderr")
+          .map((entry) => entry.message)
+          .join(" | ");
+        rejectStartup(new Error(recentError || `Prozess vorzeitig beendet (Code=${code ?? "n/a"}, Signal=${signal ?? "n/a"}).`));
+      });
+
+      this.#wireChild(candidate);
+
+      // spawn() only confirms process creation. Give the backend enough time to
+      // import its dependencies so a broken Python installation can fall back.
+      startupTimer = setTimeout(() => {
+        if (settled) return;
+        if (child.exitCode !== null || child.killed) {
+          rejectStartup(new Error(`Prozess vorzeitig beendet (Code=${child.exitCode ?? "n/a"}).`));
+          return;
+        }
+        settled = true;
+        resolve();
+      }, 1000);
+    });
+  }
+
   #wireChild(candidate) {
     const child = this.child;
     child.stdout?.on("data", (data) => this.#appendChunk("stdout", data));
@@ -120,8 +168,10 @@ export class BackendProcess {
     child.on("error", (error) => {
       this.lastError = `${candidate.command} Fehler: ${error.message}`;
       this.#appendLog("stderr", this.lastError);
-      this.child = null;
-      this.startedAt = null;
+      if (this.child === child) {
+        this.child = null;
+        this.startedAt = null;
+      }
       this.#emit();
     });
     child.on("exit", (code, signal) => {
@@ -129,8 +179,10 @@ export class BackendProcess {
       if (code && code !== 0) {
         this.lastError = `Backend wurde mit Code ${code} beendet.`;
       }
-      this.child = null;
-      this.startedAt = null;
+      if (this.child === child) {
+        this.child = null;
+        this.startedAt = null;
+      }
       this.#emit();
     });
   }

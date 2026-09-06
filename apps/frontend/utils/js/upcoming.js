@@ -1,4 +1,5 @@
 import { resolveApiBase } from './api-client.js';
+import { showViewState } from './view-state.js';
 
 const API_BASE_URL = resolveApiBase();
 const IS_DEV = Boolean(import.meta.env?.DEV);
@@ -54,6 +55,7 @@ async function responseRequiresClassContext(response) {
 function createStatusSetter(listEl) {
   return function setStatus(message, variant = 'default') {
     listEl.innerHTML = '';
+    listEl.removeAttribute('role');
     lastUpcomingSignature = '';
     const status = document.createElement('p');
     status.className = 'upcoming__status';
@@ -245,7 +247,8 @@ async function loadUpcomingEvents(listEl, { showLoading = false } = {}) {
       return;
     }
     if (await responseRequiresClassContext(res)) {
-      setStatus(unauthorizedMessage);
+      listEl.removeAttribute('role');
+      showViewState(listEl, { message: unauthorizedMessage, login: true });
       listEl.setAttribute('aria-busy', 'false');
       listEl.classList.remove('is-refreshing');
       return;
@@ -290,6 +293,7 @@ async function loadUpcomingEvents(listEl, { showLoading = false } = {}) {
     }
 
     renderUpcomingEvents(listEl, uniqueEvents, dateFormatter, timeFormatter, truncate);
+    listEl.setAttribute('role', 'list');
     listEl.setAttribute('aria-busy', 'false');
     listEl.classList.remove('is-refreshing');
   } catch (err) {
@@ -297,7 +301,8 @@ async function loadUpcomingEvents(listEl, { showLoading = false } = {}) {
       return;
     }
     console.error('Error loading data:', err);
-    setStatus(t('error', 'Error loading data.'));
+    listEl.removeAttribute('role');
+    showViewState(listEl, { message: t('error', 'Die Einträge konnten nicht geladen werden. Bitte prüfe die Verbindung.'), error: true, retry: () => loadUpcomingEvents(listEl), preserve: hasRenderedItems });
     listEl.setAttribute('aria-busy', 'false');
     listEl.classList.remove('is-refreshing');
   }
@@ -326,6 +331,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
   listEl.dataset.upcomingEnhanced = 'true';
+  lastUpcomingSignature = '';
 
   let loadedFromClassSelector = false;
   if (window.hmClassSelector) {

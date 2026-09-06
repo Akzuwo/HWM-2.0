@@ -1,9 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useOutlet, useLocation, useNavigate } from 'react-router-dom';
 import { Header } from './Header';
 import { Footer } from './Footer';
 import { CookieConsentBanner } from './CookieConsentBanner';
+import { NetworkStatus } from './NetworkStatus';
+import { PageErrorBoundary } from './PageErrorBoundary';
 
 const LAYOUTS = {
   '/': { mainClassName: 'hm-react-main--landing', shellClassName: 'hm-react-shell--landing' },
@@ -33,6 +35,7 @@ function getLayout(pathname) {
 export function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const outlet = useOutlet();
   const prefersReducedMotion = useReducedMotion();
   const mainRef = useRef(null);
   const previousPathRef = useRef(location.pathname);
@@ -78,12 +81,13 @@ export function AppLayout() {
         Zum Inhalt springen
       </a>
       <Header />
+      <NetworkStatus />
       <div id="pageContent" className={footer ? 'hm-page-content--with-footer' : undefined}>
         <div ref={mainRef} id="main-content" className={`hm-react-main ${mainClassName}`.trim()} tabIndex="-1">
           <div className="hm-react-main__inner">
             <AnimatePresence mode="sync" initial={false}>
               <motion.div className="hm-route-transition" key={location.pathname} {...transition}>
-                <Outlet />
+                <PageErrorBoundary>{outlet}</PageErrorBoundary>
               </motion.div>
             </AnimatePresence>
           </div>

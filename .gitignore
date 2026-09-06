@@ -11,6 +11,7 @@ apps/backend/build/
 apps/backend/dist/
 apps/backend/*.spec
 .vite/
+**/.wrangler/
 test-results/
 __pycache__/
 .pytest_cache/

@@ -31,9 +31,9 @@ export function NewsPreviewCard({
       <p className="home-card__summary" {...summaryProps}>
         {summary || 'Hier erscheint bald eine Vorschau auf einen neuen Beitrag.'}
       </p>
-      <div className="home-card__actions">
+      {!disabled ? <div className="home-card__actions">
         <CardActionLink href={href} disabled={disabled} todoKey={todoKey} />
-      </div>
+      </div> : null}
     </article>
   );
 }

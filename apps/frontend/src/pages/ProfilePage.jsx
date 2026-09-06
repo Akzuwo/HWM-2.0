@@ -1,3 +1,4 @@
+import { PasswordField } from '../components/PasswordField';
 import { usePageSetup } from '../hooks/usePageSetup';
 
 export function ProfilePage() {
@@ -9,6 +10,7 @@ export function ProfilePage() {
   return (
     <>
       <main id="main" className="profile">
+        <div id="profile-load-status" role="status">Profil wird geladen…</div>
         <div className="profile__container">
           <header className="profile__header">
             <p className="profile__eyebrow" data-i18n="profile.eyebrow">
@@ -112,17 +114,17 @@ export function ProfilePage() {
                 <label className="profile-form__label" htmlFor="current-password" data-i18n="profile.currentPassword">
                   Current password
                 </label>
-                <input id="current-password" className="profile-input" type="password" autoComplete="current-password" />
+                <PasswordField id="current-password" className="profile-input" type="password" autoComplete="current-password" />
 
                 <label className="profile-form__label" htmlFor="new-password" data-i18n="profile.newPassword">
                   New password
                 </label>
-                <input id="new-password" className="profile-input" type="password" autoComplete="new-password" />
+                <PasswordField id="new-password" className="profile-input" type="password" autoComplete="new-password" />
 
                 <label className="profile-form__label" htmlFor="confirm-password" data-i18n="profile.confirmPassword">
                   Confirm password
                 </label>
-                <input id="confirm-password" className="profile-input" type="password" autoComplete="new-password" />
+                <PasswordField id="confirm-password" className="profile-input" type="password" autoComplete="new-password" />
 
                 <p className="profile-help" data-i18n="profile.passwordHint">
                   Use at least 8 characters.
@@ -132,7 +134,7 @@ export function ProfilePage() {
                     <span data-i18n="profile.passwordChangeButton">Update password</span>
                   </button>
                 </div>
-                <p id="password-email-status" className="profile-help"></p>
+                <p role="status" aria-live="polite" id="password-email-status" className="profile-help"></p>
               </form>
             </article>
 

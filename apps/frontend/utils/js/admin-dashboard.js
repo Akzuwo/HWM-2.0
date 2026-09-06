@@ -456,12 +456,12 @@ const LOG_LINE_MAX = 5000;
 const LOG_LINE_STEP = 50;
 
 function getTranslations() {
-  const lang = document.documentElement.lang?.toLowerCase() || 'en';
+  const lang = (window.hmI18n?.getLocale() || document.documentElement.lang || 'de').toLowerCase().split('-')[0];
   return TRANSLATIONS[lang] || TRANSLATIONS.en;
 }
 
 function localeForDate() {
-  const lang = document.documentElement.lang?.toLowerCase() || 'en';
+  const lang = (window.hmI18n?.getLocale() || document.documentElement.lang || 'de').toLowerCase().split('-')[0];
   switch (lang) {
     case 'de':
       return 'de-DE';
@@ -1480,16 +1480,20 @@ function buildDashboard(root) {
     });
   }
 
+  let feedbackTimer;
+  let dataRequestSequence = 0;
   function showMessage(type, text) {
+    clearTimeout(feedbackTimer);
     if (!text) {
       messageArea.clear();
       return;
     }
     messageArea.show(type, text);
-    setTimeout(() => messageArea.clear(), 4000);
+    if (type === 'success') feedbackTimer = setTimeout(() => messageArea.clear(), 5000);
   }
 
   async function loadData() {
+    const requestId = ++dataRequestSequence;
     const resource = resources[state.active];
     table.setLoading(true);
     showMessage();
@@ -1500,20 +1504,24 @@ function buildDashboard(root) {
     }
     try {
       const response = await fetchJson(`/api/admin/${resource.key}?page=${state.page}&page_size=${state.pageSize}`);
+      if (requestId !== dataRequestSequence || !root.isConnected) return;
       const rows = response.data || [];
       state.total = response.pagination?.total ?? rows.length;
       state.data = rows;
       table.setRows(rows);
       pagination.update({ page: state.page, pageSize: state.pageSize, total: state.total });
     } catch (error) {
+      if (requestId !== dataRequestSequence || !root.isConnected) return;
       if (error.status === 401 || error.status === 403) {
         handleAuthFailure(error.status);
       } else {
-        showMessage('error', error.message || t.messages.loadFailed);
+        showMessage('error', t.messages.loadFailed);
+        const retry = createActionButton('Erneut versuchen');
+        retry.onclick = loadData;
+        messageArea.element.append(retry);
       }
-      table.setRows([]);
     } finally {
-      table.setLoading(false);
+      if (requestId === dataRequestSequence) table.setLoading(false);
     }
   }
 
@@ -2049,7 +2057,9 @@ function initDashboard() {
   if (!root) {
     return;
   }
+  if (root.dataset.enhanced === 'true') return;
+  root.dataset.enhanced = 'true';
   buildDashboard(root);
 }
 
-initDashboard();
+document.addEventListener('DOMContentLoaded', initDashboard);
